@@ -31,38 +31,38 @@
 #include <cstddef>
 
 namespace gpu_voxels {
-namespace voxellist {
+	namespace voxellist {
 
 
-class CountingVoxelList : public TemplateVoxelList<CountingVoxel, MapVoxelID>,
-    public CollidableWithBitVectorVoxelList
-{
-public:
-  // This can either represent a MORTON or Voxelmap Bitvector Voxel List:
-  //  typedef CountingVoxelList<VoxelIDType> TemplatedCountingVoxelList;
+		class CountingVoxelList : public TemplateVoxelList<CountingVoxel, MapVoxelID>,
+			public CollidableWithBitVectorVoxelList<BIT_VECTOR_LENGTH, MapVoxelID>
+		{
+		public:
+			// This can either represent a MORTON or Voxelmap Bitvector Voxel List:
+			//  typedef CountingVoxelList<VoxelIDType> TemplatedCountingVoxelList;
 
-  CountingVoxelList(const gpu_voxels::Vector3ui ref_map_dim,
-                    const float voxel_side_length,
-                    const gpu_voxels::MapType map_type);
+			CountingVoxelList(const gpu_voxels::Vector3ui ref_map_dim,
+				const float voxel_side_length,
+				const gpu_voxels::MapType map_type);
 
-  ~CountingVoxelList();
+			~CountingVoxelList() override;
 
-  virtual void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning);
+			void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning) override;
 
-  virtual MapType getTemplateType() { return this->m_map_type; }
+			MapType getTemplateType() override { return this->m_map_type; }
 
-  size_t collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold = 1.0, const Vector3i &offset = Vector3i());
+			size_t collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
 
-  void remove_underpopulated(const int8_t threshold);
+			void remove_underpopulated(const int8_t threshold);
 
-private:
+		private:
 
-  // thrust::device_vector<CountingVoxel> m_dev_colliding_bits_result_list;
-  // thrust::host_vector<CountingVoxel> m_colliding_bits_result_list;
-  // CountingVoxel* m_dev_bitmask;
-};
+			// thrust::device_vector<CountingVoxel> m_dev_colliding_bits_result_list;
+			// thrust::host_vector<CountingVoxel> m_colliding_bits_result_list;
+			// CountingVoxel* m_dev_bitmask;
+		};
 
-} // end namespace voxellist
+	} // end namespace voxellist
 } // end namespace gpu_voxels
 
 #endif // GPU_VOXELS_VOXELLIST_COUNTINGVOXELLIST_H

@@ -203,7 +203,7 @@ void RobotLink::createEntityForGeometryElement(const urdf::LinkConstPtr& link, c
   case urdf::Geometry::SPHERE:
   {
     const urdf::Sphere& sphere = static_cast<const urdf::Sphere&>(geom);
-    link_cloud.update(geometry_generation::createSphereOfPoints(Vector3f(0), sphere.radius, discretization_distance_));
+    link_cloud.update(geometry_generation::createSphereOfPoints(Vector3f::Zero(), sphere.radius, discretization_distance_));
     entity->setHasData(true);
     break;
   }
@@ -211,13 +211,13 @@ void RobotLink::createEntityForGeometryElement(const urdf::LinkConstPtr& link, c
   {
     const urdf::Box& box = static_cast<const urdf::Box&>(geom);
     Vector3f half_dim(box.dim.x / 2.0, box.dim.y / 2.0, box.dim.z / 2.0);
-    link_cloud.update(geometry_generation::createBoxOfPoints((Vector3f(0) - half_dim), (Vector3f(0) + half_dim), discretization_distance_));
+    link_cloud.update(geometry_generation::createBoxOfPoints((Vector3f::Zero() - half_dim), (Vector3f::Zero() + half_dim), discretization_distance_));
     break;
   }
   case urdf::Geometry::CYLINDER:
   {
     const urdf::Cylinder& cylinder = static_cast<const urdf::Cylinder&>(geom);
-    link_cloud.update(geometry_generation::createCylinderOfPoints(Vector3f(0), cylinder.radius, cylinder.length, discretization_distance_));
+    link_cloud.update(geometry_generation::createCylinderOfPoints(Vector3f::Zero(), cylinder.radius, cylinder.length, discretization_distance_));
     entity->setHasData(true);
     break;
   }
@@ -236,12 +236,12 @@ void RobotLink::createEntityForGeometryElement(const urdf::LinkConstPtr& link, c
 
     LOGGING_DEBUG_C(RobotLog, RobotLink, "Loading pointcloud of link " << pc_file.string() << endl);
     if(!file_handling::PointcloudFileHandler::Instance()->loadPointCloud(
-         pc_file.string(), false, tmp_vec3f_cloud, false, Vector3f(0), 1.0))
+         pc_file.string(), false, tmp_vec3f_cloud, false, Vector3f::Zero(), 1.0))
     {
       LOGGING_ERROR_C(RobotLog, RobotLink,
                       "Could not read file [" << pc_file.string() <<
                       "]. Adding single point instead..." << endl);
-      tmp_vec3f_cloud.push_back(Vector3f());
+      tmp_vec3f_cloud.push_back(Vector3f::Zero());
     }
 
     link_cloud.update(tmp_vec3f_cloud);

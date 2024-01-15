@@ -26,70 +26,68 @@
 
 #include <fstream>
 
-#include "icl_core/TimeSpan.h"
+#include "icl_core/fs.h"
 #include "icl_core/TimeStamp.h"
 #include "icl_core_logging/ImportExport.h"
 #include "icl_core_logging/LogOutputStream.h"
 
-#ifdef _IC_BUILDER_ZLIB_
-# include <zlib.h>
-#endif
-
 namespace icl_core {
-namespace logging {
+    namespace logging {
 
-/*! An output stream which streams to a file.
- *
- *  This class is implemented as a singleton so that only one instance
- *  can exist in any process.
- */
-class ICL_CORE_LOGGING_IMPORT_EXPORT FileLogOutput : public LogOutputStream,
-                                                     protected virtual icl_core::Noncopyable
-{
-  friend class LoggingManager;
+        /*! An output stream which streams to a file.
+         *
+         *  This class is implemented as a singleton so that only one instance
+         *  can exist in any process.
+         */
+        class ICL_CORE_LOGGING_IMPORT_EXPORT FileLogOutput : public LogOutputStream,
+            protected virtual icl_core::Noncopyable
+        {
+            friend class LoggingManager;
 
-public:
-  /*! Creates a new file log output stream object.
-   */
-  static LogOutputStream *create(const icl_core::String& name, const icl_core::String& config_prefix,
-                                 icl_core::logging::LogLevel log_level = cDEFAULT_LOG_LEVEL);
+        public:
+            /*! Creates a new file log output stream object.
+             */
+            static LogOutputStream* create(const std::string& name, const std::string& config_prefix,
+                icl_core::logging::LogLevel log_level = cDEFAULT_LOG_LEVEL);
 
-private:
-  FileLogOutput(const icl_core::String& name, const icl_core::String& config_prefix,
+        private:
+
+            FileLogOutput(const std::string& name, const std::string& config_prefix,
                 icl_core::logging::LogLevel log_level);
-  FileLogOutput(const icl_core::String& name, const icl_core::String& config_prefix,
+            FileLogOutput(const std::string& name, std::string config_prefix,
                 icl_core::logging::LogLevel log_level, bool flush);
-  virtual ~FileLogOutput();
 
-  virtual void pushImpl(const icl_core::String& log_line);
+            ~FileLogOutput() override;
 
-  void expandFilename();
+            void pushImpl(const std::string& log_line) override;
 
-  bool isOpen();
-  void flush();
+            void expandFilename();
 
-  void closeLogFile();
-  void openLogFile();
-  void rotateLogFile();
+            [[nodiscard]] bool isOpen() const;
+            void flush();
 
-  icl_core::String m_filename;
-  std::ofstream m_log_file;
+            void closeLogFile();
+            void openLogFile();
+            void rotateLogFile();
 
-  bool m_rotate;
-  int64_t m_last_rotation;
+            std::string m_filename;
+            std::ofstream m_log_file;
 
-  bool m_delete_old_files;
-  uint32_t m_delete_older_than_days;
+            bool m_rotate;
+            std::chrono::days m_last_rotation;
 
-  bool m_flush;
+            bool m_delete_old_files;
+            std::chrono::days m_delete_older_than_days;
+
+            bool m_flush;
 
 #if defined(_IC_BUILDER_ZLIB_)
-  bool m_online_zip;
-  gzFile m_zipped_log_file;
+            bool m_online_zip;
+            os::ZipFilePtr m_zipped_log_file;
 #endif
-};
+        };
 
-}
+    }
 }
 
 #endif

@@ -22,18 +22,17 @@
 //----------------------------------------------------------------------
 #include <gpu_voxels/logging/logging_octree.h>
 
-namespace gpu_voxels {
-
-REGISTER_LOG_STREAM(OctreeLog);
-REGISTER_LOG_STREAM(OctreeDebugLog);
-REGISTER_LOG_STREAM(OctreeDebugEXLog);
-REGISTER_LOG_STREAM(OctreeFreespaceLog);
-REGISTER_LOG_STREAM(OctreeInsertLog);
-REGISTER_LOG_STREAM(OctreePropagateLog);
-REGISTER_LOG_STREAM(OctreeCountBeforeExtractLog);
-REGISTER_LOG_STREAM(OctreeExtractCubeLog);
-REGISTER_LOG_STREAM(OctreeRebuildLog);
-REGISTER_LOG_STREAM(OctreeFreeBoundingBoxLog);
-REGISTER_LOG_STREAM(OctreeDepthCallbackLog);
-
+namespace gpu_voxels
+{
+	REGISTER_LOG_STREAM(OctreeLog);
+	REGISTER_LOG_STREAM(OctreeDebugLog);
+	REGISTER_LOG_STREAM(OctreeDebugEXLog);
+	REGISTER_LOG_STREAM(OctreeFreespaceLog);
+	REGISTER_LOG_STREAM(OctreeInsertLog);
+	REGISTER_LOG_STREAM(OctreePropagateLog);
+	REGISTER_LOG_STREAM(OctreeCountBeforeExtractLog);
+	REGISTER_LOG_STREAM(OctreeExtractCubeLog);
+	REGISTER_LOG_STREAM(OctreeRebuildLog);
+	REGISTER_LOG_STREAM(OctreeFreeBoundingBoxLog);
+	REGISTER_LOG_STREAM(OctreeDepthCallbackLog);
 }

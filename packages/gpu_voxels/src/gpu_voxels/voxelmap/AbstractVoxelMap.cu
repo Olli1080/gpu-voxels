@@ -10,7 +10,7 @@
  * \date    2014-07-12
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #include "AbstractVoxelMap.h"
 
 /**
@@ -18,18 +18,18 @@
  * Contains implementation of VoxelMap Datastructure and according operations
  */
 namespace gpu_voxels {
-namespace voxelmap {
+	namespace voxelmap {
 
-bool AbstractVoxelMap::needsRebuild() const
-{
-  LOGGING_ERROR_C(VoxelmapLog, AbstractVoxelMap, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
-  return false;
-}
+		bool AbstractVoxelMap::needsRebuild() const
+		{
+			LOGGING_ERROR_C(VoxelmapLog, AbstractVoxelMap, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
+			return false;
+		}
 
-bool AbstractVoxelMap::rebuild()
-{
-  LOGGING_ERROR_C(VoxelmapLog, AbstractVoxelMap, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
-  return false;
-}
-} // end of namespace voxelmap
+		bool AbstractVoxelMap::rebuild()
+		{
+			LOGGING_ERROR_C(VoxelmapLog, AbstractVoxelMap, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
+			return false;
+		}
+	} // end of namespace voxelmap
 } // end of namespace gpu_voxels

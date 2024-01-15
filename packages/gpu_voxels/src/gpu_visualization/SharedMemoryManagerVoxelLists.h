@@ -24,35 +24,36 @@
 #ifndef GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVOXELLISTS_H
 #define GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVOXELLISTS_H
 
-#include <gpu_voxels/voxellist/VoxelList.h>
-#include <gpu_voxels/vis_interface/VisualizerInterface.h>
+#include <memory>
+#include <string>
 
-
-namespace gpu_voxels {
-namespace visualization {
-
-class SharedMemoryManager;
-
-class SharedMemoryManagerVoxelLists
+namespace gpu_voxels
 {
-public:
-  SharedMemoryManagerVoxelLists();
-  ~SharedMemoryManagerVoxelLists();
+	struct Cube;
+}
 
-  uint32_t getNumberOfVoxelListsToDraw();
+namespace gpu_voxels
+{
+	namespace visualization
+	{
+		class SharedMemoryManager;
+		class SharedMemoryManagerVoxelLists
+		{
+		public:
 
-  bool getVoxelListName(std::string& map_name, const uint32_t index);
+			SharedMemoryManagerVoxelLists();
 
-  bool getVisualizationData(Cube*& cubes, uint32_t& size,const uint32_t index);
-  void setBufferSwappedToFalse(const uint32_t index);
-  bool hasBufferSwapped(const uint32_t index);
+			[[nodiscard]] uint32_t getNumberOfVoxelListsToDraw() const;
 
-private:
-  SharedMemoryManager* shmm;
-};
+			[[nodiscard]] bool getVoxelListName(std::string& map_name, uint32_t index) const;
 
+			[[nodiscard]] bool getVisualizationData(Cube*& cubes, uint32_t& size, uint32_t index) const;
+			void setBufferSwappedToFalse(uint32_t index) const;
+			[[nodiscard]] bool hasBufferSwapped(uint32_t index) const;
 
-} //end of namespace visualization
+		private:
+			std::unique_ptr<SharedMemoryManager> shmm;
+		};
+	} //end of namespace visualization
 } //end of namespace gpu_voxels
-
 #endif // GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVOXELLISTS_H

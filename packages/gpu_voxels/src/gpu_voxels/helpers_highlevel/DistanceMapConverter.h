@@ -21,52 +21,54 @@
  */
 //----------------------------------------------------------------------
 
+#ifndef GPU_VOXELS_HELPERS_HIGHLEVEL_H_INCLUDED
+#define GPU_VOXELS_HELPERS_HIGHLEVEL_H_INCLUDED
+
 #include <gpu_voxels/voxellist/BitVoxelList.h>
 #include <gpu_voxels/voxelmap/VoxelMap.h>
 
 namespace gpu_voxels
 {
-namespace distance_map_converter
-{
+    namespace distance_map_converter
+    {
+        struct in_range
+        {
+            free_space_t min_dist;
+            free_space_t max_dist;
 
-struct in_range
-{
-  free_space_t min_dist;
-  free_space_t max_dist;
+            __host__ __device__
+                in_range(free_space_t min_dist_, free_space_t max_dist_) :
+                min_dist(min_dist_), max_dist(max_dist_)
+            {
+                printf("Constructed in_range operator \n");
+            }
 
-  __host__ __device__
-  in_range(free_space_t min_dist_, free_space_t max_dist_) :
-    min_dist(min_dist_), max_dist(max_dist_)
-  {
-    printf("Contructed in_range operator \n");
-  }
+            __host__ __device__
+                bool operator()(const free_space_t& dist) const
+            {
+                return (dist >= min_dist && dist <= max_dist);
+            }
+        };
 
-  __host__ __device__
-  bool operator()(const free_space_t &dist) const
-  {
-    return (dist >= min_dist && dist <= max_dist);
-  }
-};
+        struct in_range_tuple
+        {
+            free_space_t min_dist;
+            free_space_t max_dist;
 
-struct in_range_tuple
-{
-  free_space_t min_dist;
-  free_space_t max_dist;
+            __host__ __device__
+                in_range_tuple(free_space_t min_dist_, free_space_t max_dist_) :
+                min_dist(min_dist_), max_dist(max_dist_) {}
 
-  __host__ __device__
-  in_range_tuple(free_space_t min_dist_, free_space_t max_dist_) :
-    min_dist(min_dist_), max_dist(max_dist_) {}
+            __host__ __device__
+                bool operator()(const thrust::tuple<free_space_t, MapVoxelID>& dist_tuple) const
+            {
+                return (thrust::get<0>(dist_tuple) >= min_dist && thrust::get<0>(dist_tuple) <= max_dist);
+            }
+        };
 
-  __host__ __device__
-  bool operator()(const thrust::tuple<free_space_t, MapVoxelID> &dist_tuple) const
-  {
-    return (thrust::get<0>(dist_tuple) >= min_dist && thrust::get<0>(dist_tuple) <= max_dist);
-  }
-};
-
-size_t extract_given_distances(const voxelmap::DistanceVoxelMap& dist_map,
-                               free_space_t min_sqare_dist, free_space_t max_sqare_dist,
-                               voxellist::BitVectorVoxelList& result);
-
+        size_t extract_given_distances(const voxelmap::DistanceVoxelMap& dist_map,
+            free_space_t min_square_dist, free_space_t max_square_dist,
+            voxellist::BitVectorVoxelList& result);
+    }
 }
-}
+#endif

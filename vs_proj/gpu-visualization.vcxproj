@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CUDAPropsPath Condition="'$(CUDAPropsPath)'==''">
+     $(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{D25DD3A4-930A-4430-B58B-5C82A76E95B6}</ProjectGuid>
+    <RootNamespace>gpuvoxelsvs22</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(CUDAPropsPath)\CUDA 12.3.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_IC_BUILDER_ZLIB_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\icl_core.lib;$(SolutionDir)$(Platform)\$(Configuration)\gpu-voxels.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
+      <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
+      <KeepDir>$(CudaIntDir)\%(RelativeDir)</KeepDir>
+      <Keep>false</Keep>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_IC_BUILDER_ZLIB_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\icl_core.lib;$(SolutionDir)$(Platform)\$(Configuration)\gpu-voxels.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
+      <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
+      <KeepDir>$(CudaIntDir)\%(RelativeDir)</KeepDir>
+      <Keep>false</Keep>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\packages\gpu_voxels\src\constants.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Camera.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\CubelistContext.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Cuboid.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\DataContext.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\gpu_voxels_visualizer.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\kernels\VisualizerUtil.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\kernels\VoxelMapVisualizerOperations.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\logging\logging_visualization.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Primitive.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\PrimitiveArrayContext.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\ColormapFragmentShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\ColormapVertexShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\LightingFragmentShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\LightingVertexShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\SimpleFragmentShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\shaders\SimpleVertexShader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManager.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerOctrees.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerPrimitiveArrays.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVisualizer.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVoxelLists.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVoxelMaps.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Sphere.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Utils.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\Visualizer.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\VisualizerContext.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\visualizerDefines.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\VoxelmapContext.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\XMLInterpreter.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_visualization\TemplatedVoxelMapVisual.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\Camera.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\CubeListContext.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\DataContext.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\logging\logging_visualization.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\shader.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerOctrees.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerPrimitiveArrays.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVisualizer.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVoxelLists.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\SharedMemoryManagerVoxelMaps.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\Sphere.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\Utils.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\XMLInterpreter.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\Visualizer.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_visualization\gpu_voxels_visualizer.cpp" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_visualization\TemplatedVoxelMapVisual.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_visualization\kernels\VoxelMapVisualizerOperations.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_visualization\kernels\VisualizerUtil.cu" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(CUDAPropsPath)\CUDA 12.3.targets" />
+  </ImportGroup>
+</Project>

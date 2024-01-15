@@ -27,43 +27,44 @@
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/helpers/common_defines.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/CollisionInterfaces.h>
 
-namespace gpu_voxels {
-namespace voxelmap {
-
-class ProbVoxelMap: public TemplateVoxelMap<ProbabilisticVoxel>,
-    public CollidableWithBitVectorVoxelMap, public CollidableWithProbVoxelMap
+namespace gpu_voxels
 {
-public:
-  typedef ProbabilisticVoxel Voxel;
-  typedef TemplateVoxelMap<Voxel> Base;
+    namespace voxelmap
+	{
+        class ProbVoxelMap : public TemplateVoxelMap<ProbabilisticVoxel>,
+            public CollidableWithBitVectorVoxelMap, public CollidableWithProbVoxelMap
+        {
+        public:
 
-  ProbVoxelMap(const Vector3ui dim, const float voxel_side_length, const MapType map_type);
-  ProbVoxelMap(Voxel* dev_data, const Vector3ui dim, const float voxel_side_length, const MapType map_type);
-  virtual ~ProbVoxelMap();
+            typedef ProbabilisticVoxel Voxel;
+            typedef TemplateVoxelMap<Voxel> Base;
 
-  template<std::size_t length>
-  void insertSensorData(const PointCloud &global_points, const Vector3f &sensor_pose, const bool enable_raycasting, const bool cut_real_robot,
-                        const BitVoxelMeaning robot_voxel_meaning, BitVoxel<length>* robot_map = NULL);
+            ProbVoxelMap(Vector3ui dim, float voxel_side_length, MapType map_type);
+            ProbVoxelMap(Voxel* dev_data, Vector3ui dim, float voxel_side_length, MapType map_type);
+            ~ProbVoxelMap() override;
 
-  virtual bool insertMetaPointCloudWithSelfCollisionCheck(const MetaPointCloud *robot_links,
-                                                          const std::vector<BitVoxelMeaning>& voxel_meanings = std::vector<BitVoxelMeaning>(),
-                                                          const std::vector<BitVector<BIT_VECTOR_LENGTH> >& collision_masks = std::vector<BitVector<BIT_VECTOR_LENGTH> >(),
-                                                          BitVector<BIT_VECTOR_LENGTH>* colliding_meanings = NULL);
+            template<std::size_t length>
+            void insertSensorData(const PointCloud& global_points, const Vector3f& sensor_pose, bool enable_raycasting, bool cut_real_robot,
+                                  BitVoxelMeaning robot_voxel_meaning, BitVoxel<length>* robot_map = nullptr);
 
-  virtual void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning);
+            bool insertMetaPointCloudWithSelfCollisionCheck(const MetaPointCloud* robot_links,
+                const std::vector<BitVoxelMeaning>& voxel_meanings = {},
+                const std::vector<BitVector<BIT_VECTOR_LENGTH>>& collision_masks = {},
+                BitVector<BIT_VECTOR_LENGTH>* colliding_meanings = nullptr) override;
 
-  virtual MapType getTemplateType() const { return MT_PROBAB_VOXELMAP; }
+            void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning) override;
 
-  // Collision Interface Methods
+            MapType getTemplateType() const override { return MT_PROBAB_VOXELMAP; }
 
-  size_t collideWith(const voxelmap::BitVectorVoxelMap* map, float coll_threshold = 1.0, const Vector3i &offset = Vector3i());
-  size_t collideWith(const voxelmap::ProbVoxelMap* map, float coll_threshold = 1.0, const Vector3i &offset = Vector3i());
-};
+            // Collision Interface Methods
 
+            size_t collideWith(const voxelmap::BitVectorVoxelMap* map, float coll_threshold = 1.f, const Vector3i& offset = Vector3i::Zero()) override;
+            size_t collideWith(const voxelmap::ProbVoxelMap* map, float coll_threshold = 1.f, const Vector3i& offset = Vector3i::Zero()) override;
+        };
+
+    } // end of namespace
 } // end of namespace
-} // end of namespace
-
 #endif

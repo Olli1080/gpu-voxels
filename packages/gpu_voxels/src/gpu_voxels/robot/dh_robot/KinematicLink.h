@@ -24,112 +24,118 @@
 #define GPU_VOXELS_ROBOT_DH_ROBOT_KINEMATIC_LINK_H_INCLUDED
 
 #include <cuda_runtime.h>
-#include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+#include <ostream>
 
-#include <gpu_voxels/helpers/cuda_handling.hpp>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 
 namespace gpu_voxels {
-namespace robot {
+    namespace robot {
 
-typedef enum
-{
-  REVOLUTE = 0,
-  PRISMATIC
-} DHJointType;
+        enum DHJointType
+        {
+            REVOLUTE = 0,
+            PRISMATIC
+        };
 
-class DHParameters
-{
-public:
-  float d;
-  float theta;        // initial rotation
-  float a;            // intial translation
-  float alpha;
-  float value;       /* joint value
-                        (rotation for revolute joints,
-                        translation for prismatic joints) */
-  DHJointType joint_type;
+        enum DHConvention
+        {
+	        CLASSIC = 0,
+            CRAIGS
+        };
 
-  DHParameters()
-      : d(0.0), theta(0.0), a(0.0), alpha(0.0), value(0.0), joint_type(REVOLUTE)
-      {
-      }
+        template<DHConvention convention>
+        class DHParameters
+        {
+        public:
 
-  DHParameters(float _d, float _theta, float _a, float _alpha, float _value, DHJointType _joint_type)
-      : d(_d), theta(_theta), a(_a), alpha(_alpha), value(_value), joint_type(_joint_type)
-      {
-      }
+            float d;
+            float theta;        // initial rotation
+            float a;            // initial translation
+            float alpha;
+            float value;       /* joint value
+                                  (rotation for revolute joints,
+                                  translation for prismatic joints) */
+            DHJointType joint_type;
 
-  void convertDHtoM(Matrix4f& m) const;
-};
+            DHParameters()
+                : d(0.0), theta(0.0), a(0.0), alpha(0.0), value(0.0), joint_type(REVOLUTE)
+            {
+            }
 
+            DHParameters(float _d, float _theta, float _a, float _alpha, float _value, DHJointType _joint_type)
+                : d(_d), theta(_theta), a(_a), alpha(_alpha), value(_value), joint_type(_joint_type)
+            {
+            }
 
+            void convertDHtoM(Matrix4f& m) const;
 
+            friend std::ostream& operator<<(std::ostream& os, const DHParameters<convention>& params)
+            {
+                os << "d(m): " << params.d << " \ttheta(rad): " << params.theta << " \ta/(m): " << params.a << " \talpha(rad): " << params.alpha << " \ttype: " << (params.joint_type == REVOLUTE ? "REVOLUTE" : "PRISMATIC");
+                return os;
+            }
+        };
 
+        template<DHConvention convention>
+        class KinematicLink
+        {
+        public:
 
+            __host__
+            KinematicLink(const DHParameters<convention>& dh_parameters);
 
+            __host__
+            KinematicLink(float d, float theta, float a, float alpha, float joint_value, DHJointType joint_type);
 
+            //! destructor.
+            __host__
+            ~KinematicLink() = default;
 
-class KinematicLink;
-typedef boost::shared_ptr<KinematicLink>  KinematicLinkSharedPtr;
+            __host__
+            void setJointValue(float value)
+            {
+                m_dh_parameters.value = value;
+            }
 
-class KinematicLink
-{
-public:
+            __host__
+            [[nodiscard]] DHJointType getJointType() const
+            {
+				return m_dh_parameters.joint_type;
+            }
 
-  __host__
-  KinematicLink(const DHParameters &dh_parameters);
-  __host__
-  KinematicLink(float d, float theta, float a, float alpha, float joint_value, DHJointType joint_type);
+            __host__
+            [[nodiscard]] float getJointValue() const
+            {
+	            if (m_dh_parameters.joint_type == PRISMATIC)
+	                return m_dh_parameters.d + m_dh_parameters.value;
+	            
+	            if (m_dh_parameters.joint_type == REVOLUTE)
+	                return m_dh_parameters.theta + m_dh_parameters.value;
 
-  //! destructor.
-  __host__
-  ~KinematicLink();
+	            return 0;
+            }
 
-  __host__
-  void setJointValue(float value)
-  {
-    m_dh_parameters.value = value;
-  }
+            __host__
+            [[nodiscard]] DHParameters<convention> getDHParam() const
+            {
+				return m_dh_parameters;
+            }
 
-  __host__
-  DHJointType getJointType()
-  {
-    return m_dh_parameters.joint_type;
-  }
+            void setDHParam(float d, float theta, float a, float alpha, float joint_value, DHJointType joint_type);
+            void setDHParam(const DHParameters<convention>& dh_parameters);
 
-  __host__
-  float getJointValue()
-  {
-    if (m_dh_parameters.joint_type == PRISMATIC)
-    {
-      return m_dh_parameters.a + m_dh_parameters.value;
-    }
-    if (m_dh_parameters.joint_type == REVOLUTE)
-    {
-      return m_dh_parameters.theta + m_dh_parameters.value;
-    }
-    return 0;
-  }
+            void getMatrixRepresentation(Matrix4f& m) const;
 
-  __host__
-  DHParameters getDHParam()
-  {
-    return m_dh_parameters;
-  }
+        private:
 
-  void setDHParam(float d, float theta, float a, float alpha, float joint_value, DHJointType joint_type);
-  void setDHParam(DHParameters dh_parameters);
+            //float m_joint_value;
+            DHParameters<convention> m_dh_parameters;
+            Matrix4f m_dh_transformation;
+        };
 
-  void getMatrixRepresentation(Matrix4f& m);
-
-private:
-  float m_joint_value;
-  DHParameters m_dh_parameters;
-  Matrix4f m_dh_transformation;
-};
-
-} // end of namespace
+        template<DHConvention convention>
+        using KinematicLinkSharedPtr = std::shared_ptr<KinematicLink<convention>>;
+    } // end of namespace
 } // end of namespace
 #endif

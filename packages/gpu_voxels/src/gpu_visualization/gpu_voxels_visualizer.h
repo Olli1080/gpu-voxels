@@ -26,85 +26,84 @@
 #ifndef GPU_VOXELS_VISUALIZER_H_
 #define GPU_VOXELS_VISUALIZER_H_
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>       /* time */
-#include <math.h>
-#include <iostream>
-#include <fstream>
-#include <cstdio>
+ ///#include <cstdlib>
+ //#include <cstdio>
+ //#include <string.h>
+ //#include <time.h>       /* time */
+ //#include <math.h>
+ //#include <iostream>
+ //#include <fstream>
+ //#include <cstdio>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
+//#include <boost/interprocess/containers/vector.hpp>
+//#include <boost/interprocess/allocators/allocator.hpp>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
-
-#include <gpu_visualization/logging/logging_visualization.h>
+//#include <gpu_visualization/logging/logging_visualization.h>
 
 // OpenGL Graphics includes
-#include <GL/glew.h>
-#include <GL/freeglut.h>
+//#include <GL/glew.h>
+//#include <GL/freeglut.h>
 
-#include <gpu_voxels/helpers/cuda_datatypes.h>
-#include <gpu_voxels/helpers/cuda_handling.h>
+//#include <gpu_voxels/helpers/cuda_datatypes.hpp>
+//#include <gpu_voxels/helpers/cuda_handling.h>
 //#include <gpu_voxels/voxelmap/Voxel.h>
 #include <gpu_visualization/Visualizer.h>
 
-#include <icl_core_config/Config.h>
-#include <gpu_voxels/voxelmap/VoxelMap.h>
+//#include <icl_core_config/Config.h>
+//#include <gpu_voxels/voxelmap/VoxelMap.h>
 
-#include <gpu_visualization/SharedMemoryManagerOctrees.h>
-#include <gpu_visualization/SharedMemoryManagerVoxelMaps.h>
+//#include <gpu_visualization/SharedMemoryManagerOctrees.h>
+//#include <gpu_visualization/SharedMemoryManagerVoxelMaps.h>
 
 gpu_voxels::visualization::Visualizer* vis =
-    new gpu_voxels::visualization::Visualizer();
+new gpu_voxels::visualization::Visualizer();
 
-void resizeFunctionWrapper(int32_t width, int32_t height)
+inline void resizeFunctionWrapper(int32_t width, int32_t height)
 {
-  vis->resizeFunction(width, height);
+	vis->resizeFunction(width, height);
 }
-void renderFunctionWrapper()
+inline void renderFunctionWrapper()
 {
-  vis->renderFunction();
+	vis->renderFunction();
 }
-void idleFunctionWrapper()
+inline void idleFunctionWrapper()
 {
-  vis->idleFunction();
+	vis->idleFunction();
 }
-void timerFunctionWrapper(int32_t value)
+inline void timerFunctionWrapper(int32_t value)
 {
-  vis->timerFunction(value, timerFunctionWrapper);
+	vis->timerFunction(value, timerFunctionWrapper);
 }
-void cleanupFunctionWrapper(void)
+inline void cleanupFunctionWrapper(void)
 {
-  vis->cleanupFunction();
+	vis->cleanupFunction();
 }
-void keyboardFunctionWrapper(unsigned char key, int32_t x, int32_t y)
+inline void keyboardFunctionWrapper(unsigned char key, int32_t x, int32_t y)
 {
-  vis->keyboardFunction(key, x, y);
+	vis->keyboardFunction(key, x, y);
 }
-void keyboardSpecialFunctionWrapper(int32_t key, int32_t x, int32_t y)
+inline void keyboardSpecialFunctionWrapper(int32_t key, int32_t x, int32_t y)
 {
-  vis->keyboardSpecialFunction(key, x, y);
+	vis->keyboardSpecialFunction(key, x, y);
 }
-void mouseMotionFunctionWrapper(int32_t xpos, int32_t ypos)
+inline void mouseMotionFunctionWrapper(int32_t xpos, int32_t ypos)
 {
-  vis->mouseMotionFunction(xpos, ypos);
+	vis->mouseMotionFunction(xpos, ypos);
 }
-void mousePassiveMotionFunctionWrapper(int32_t xpos, int32_t ypos)
+
+inline void mousePassiveMotionFunctionWrapper(int32_t xpos, int32_t ypos)
 {
-  vis->mousePassiveMotionFunction(xpos, ypos);
+	vis->mousePassiveMotionFunction(xpos, ypos);
 }
-void mouseClickFunctionWrapper(int32_t button, int32_t state, int32_t x, int32_t y)
+
+inline void mouseClickFunctionWrapper(int32_t button, int32_t state, int32_t x, int32_t y)
 {
-  vis->mouseClickFunction(button, state, x, y);
+	vis->mouseClickFunction(button, state, x, y);
 }
-void menuFunctionWrapper(int value)
+inline void menuFunctionWrapper(int value)
 {
-  vis->menuFunction(value);
+	vis->menuFunction(value);
 }
 
 void runVisualisation(int32_t* argc, char* argv[]);

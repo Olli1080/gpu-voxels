@@ -19,7 +19,7 @@
  * \date    2017-10-25
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXEL_COUNTING_VOXEL_HPP_INCLUDED
 #define GPU_VOXELS_VOXEL_COUNTING_VOXEL_HPP_INCLUDED
 
@@ -28,56 +28,53 @@
 
 namespace gpu_voxels {
 
-__host__ __device__
-CountingVoxel::CountingVoxel() :
-    m_count(0)
-{
+	__host__ __device__
+		inline CountingVoxel::CountingVoxel()
+		: m_count(0)
+	{
 
-}
+	}
 
-__host__ __device__
-CountingVoxel::~CountingVoxel()
-{
+	__host__ __device__
+	inline CountingVoxel::~CountingVoxel() = default;
 
-}
+	__host__ __device__
+		inline bool CountingVoxel::isOccupied(uint8_t occ_threshold) const
+	{
+		return m_count >= occ_threshold;
+	}
 
-__host__ __device__
-bool CountingVoxel::isOccupied(uint8_t occ_threshold) const
-{
-    return m_count >= occ_threshold;
-}
+	__host__ __device__
+		inline int8_t CountingVoxel::getCount() const
+	{
+		return m_count;
+	}
 
-__host__ __device__
-int8_t CountingVoxel::getCount() const
-{
-    return m_count;
-}
+	__host__ __device__
+		inline int8_t& CountingVoxel::count()
+	{
+		return m_count;
+	}
 
-__host__ __device__
-int8_t& CountingVoxel::count()
-{
-    return m_count;
-}
+	__host__ __device__
+		inline const int8_t& CountingVoxel::count() const
+	{
+		return m_count;
+	}
 
-__host__ __device__
-const int8_t& CountingVoxel::count() const
-{
-    return m_count;
-}
+	__host__ __device__
+		inline void CountingVoxel::insert(const uint32_t voxel_meaning)
+	{
+		m_count++;
+	}
 
-__host__ __device__
-void CountingVoxel::insert(const uint32_t voxel_meaning)
-{
-    m_count++;
-}
-
-__host__ __device__ 
-CountingVoxel CountingVoxel::reduce(const CountingVoxel voxel, const CountingVoxel other_voxel)
-{
-    CountingVoxel res = voxel;
-    res.m_count += other_voxel.m_count;
-    return res;
-}
+	__host__ __device__
+		inline CountingVoxel CountingVoxel::reduce(const CountingVoxel voxel, const CountingVoxel other_voxel)
+	{
+		CountingVoxel res = voxel;
+		res.m_count += other_voxel.m_count;
+		return res;
+	}
 
 } // end of ns
 

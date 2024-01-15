@@ -23,7 +23,7 @@
 #define ICL_CORE_LOGGING_ICL_CORE_LOGGING_H_INCLUDED
 
 #ifndef _IC_BUILDER_ICL_CORE_LOGGING_
-#  define _IC_BUILDER_ICL_CORE_LOGGING_
+#define _IC_BUILDER_ICL_CORE_LOGGING_
 #endif
 
 #include <icl_core/icl_core.h>
@@ -33,9 +33,5 @@
 #include "icl_core_logging/LoggingManager.h"
 #include "icl_core_logging/LogLevel.h"
 #include "icl_core_logging/LogOutputStream.h"
-
-// -- START Deprecated compatibility headers --
-#include "icl_core_logging/tLogLevel.h"
-// -- END Deprecated compatibility headers --
 
 #endif

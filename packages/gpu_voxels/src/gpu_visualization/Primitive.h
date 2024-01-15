@@ -20,7 +20,7 @@
  *
  * \brief   A base frame for different primitives.
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VISUALIZATION_PRIMITIVE_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_PRIMITIVE_H_INCLUDED
 
@@ -38,45 +38,40 @@
 #include <gpu_visualization/visualizerDefines.h>
 
 namespace gpu_voxels {
-namespace visualization {
+	namespace visualization {
 
-class Primitive
-{
-protected:
+		class Primitive
+		{
+		protected:
 
-  GLuint m_vbo;
-  glm::vec4 m_color;
-  bool m_is_created;
-  bool m_lighting_mode;
+			GLuint m_vbo;
+			glm::vec4 m_color;
+			bool m_is_created;
+			bool m_lighting_mode;
 
-  Primitive()
-    : m_vbo(0),
-      m_color(glm::vec4(1.f)),
-      m_is_created(false),
-      m_lighting_mode(false)
-  {
-  }
+			Primitive()
+				: m_vbo(0),
+				m_color(glm::vec4(1.f)),
+				m_is_created(false),
+				m_lighting_mode(false)
+			{}
 
-public:
+		public:
 
-  virtual ~Primitive()
-  {
-  }
-  virtual void draw(uint32_t number_of_draws, bool with_lighting)
-  {
-  }
+			virtual ~Primitive() = default;
 
-  virtual void create(bool with_lighting)
-  {
-  }
+			virtual void draw(uint32_t number_of_draws, bool with_lighting)
+			{}
 
-  glm::vec4 getColor()
-  {
-    return m_color;
-  }
-};
+			virtual void create(bool with_lighting)
+			{}
 
-} // end of namespace visualization
+			const glm::vec4& getColor() const
+			{
+				return m_color;
+			}
+		};
+
+	} // end of namespace visualization
 } // end of namespace gpu_voxels
-
 #endif

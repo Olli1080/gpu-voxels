@@ -31,64 +31,66 @@
 namespace gpu_voxels {
 
 
-class SVCollider
-{
-public:
-  __host__ __device__
-  SVCollider();
+	class SVCollider
+	{
+	public:
 
-  __host__ __device__
-  SVCollider(const float coll_threshold, const size_t window_size = 0);
+		__host__ __device__
+		SVCollider();
 
-  __host__ __device__
-  SVCollider(const Probability threshold1, const Probability threshold2, const size_t window_size = 0);
+		__host__ __device__
+		SVCollider(const float coll_threshold, const size_t window_size = 0);
 
-  __host__ __device__
-  bool collide(const ProbabilisticVoxel& v1, const ProbabilisticVoxel& v2) const;
+		__host__ __device__
+		SVCollider(const Probability threshold1, const Probability threshold2, const size_t window_size = 0);
 
-  __host__ __device__
-  bool collide(const ProbabilisticVoxel& v1) const;
+		__host__ __device__
+		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1, const ProbabilisticVoxel& v2) const;
 
-  template<std::size_t length>
-  __host__ __device__
-  bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const;
+		__host__ __device__
+		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1) const;
 
-  template<std::size_t length>
-  __host__ __device__
-  bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const;
+		template<std::size_t length>
+		__host__ __device__
+		bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const;
 
-  //template<std::size_t length>
-  //__host__ __device__
-  //bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const;
+		template<std::size_t length>
+		__host__ __device__
+		bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const;
 
-  template<std::size_t length>
-  __host__ __device__
-  bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset) const;
+		//template<std::size_t length>
+		//__host__ __device__
+		//bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const;
 
-  template<std::size_t length>
-  __host__ __device__
-  bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
+		template<std::size_t length>
+		__host__ __device__
+		bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset) const;
 
-  template<std::size_t length>
-  __host__ __device__
-  bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
+		template<std::size_t length>
+		__host__ __device__
+		bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
 
-  template<class OtherVoxel>
-  __host__ __device__
-  bool collide(const DistanceVoxel& v1, const OtherVoxel& v2) const;
+		template<std::size_t length>
+		__host__ __device__
+		bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
 
-  template<class OtherVoxel>
-  __host__ __device__
-  bool collide(const OtherVoxel& v1, const DistanceVoxel& v2) const;
+		template<class OtherVoxel>
+		__host__ __device__
+		bool collide(const DistanceVoxel& v1, const OtherVoxel& v2) const;
 
-protected:
-  __host__ __device__
-  static Probability floatToProbability(const float val);
+		template<class OtherVoxel>
+		__host__ __device__
+		bool collide(const OtherVoxel& v1, const DistanceVoxel& v2) const;
 
-protected:
-  Probability m_threshold1, m_threshold2;
-  size_t m_type_range;
-};
+	protected:
+
+		__host__ __device__
+		static Probability floatToProbability(const float val);
+
+	protected:
+		Probability m_threshold1, m_threshold2;
+		size_t m_type_range;
+	};
 
 } // end of ns
 

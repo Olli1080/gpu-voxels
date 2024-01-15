@@ -21,7 +21,7 @@
  *
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 
 #ifndef GPU_VOXELS_ROBOT_ROBOT_INTERFACE_H_INCLUDED
 #define GPU_VOXELS_ROBOT_ROBOT_INTERFACE_H_INCLUDED
@@ -30,71 +30,79 @@
 #include <string>
 #include "gpu_voxels/helpers/MetaPointCloud.h"
 
-namespace gpu_voxels {
-namespace robot {
-
-typedef std::pair<std::string, float> JointValuePair;
-typedef std::map<std::string, float> JointValueMap;
-typedef JointValueMap::iterator JointValueMapIterator;
-typedef JointValueMap::const_iterator JointValueMapConstIterator;
-
-
-class RobotInterface
+namespace gpu_voxels
 {
-public:
+	namespace robot
+	{
+		typedef std::pair<std::string, float> JointValuePair;
+		typedef std::map<std::string, float> JointValueMap;
+		typedef JointValueMap::iterator JointValueMapIterator;
+		typedef JointValueMap::const_iterator JointValueMapConstIterator;
 
-  /**
-   * @brief getJointNames Reads all joint names
-   * @param jointnames Vector of jointnames that will get extended
-   */
-  virtual void getJointNames(std::vector<std::string> &jointnames) = 0;
 
-  /**
-   * @brief Updates the joints of the robot
-   * @param jointmap Pairs of jointnames and joint values
-   * Joints get matched by names, so not all joints have to be
-   * specified.
-   */
-  virtual void setConfiguration(const JointValueMap &jointmap) = 0;
+		class RobotInterface
+		{
+		public:
 
-  /**
-   * @brief getConfiguration Gets the robot configuration
-   * @param joint_values Map of jointnames and values.
-   * This map will get extended if joints were missing.
-   */
-  virtual void getConfiguration(JointValueMap &jointmap) = 0;
+			virtual ~RobotInterface() = default;
 
-  /**
-   * @brief getTransformedClouds
-   * @return Pointers to the kinematically transformed clouds.
-   */
-  virtual const MetaPointCloud *getTransformedClouds() = 0;
+			/**
+			 * @brief getJointNames Reads all joint names
+			 * @param jointnames Vector of jointnames that will get extended
+			 */
+			virtual void getJointNames(std::vector<std::string>& jointnames) = 0;
 
-  /*!
-   * \brief updatePointcloud Changes the geometry of a single link.
-   * Useful when grasping an object, changing a tool
-   * or interpreting point cloud data from an onboard sensor as a robot link.
-   * \param link Link to modify
-   * \param cloud New geometry
-   */
-  virtual void updatePointcloud(const std::string &link_name, const std::vector<Vector3f> &cloud) = 0;
+			/**
+			 * @brief Updates the joints of the robot
+			 * @param jointmap Pairs of jointnames and joint values
+			 * Joints get matched by names, so not all joints have to be
+			 * specified.
+			 */
+			virtual void setConfiguration(const JointValueMap& jointmap) = 0;
 
-  /**
-   * @brief getLowerJointLimits Gets the minimum joint values
-   * @param lower_limits Map of jointnames and values.
-   * This map will get extended if joints were missing.
-   */
-  virtual void getLowerJointLimits(JointValueMap &lower_limits) = 0;
+			/**
+			 * @brief getConfiguration Gets the robot configuration
+			 * @param jointmap Map of jointnames and values.
+			 * This map will get extended if joints were missing.
+			 */
+			virtual void getConfiguration(JointValueMap& jointmap) = 0;
 
-  /**
-   * @brief getUpperJointLimits Gets the maximum joint values
-   * @param upper_limits Map of jointnames and values.
-   * This map will get extended if joints were missing.
-   */
-  virtual void getUpperJointLimits(JointValueMap &upper_limits) = 0;
-};
+			/**
+			 * @brief getTransformedClouds
+			 * @return Pointers to the kinematically transformed clouds.
+			 */
+			virtual const MetaPointCloud* getTransformedClouds() = 0;
 
-} // namespace robot
+			/*!
+			 * \brief updatePointcloud Changes the geometry of a single link.
+			 * Useful when grasping an object, changing a tool
+			 * or interpreting point cloud data from an onboard sensor as a robot link.
+			 * \param link_name Link to modify
+			 * \param cloud New geometry
+			 */
+			virtual void updatePointcloud(const std::string& link_name, const std::vector<Vector3f>& cloud) = 0;
+
+			/**
+			 * @brief getLowerJointLimits Gets the minimum joint values
+			 * @param lower_limits Map of jointnames and values.
+			 * This map will get extended if joints were missing.
+			 */
+			virtual void getLowerJointLimits(JointValueMap& lower_limits) = 0;
+
+			/**
+			 * @brief getUpperJointLimits Gets the maximum joint values
+			 * @param upper_limits Map of jointnames and values.
+			 * This map will get extended if joints were missing.
+			 */
+			virtual void getUpperJointLimits(JointValueMap& upper_limits) = 0;
+
+
+			virtual void setBaseTransformation(const Matrix4f& base_transformation) = 0;
+
+			virtual void getBaseTransformation(Matrix4f& base_transformation) const = 0;
+		};
+
+	} // namespace robot
 } // namespace gpu_voxels
 
 #endif /* GPU_VOXELS_ROBOT_ROBOT_INTERFACE_H_INCLUDED */

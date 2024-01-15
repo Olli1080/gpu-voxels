@@ -20,45 +20,39 @@
  *
  */
 //----------------------------------------------------------------------
-#include <gpu_voxels/helpers/XyzFileReader.h>
+#include "XyzFileReader.h"
+
+#include <fstream>
+
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
-namespace file_handling {
+    namespace file_handling {
 
-bool XyzFileReader::readPointCloud(const std::string filename, std::vector<Vector3f> &points)
-{
-  float x;
-  float y;
-  float z;
-  std::string line;
-  std::ifstream file(filename.c_str());
+        bool XyzFileReader::readPointCloud(const std::string& filename, std::vector<Vector3f>& points)
+        {
+            std::ifstream file(filename.c_str());
 
-  if (!file)
-  {
-    LOGGING_ERROR(Gpu_voxels_helpers, "Could not open file " << filename.c_str() << " !" << endl);
-    return false;
-  }
-  while (std::getline(file, line))
-  {
-    std::istringstream iss(line);
-    Vector3f vec;
-    // reads the float value from the file and adds the offset.
-    while (iss >> x && iss >> y && iss >> z)
-    {
-      vec.x = x;
-      vec.y = y;
-      vec.z = z;
-      points.push_back(vec);
-    }
-  }
-  LOGGING_DEBUG(
-      Gpu_voxels_helpers,
-      "XYZ-FileReader: loaded " << points.size() << " points ("<< (points.size()*sizeof(Vector3f)) * cBYTE2MBYTE << " MB on CPU) from "<< filename.c_str() << "." << endl);
-  file.close();
-  return true;
-}
+            if (!file)
+            {
+                LOGGING_ERROR(Gpu_voxels_helpers, "Could not open file " << filename.c_str() << " !" << endl);
+                return false;
+            }
+            std::string line;
+            while (std::getline(file, line))
+            {
+                std::istringstream iss(line);
+                float x, y, z;
+                // reads the float value from the file and adds the offset.
+                while (iss >> x && iss >> y && iss >> z)
+                    points.emplace_back(x, y, z);
+            }
+            LOGGING_DEBUG(
+                Gpu_voxels_helpers,
+                "XYZ-FileReader: loaded " << points.size() << " points (" << (points.size() * sizeof(Vector3f)) * cBYTE2MBYTE << " MB on CPU) from " << filename.c_str() << "." << endl);
+            file.close();
+            return true;
+        }
 
-
-} // end of namespace
+    } // end of namespace
 } // end of namespace

@@ -22,8 +22,7 @@
 //----------------------------------------------------------------------
 #include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 
-namespace gpu_voxels {
-
-REGISTER_LOG_STREAM(Gpu_voxels_helpers);
-
+namespace gpu_voxels
+{
+	REGISTER_LOG_STREAM(Gpu_voxels_helpers);
 }

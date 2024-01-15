@@ -21,139 +21,141 @@
 #define ICL_CORE_CONFIG_MEMBER_VALUE_H_INCLUDED
 
 #include "icl_core/RemoveMemberPointer.h"
-#include "icl_core/TemplateHelper.h"
-#include "icl_core_config/ConfigHelper.h"
 #include "icl_core_config/ConfigManager.h"
 #include "icl_core_config/MemberValueIface.h"
 #include "icl_core_config/Util.h"
 
 #include <string>
-#include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
+#include <functional>
+//#include <boost/lambda/bind.hpp>
 
+/*
 #define MEMBER_VALUE_1(suffix, cls, member1)                                                   \
   (new icl_core::config::MemberValue<                                                          \
-     icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(&cls::member1)>::Type, cls>(         \
+     icl_core::RemoveMemberPointer<decltype(&cls::member1)>::Type, cls>(         \
      suffix,                                                                                   \
      boost::lambda::bind(&cls::member1, boost::lambda::_1)))
 
 #define MEMBER_VALUE_2(suffix, cls, member1, member2)                                          \
   (new icl_core::config::MemberValue<                                                          \
-     icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                     \
-       &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                  \
+     icl_core::RemoveMemberPointer<decltype(                                     \
+       &icl_core::RemoveMemberPointer<decltype(                                  \
          &cls::member1)>::Type::member2)>::Type, cls>(                                         \
      suffix,                                                                                   \
      boost::lambda::bind(                                                                      \
-       &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(&cls::member1)>::Type::member2,   \
+       &icl_core::RemoveMemberPointer<decltype(&cls::member1)>::Type::member2,   \
        boost::lambda::bind(&cls::member1, boost::lambda::_1))))
 
 #define MEMBER_VALUE_3(suffix, cls, member1, member2, member3)                                 \
   (new icl_core::config::MemberValue<                                                          \
-     icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                     \
-       &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                  \
-         &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                \
+     icl_core::RemoveMemberPointer<decltype(                                     \
+       &icl_core::RemoveMemberPointer<decltype(                                  \
+         &icl_core::RemoveMemberPointer<decltype(                                \
            &cls::member1)>::Type::member2)>::Type::member3)>::Type, cls>(                      \
      suffix,                                                                                   \
      boost::lambda::bind(                                                                      \
-       &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                  \
-         &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(                                \
+       &icl_core::RemoveMemberPointer<decltype(                                  \
+         &icl_core::RemoveMemberPointer<decltype(                                \
            &cls::member1)>::Type::member2)>::Type::member3,                                    \
        boost::lambda::bind(                                                                    \
-         &icl_core::RemoveMemberPointer<ICL_CORE_CONFIG_TYPEOF(&cls::member1)>::Type::member2, \
+         &icl_core::RemoveMemberPointer<decltype(&cls::member1)>::Type::member2, \
          boost::lambda::bind(&cls::member1, boost::lambda::_1)))))
+*/
 
 namespace icl_core {
-namespace config {
+    namespace config {
 
-template<typename T, typename Q>
-class MemberValue : public impl::MemberValueIface<Q>
-{
-public:
-  MemberValue(std::string const & config_suffix,
-              boost::function<T&(Q&)> accessor)
-    : m_config_suffix(config_suffix),
-      m_accessor(accessor)
-  {
-  }
-  virtual ~MemberValue() {}
+        template<typename T, typename Q>
+        class MemberValue : public impl::MemberValueIface<Q>
+        {
+        public:
+            MemberValue(std::string const& config_suffix,
+                std::function<T& (Q&)> accessor)
+                : m_config_suffix(config_suffix),
+                m_accessor(accessor)
+            {
+            }
 
-  virtual bool get(std::string const & key,
-                   typename icl_core::ConvertToRef<Q>::ToRef value) const
-  {
-    bool result = false;
-    if (ConfigManager::instance().get(key, m_str_value))
-    {
-      try
-      {
-        m_accessor(value) = impl::hexical_cast<T>(m_str_value);
-        result = true;
-      }
-      catch (...)
-      {
-        result = false;
-      }
+            ~MemberValue() override {}
+
+            bool get(std::string const& key, Q& value) const override
+            {
+                bool result = false;
+                if (ConfigManager::instance().get(key, m_str_value))
+                {
+                    try
+                    {
+                        m_accessor(value) = impl::hexical_cast<T>(m_str_value);
+                        result = true;
+                    }
+                    catch (...)
+                    {
+                        result = false;
+                    }
+                }
+                else
+                {
+                    result = false;
+                }
+                return result;
+            }
+
+            std::string getSuffix() const override { return m_config_suffix; }
+            std::string getStringValue() const override { return m_str_value; }
+
+        private:
+            std::string m_config_suffix;
+            boost::function<T& (Q&)> m_accessor;
+            mutable std::string m_str_value;
+        };
+
+        //! Template specialization for boolean MemberValues.
+        template<typename Q>
+        class MemberValue<bool, Q> : public impl::MemberValueIface<Q>
+        {
+        public:
+            MemberValue(std::string const& config_suffix,
+                boost::function<bool& (Q&)> accessor)
+                : m_config_suffix(config_suffix),
+                m_accessor(accessor)
+            {
+            }
+
+            ~MemberValue() override {}
+
+            bool get(std::string const& key, Q& value) const override
+            {
+                bool result = false;
+                if (ConfigManager::instance().get(key, m_str_value))
+                {
+                    try
+                    {
+                        m_accessor(value) = impl::strict_bool_cast(m_str_value);
+                        result = true;
+                    }
+                    catch (...)
+                    {
+                        result = false;
+                    }
+                }
+                else
+                {
+                    result = false;
+                }
+                return result;
+            }
+
+            std::string getSuffix() const override { return m_config_suffix; }
+            std::string getStringValue() const override { return m_str_value; }
+
+        private:
+
+            std::string m_config_suffix;
+            std::function<bool& (Q&)> m_accessor;
+            mutable std::string m_str_value;
+        };
+
     }
-    else
-    {
-      result = false;
-    }
-    return result;
-  }
-
-  virtual std::string getSuffix() const { return m_config_suffix; }
-  virtual std::string getStringValue() const { return m_str_value; }
-
-private:
-  std::string m_config_suffix;
-  boost::function<T&(Q&)> m_accessor;
-  mutable std::string m_str_value;
-};
-
-//! Template specialization for boolean MemberValues.
-template<typename Q>
-class MemberValue<bool, Q> : public impl::MemberValueIface<Q>
-{
-public:
-  MemberValue(std::string const & config_suffix,
-              boost::function<bool&(Q&)> accessor)
-    : m_config_suffix(config_suffix),
-      m_accessor(accessor)
-  {
-  }
-  virtual ~MemberValue() {}
-
-  virtual bool get(std::string const & key,
-                   typename icl_core::ConvertToRef<Q>::ToRef value) const
-  {
-    bool result = false;
-    if (ConfigManager::instance().get(key, m_str_value))
-    {
-      try
-      {
-        m_accessor(value) = impl::strict_bool_cast(m_str_value);
-        result = true;
-      }
-      catch (...)
-      {
-        result = false;
-      }
-    }
-    else
-    {
-      result = false;
-    }
-    return result;
-  }
-
-  virtual std::string getSuffix() const { return m_config_suffix; }
-  virtual std::string getStringValue() const { return m_str_value; }
-
-private:
-  std::string m_config_suffix;
-  boost::function<bool&(Q&)> m_accessor;
-  mutable std::string m_str_value;
-};
-
-}}
+}
 
 #endif

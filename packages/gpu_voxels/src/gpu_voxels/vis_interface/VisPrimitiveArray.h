@@ -19,7 +19,7 @@
  * \date    2014-12-15
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VISPRIMITIVEARRAY_H_INCLUDED
 #define GPU_VOXELS_VISPRIMITIVEARRAY_H_INCLUDED
 
@@ -31,26 +31,27 @@
 
 namespace gpu_voxels {
 
-class VisPrimitiveArray: public VisProvider
-{
-public:
+	class VisPrimitiveArray : public VisProvider
+	{
+	public:
 
-  VisPrimitiveArray(primitive_array::PrimitiveArray* primitive_array, std::string array_name);
+		VisPrimitiveArray(primitive_array::PrimitiveArray* primitive_array, std::string array_name);
 
-  virtual ~VisPrimitiveArray();
+		~VisPrimitiveArray() override;
 
-  virtual bool visualize(const bool force_repaint = true);
+		bool visualize(const bool force_repaint = true) override;
 
-  virtual uint32_t getResolutionLevel() { return 0; }
+		uint32_t getResolutionLevel() override { return 0; }
 
-protected:
-  primitive_array::PrimitiveArray* m_primitive_array;
-  cudaIpcMemHandle_t* m_shm_memHandle;
-  float* m_shm_primitive_diameter;
-  uint32_t* m_shm_num_primitives;
-  primitive_array::PrimitiveType* m_shm_primitive_type;
-  bool* m_shm_primitive_array_changed;
-};
+	protected:
+
+		primitive_array::PrimitiveArray* m_primitive_array;
+		cudaIpcMemHandle_t* m_shm_memHandle;
+		float* m_shm_primitive_diameter;
+		uint32_t* m_shm_num_primitives;
+		primitive_array::PrimitiveType* m_shm_primitive_type;
+		bool* m_shm_primitive_array_changed;
+	};
 
 }
 

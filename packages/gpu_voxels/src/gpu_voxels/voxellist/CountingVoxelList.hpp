@@ -33,107 +33,101 @@
 #include <thrust/system_error.h>
 
 namespace gpu_voxels {
-namespace voxellist {
-// using namespace gpu_voxels::voxelmap;
+	namespace voxellist {
+		// using namespace gpu_voxels::voxelmap;
 
 
-CountingVoxelList::CountingVoxelList(const Vector3ui ref_map_dim,
-                                     const float voxel_side_length,
-                                     const MapType map_type)
-  : TemplateVoxelList<CountingVoxel, MapVoxelID>(ref_map_dim, voxel_side_length, map_type)
-{
-  // We already resize the result vector for Bitvector Checks
-  // m_dev_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
-  // m_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
+		inline CountingVoxelList::CountingVoxelList(const Vector3ui ref_map_dim,
+			const float voxel_side_length,
+			const MapType map_type)
+			: TemplateVoxelList<CountingVoxel, MapVoxelID>(ref_map_dim, voxel_side_length, map_type)
+		{
+			// We already resize the result vector for Bitvector Checks
+			// m_dev_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
+			// m_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
 
-  // Allocate a BitVectorVoxel on the device to it use as bitmask for later coll-checks.
-  // cudaMalloc(&m_dev_bitmask, sizeof(CountingVoxel));
+			// Allocate a BitVectorVoxel on the device to it use as bitmask for later coll-checks.
+			// cudaMalloc(&m_dev_bitmask, sizeof(CountingVoxel));
 
-  //TODO: check memory allocation for bitmask, colliding_bits, dev_colliding_bits
-}
-
-
-CountingVoxelList::~CountingVoxelList()
-{
-}
+			//TODO: check memory allocation for bitmask, colliding_bits, dev_colliding_bits
+		}
 
 
-void CountingVoxelList::clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning)
-{
-  LOGGING_ERROR_C(
-    VoxellistLog, CountingVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_YET_SUPPORTED << endl);
-}
+		inline CountingVoxelList::~CountingVoxelList() = default;
 
-struct is_collision_candidate
-{
-  int8_t threshold;
-  is_collision_candidate(int8_t th) : threshold(th) {}
 
-  __host__ __device__
-  bool operator()(CountingVoxel v) const
-  {
-    return v.getCount() >= threshold;
-  }
-};
+		inline void CountingVoxelList::clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning)
+		{
+			LOGGING_ERROR_C(
+				VoxellistLog, CountingVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_YET_SUPPORTED << endl);
+		}
 
-struct is_underpopulated
-{
-  int8_t threshold;
-  is_underpopulated(int8_t th) : threshold(th) {}
+		struct is_collision_candidate
+		{
+			int8_t threshold;
+			is_collision_candidate(int8_t th) : threshold(th) {}
 
-  __host__ __device__
-  bool operator()(thrust::tuple<MapVoxelID, Vector3ui, CountingVoxel> triple_it) const
-  {
-    CountingVoxel cv = thrust::get<2>(triple_it);
-    //printf("voxel count was: %d, id: %d\n", cv.getCount(), thrust::get<0>(triple_it));
-    return cv.getCount() < threshold;
-  }
-};
+			__host__ __device__
+				bool operator()(CountingVoxel v) const
+			{
+				return v.getCount() >= threshold;
+			}
+		};
 
-size_t CountingVoxelList::collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold, const Vector3i &offset)
-{
-  size_t collisions = SSIZE_MAX;
+		struct is_underpopulated
+		{
+			int8_t threshold;
+			is_underpopulated(int8_t th) : threshold(th) {}
 
-  boost::lock(this->m_mutex, map->m_mutex);
-  lock_guard guard(this->m_mutex, boost::adopt_lock);
-  lock_guard guard2(map->m_mutex, boost::adopt_lock);
+			__host__ __device__
+				bool operator()(thrust::tuple<MapVoxelID, Vector3ui, CountingVoxel> triple_it) const
+			{
+				const CountingVoxel cv = thrust::get<2>(triple_it);
+				//printf("voxel count was: %d, id: %d\n", cv.getCount(), thrust::get<0>(triple_it));
+				return cv.getCount() < threshold;
+			}
+		};
 
-  thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
+		inline size_t CountingVoxelList::collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold, const Vector3i& offset)
+		{
+			size_t collisions = (std::numeric_limits<size_t>::max)();
 
-  //after transform the collision_stencil will have a true in every element that should be considered for collision checking
-  is_collision_candidate filter(static_cast<int>(coll_threshold));
-  thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(), collision_stencil.begin(), filter);
+			std::scoped_lock lock(this->m_mutex, map->m_mutex);
 
-  collisions = this->collideVoxellists(map, offset, collision_stencil);
-  return collisions;
-}
+			thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
 
-void CountingVoxelList::remove_underpopulated(const int8_t threshold)
-{
-  //this->screendump(true); // DEBUG
+			//after transform the collision_stencil will have a true in every element that should be considered for collision checking
+			const is_collision_candidate filter(static_cast<int>(coll_threshold));
+			thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(), collision_stencil.begin(), filter);
 
-  lock_guard guard(this->m_mutex);
+			collisions = this->collideVoxellists(map, offset, collision_stencil);
+			return collisions;
+		}
 
-  // find the overlapping voxels:
+		inline void CountingVoxelList::remove_underpopulated(const int8_t threshold)
+		{
+			//this->screendump(true); // DEBUG
 
-  keyCoordVoxelZipIterator new_end;
+			std::lock_guard guard(this->m_mutex);
 
-  is_underpopulated filter(threshold);
+			// find the overlapping voxels:
 
-  // remove voxels below threshold
-  new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
-                              this->getEndTripleZipIterator(),
-                              filter);
+			const is_underpopulated filter(threshold);
 
-  size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
-  this->resize(new_length);
+			// remove voxels below threshold
+			const keyCoordVoxelZipIterator new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
+			                                                           this->getEndTripleZipIterator(),
+			                                                           filter);
 
-  //this->screendump(true); // DEBUG
+			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			this->resize(new_length);
 
-  return;
-}
+			//this->screendump(true); // DEBUG
 
-} // end namespace voxellist
+			return;
+		}
+
+	} // end namespace voxellist
 } // end namespace gpu_voxels
 
 #endif // GPU_VOXELS_VOXELLIST_COUNTINGVOXELLIST_HPP_INCLUDED

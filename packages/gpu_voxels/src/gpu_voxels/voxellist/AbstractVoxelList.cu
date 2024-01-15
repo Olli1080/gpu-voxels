@@ -21,18 +21,18 @@
  * Contains implementation of VoxelMap Datastructure and according operations
  */
 namespace gpu_voxels {
-namespace voxellist {
+	namespace voxellist {
 
-bool AbstractVoxelList::needsRebuild() const
-{
-  LOGGING_ERROR_C(VoxellistLog, AbstractVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
-  return false;
-}
+		bool AbstractVoxelList::needsRebuild() const
+		{
+			LOGGING_ERROR_C(VoxellistLog, AbstractVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
+			return false;
+		}
 
-bool AbstractVoxelList::rebuild()
-{
-  LOGGING_ERROR_C(VoxellistLog, AbstractVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
-  return false;
-}
-} // end of namespace voxelmap
+		bool AbstractVoxelList::rebuild()
+		{
+			LOGGING_ERROR_C(VoxellistLog, AbstractVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_SUPPORTED << endl);
+			return false;
+		}
+	} // end of namespace voxelmap
 } // end of namespace gpu_voxels

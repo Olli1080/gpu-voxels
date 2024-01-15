@@ -15,13 +15,13 @@
  * \author  Klaus Uhl <uhl@fzi.de>
  * \date    2008-11-01
  */
-//----------------------------------------------------------------------
-#include "icl_core/KeyValueDirectory.hpp"
+ //----------------------------------------------------------------------
+#include "icl_core/KeyValueDirectory.h"
 #include "icl_core_config/ConfigIterator.h"
 
 namespace icl_core {
 
-// Explicit template instantiation!
-template class KeyValueDirectoryIterator<String>;
+	// Explicit template instantiation!
+	template class KeyValueDirectoryIterator<std::string>;
 
 }

@@ -22,9 +22,11 @@
 #ifndef ICL_CORE_LOGGING_LOGGING_NS_H_INCLUDED
 #define ICL_CORE_LOGGING_LOGGING_NS_H_INCLUDED
 
-#if defined _SYSTEM_POSIX_
+#include <boost/predef.h>
+
+#if BOOST_OS_UNIX//_SYSTEM_POSIX_
 # define ICL_CORE_LOGGING_IMPL_NS ::icl_core::logging::hidden_posix
-#elif defined _SYSTEM_WIN32_
+#elif BOOST_OS_WINDOWS//_SYSTEM_WIN32_
 # define ICL_CORE_LOGGING_IMPL_NS ::icl_core::logging::hidden_win32
 #else
 # error "No ::icl_core::logging namespace implementation defined for this platform."

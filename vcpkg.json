@@ -1,0 +1,21 @@
+{
+    "dependencies": [
+        { 
+            "name": "pcl",
+            "features": ["openni2"]
+        },
+        "boost-predef",
+	"boost-interprocess",
+        "tinyxml",
+        "cppunit",
+        "cuda",
+        "orocos-kdl",
+        "urdfdom",
+        "glew",
+        "glm",
+        "freeglut",
+        "zlib",
+        "stb",
+        "eigen3"
+    ]
+}

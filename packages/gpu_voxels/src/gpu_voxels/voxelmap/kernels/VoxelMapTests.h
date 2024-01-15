@@ -24,7 +24,7 @@
 #define GPU_VOXELS_VOXELMAP_KERNELS_VOXEL_MAP_TESTS_H_INCLUDED
 
 #include <cuda_runtime.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 

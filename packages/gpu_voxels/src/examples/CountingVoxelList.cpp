@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
   icl_core::logging::initialize(argc, argv);
 
   gvl = GpuVoxels::getInstance();
-  gvl->initialize(200, 200, 200, 0.01);
+  gvl->initialize(200, 200, 200, 0.01f);
 
   gvl->addMap(MT_COUNTING_VOXELLIST, "CountingMap");
   gvl->addMap(MT_COUNTING_VOXELLIST, "CountingFilter0Map");
@@ -68,18 +68,18 @@ int main(int argc, char* argv[])
 
   // We load a pointcloud
   if (!gvl->insertPointCloudFromFile("BitvectorMap", "robot4cmRes.pcd", true,
-                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3, 0.2, 0.0),0.5))
+                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3f, 0.2f, 0.0f),0.5f))
   {
     LOGGING_WARNING(gpu_voxels::Gpu_voxels, "Could not insert the pointcloud..." << gpu_voxels::endl);
   }
   if (!gvl->insertPointCloudFromFile("CountingMap", "robot4cmRes.pcd", true,
-                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3, 0.2, 0.0),0.5))
+                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3f, 0.2f, 0.0f),0.5f))
   {
     LOGGING_WARNING(gpu_voxels::Gpu_voxels, "Could not insert the pointcloud..." << gpu_voxels::endl);
   }
 
-  Vector3f center1_min = Vector3f(0.0, 0.0, 0.2);
-  Vector3f center1_max = Vector3f(2.0, 2.0, 0.5);
+  Vector3f center1_min = Vector3f(0.0f, 0.0f, 0.2f);
+  Vector3f center1_max = Vector3f(2.0f, 2.0f, 0.5f);
   gvl->insertBoxIntoMap(center1_min, center1_max, "ObstacleBitvectorMap", gpu_voxels::eBVM_OCCUPIED, 1);
 //   gvl->insertPointCloudFromFile("ObstacleBitvectorMap", "robot4cmRes.pcd", true,
 //                                      gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3, 0.2, 0.0),0.5);
@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
    //insert an obstacle to set each Counting voxel to 1
    //TODO: fix bug in insertBoxIntoMap resulting in voxels appearing up to 15 times!
    //TODO: test by building vector of point that fall into voxel centers
-   Vector3f center2_min = Vector3f(0.1, 0.5, 0.7);
-   Vector3f center2_max = Vector3f(0.5, 1.0, 0.9);
+   Vector3f center2_min = Vector3f(0.1f, 0.5f, 0.7f);
+   Vector3f center2_max = Vector3f(0.5f, 1.0f, 0.9f);
    gvl->insertBoxIntoMap(center2_min, center2_max, "CountingFilter0Map", gpu_voxels::eBVM_OCCUPIED, 1);
    gvl->insertBoxIntoMap(center2_min, center2_max, "CountingFilter1Map", gpu_voxels::eBVM_OCCUPIED, 1);
    gvl->insertBoxIntoMap(center2_min, center2_max, "CountingFilter2Map", gpu_voxels::eBVM_OCCUPIED, 1);

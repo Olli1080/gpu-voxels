@@ -18,46 +18,47 @@
  * \brief   Contains GetoptPositionalParameter
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_CORE_CONFIG_GETOPT_POSITIONAL_PARAMETER_H_INCLUDED
 #define ICL_CORE_CONFIG_GETOPT_POSITIONAL_PARAMETER_H_INCLUDED
 
-#include "icl_core/BaseTypes.h"
-#include "icl_core/Vector.h"
+#include <string>
+#include <vector>
+
 #include "icl_core_config/ImportExport.h"
 
 namespace icl_core {
-namespace config {
+	namespace config {
 
-class ICL_CORE_CONFIG_IMPORT_EXPORT GetoptPositionalParameter
-{
-public:
-  /*! Create a new positional commandline parameter.
-   *
-   * \param name The name of the parameter.
-   * \param help A help text that will be used in the generic help.
-   * \param is_optional Iff the parameter is an optional parameter.
-   */
-  GetoptPositionalParameter(const icl_core::String& name,
-                            const icl_core::String& help,
-                            const bool is_optional=false);
+		class ICL_CORE_CONFIG_IMPORT_EXPORT GetoptPositionalParameter
+		{
+		public:
+			/*! Create a new positional commandline parameter.
+			 *
+			 * \param name The name of the parameter.
+			 * \param help A help text that will be used in the generic help.
+			 * \param is_optional Iff the parameter is an optional parameter.
+			 */
+			GetoptPositionalParameter(std::string name,
+				std::string help,
+				bool is_optional = false);
 
-  //! Get the option name.
-  icl_core::String name() const { return m_name; }
-  //! Get the help text.
-  icl_core::String help() const { return m_help; }
-  //! Get if the parameter is optional.
-  bool isOptional() const { return m_is_optional; }
+			//! Get the option name.
+			[[nodiscard]] std::string name() const { return m_name; }
+			//! Get the help text.
+			[[nodiscard]] std::string help() const { return m_help; }
+			//! Get if the parameter is optional.
+			[[nodiscard]] bool isOptional() const { return m_is_optional; }
 
-private:
-  icl_core::String m_name;
-  icl_core::String m_help;
-  bool m_is_optional;
-};
+		private:
+			std::string m_name;
+			std::string m_help;
+			bool m_is_optional;
+		};
 
-typedef icl_core::Vector<GetoptPositionalParameter> GetoptPositionalParameterList;
+		typedef std::vector<GetoptPositionalParameter> GetoptPositionalParameterList;
 
-}
+	}
 }
 
 #endif

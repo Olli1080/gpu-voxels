@@ -16,19 +16,19 @@
  * \date    2014-05-07
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #include "icl_core_config/GetoptPositionalParameter.h"
 
 namespace icl_core {
-namespace config {
+	namespace config {
 
-GetoptPositionalParameter::GetoptPositionalParameter(const String &name, const String &help, const bool is_optional)
-  : m_name(name),
-    m_help(help),
-    m_is_optional(is_optional)
-{
+		GetoptPositionalParameter::GetoptPositionalParameter(std::string name, std::string help, bool is_optional)
+			: m_name(std::move(name)),
+			m_help(std::move(help)),
+			m_is_optional(is_optional)
+		{
 
-}
+		}
 
-}
+	}
 }

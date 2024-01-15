@@ -24,16 +24,11 @@
  * The camera looks into the direction of positive X. Z points upwards.
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VISUALIZATION_CAMERA_GPU_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_CAMERA_GPU_H_INCLUDED
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <iostream>
-#include <sstream>
+#include <string>
 
 #include <GL/glew.h>
 #if defined (__APPLE__) || defined(MACOSX)
@@ -47,225 +42,164 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace gpu_voxels {
-namespace visualization {
+	namespace visualization {
 
-class Camera_gpu
-{
-public:
-  struct CameraContext
-  {
-    CameraContext()
-      : camera_position(-10.f, -10.f, 10.f),
-        h_angle(0.5f),
-        v_angle(0.f),
-        foV(M_PI/3)
-    {
-      camera_target = glm::vec3(250.f, 250.f, 0);
-    }
+		class Camera_gpu
+		{
+		public:
 
-    CameraContext(glm::vec3 cam_pos, glm::vec3 cam_focus,
-                  float horizontal_angle, float vertical_angle, float field_of_view)
-    {
-      camera_position = cam_pos;
-      h_angle = horizontal_angle;
-      v_angle = vertical_angle;
-      foV = field_of_view;
-      camera_target = cam_focus;
-    }
+			struct CameraContext
+			{
+				CameraContext();
 
-    ~CameraContext()
-    {
-    }
+				CameraContext(glm::vec3 cam_pos, glm::vec3 cam_focus,
+					float horizontal_angle, float vertical_angle, float field_of_view);
 
-    // the position of the camera
-    glm::vec3 camera_position;
-    // the point where the camera is looking in orbit mode
-    glm::vec3 camera_target;
+				// the position of the camera
+				glm::vec3 camera_position;
+				// the point where the camera is looking in orbit mode
+				glm::vec3 camera_target;
 
-    float h_angle; // the horizontal angle (panning)
-    float v_angle; // vertical angle (tilting)
-    float foV;     // field of view (RAD)
-  };
+				float h_angle; // the horizontal angle (panning)
+				float v_angle; // vertical angle (tilting)
+				float foV;     // field of view (RAD)
+			};
 
-  Camera_gpu(float window_width, float window_height, CameraContext context);
+			Camera_gpu(float window_width, float window_height, CameraContext context);
 
-  ~Camera_gpu();
+			~Camera_gpu();
 
-  void resetToInitialValues();
-  void resizeWindow(float width, float height);
-  ///////////////////////////////////// functions for camera movement /////////////////////////////////
+			void resetToInitialValues();
+			void resizeWindow(float width, float height);
+			///////////////////////////////////// functions for camera movement /////////////////////////////////
 
-  /*!
-   * \brief moveAlongDirection
-   * Moves the camera along the view vector
-   * \param factor Use negative factor to move in negative direction.
-   */
-  void moveAlongDirection(float factor);
+			/*!
+			 * \brief moveAlongDirection
+			 * Moves the camera along the view vector
+			 * \param factor Use negative factor to move in negative direction.
+			 */
+			void moveAlongDirection(float factor);
 
-  /*!
-   * \brief moveAlongRight
-   * Moves the camera along the camera's right vector.
-   * Is disabled in orbit mode.
-   * \param factor Use negative factor to move in negative direction.
-   */
-  void moveAlongRight(float factor);
+			/*!
+			 * \brief moveAlongRight
+			 * Moves the camera along the camera's right vector.
+			 * Is disabled in orbit mode.
+			 * \param factor Use negative factor to move in negative direction.
+			 */
+			void moveAlongRight(float factor);
 
-  /*!
-   * \brief moveAlongUp
-   * Move the camera along the camera's up vector.
-   * Is disabled in orbit mode.
-   * \param factor Use negative factor to move in negative direction.
-   */
-  void moveAlongUp(float factor);
+			/*!
+			 * \brief moveAlongUp
+			 * Move the camera along the camera's up vector.
+			 * Is disabled in orbit mode.
+			 * \param factor Use negative factor to move in negative direction.
+			 */
+			void moveAlongUp(float factor);
 
-  /*!
-   * \brief moveFocusPointFromMouseInput
-   * Moves the center point around which the Oribt mode rotates
-   * \param xpos Mouse X Position
-   * \param ypos Mouse Y Position
-   */
-  void moveFocusPointFromMouseInput(int32_t xpos, int32_t ypos);
+			/*!
+			 * \brief moveFocusPointFromMouseInput
+			 * Moves the center point around which the Oribt mode rotates
+			 * \param xpos Mouse X Position
+			 * \param ypos Mouse Y Position
+			 */
+			void moveFocusPointFromMouseInput(int32_t xpos, int32_t ypos);
 
-  /**
-   * @brief moveFocusPointVerticalFromMouseInput
-   * Moves the focus point in z direction
-   * \param xpos Mouse X Position
-   * \param ypos Mouse Y Position
-   */
-  void moveFocusPointVerticalFromMouseInput(int32_t xpos, int32_t ypos);
+			/**
+			 * @brief moveFocusPointVerticalFromMouseInput
+			 * Moves the focus point in z direction
+			 * \param xpos Mouse X Position
+			 * \param ypos Mouse Y Position
+			 */
+			void moveFocusPointVerticalFromMouseInput(int32_t xpos, int32_t ypos);
 
-  /*!
-   * \brief updateViewMatrixFromMouseInput
-   * Update the view matrix.
-   * Call this function if the camera's right or direction vector
-   * or the camera position have changed.
-   * \param xpos Mouse X Position
-   * \param ypos Mouse Y Position
-   */
-  void updateViewMatrixFromMouseInput(int32_t xpos, int32_t ypos);
+			/*!
+			 * \brief updateViewMatrixFromMouseInput
+			 * Update the view matrix.
+			 * Call this function if the camera's right or direction vector
+			 * or the camera position have changed.
+			 * \param xpos Mouse X Position
+			 * \param ypos Mouse Y Position
+			 */
+			void updateViewMatrixFromMouseInput(int32_t xpos, int32_t ypos);
 
-  /*!
-   * \brief toggleCameraMode
-   * Switches between Orbit and Free flight mode
-   */
-  void toggleCameraMode();
+			/*!
+			 * \brief toggleCameraMode
+			 * Switches between Orbit and Free flight mode
+			 */
+			void toggleCameraMode();
 
-  bool hasViewChanged()
-  {
-    return m_has_view_changed;
-  }
+			[[nodiscard]] bool hasViewChanged() const;
+			void setViewChanged(bool view_changed);
 
-  void setViewChanged(bool view_changed)
-  {
-    m_has_view_changed = view_changed;
-  }
+			//////////////////////////////////////// getter / setter /////////////////////////////////////////////
+			[[nodiscard]] glm::vec3 getCameraDirection() const;
 
-  //////////////////////////////////////// getter / setter /////////////////////////////////////////////
-  glm::vec3 getCameraDirection() const
-  {
-    return m_camera_direction;
-  }
+			[[nodiscard]] glm::vec3 getCameraPosition() const;
 
-  glm::vec3 getCameraPosition() const
-  {
-    return m_cur_context.camera_position;
-  }
+			[[nodiscard]] glm::vec3 getCameraTarget() const;
 
-  glm::vec3 getCameraTarget() const
-  {
-    return m_cur_context.camera_target;
-  }
+			void setCameraTarget(glm::vec3 camera_target);
 
-  void setCameraTarget(glm::vec3 camera_target);
+			void setCameraTargetOfInitContext(glm::vec3 camera_target);
 
-  void setCameraTargetOfInitContext(glm::vec3 camera_target)
-  {
-    m_init_context.camera_target = camera_target;
-  }
+			[[nodiscard]] glm::mat4 getProjectionMatrix() const;
 
-  glm::mat4 getProjectionMatrix() const
-  {
-    return m_projection_matrix;
-  }
+			[[nodiscard]] glm::mat4 getViewMatrix() const;
 
-  glm::mat4 getViewMatrix() const
-  {
-    return m_view_matrix;
-  }
+			[[nodiscard]] float getWindowHeight() const;
 
-  float getWindowHeight() const
-  {
-    return m_window_height;
-  }
+			void setWindowHeight(float windowHeight);
 
-  void setWindowHeight(float windowHeight)
-  {
-    m_window_height = windowHeight;
-  }
+			[[nodiscard]] float getWindowWidth() const;
 
-  float getWindowWidth() const
-  {
-    return m_window_width;
-  }
+			void setWindowWidth(float windowWidth);
 
-  void setWindowWidth(float windowWidth)
-  {
-    m_window_width = windowWidth;
-  }
+			void setMousePosition(int32_t x, int32_t y);
 
-  void setMousePosition(int32_t x, int32_t y)
-  {
-    m_mouse_old_x = x;
-    m_mouse_old_y = m_window_height - y;
-  }
+			[[nodiscard]] std::string getCameraInfo() const;
+			// --- debug functions ---
+			void printCameraPosDirR() const;
 
-  std::string getCameraInfo();
-  // --- debug functions ---
-  void printCameraPosDirR();
-  
-  glm::vec3 getCameraRight() const
-  {
-    return m_camera_right;
-  }
-  // --- end debug functions ---
-  bool m_camera_orbit;
-private:
+			[[nodiscard]] glm::vec3 getCameraRight() const;
+			// --- end debug functions ---
+			bool m_camera_orbit;
 
-  void updateViewMatrix();
+		private:
 
-  void updateProjectionMatrix();
+			void updateViewMatrix();
 
-  void updateRotationMatrix();
+			void updateProjectionMatrix();
 
-  void updateCameraDirection();
+			void updateRotationMatrix();
 
-  void updateCameraRight();
+			void updateCameraDirection();
 
-  // the initial context of the camera
-  CameraContext m_init_context;
-  // the current context of the camera
-  CameraContext m_cur_context;
+			void updateCameraRight();
 
-  glm::mat4 m_view_matrix;
-  glm::mat4 m_projection_matrix;
+			// the initial context of the camera
+			CameraContext m_init_context;
+			// the current context of the camera
+			CameraContext m_cur_context;
 
-  glm::vec3 m_camera_direction;
-  glm::vec3 m_camera_right;
+			glm::mat4 m_view_matrix;
+			glm::mat4 m_projection_matrix;
 
-  float m_speed;
-  float m_mouse_speed;
+			glm::vec3 m_camera_direction;
+			glm::vec3 m_camera_right;
 
-  float m_window_width;
-  float m_window_height;
+			float m_speed;
+			float m_mouse_speed;
 
-  
-  int32_t m_mouse_old_x;
-  int32_t m_mouse_old_y;
+			float m_window_width;
+			float m_window_height;
 
-  bool m_has_view_changed;
 
-};
+			int32_t m_mouse_old_x;
+			int32_t m_mouse_old_y;
 
-} // end of namespace visualization
+			bool m_has_view_changed;
+
+		};
+	} // end of namespace visualization
 } // end of namespace gpu_voxels
 #endif

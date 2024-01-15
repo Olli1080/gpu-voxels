@@ -72,7 +72,7 @@
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/utility/declval.hpp>
-#include <urdf/model.h>
+#include <urdf_model/model.h>
 
 namespace urdf {
   class ModelInterface;

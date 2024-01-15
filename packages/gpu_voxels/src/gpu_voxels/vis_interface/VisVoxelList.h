@@ -30,25 +30,27 @@
 
 namespace gpu_voxels {
 
-class VisVoxelList : public VisProvider
-{
-public:
-  VisVoxelList(voxellist::AbstractVoxelList* voxellist, std::string map_name);
+	class VisVoxelList : public VisProvider
+	{
+	public:
 
-  virtual ~VisVoxelList();
+		VisVoxelList(voxellist::AbstractVoxelList* voxellist, std::string map_name);
 
-  virtual bool visualize(const bool force_repaint = true);
+		~VisVoxelList() override;
 
-  virtual uint32_t getResolutionLevel();
+		bool visualize(const bool force_repaint = true) override;
 
-protected:
-  voxellist::AbstractVoxelList* m_voxellist;
-  cudaIpcMemHandle_t* m_shm_memHandle;
-  uint32_t* m_shm_list_size;
-  float* m_shm_VoxelSize;
-  MapType* m_shm_voxellist_type;
-  bool* m_shm_voxellist_changed;
-};
+		uint32_t getResolutionLevel() override;
+
+	protected:
+
+		voxellist::AbstractVoxelList* m_voxellist;
+		cudaIpcMemHandle_t* m_shm_memHandle;
+		uint32_t* m_shm_list_size;
+		float* m_shm_VoxelSize;
+		MapType* m_shm_voxellist_type;
+		bool* m_shm_voxellist_changed;
+	};
 
 }
 

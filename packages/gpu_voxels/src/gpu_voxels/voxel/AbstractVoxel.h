@@ -19,7 +19,7 @@
  * \date    2014-07-08
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXEL_ABSTRACT_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_ABSTRACT_VOXEL_H_INCLUDED
 
@@ -29,32 +29,32 @@
 
 namespace gpu_voxels {
 
-/**
- * @brief Interface for different voxel subclasses.
- */
-class AbstractVoxel
-{
-  // ##### No virtual inheritance possible since this would blow up the the voxels by the vptr #####
+	/**
+	 * @brief Interface for different voxel subclasses.
+	 */
+	class AbstractVoxel
+	{
+		// ##### No virtual inheritance possible since this would blow up the the voxels by the vptr #####
 
-  /**
-   * @brief insert Inserts new data into this voxel
-   * @param voxel_meaning Meaning of the voxel to insert data into
-   */
-  __host__ __device__
-  void insert(const BitVoxelMeaning voxel_meaning);
+		/**
+		 * @brief insert Inserts new data into this voxel
+		 * @param voxel_meaning Meaning of the voxel to insert data into
+		 */
+		__host__ __device__
+			void insert(const BitVoxelMeaning voxel_meaning);
 
-  /**
-   * @brief reduce Reduces 'this' and 'other_voxel' into a single voxel
-   * @param other_voxel
-   * @return Reduced voxel
-   */
-  __host__ __device__
-  AbstractVoxel reduce(const AbstractVoxel other_voxel);
+		/**
+		 * @brief reduce Reduces 'this' and 'other_voxel' into a single voxel
+		 * @param other_voxel
+		 * @return Reduced voxel
+		 */
+		__host__ __device__
+			AbstractVoxel reduce(const AbstractVoxel other_voxel);
 
-  __host__ __device__
-  bool isOccupied(float col_threshold) const;
+		__host__ __device__
+			bool isOccupied(float col_threshold) const;
 
-};
+	};
 
 } // end of ns
 

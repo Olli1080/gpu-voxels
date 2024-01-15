@@ -18,47 +18,19 @@
  * \brief   Contains ConfigIterator.
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_CORE_CONFIG_CONFIG_ITERATOR_H_INCLUDED
 #define ICL_CORE_CONFIG_CONFIG_ITERATOR_H_INCLUDED
 
 #include "icl_core/KeyValueDirectory.h"
 #include "icl_core_config/ImportExport.h"
 
-#ifdef _SYSTEM_WIN32_
-#include "icl_core/KeyValueDirectory.hpp"
-#endif
-
 namespace icl_core {
+	namespace config {
 
-#ifdef _SYSTEM_WIN32_
-#ifdef __INSURE__
-// ParaSoft Insure++ produces linker errors when the class itself is
-// instantiated with the ICL_CORE_CONFIG_IMPORT_EXPORT modifier.  We
-// therefore add declarations for all exported class members.
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-KeyValueDirectoryIterator<String>::KeyValueDirectoryIterator(const String& query,
-                                                             const KeyValueDirectory<String> *directory);
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-String KeyValueDirectoryIterator<String>::key() const;
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-String KeyValueDirectoryIterator<String>::matchGroup(size_t index) const;
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-bool KeyValueDirectoryIterator<String>::next();
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-void KeyValueDirectoryIterator<String>::reset();
-template ICL_CORE_CONFIG_IMPORT_EXPORT
-ConvertToRef<String>::ToConstRef KeyValueDirectoryIterator<String>::value() const;
-#else
-template ICL_CORE_CONFIG_IMPORT_EXPORT class KeyValueDirectoryIterator<String>;
-#endif
-#endif
+		typedef icl_core::KeyValueDirectoryIterator<std::string> ConfigIterator;
 
-namespace config {
-
-typedef icl_core::KeyValueDirectoryIterator<icl_core::String> ConfigIterator;
-
-}
+	}
 }
 
 #endif

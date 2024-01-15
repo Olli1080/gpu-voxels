@@ -19,61 +19,63 @@
  * \date    2014-08-31
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_OCTREE_LOAD_BALANCER_PROPAGATE_H_INCLUDED
 #define GPU_VOXELS_OCTREE_LOAD_BALANCER_PROPAGATE_H_INCLUDED
 
 #include <gpu_voxels/octree/load_balancer/AbstractLoadBalancer.h>
 
-namespace gpu_voxels {
-namespace NTree {
-namespace LoadBalancer {
-
-typedef RunConfig<128> PropagateRunConfig; // Number of threads due to experimental founding
-
-/**
- * @brief Load balancing propagate to fix the NTree properties after after modifications of the NTree. This is necessary e.g. after the insertion of new voxel data.
- * @tparam branching_factor Branching factor of the corresponding \code NTree \endcode
- * @tparam level_count Number of levels of the corresponding \code NTree \endcode
- * @tparam InnerNode Inner node type of the corresponding \code NTree \endcode
- * @tparam LeafNode Leaf node type of the corresponding \code NTree \endcode
- */
-template<std::size_t branching_factor,
-    std::size_t level_count,
-    class InnerNode,
-    class LeafNode>
-class Propagate: public AbstractLoadBalancer<branching_factor, level_count, InnerNode, LeafNode,
-    WorkItemPropagate<InnerNode>, PropagateRunConfig>
+namespace gpu_voxels
 {
-public:
-  typedef WorkItemPropagate<InnerNode> WorkItem;
-  typedef PropagateRunConfig RunConfig;
-  typedef AbstractLoadBalancer<branching_factor, level_count, InnerNode, LeafNode, WorkItem, RunConfig> Base;
+	namespace NTree
+	{
+		namespace LoadBalancer
+		{
 
-   /**
-   * @brief Propagate constructor.
-   * @param ntree The NTree to apply the propagate operations to.
-   * @param num_tasks The number of tasks the propagate work is split into. More tasks means higher degree of parallelism. Default value is \code 1024 \endcode, which performs quite well for the experiments.
-   */
-  Propagate(NTree<branching_factor, level_count, InnerNode, LeafNode>* ntree, const uint32_t num_tasks = 1024);
+			typedef RunConfig<128> PropagateRunConfig; // Number of threads due to experimental founding
 
-  virtual ~Propagate();
+			/**
+			 * @brief Load balancing propagate to fix the NTree properties after after modifications of the NTree. This is necessary e.g. after the insertion of new voxel data.
+			 * @tparam branching_factor Branching factor of the corresponding \code NTree \endcode
+			 * @tparam level_count Number of levels of the corresponding \code NTree \endcode
+			 * @tparam InnerNode Inner node type of the corresponding \code NTree \endcode
+			 * @tparam LeafNode Leaf node type of the corresponding \code NTree \endcode
+			 */
+			template<std::size_t branching_factor,
+				std::size_t level_count,
+				class InnerNode,
+				class LeafNode>
+			class Propagate : public AbstractLoadBalancer<branching_factor, level_count, InnerNode, LeafNode,
+				WorkItemPropagate<InnerNode>, PropagateRunConfig>
+			{
+			public:
+				typedef WorkItemPropagate<InnerNode> WorkItem;
+				typedef PropagateRunConfig RunConfig;
+				typedef AbstractLoadBalancer<branching_factor, level_count, InnerNode, LeafNode, WorkItem, RunConfig> Base;
 
-protected:
-  // ---------- Abstract method implementation --------------
-  virtual void doWork();
-  virtual void doPostCalculations();
-  // --------------------------------------------------------
+				/**
+				* @brief Propagate constructor.
+				* @param ntree The NTree to apply the propagate operations to.
+				* @param num_tasks The number of tasks the propagate work is split into. More tasks means higher degree of parallelism. Default value is \code 1024 \endcode, which performs quite well for the experiments.
+				*/
+				Propagate(NTree<branching_factor, level_count, InnerNode, LeafNode>* ntree, const uint32_t num_tasks = 1024);
 
-  virtual bool doPreparations();
-  virtual void doCleanup();
+				~Propagate() override;
 
-protected:
-  NTree<branching_factor, level_count, InnerNode, LeafNode>* m_ntree;
-};
+			protected:
+				// ---------- Abstract method implementation --------------
+				void doWork() override;
+				void doPostCalculations() override;
+				// --------------------------------------------------------
 
+				bool doPreparations() override;
+				void doCleanup() override;
+
+			protected:
+				NTree<branching_factor, level_count, InnerNode, LeafNode>* m_ntree;
+			};
+
+		}
+	}
 }
-}
-}
-
 #endif

@@ -25,43 +25,33 @@
 #include <gpu_visualization/SharedMemoryManagerVisualizer.h>
 #include <gpu_visualization/SharedMemoryManager.h>
 
-using namespace boost::interprocess;
+#include <glm/vec3.hpp>
+
 namespace gpu_voxels {
-namespace visualization {
+    namespace visualization {
 
-SharedMemoryManagerVisualizer::SharedMemoryManagerVisualizer()
-{
-  shmm = new SharedMemoryManager(shm_segment_name_visualizer, true);
-}
+        SharedMemoryManagerVisualizer::SharedMemoryManagerVisualizer()
+	        : shmm(std::make_unique<SharedMemoryManager>(shm_segment_name_visualizer, true))
+        {}
 
-SharedMemoryManagerVisualizer::~SharedMemoryManagerVisualizer()
-{
-  delete shmm;
-}
+        bool SharedMemoryManagerVisualizer::getCameraTargetPoint(glm::vec3& target) const
+        {
+            const auto [targetPoint, amountFound] = shmm->getMemSegment().find<Vector3f>(shm_variable_name_target_point.c_str());
+            if (amountFound == 0)
+                return false;
 
-bool SharedMemoryManagerVisualizer::getCameraTargetPoint(glm::vec3& target)
-{
-  std::pair<Vector3f*, std::size_t> res_s = shmm->getMemSegment().find<Vector3f>(shm_variable_name_target_point.c_str());
-  if (res_s.second != 0)
-  {
-    Vector3f t = *(res_s.first);
-    target = glm::vec3(t.x, t.y, t.z);
-    return true;
-  }
-  return false;
-}
+            const Vector3f& t = *targetPoint;
+            target = glm::vec3(t.x(), t.y(), t.z());
+            return true;
+        }
 
-DrawTypes SharedMemoryManagerVisualizer::getDrawTypes()
-{
-  std::pair<DrawTypes*, std::size_t> res_s = shmm->getMemSegment().find<DrawTypes>(shm_variable_name_set_draw_types.c_str());
-  if (res_s.second != 0)
-  {
-    DrawTypes tmp = *(res_s.first);
-    //*(res_s.first) = DrawTypes();
-    return tmp;
-  }
-  return DrawTypes();
-}
-
-} //end of namespace visualization
+        DrawTypes SharedMemoryManagerVisualizer::getDrawTypes() const
+        {
+            const auto [drawType, amountFound] = shmm->getMemSegment().find<DrawTypes>(shm_variable_name_set_draw_types.c_str());
+            if (amountFound == 0)
+                return {};
+            
+            return *drawType;
+        }
+    } //end of namespace visualization
 } //end of namespace gpu_voxels

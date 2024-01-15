@@ -19,7 +19,7 @@
  * \date    2014-06-18
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VISVOXELMAPPROB_H_INCLUDED
 #define GPU_VOXELS_VISVOXELMAPPROB_H_INCLUDED
 
@@ -31,26 +31,26 @@
 
 namespace gpu_voxels {
 
-class VisVoxelMap: public VisProvider
-{
-public:
+	class VisVoxelMap : public VisProvider
+	{
+	public:
 
-  VisVoxelMap(voxelmap::AbstractVoxelMap* voxelmap, std::string map_name);
+		VisVoxelMap(voxelmap::AbstractVoxelMap* voxelmap, std::string map_name);
+		~VisVoxelMap() override;
 
-  virtual ~VisVoxelMap();
+		bool visualize(bool force_repaint = true) override;
 
-  virtual bool visualize(const bool force_repaint = true);
+		uint32_t getResolutionLevel() override;
 
-  virtual uint32_t getResolutionLevel();
+	protected:
 
-protected:
-  voxelmap::AbstractVoxelMap* m_voxelmap;
-  cudaIpcMemHandle_t* m_shm_memHandle;
-  Vector3ui* m_shm_mapDim;
-  float* m_shm_VoxelSize;
-  MapType* m_shm_voxelmap_type;
-  bool* m_shm_voxelmap_changed;
-};
+		voxelmap::AbstractVoxelMap* m_voxelmap;
+		cudaIpcMemHandle_t* m_shm_memHandle;
+		Vector3ui* m_shm_mapDim;
+		float* m_shm_VoxelSize;
+		MapType* m_shm_voxelmap_type;
+		bool* m_shm_voxelmap_changed;
+	};
 
 }
 

@@ -23,55 +23,45 @@
 
 #ifndef GPU_VOXELS_HELPERS_VIS_PROVIDER_H_INCLUDED
 #define GPU_VOXELS_HELPERS_VIS_PROVIDER_H_INCLUDED
-#include <gpu_voxels/helpers/CompileIssues.h>
 
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
 
-#include <cstdio>
-
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/permissions.hpp>
 
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-
-
-namespace gpu_voxels {
-
-class VisProvider;
-typedef boost::shared_ptr<VisProvider> VisProviderSharedPtr;
-
-/**
- * @brief VisProvider Superclass to handle the visualization of different map types
- * with gpu_visualization through shared memory
- */
-class VisProvider
+namespace gpu_voxels
 {
-public:
+	/**
+	 * @brief VisProvider Superclass to handle the visualization of different map types
+	 * with gpu_visualization through shared memory
+	 */
+	class VisProvider
+	{
+	public:
 
-  VisProvider(std::string segment_name, std::string map_name);
+		VisProvider(std::string segment_name, std::string map_name);
 
-  virtual ~VisProvider();
+		virtual ~VisProvider();
 
-  virtual bool visualize(const bool force_repaint = true) = 0;
+		virtual bool visualize(bool force_repaint = true) = 0;
 
-  virtual uint32_t getResolutionLevel() = 0;
+		virtual uint32_t getResolutionLevel() = 0;
 
-  virtual void setDrawTypes(DrawTypes toggle_draw_types);
+		virtual void setDrawTypes(DrawTypes toggle_draw_types);
 
-protected:
+	protected:
 
-  void openOrCreateSegment();
+		void openOrCreateSegment();
 
-  boost::interprocess::managed_shared_memory m_segment;
-  boost::interprocess::managed_shared_memory m_visualizer_segment;
-  std::string m_segment_name;
-  std::string m_map_name;
-  char* m_shm_mapName;
-  DrawTypes* m_shm_draw_types;
-};
+		boost::interprocess::managed_shared_memory m_segment;
+		boost::interprocess::managed_shared_memory m_visualizer_segment;
+		std::string m_segment_name;
+		std::string m_map_name;
+		char* m_shm_mapName;
+		DrawTypes* m_shm_draw_types;
+	};
 
+	typedef std::shared_ptr<VisProvider> VisProviderSharedPtr;
 }
 
 #endif

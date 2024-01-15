@@ -19,60 +19,55 @@
  * \date    2014-07-08
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXEL_BIT_VOXEL_HPP_INCLUDED
 #define GPU_VOXELS_VOXEL_BIT_VOXEL_HPP_INCLUDED
 
 #include "BitVoxel.h"
-#include <gpu_voxels/helpers/BitVector.h>
+#include <gpu_voxels/helpers/BitVector.cuhpp>
 
-namespace gpu_voxels {
-
-template<std::size_t length>
-__host__ __device__
-BitVoxel<length>::BitVoxel() :
-    m_bit_vector()
+namespace gpu_voxels
 {
+	template<std::size_t length>
+	__host__ __device__
+	BitVoxel<length>::BitVoxel() :
+		m_bit_vector()
+	{}
 
-}
+	template<std::size_t length>
+	__host__ __device__
+	BitVoxel<length>::~BitVoxel()
+	{}
 
-template<std::size_t length>
-__host__ __device__
-BitVoxel<length>::~BitVoxel()
-{
+	template<std::size_t length>
+	__host__ __device__
+	BitVector<length>& BitVoxel<length>::bitVector()
+	{
+		return m_bit_vector;
+	}
 
-}
+	template<std::size_t length>
+	__host__ __device__
+	const BitVector<length>& BitVoxel<length>::bitVector() const
+	{
+		return m_bit_vector;
+	}
 
-template<std::size_t length>
-__host__ __device__
-BitVector<length>& BitVoxel<length>::bitVector()
-{
-  return m_bit_vector;
-}
+	template<std::size_t length>
+	__host__ __device__
+	void BitVoxel<length>::insert(const BitVoxelMeaning voxel_meaning)
+	{
+		m_bit_vector.setBit(voxel_meaning);
+	}
 
-template<std::size_t length>
-__host__ __device__
-const BitVector<length>& BitVoxel<length>::bitVector() const
-{
-  return m_bit_vector;
-}
-
-template<std::size_t length>
-__host__ __device__
-void BitVoxel<length>::insert(const BitVoxelMeaning voxel_meaning)
-{
-  m_bit_vector.setBit(voxel_meaning);
-}
-
-template<std::size_t length>
-__host__ __device__
-BitVoxel<length> BitVoxel<length>::reduce(const BitVoxel<length> voxel, const BitVoxel<length> other_voxel)
-{
-  BitVoxel<length> res;
-  BitVector<length>& b = res.bitVector();
-  b = voxel.bitVector() | other_voxel.bitVector();
-  return res;
-}
+	template<std::size_t length>
+	__host__ __device__
+	BitVoxel<length> BitVoxel<length>::reduce(const BitVoxel<length> voxel, const BitVoxel<length> other_voxel)
+	{
+		BitVoxel<length> res;
+		res.bitVector() = voxel.bitVector() | other_voxel.bitVector();
+		return res;
+	}
 
 } // end of ns
 

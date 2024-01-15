@@ -19,28 +19,25 @@
  * \date    2014-06-18
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_HELPERS_MANAGEDMAP_H_INCLUDED
 #define GPU_VOXELS_HELPERS_MANAGEDMAP_H_INCLUDED
 
-#include <gpu_voxels/GpuVoxels.h>
+#include <gpu_voxels/GpuVoxelsMap.h>
 #include <gpu_voxels/vis_interface/VisProvider.h>
 
-namespace gpu_voxels {
-
-struct ManagedMap
+namespace gpu_voxels
 {
+	struct ManagedMap
+	{
 
-  ManagedMap(GpuVoxelsMapSharedPtr map_shared_ptr, VisProviderSharedPtr vis_provider_shared_ptr)
-  {
-    this->map_shared_ptr = map_shared_ptr;
-    this->vis_provider_shared_ptr = vis_provider_shared_ptr;
-  }
+		ManagedMap(GpuVoxelsMapSharedPtr map_shared_ptr, VisProviderSharedPtr vis_provider_shared_ptr)
+			: map_shared_ptr(std::move(map_shared_ptr)),
+			vis_provider_shared_ptr(std::move(vis_provider_shared_ptr))
+		{}
 
-  GpuVoxelsMapSharedPtr map_shared_ptr;
-  VisProviderSharedPtr vis_provider_shared_ptr;
-};
-
+		GpuVoxelsMapSharedPtr map_shared_ptr;
+		VisProviderSharedPtr vis_provider_shared_ptr;
+	};
 } // end of ns
-
 #endif

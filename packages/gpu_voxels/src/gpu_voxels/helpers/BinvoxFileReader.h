@@ -26,30 +26,30 @@
 
 #include <string>
 #include <vector>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <stdlib.h>
 
 #include <gpu_voxels/helpers/FileReaderInterface.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
-#include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 
-namespace gpu_voxels {
-namespace file_handling {
-
-class BinvoxFileReader: public FileReaderInterface
+namespace gpu_voxels
 {
-public:
-  /*!
-   * \brief readPointCloud is the file specific parsing function that has to be implemented
-   * \param filename Filename
-   * \param points points are written into this vector
-   * \return true if succeeded, false otherwise
-   */
-  virtual bool readPointCloud(const std::string filename, std::vector<Vector3f> &points);
-};
+	namespace file_handling
+	{
+		class BinvoxFileReader : public FileReaderInterface
+		{
+		public:
 
-}  // end of namespace
+			BinvoxFileReader() = default;
+			~BinvoxFileReader() override = default;
+
+			/*!
+			 * \brief readPointCloud is the file specific parsing function that has to be implemented
+			 * \param filename Filename
+			 * \param points points are written into this vector
+			 * \return true if succeeded, false otherwise
+			 */
+			bool readPointCloud(const std::string& filename, std::vector<Vector3f>& points) override;
+		};
+
+	}  // end of namespace
 }  // end of namespace
 #endif

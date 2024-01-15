@@ -19,7 +19,7 @@
  * \date    2013-11-07
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_OCTREE_DATATYPES_H_INCLUDED
 #define GPU_VOXELS_OCTREE_DATATYPES_H_INCLUDED
 
@@ -32,59 +32,27 @@
 #include <stdio.h>
 #include <limits.h>
 #include <math.h>
-#include <sys/utsname.h>
+#include <time.h>
+#include <chrono>
+#include <algorithm>
+//#include <sys/utsname.h>
 #include <gpu_voxels/helpers/common_defines.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
-#include <gpu_voxels/helpers/BitVector.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
+#include <gpu_voxels/helpers/BitVector.cuhpp>
+
+#include "CommonValues.h"
 
 namespace gpu_voxels {
-namespace NTree {
+	namespace NTree {
 
-//-Wno-unknown-pragmas -Wno-unused-function
+		//-Wno-unknown-pragmas -Wno-unused-function
 
-//#define PROBABILISTIC_TREE
-#define PACKING_OF_VOXEL true
-#define DO_REBUILDS
-#define PERFORMANCE_MEASUREMENT
-
-#define VISUALIZER_SHIFT_X 0//7600
-#define VISUALIZER_SHIFT_Y 0//7600
-#define VISUALIZER_SHIFT_Z 0//8000
-// only include declaration of template class NTree.hpp once to speed up the build process
-#define NTREE_PRECOMPILE
-
-#undef TREAT_UNKNOWN_AS_COLLISION // When defined, intesections with unknown octree nodes will result in collisions
-
-#define INITIAL_PROBABILITY Probability(0)  // probability used to initialize any new node
-#define INITIAL_FREE_SPACE_PROBABILITY Probability(0)
-#define INITIAL_OCCUPIED_PROBABILITY Probability(0)
-#define FREE_UPDATE_PROBABILITY Probability(-10)
-#define OCCUPIED_UPDATE_PROBABILITY Probability(100)
-
-#define KINECT_CUT_FREE_SPACE_Y 0//50
-#define KINECT_CUT_FREE_SPACE_X 0//80
-#define KINECT_FREE_NAN_MEASURES true
-//#define VISUALIZER_OBJECT_DATA_ONLY
-//#define KINECT_FREE_SPACE_DEBUG
-//#define KINECT_FREE_SPACE_DEBUG_2
-#define KINECT_WIDTH 640
-#define KINECT_HEIGHT 480
-
-//#define KINECT_ORIENTATION Vector3f(M_PI / 2.0f, M_PI, 0) // up-side-down on PTU (roll, pitch yaw)
-#define KINECT_ORIENTATION Vector3f(M_PI / 2.0f, 0, 0) // normal (roll, pitch yaw)
-
-#define NUM_BLOCKS 2688 // 8192 * 8;
-#define NUM_THREADS_PER_BLOCK 128 // 32 // 32 * 8
-#define THRESHOLD_OCCUPANCY 10
 #define D_PTR(X) thrust::raw_pointer_cast((X).data())
 #define MAX_VALUE(TYPE) ((TYPE)((1 << (sizeof(TYPE) * 8)) - 1))
 
 #define INVALID_VOXEL ULONG_MAX
-const gpu_voxels::Vector3ui INVALID_POINT = gpu_voxels::Vector3ui(UINT_MAX, UINT_MAX, UINT_MAX);
-
 #define DISABLE_SEPARATE_COMPILTION
 
-#define VOXELMAP_FLAG_SIZE 1
 
 // NTree
 #define FEW_MESSAGES
@@ -128,8 +96,6 @@ const gpu_voxels::Vector3ui INVALID_POINT = gpu_voxels::Vector3ui(UINT_MAX, UINT
 #define MAX_NUMBER_OF_THREADS 1024
 
 // Define min/max functions to handle different namespaces of host and device code
-#undef MIN
-#undef MAX
 #ifdef __CUDACC__
 #define MIN(x,y) min(x,y)
 #define MAX(x,y) max(x,y)
@@ -140,102 +106,108 @@ const gpu_voxels::Vector3ui INVALID_POINT = gpu_voxels::Vector3ui(UINT_MAX, UINT
 
 // ######################################################################
 
-typedef uint32_t voxel_count;
+		typedef uint32_t voxel_count;
 
-/*
- * Returns the difference in milliseconds
- */
-inline static double timeDiff(timespec start, timespec end)
-{
-  double ms = 0.0;
-  if ((end.tv_nsec - start.tv_nsec) < 0)
-  {
-    ms = double(1000000000 + end.tv_nsec - start.tv_nsec) / 1000000.0;
-    ms += double(end.tv_sec - start.tv_sec - 1) * 1000.0;
-  }
-  else
-  {
-    ms = double(end.tv_nsec - start.tv_nsec) / 1000000.0;
-    ms += double(end.tv_sec - start.tv_sec) * 1000.0;
-  }
-  return ms;
-}
+		/*
+		 * Returns the difference in milliseconds
+		 */
+		inline static double timeDiff(timespec start, timespec end)
+		{
+			double ms = 0.0;
+			if ((end.tv_nsec - start.tv_nsec) < 0)
+			{
+				ms = static_cast<double>(1000000000 + end.tv_nsec - start.tv_nsec) / 1000000.0;
+				ms += static_cast<double>(end.tv_sec - start.tv_sec - 1) * 1000.0;
+			}
+			else
+			{
+				ms = static_cast<double>(end.tv_nsec - start.tv_nsec) / 1000000.0;
+				ms += static_cast<double>(end.tv_sec - start.tv_sec) * 1000.0;
+			}
+			return ms;
+		}
 
-inline static timespec getCPUTime()
-{
-  timespec t;
-  clock_gettime(CLOCK_REALTIME, &t);
-  return t;
-}
+		inline static timespec getCPUTime()
+		{
+			auto tp = std::chrono::system_clock::now();
 
-inline static std::string getTime_str()
-{
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer[80];
+			auto secs = std::chrono::time_point_cast<std::chrono::seconds>(tp);
+			auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(tp) -
+				std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
 
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
+			return timespec{ secs.time_since_epoch().count(), static_cast<long>(ns.count()) };
+		}
 
-  strftime(buffer, 80, "%F_%H.%M.%S", timeinfo);
-  return buffer;
-}
+		inline static std::string getTime_str()
+		{
+			time_t rawtime;
+			struct tm* timeinfo;
+			char buffer[80];
 
-inline std::string to_string(int _Val, const char format[] = "%d")
-{   // convert long long to string
-  char _Buf[50];
-  sprintf(_Buf, format, _Val);
-  return (std::string(_Buf));
-}
+			time(&rawtime);
+			timeinfo = localtime(&rawtime);
 
-inline utsname getUname()
-{
-  utsname tmp;
-  uname(&tmp);
-  return tmp;
-}
+			strftime(buffer, 80, "%F_%H.%M.%S", timeinfo);
+			return buffer;
+		}
 
-//#define lookup_type_8 uint8_t
-//#define lookup_type_64 uint8_t
-//#define lookup_type_512 uint16_t
-//#define lookup_type_4096 uint16_t
-//#define lookup_type(X) lookup_type_"X"
+		inline std::string to_string(int _Val, const char format[] = "%d")
+		{   // convert long long to string
+			char _Buf[50];
+			sprintf(_Buf, format, _Val);
+			return { _Buf };
+		}
 
-//#define third_root(X) third_root_"X"
-//#define third_root_8 2
-//#define third_root_64 4
-//#define third_root_512 8
+		/*
+	inline utsname getUname()
+	{
+	  utsname tmp;
+	  uname(&tmp);
+	  return tmp;
+	}*/
 
-//// ##### type comparison at compile time #####
-//template<typename T>
-//struct is_same<T, T>
-//{
-//    static const bool value = true;
-//};
-//
-//template<typename T, typename U>
-//struct is_same
-//{
-//    static const bool value = false;
-//};
-//
-//template<typename T, typename U>
-//bool eqlTypes() { return is_same<T, U>::value; }
-//// #################################################
+	//#define lookup_type_8 uint8_t
+	//#define lookup_type_64 uint8_t
+	//#define lookup_type_512 uint16_t
+	//#define lookup_type_4096 uint16_t
+	//#define lookup_type(X) lookup_type_"X"
 
-__host__ inline
-uint32_t linearApprox(const float y1, const float x1, const float y2, const float x2, const float x,
-                      const uint32_t alignment = 1, const uint32_t max_val = UINT_MAX)
-{
-    const float a = (y1 - y2) / (x1 - x2);
-    const float b = y1 - a * x1;
-    const float y = a * x + b;
-    const float y_aligned = ceil(y / alignment) * alignment;
-    const uint32_t y_min_max = std::min(uint32_t(std::max(y_aligned, float(alignment))), max_val);
+	//#define third_root(X) third_root_"X"
+	//#define third_root_8 2
+	//#define third_root_64 4
+	//#define third_root_512 8
 
-    return y_min_max;
-}
+	//// ##### type comparison at compile time #####
+	//template<typename T>
+	//struct is_same<T, T>
+	//{
+	//    static const bool value = true;
+	//};
+	//
+	//template<typename T, typename U>
+	//struct is_same
+	//{
+	//    static const bool value = false;
+	//};
+	//
+	//template<typename T, typename U>
+	//bool eqlTypes() { return is_same<T, U>::value; }
+	//// #################################################
 
-} // end of ns
+		template<typename t0, typename t1, typename t2, typename t3, typename t4, typename t5 = uint32_t, typename t6 = uint32_t>
+		__host__
+		uint32_t linearApprox(t0 y1, t1 x1, t2 y2, t3 x2, t4 x,
+			t5 alignment = 1, t6 max_val = UINT_MAX)
+		{
+			const float a = static_cast<float>(y1 - y2) / static_cast<float>(x1 - x2);
+			const float b = y1 - a * x1;
+			const float y = a * x + b;
+			const float y_aligned = ceil(y / alignment) * alignment;
+			const uint32_t y_min_max = (std::min)(static_cast<uint32_t>((std::max)(y_aligned, static_cast<float>(alignment))), static_cast<uint32_t>(max_val));
+
+			return y_min_max;
+		}
+
+	} // end of ns
 } // end of ns
 #endif

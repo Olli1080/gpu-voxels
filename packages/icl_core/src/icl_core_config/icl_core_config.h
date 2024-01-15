@@ -38,12 +38,5 @@
 #include "icl_core_config/ConfigValues.h"
 #include "icl_core_config/GetoptParser.h"
 #include "icl_core_config/GetoptParameter.h"
-#include "icl_core_config/tConfig.h"
-#include "icl_core_config/tConfigIterator.h"
-#include "icl_core_config/tConfigObserver.h"
-#include "icl_core_config/tConfigParameter.h"
-#include "icl_core_config/tConfigValues.h"
-#include "icl_core_config/tGetopt.h"
-#include "icl_core_config/tGetoptParameter.h"
 
 #endif

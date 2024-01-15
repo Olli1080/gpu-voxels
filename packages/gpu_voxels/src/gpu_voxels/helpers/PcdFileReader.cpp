@@ -21,39 +21,37 @@
  */
 //----------------------------------------------------------------------
 #include <gpu_voxels/helpers/PcdFileReader.h>
+
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+
+#include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 #include <gpu_voxels/helpers/common_defines.h>
 
-namespace gpu_voxels {
-namespace file_handling {
+namespace gpu_voxels
+{
+    namespace file_handling
+	{
 
-bool PcdFileReader::readPointCloud(const std::string filename, std::vector<Vector3f> &points)
-{ 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+        bool PcdFileReader::readPointCloud(const std::string& filename, std::vector<Vector3f>& points)
+        {
+	        const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-  if (pcl::io::loadPCDFile<pcl::PointXYZ> (filename.c_str(), *cloud) == -1) //* load the file
-  {
-    LOGGING_ERROR(Gpu_voxels_helpers, "Could not open file " << filename.c_str() << " !" << endl);
-    return false;
-  }
+            if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *cloud) == -1) //* load the file
+            {
+                LOGGING_ERROR(Gpu_voxels_helpers, "Could not open file " << filename.c_str() << " !" << endl);
+                return false;
+            }
 
-  Vector3f vec;
-  points.resize(cloud->points.size());
-  for (size_t i = 0; i < cloud->points.size(); ++i)
-  {
-    vec.x = cloud->points[i].x;
-    vec.y = cloud->points[i].y;
-    vec.z = cloud->points[i].z;
-    points[i] = vec;
-  }
+            points.reserve(cloud->points.size());
+            for (const auto& point : cloud->points)
+                points.emplace_back(point.x, point.y, point.z);
 
-  LOGGING_DEBUG(
-      Gpu_voxels_helpers,
-      "PCD Handler: loaded " << points.size() << " points ("<< (points.size()*sizeof(Vector3f)) * cBYTE2MBYTE << " MB on CPU) from "<< filename.c_str() << "." << endl);
-  return true;
-}
+            LOGGING_DEBUG(
+                Gpu_voxels_helpers,
+                "PCD Handler: loaded " << points.size() << " points (" << (points.size() * sizeof(Vector3f)) * cBYTE2MBYTE << " MB on CPU) from " << filename.c_str() << "." << endl);
+            return true;
+        }
 
-
-} // end of namespace
+    } // end of namespace
 } // end of namespace

@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
   // First we initialize gpu voxels
   icl_core::logging::initialize(argc, argv);
   gvl = gpu_voxels::GpuVoxels::getInstance();
-  gvl->initialize(200, 200, 200, 0.01);
+  gvl->initialize(200, 200, 200, 0.01f);
 
   // We add different maps with objects, to collide them
   gvl->addMap(gpu_voxels::MT_BITVECTOR_VOXELLIST,"myPointcloud");
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
   // We load a pointcloud
   if (!gvl->insertPointCloudFromFile("myPointcloud", "robot4cmRes.pcd", true,
-                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3, 0.2, 0.0),0.5))
+                                     gpu_voxels::eBVM_OCCUPIED, true, gpu_voxels::Vector3f(0.3f, 0.2f, 0.0f),0.5f))
   {
     LOGGING_WARNING(gpu_voxels::Gpu_voxels, "Could not insert the pointcloud..." << gpu_voxels::endl);
   }
@@ -75,22 +75,22 @@ int main(int argc, char* argv[])
    * so we can later identify, which pose created a collision.
    */
   const int num_swept_volumes = 50;// < eBVM_SWEPT_VOLUME_END;
-  gpu_voxels::Vector3f center0_min(0.3,0.7,0.3);
-  gpu_voxels::Vector3f center0_max(0.4,0.8,0.7);
+  gpu_voxels::Vector3f center0_min(0.3f,0.7f,0.3f);
+  gpu_voxels::Vector3f center0_max(0.4f,0.8f,0.7f);
   for (int i = 0; i < num_swept_volumes; ++i)
   {
-    gpu_voxels::Vector3f corner0_min = center0_min + gpu_voxels::Vector3f(0.025*i, 0.0, 0.0);
-    gpu_voxels::Vector3f corner0_max = center0_max + gpu_voxels::Vector3f(0.025*i, 0.0, 0.0);
+    gpu_voxels::Vector3f corner0_min = center0_min + gpu_voxels::Vector3f(0.025f*i, 0.f, 0.f);
+    gpu_voxels::Vector3f corner0_max = center0_max + gpu_voxels::Vector3f(0.025f*i, 0.f, 0.f);
     gpu_voxels::BitVoxelMeaning v = gpu_voxels::BitVoxelMeaning(gpu_voxels::eBVM_SWEPT_VOLUME_START + i);
     gvl->insertBoxIntoMap(corner0_min, corner0_max, "mySweptVolume", v);
   }
   gvl->visualizeMap("mySweptVolume");
 
   // These coordinates are used for two boxes, wich will represent our obstacles
-  gpu_voxels::Vector3f center1_min(0.5,0.5,0.5);
-  gpu_voxels::Vector3f center1_max(0.6,0.6,0.6);
-  gpu_voxels::Vector3f center2_min(0.5,0.5,0.3);
-  gpu_voxels::Vector3f center2_max(0.6,0.6,0.4);
+  gpu_voxels::Vector3f center1_min(0.5f,0.5f,0.5f);
+  gpu_voxels::Vector3f center1_max(0.6f,0.6f,0.6f);
+  gpu_voxels::Vector3f center2_min(0.5f,0.5f,0.3f);
+  gpu_voxels::Vector3f center2_max(0.6f,0.6f,0.4f);
   gpu_voxels::Vector3f corner1_min;
   gpu_voxels::Vector3f corner2_min;
   gpu_voxels::Vector3f corner1_max;
@@ -100,18 +100,18 @@ int main(int argc, char* argv[])
   float t = 0.0;
   while(true)
   {
-    t += 0.03;
+    t += 0.03f;
 
     // Move the boxes
     float x = sin(t);
     float y = cos(t);
 
-    corner1_min = center1_min + gpu_voxels::Vector3f(0.2 * x, 0.2 * y, 0);
-    corner1_max = center1_max + gpu_voxels::Vector3f(0.2 * x, 0.2 * y, 0);
+    corner1_min = center1_min + gpu_voxels::Vector3f(0.2f * x, 0.2f * y, 0.f);
+    corner1_max = center1_max + gpu_voxels::Vector3f(0.2f * x, 0.2f * y, 0.f);
     gvl->insertBoxIntoMap(corner1_min, corner1_max, "myObstacles", gpu_voxels::eBVM_OCCUPIED, 2);
 
-    corner2_min = center2_min + gpu_voxels::Vector3f(0 , 0.4 * x, 0);
-    corner2_max = center2_max + gpu_voxels::Vector3f(0 , 0.4 * x, 0);
+    corner2_min = center2_min + gpu_voxels::Vector3f(0.f, 0.4f * x, 0.f);
+    corner2_max = center2_max + gpu_voxels::Vector3f(0.f, 0.4f * x, 0.f);
     gvl->insertBoxIntoMap(corner2_min, corner2_max, "myObstacles", gpu_voxels::eBVM_OCCUPIED, 2);
 
     /*
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 
     // don't forget to keep your varying Maps up to date
     gvl->visualizeMap("myObstacles");
-    usleep(100000); // give the visualizer some time to render the maps
+    std::this_thread::sleep_for(std::chrono::microseconds(100000)); // give the visualizer some time to render the maps
     gvl->clearMap("myObstacles");
 
   }

@@ -25,29 +25,29 @@
 #ifndef GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVISUALIZER_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVISUALIZER_H_INCLUDED
 
-
+#include <memory>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
-#include <gpu_voxels/primitive_array/PrimitiveArray.h>
-#include <boost/lexical_cast.hpp>
-#include <glm/glm.hpp>
 
-namespace gpu_voxels {
-namespace visualization {
+#include <glm/fwd.hpp>
 
-class SharedMemoryManager;
-
-class SharedMemoryManagerVisualizer
+namespace gpu_voxels
 {
-public:
-  SharedMemoryManagerVisualizer();
-  ~SharedMemoryManagerVisualizer();
-  bool getCameraTargetPoint(glm::vec3& target);
-  DrawTypes getDrawTypes();
+	namespace visualization
+	{
+		class SharedMemoryManager;
+		class SharedMemoryManagerVisualizer
+		{
+		public:
 
-private:
-  SharedMemoryManager* shmm;
-}
-;
-} //end of namespace visualization
+			SharedMemoryManagerVisualizer();
+
+			[[nodiscard]] bool getCameraTargetPoint(glm::vec3& target) const;
+			[[nodiscard]] DrawTypes getDrawTypes() const;
+
+		private:
+
+			std::unique_ptr<SharedMemoryManager> shmm;
+		};
+	} //end of namespace visualization
 } //end of namespace gpu_voxels
 #endif /* GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERVISUALIZER_H_INCLUDED */

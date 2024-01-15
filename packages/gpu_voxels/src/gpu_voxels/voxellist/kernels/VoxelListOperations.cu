@@ -21,4 +21,47 @@
 */
 //----------------------------------------------------------------------
 
+#include "VoxelListOperations.hpp"
 
+namespace gpu_voxels
+{
+    namespace voxellist
+    {
+        __global__
+        void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
+            const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
+            Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results)
+        {
+            // NOP
+            printf("kernelCollideWithVoxelMap not implemented for Octreee!");
+        }
+
+        __global__
+        void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
+            const BitVectorVoxel* other_map, Vector3ui other_map_dim,
+            Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results)
+        {
+            // NOP
+            printf("kernelCollideWithVoxelMap not implemented for Octreee!");
+        }
+
+        __global__
+        void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
+            const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
+            Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results)
+        {
+            // NOP
+            printf("kernelCollideWithVoxelMapBitMask not implemented for Octreee!");
+        }
+
+        __global__
+        void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
+            const BitVectorVoxel* other_map, Vector3ui other_map_dim,
+            Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results)
+        {
+            // NOP
+            printf("kernelCollideWithVoxelMapBitMask not implemented for Octreee!");
+        }
+
+    }
+}

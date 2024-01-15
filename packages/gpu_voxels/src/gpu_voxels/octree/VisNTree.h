@@ -19,7 +19,7 @@
  * \date    2014-06-18
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef VISNTREE_H_
 #define VISNTREE_H_
 
@@ -28,34 +28,34 @@
 #include <gpu_voxels/helpers/cuda_handling.h>
 
 namespace gpu_voxels {
-namespace NTree {
+	namespace NTree {
 
-template<typename InnerNode, typename LeafNode>
-class VisNTree: public VisProvider
-{
-public:
-  typedef NTree<8, 15, InnerNode, LeafNode> MyNTree;
+		template<typename InnerNode, typename LeafNode>
+		class VisNTree : public VisProvider
+		{
+		public:
+			typedef NTree<8, 15, InnerNode, LeafNode> MyNTree;
 
-  VisNTree(MyNTree* ntree, std::string map_name);
+			VisNTree(MyNTree* ntree, std::string map_name);
+			~VisNTree() override;
 
-  virtual ~VisNTree();
+			bool visualize(const bool force_repaint = true) override;
 
-  virtual bool visualize(const bool force_repaint = true);
+			uint32_t getResolutionLevel() override;
 
-  virtual uint32_t getResolutionLevel();
+		protected:
 
-protected:
-  MyNTree* m_ntree;
-  cudaIpcMemHandle_t* m_shm_memHandle;
-  uint32_t m_min_level; // Min visualization level of octree of last visualize() call
-  uint32_t* m_shm_superVoxelSize;
-  uint32_t* m_shm_numCubes;
-  bool* m_shm_bufferSwapped;
-  bool m_internal_buffer_1;
-  thrust::device_vector<Cube> *m_d_cubes_1;
-  thrust::device_vector<Cube> *m_d_cubes_2;
-};
-}
+			MyNTree* m_ntree;
+			cudaIpcMemHandle_t* m_shm_memHandle;
+			uint32_t m_min_level; // Min visualization level of octree of last visualize() call
+			uint32_t* m_shm_superVoxelSize;
+			uint32_t* m_shm_numCubes;
+			bool* m_shm_bufferSwapped;
+			bool m_internal_buffer_1;
+			thrust::device_vector<Cube>* m_d_cubes_1;
+			thrust::device_vector<Cube>* m_d_cubes_2;
+		};
+	}
 
 }
 

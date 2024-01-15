@@ -23,50 +23,46 @@
 #ifndef GPU_VOXELS_HELPERS_KINECT_H_INCLUDED
 #define GPU_VOXELS_HELPERS_KINECT_H_INCLUDED
 
-#include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include <pcl/io/openni_grabber.h>
+#include <pcl/io/openni2_grabber.h>
 
 #include <gpu_voxels/voxelmap/VoxelMap.h>
 
-#include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
-
-namespace gpu_voxels {
-
-class Kinect
+namespace gpu_voxels
 {
-public:
-  //! Constructor
-  Kinect(std::string identifier = "");
+	class Kinect
+	{
+	public:
+		//! Constructor
+		Kinect(std::string identifier = "");
 
-  //! Destructor
-  ~Kinect();
+		//! Destructor
+		~Kinect();
 
-  //! Create a OpenNI grabber and start capturing
-  void run();
+		//! Create a OpenNI grabber and start capturing
+		void run();
 
-  //! Stop Capturing and delete the OpenNI grabber
-  void stop();
+		//! Stop Capturing and delete the OpenNI grabber
+		void stop();
 
-  //! Information about the capturing state.
-  bool isRunning();
+		//! Information about the capturing state.
+		[[nodiscard]] bool isRunning() const;
 
-  //! Direct access to the stored data
-  const std::vector<Vector3f>& getDataPtr() { return m_data; }
+		//! Direct access to the stored data
+		const std::vector<Vector3f>& getDataPtr();
 
-private:
+	private:
 
-  pcl::Grabber* m_interface;
-  std::vector<Vector3f> m_data;
+		std::shared_ptr<pcl::Grabber> m_interface;
+		std::vector<Vector3f> m_data;
 
-  bool m_running;
+		bool m_running;
 
-  std::string m_identifier;
+		std::string m_identifier;
 
-  // Callback triggered when new data is available
-  void cloud_callback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud);
+		// Callback triggered when new data is available
+		void cloud_callback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& cloud);
 
-};
-
+	};
 } // end of namespace
 #endif

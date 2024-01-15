@@ -22,8 +22,7 @@
 //----------------------------------------------------------------------
 #include <gpu_voxels/logging/logging_primitive_array.h>
 
-namespace gpu_voxels {
-
-REGISTER_LOG_STREAM(PrimitiveArrayLog);
-
+namespace gpu_voxels
+{
+	REGISTER_LOG_STREAM(PrimitiveArrayLog);
 }

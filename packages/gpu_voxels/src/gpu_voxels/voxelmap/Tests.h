@@ -19,26 +19,25 @@
  * \date    2016-05-25
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXELMAP_TESTS_H_INCLUDED
 #define GPU_VOXELS_VOXELMAP_TESTS_H_INCLUDED
 
 #include <cuda_runtime.h>
 #include <gpu_voxels/helpers/cuda_handling.hpp>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 
 
 namespace gpu_voxels {
-namespace voxelmap {
-namespace test {
+	namespace voxelmap {
+		namespace test {
 
-template<class Voxel>
-void triggerAddressingTest(Vector3ui dimensions, float voxel_side_length,
-                           size_t nr_of_tests, bool *success);
+			template<class Voxel>
+			void triggerAddressingTest(Vector3ui dimensions, float voxel_side_length,
+				size_t nr_of_tests, bool* success);
 
-
-} // end of namespace test
-} // end of namespace voxelmap
+		} // end of namespace test
+	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

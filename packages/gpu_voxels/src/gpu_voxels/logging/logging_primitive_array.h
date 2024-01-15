@@ -24,10 +24,10 @@
 #define LOGGING_PRIMITIVE_ARRAY_H_
 
 #include <icl_core_logging/Logging.h>
-namespace gpu_voxels {
+namespace gpu_voxels
+{
+	DECLARE_LOG_STREAM(PrimitiveArrayLog)
 
-DECLARE_LOG_STREAM(PrimitiveArrayLog)
-
-using icl_core::logging::endl;
+	using icl_core::logging::endl;
 }
 #endif /* LOGGING_PRIMITIVE_ARRAY_H_ */

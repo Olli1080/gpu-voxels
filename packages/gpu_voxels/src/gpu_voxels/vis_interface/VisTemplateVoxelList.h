@@ -30,29 +30,28 @@
 
 namespace gpu_voxels {
 
-template <class Voxel, typename VoxelIDType>
-class VisTemplateVoxelList : public VisProvider
-{
-public:
-  VisTemplateVoxelList(voxellist::TemplateVoxelList<Voxel, VoxelIDType>* voxellist, std::string map_name);
+	template <class Voxel, typename VoxelIDType>
+	class VisTemplateVoxelList : public VisProvider
+	{
+	public:
+		VisTemplateVoxelList(voxellist::TemplateVoxelList<Voxel, VoxelIDType>* voxellist, std::string map_name);
 
-  virtual ~VisTemplateVoxelList();
+		~VisTemplateVoxelList() override;
 
-  virtual bool visualize(const bool force_repaint = true);
+		bool visualize(const bool force_repaint = true) override;
 
-  virtual uint32_t getResolutionLevel();
+		uint32_t getResolutionLevel() override;
 
-protected:
-  voxellist::TemplateVoxelList<Voxel, VoxelIDType>* m_voxellist;
-  cudaIpcMemHandle_t* m_shm_memHandle;
-  thrust::device_vector<Cube>* m_dev_buffer_1;
-  thrust::device_vector<Cube>* m_dev_buffer_2;
-  bool* m_shm_bufferSwapped;
-  uint32_t* m_shm_num_cubes;
-  bool m_internal_buffer_1;
-  MapType* m_shm_voxellist_type;
-};
+	protected:
+		voxellist::TemplateVoxelList<Voxel, VoxelIDType>* m_voxellist;
+		cudaIpcMemHandle_t* m_shm_memHandle;
+		thrust::device_vector<Cube>* m_dev_buffer_1;
+		thrust::device_vector<Cube>* m_dev_buffer_2;
+		bool* m_shm_bufferSwapped;
+		uint32_t* m_shm_num_cubes;
+		bool m_internal_buffer_1;
+		MapType* m_shm_voxellist_type;
+	};
 
 } // namespace gpu_voxels
 #endif // VISTEMPLATEVOXELLIST_H
-

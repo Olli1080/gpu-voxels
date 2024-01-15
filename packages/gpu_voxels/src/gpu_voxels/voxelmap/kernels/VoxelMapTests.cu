@@ -26,7 +26,7 @@
 #include <cuda_runtime.h>
 #include "VoxelMapTests.h"
 
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 

@@ -23,56 +23,85 @@
 #ifndef GPU_VOXELS_HELPERS_MATH_HELPERS_H_INCLUDED
 #define GPU_VOXELS_HELPERS_MATH_HELPERS_H_INCLUDED
 
-#include <assert.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
-#include <gpu_voxels/helpers/common_defines.h>
-#include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
+#include <cstdint>
 
-namespace gpu_voxels {
+#include <vector>
+#include <string>
+#include <map>
 
-/*!
- * \brief computeLinearLoad
- * \param nr_of_items
- * \param blocks
- * \param threads_per_block
- */
-void computeLinearLoad(const uint32_t nr_of_items, uint32_t* blocks, uint32_t* threads_per_block);
+namespace gpu_voxels
+{
 
-/*! Interpolate linear between the values \a value1 and \a value2 using the given \a ratio.
- *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
- *  middle.
- */
-float interpolateLinear(float value1, float value2, float ratio);
+    /*!
+     * \brief computeLinearLoad
+     * \param nr_of_items
+     * \param blocks
+     * \param threads_per_block
+     */
+    void computeLinearLoad(uint32_t nr_of_items, uint32_t& blocks, uint32_t& threads_per_block);
 
-/*! Interpolate linear between the values \a value1 and \a value2 using the given \a ratio.
- *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
- *  middle.
- */
-double interpolateLinear(double value1, double value2, double ratio);
+    /*! Interpolate linear between the values \a value1 and \a value2 using the given \a ratio.
+     *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
+     *  middle.
+     */
+    template<std::floating_point T>
+    float interpolateLinear(T value1, T value2, T ratio)
+    {
+        return (value1 * (static_cast<T>(1.) - ratio) + value2 * ratio);
+    }
 
-/*! Interpolate linear between the robot joint vectors \a joint_state1 and \a joint_state2
- *  using the given \a ratio.
- *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
- *  middle.
- */
-std::vector<float> interpolateLinear(const std::vector<float>& joint_state1,
-                                     const std::vector<float>& joint_state2, float ratio);
+    /*! Interpolate linear between the robot joint vectors \a joint_state1 and \a joint_state2
+     *  using the given \a ratio.
+     *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
+     *  middle.
+     */
+    template<std::floating_point T>
+    std::vector<T> interpolateLinear(const std::vector<T>& joint_state1,
+        const std::vector<T>& joint_state2, T ratio)
+    {
+        assert(joint_state1.size() == joint_state2.size());
 
-/*! Interpolate linear between the robot joint vectors \a joint_state1 and \a joint_state2
- *  using the given \a ratio.
- *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
- *  middle.
- */
-std::vector<double> interpolateLinear(const std::vector<double>& joint_state1,
-                                      const std::vector<double>& joint_state2, double ratio);
+        std::vector<T> result(joint_state1.size());
+        for (std::size_t i = 0; i < joint_state1.size(); ++i)
+        {
+            result[i] = interpolateLinear<T>(joint_state1[i], joint_state2[i], ratio);
+        }
+        return result;
+    }
 
-/*! Interpolate linear between the robot JointValueMaps \a joint_state1 and \a joint_state2
- *  using the given \a ratio.
- *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
- *  middle.
- */
-std::map<std::string, float> interpolateLinear(const std::map<std::string, float>& joint_state1,
-                                               const std::map<std::string, float>& joint_state2, float ratio);
+    /*! Interpolate linear between the robot JointValueMaps \a joint_state1 and \a joint_state2
+     *  using the given \a ratio.
+     *  Using values out of [0.0, 1.0] will extrapolate, a value of 0.5 will interpolate in the
+     *  middle.
+     */
+    template<std::floating_point T>
+    std::map<std::string, T> interpolateLinear(const std::map<std::string, T>& joint_state1,
+        const std::map<std::string, T>& joint_state2, T ratio)
+    {
+        assert(joint_state1.size() == joint_state2.size());
+
+        std::map result(joint_state1);
+        for (auto it = joint_state1.begin(); it != joint_state1.end(); ++it)
+        {
+            result[it->first] = interpolateLinear<T>(joint_state1.at(it->first), joint_state2.at(it->first), ratio);
+        }
+        return result;
+    }
+
+
+    template<std::floating_point T>
+    std::map<std::string, T> interpolateLinear(const std::map<std::string, T>& joint_state1,
+        const std::map<std::string, T>& joint_state2, const std::map<std::string, T>& ratio)
+    {
+        assert(joint_state1.size() == joint_state2.size() && joint_state1.size() == ratio.size());
+
+        std::map result(joint_state1);
+        for (auto it = joint_state1.begin(); it != joint_state1.end(); ++it)
+        {
+            result[it->first] = interpolateLinear<T>(joint_state1.at(it->first), joint_state2.at(it->first), ratio.at(it->first));
+        }
+        return result;
+    }
 } // end of namespace
 
 #endif

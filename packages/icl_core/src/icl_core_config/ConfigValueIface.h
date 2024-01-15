@@ -16,29 +16,31 @@
  * \date    2010-04-28
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_CORE_CONFIG_CONFIG_VALUE_IFACE_H_INCLUDED
 #define ICL_CORE_CONFIG_CONFIG_VALUE_IFACE_H_INCLUDED
 
-#include <icl_core/BaseTypes.h>
+#include <string>
 
 namespace icl_core {
-namespace config {
+	namespace config {
 
-namespace impl {
-/*! Abstract interface for reading configuration parameters.
- */
-class ConfigValueIface
-{
-public:
-  virtual ~ConfigValueIface() { }
+		namespace impl {
+			/*! Abstract interface for reading configuration parameters.
+			 */
+			class ConfigValueIface
+			{
+			public:
+				virtual ~ConfigValueIface() = default;
 
-  virtual bool get(std::string const & prefix = "",
-                   icl_core::logging::LogStream& log_stream = icl_core::logging::Nirwana::instance()) const = 0;
-  virtual icl_core::String key() const = 0;
-  virtual icl_core::String stringValue() const = 0;
-};
+				virtual bool get(std::string const& prefix = "",
+				                 icl_core::logging::LogStream& log_stream = icl_core::logging::Nirwana::instance()) const = 0;
+				[[nodiscard]] virtual std::string key() const = 0;
+				[[nodiscard]] virtual std::string stringValue() const = 0;
+			};
 
-}}}
+		}
+	}
+}
 
 #endif

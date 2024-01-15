@@ -15,54 +15,51 @@
  * \author  Klaus Uhl <uhl@fzi.de>
  * \date    2008-11-03
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #include "icl_core_config/Config.h"
 
 #include <iostream>
 
 namespace icl_core {
-namespace config {
+	namespace config {
+		
+		void dump()
+		{
+			ConfigManager::instance().dump();
+		}
 
-const char * CONFIGFILE_CONFIG_KEY = "/configfile";
+		void debugOutCommandLine(int argc, char* argv[])
+		{
+			for (int j = 0; j < argc; j++)
+				std::cout << argv[j] << " ";
 
-void dump()
-{
-  ConfigManager::instance().dump();
+			std::cout << std::endl;
+		}
+
+		ConfigIterator find(const std::string& query)
+		{
+			return ConfigManager::instance().find(query);
+		}
+
+		bool initialize(int& argc, char* argv[], bool remove_read_arguments)
+		{
+			return initialize(argc, argv,
+				remove_read_arguments ? Getopt::eCLC_Cleanup : Getopt::eCLC_None,
+				Getopt::ePRC_Strict);
+		}
+
+		bool initialize(int& argc, char* argv[], Getopt::CommandLineCleaning cleanup,
+			Getopt::ParameterRegistrationCheck registration_check)
+		{
+			// Ensure that the commandline options for ConfigManager are registered.
+			ConfigManager::instance();
+
+			bool res = Getopt::instance().initialize(argc, argv, cleanup, registration_check);
+			if (res)
+				res = ConfigManager::instance().initialize();
+
+			return res;
+		}
+
+	}
 }
-
-void debugOutCommandLine(int argc, char *argv[])
-{
-  for (int j = 0; j < argc; j++)
-  {
-    std::cout << argv[j] << " ";
-  }
-  std::cout << std::endl;
-}
-
-ConfigIterator find(const ::icl_core::String& query)
-{
-  return ConfigManager::instance().find(query);
-}
-
-bool initialize(int& argc, char *argv[], bool remove_read_arguments)
-{
-  return initialize(argc, argv,
-                    remove_read_arguments ? Getopt::eCLC_Cleanup : Getopt::eCLC_None,
-                    Getopt::ePRC_Strict);
-}
-
-bool initialize(int& argc, char *argv[], Getopt::CommandLineCleaning cleanup,
-                Getopt::ParameterRegistrationCheck registration_check)
-{
-  // Ensure that the commandline options for ConfigManager are registered.
-  ConfigManager::instance();
-
-  bool res = Getopt::instance().initialize(argc, argv, cleanup, registration_check);
-  if (res)
-  {
-    res = ConfigManager::instance().initialize();
-  }
-  return res;
-}
-
-}}

@@ -19,12 +19,12 @@
  * \date    2014-07-10
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VOXELMAP_ABSTRACT_VOXELMAP_H_INCLUDED
 #define GPU_VOXELS_VOXELMAP_ABSTRACT_VOXELMAP_H_INCLUDED
 
 #include <gpu_voxels/GpuVoxelsMap.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/logging/logging_voxelmap.h>
 
@@ -36,39 +36,43 @@
  * Contains implementation of VoxelMap Datastructure and according operations
  */
 namespace gpu_voxels {
-namespace voxelmap {
+	namespace voxelmap {
 
-class AbstractVoxelMap : public GpuVoxelsMap
-{
-public:
+		class AbstractVoxelMap : public GpuVoxelsMap
+		{
+		public:
 
-  //! get pointer to data array on device
-  virtual void* getVoidDeviceDataPtr() = 0;
+			~AbstractVoxelMap() override = default;
 
-  //! get the side length of the voxels.
-  virtual float getVoxelSideLength() const = 0;
+			//! get pointer to data array on device
+			virtual void* getVoidDeviceDataPtr() = 0;
 
-  virtual void insertPointCloud(const std::vector<Vector3f> &points, const BitVoxelMeaning voxel_meaning) = 0;
+			virtual const void* getConstVoidDeviceDataPtr() const = 0;
 
-  virtual void insertPointCloud(const PointCloud &pointcloud, const BitVoxelMeaning voxel_meaning) = 0;
+			//! get the side length of the voxels.
+			virtual float getVoxelSideLength() const = 0;
 
-  virtual void insertPointCloud(const Vector3f* points_d, uint32_t size, const BitVoxelMeaning voxel_meaning) = 0;
+			void insertPointCloud(const std::vector<Vector3f>& points, BitVoxelMeaning voxel_meaning) override = 0;
 
-  //! get the number of bytes that is required for the voxelmap
-  virtual size_t getMemoryUsage() const = 0;
+			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override = 0;
 
-  virtual MapType getTemplateType() const = 0;
+			virtual void insertPointCloud(const thrust::device_vector<Vector3f>& points_d, BitVoxelMeaning voxel_meaning) = 0;
+
+			//! get the number of bytes that is required for the voxelmap
+			size_t getMemoryUsage() const override = 0;
+
+			virtual MapType getTemplateType() const = 0;
 
 
 
-  // ------ BEGIN Global API functions ------
-  virtual bool needsRebuild() const;
+			// ------ BEGIN Global API functions ------
+			bool needsRebuild() const override;
 
-  virtual bool rebuild();
-  // ------ END Global API functions ------
+			bool rebuild() override;
+			// ------ END Global API functions ------
 
-};
+		};
 
-} // end of namespace voxelmap
+	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

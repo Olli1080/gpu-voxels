@@ -22,8 +22,7 @@
 //----------------------------------------------------------------------
 #include <gpu_voxels/logging/logging_robot.h>
 
-namespace gpu_voxels {
-
-REGISTER_LOG_STREAM(RobotLog);
-
+namespace gpu_voxels
+{
+	REGISTER_LOG_STREAM(RobotLog);
 }

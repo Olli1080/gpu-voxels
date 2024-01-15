@@ -43,19 +43,19 @@ class ICL_CORE_LOGGING_IMPORT_EXPORT UdpLogOutput : public LogOutputStream,
 public:
   /*! Creates a new file log output stream object.
    */
-  static LogOutputStream *create(const icl_core::String& name, const icl_core::String& config_prefix,
+  static LogOutputStream *create(const std::string& name, const std::string& config_prefix,
                                  icl_core::logging::LogLevel log_level = cDEFAULT_LOG_LEVEL);
 
 private:
-  UdpLogOutput(const icl_core::String& name, const icl_core::String& config_prefix,
+  UdpLogOutput(const std::string& name, const std::string& config_prefix,
                icl_core::logging::LogLevel log_level);
   virtual ~UdpLogOutput();
 
   virtual void pushImpl(const LogMessage& log_message);
 
-  icl_core::String escape(icl_core::String str) const;
+  std::string escape(std::string str) const;
 
-  icl_core::String m_system_name;
+  std::string m_system_name;
 
   int m_socket;
 };

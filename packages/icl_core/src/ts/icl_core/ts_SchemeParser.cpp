@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(TestStaticParser)
   BOOST_SPIRIT_NAMESPACE::parse_info<> info;
   icl_core::Scheme scheme;
   scheme.scheme_type = icl_core::OtherScheme;
-  icl_core::String input = "file:///path/to/file/data.abc#anchor123?foo=bar&test=me";
+  std::string input = "file:///path/to/file/data.abc#anchor123?foo=bar&test=me";
 
   BOOST_CHECK_EQUAL(icl_core::SchemeParser::parseScheme(input, scheme, info), true);
   BOOST_CHECK_EQUAL(scheme.scheme_type, icl_core::FileScheme);
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(TestStaticParser)
 
 BOOST_AUTO_TEST_CASE(TestParserClass)
 {
-  std::list<icl_core::String> input_list;
+  std::list<std::string> input_list;
 
   input_list.push_back("file:///path/to/my_file/data.tof");
   input_list.push_back("file:///path/to/my file/my data.tof");
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(TestParserClass)
   // Test WithoutPath
   input_list.push_back("data.tof");
 
-  std::list<icl_core::String>::iterator iter = input_list.begin();
+  std::list<std::string>::iterator iter = input_list.begin();
 
   icl_core::SchemeParser parser;
 

@@ -13,16 +13,18 @@
  *  \brief Loads and compiles the fragment and vertex shader.
  *              from: http://www.opengl-tutorial.org/
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VISUALIZATION_SHADER_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_SHADER_H_INCLUDED
 
 // 1) adjust CSG
-namespace gpu_voxels {
-namespace visualization {
+namespace gpu_voxels
+{
+	namespace visualization
+	{
 
-GLuint loadShaders(const char *vertex_shader, const char *fragment_shader);
+		GLuint loadShaders(const char* vertex_shader, const char* fragment_shader);
 
-} // end of namespace visualization
+	} // end of namespace visualization
 } // end of namespace gpu_voxels
 #endif

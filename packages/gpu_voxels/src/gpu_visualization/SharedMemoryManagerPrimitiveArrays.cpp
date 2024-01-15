@@ -22,128 +22,117 @@
  */
 //----------------------------------------------------------------------
 #include <gpu_visualization/SharedMemoryManagerPrimitiveArrays.h>
-#include <gpu_visualization/SharedMemoryManager.h>
 
-using namespace boost::interprocess;
 namespace gpu_voxels {
-namespace visualization {
+    namespace visualization {
 
 
-SharedMemoryManagerPrimitiveArrays::SharedMemoryManagerPrimitiveArrays()
-{
-  shmm = new SharedMemoryManager(shm_segment_name_primitive_array, true);
-}
+        SharedMemoryManagerPrimitiveArrays::SharedMemoryManagerPrimitiveArrays()
+            : shmm(std::make_unique<SharedMemoryManager>(shm_segment_name_primitive_array, true))
+        {}
 
-SharedMemoryManagerPrimitiveArrays::~SharedMemoryManagerPrimitiveArrays()
-{
-  delete shmm;
-}
+        SharedMemoryManagerPrimitiveArrays::~SharedMemoryManagerPrimitiveArrays() = default;
 
-uint32_t SharedMemoryManagerPrimitiveArrays::getNumberOfPrimitiveArraysToDraw()
-{
-  std::pair<uint32_t*, std::size_t> res = shmm->getMemSegment().find<uint32_t>(
-      shm_variable_name_number_of_primitive_arrays.c_str());
-  if (res.second == 0)
-  {
-    return 0;
-  }
+        uint32_t SharedMemoryManagerPrimitiveArrays::getNumberOfPrimitiveArraysToDraw() const
+        {
+	        const std::pair<uint32_t*, std::size_t> res = shmm->getMemSegment().find<uint32_t>(
+                shm_variable_name_number_of_primitive_arrays.c_str());
+            if (res.second == 0)
+                return 0;
 
-  return *res.first;
-}
+            return *res.first;
+        }
 
-std::string SharedMemoryManagerPrimitiveArrays::getNameOfPrimitiveArray(const uint32_t index)
-{
-  std::string prim_array_name;
-  std::string index_str = boost::lexical_cast<std::string>(index);
-  std::string prim_array_name_var_name = shm_variable_name_primitive_array_name + index_str;
-  std::pair<char*, std::size_t> res_n = shmm->getMemSegment().find<char>(prim_array_name_var_name.c_str());
-  if (res_n.second == 0)
-  { /*If the segment couldn't be find or the string is empty*/
-    prim_array_name = "primitive_array_" + index_str;
-    return prim_array_name;
-  }
-  prim_array_name.assign(res_n.first, res_n.second);
-  return prim_array_name;
-}
+        std::string SharedMemoryManagerPrimitiveArrays::getNameOfPrimitiveArray(const uint32_t index) const
+        {
+            std::string prim_array_name;
+            const std::string index_str = std::to_string(index);
+            const std::string prim_array_name_var_name = shm_variable_name_primitive_array_name + index_str;
+            const std::pair<char*, std::size_t> res_n = shmm->getMemSegment().find<char>(prim_array_name_var_name.c_str());
+            if (res_n.second == 0)
+            { /*If the segment couldn't be find or the string is empty*/
+                prim_array_name = "primitive_array_" + index_str;
+                return prim_array_name;
+            }
+            prim_array_name.assign(res_n.first, res_n.second);
+            return prim_array_name;
+        }
 
 
-bool SharedMemoryManagerPrimitiveArrays::getPrimitivePositions(const uint32_t index, Vector4f **d_positions, uint32_t& size,
-                                                          primitive_array::PrimitiveType& type)
-{
-  bool error = false;
-  std::string index_str = boost::lexical_cast<std::string>(index);
-  std::string handler_name = shm_variable_name_primitive_array_handler_dev_pointer + index_str;
-  std::string number_primitives = shm_variable_name_primitive_array_number_of_primitives + index_str;
-  std::string type_primitives = shm_variable_name_primitive_array_type + index_str;
+        bool SharedMemoryManagerPrimitiveArrays::getPrimitivePositions(const uint32_t index, Vector4f** d_positions, uint32_t& size,
+            primitive_array::PrimitiveType& type) const
+        {
+            bool error = false;
+            const std::string index_str = std::to_string(index);
+            const std::string handler_name = shm_variable_name_primitive_array_handler_dev_pointer + index_str;
+            const std::string number_primitives = shm_variable_name_primitive_array_number_of_primitives + index_str;
+            const std::string type_primitives = shm_variable_name_primitive_array_type + index_str;
 
-  //Find the handler object
-  std::pair<cudaIpcMemHandle_t*, std::size_t> res_h = shmm->getMemSegment().find<cudaIpcMemHandle_t>(
-      handler_name.c_str());
-  error = res_h.second == 0;
-  if (!error)
-  {
-    cudaIpcMemHandle_t handler = *res_h.first;
-    // get to device data pointer from the handler
-    cudaError_t cuda_error = cudaIpcOpenMemHandle((void**) d_positions, (cudaIpcMemHandle_t) handler,
-                                                  cudaIpcMemLazyEnablePeerAccess);
-    // the handle is closed by Visualizer.cu
-    if (cuda_error == cudaSuccess)
-    {
-      //Find the number of primitives
-      std::pair<uint32_t*, std::size_t> res_d = shmm->getMemSegment().find<uint32_t>(number_primitives.c_str());
-      std::pair<primitive_array::PrimitiveType*, std::size_t> res_p = shmm->getMemSegment().find<primitive_array::PrimitiveType>(type_primitives.c_str());
-      error = (res_d.second == 0) | (res_p.second == 0);
-      if (!error)
-      {
-        size = *res_d.first;
-        type = *res_p.first;
-        LOGGING_DEBUG_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Number of primitives in array: " << size << " Type: " << type << endl);
-        return true;
-      }else{
-        LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays count or type could not be read from SHM." << endl);
-      }
-    }else{
-      LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays Handler could not be opened! Error was " << cuda_error << endl);
-    }
-  }else{
-    LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays Handler not found!" << endl);
-  }
-  cudaIpcCloseMemHandle(*d_positions);
-  /*If an error occurred */
-  size = 0;
-  type = primitive_array::ePRIM_INITIAL_VALUE;
-  d_positions = NULL;
-  return false;
-}
-bool SharedMemoryManagerPrimitiveArrays::hasPrimitiveBufferChanged(const uint32_t index)
-{
-  std::string index_str = boost::lexical_cast<std::string>(index);
-  std::string swapped_buffer_name = shm_variable_name_primitive_array_data_changed + index_str;
-  std::pair<bool*, std::size_t> swapped = shmm->getMemSegment().find<bool>(swapped_buffer_name.c_str());
+            //Find the handler object
+            const std::pair<cudaIpcMemHandle_t*, std::size_t> res_h = shmm->getMemSegment().find<cudaIpcMemHandle_t>(
+                handler_name.c_str());
+            error = res_h.second == 0;
+            if (!error)
+            {
+	            const cudaIpcMemHandle_t handler = *res_h.first;
+                // get to device data pointer from the handler
+	            const cudaError_t cuda_error = cudaIpcOpenMemHandle(reinterpret_cast<void**>(d_positions), handler,
+	                                                                cudaIpcMemLazyEnablePeerAccess);
+                // the handle is closed by Visualizer.cu
+                if (cuda_error == cudaSuccess)
+                {
+                    //Find the number of primitives
+                    const std::pair<uint32_t*, std::size_t> res_d = shmm->getMemSegment().find<uint32_t>(number_primitives.c_str());
+                    const std::pair<primitive_array::PrimitiveType*, std::size_t> res_p = shmm->getMemSegment().find<primitive_array::PrimitiveType>(type_primitives.c_str());
+                    error = res_d.second == 0 || res_p.second == 0;
+                    if (!error)
+                    {
+                        size = *res_d.first;
+                        type = *res_p.first;
+                        LOGGING_DEBUG_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Number of primitives in array: " << size << " Type: " << type << endl);
+                        return true;
+                    }
+                    else {
+                        LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays count or type could not be read from SHM." << endl);
+                    }
+                }
+                else {
+                    LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays Handler could not be opened! Error was " << cuda_error << endl);
+                }
+            }
+            else {
+                LOGGING_ERROR_C(SharedMemManager, SharedMemoryManagerPrimitiveArrays, "Primitive Arrays Handler not found!" << endl);
+            }
+            cudaIpcCloseMemHandle(*d_positions);
+            /*If an error occurred */
+            size = 0;
+            type = primitive_array::ePRIM_INITIAL_VALUE;
+            d_positions = nullptr;
+            return false;
+        }
+        bool SharedMemoryManagerPrimitiveArrays::hasPrimitiveBufferChanged(const uint32_t index) const
+        {
+	        const std::string index_str = std::to_string(index);
+	        const std::string swapped_buffer_name = shm_variable_name_primitive_array_data_changed + index_str;
+	        const std::pair<bool*, std::size_t> swapped = shmm->getMemSegment().find<bool>(swapped_buffer_name.c_str());
 
-  if (swapped.second != 0)
-  {
-    return *swapped.first;
-  }
-  else
-  {
-    return false;
-  }
-}
-/**
- * Sets the shared memory variable buffer_changed_primitive to false.
- */
-void SharedMemoryManagerPrimitiveArrays::setPrimitiveBufferChangedToFalse(const uint32_t index)
-{
-  std::string index_str = boost::lexical_cast<std::string>(index);
-  std::string swapped_buffer_name = shm_variable_name_primitive_array_data_changed + index_str;
-  std::pair<bool*, std::size_t> swapped = shmm->getMemSegment().find<bool>(swapped_buffer_name.c_str());
+            if (swapped.second != 0)
+                return *swapped.first;
 
-  if (swapped.second)
-  {
-    *swapped.first = false;
-  }
-}
+            return false;
+        }
+        /**
+         * Sets the shared memory variable buffer_changed_primitive to false.
+         */
+        void SharedMemoryManagerPrimitiveArrays::setPrimitiveBufferChangedToFalse(const uint32_t index)
+        {
+	        const std::string index_str = std::to_string(index);
+	        const std::string swapped_buffer_name = shm_variable_name_primitive_array_data_changed + index_str;
+	        const std::pair<bool*, std::size_t> swapped = shmm->getMemSegment().find<bool>(swapped_buffer_name.c_str());
 
-} //end of namespace visualization
+            if (swapped.second)
+                *swapped.first = false;
+        }
+
+    } //end of namespace visualization
 } //end of namespace gpu_voxels

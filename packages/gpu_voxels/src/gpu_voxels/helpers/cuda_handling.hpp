@@ -25,125 +25,127 @@
 #define GPU_VOXELS_CUDA_HANDLING_HPP_INCLUDED
 
 #include "cuda_handling.h"
-#include <stdint.h>
 
-namespace gpu_voxels {
+#include <sstream>
+#include <cstdint>
 
-/* Helper functions that can be used for debugging
- * surround with HANDLE_CUDA_ERROR(     ) for error handling
- */
+#include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 
-// print single device variable
-template<class T>
-cudaError_t cuPrintDeviceVariable(T* dev_variable)
+namespace gpu_voxels
 {
-  T host_variable;
-  cudaError_t error = cudaMemcpy(&host_variable, dev_variable, sizeof(T), cudaMemcpyDeviceToHost);
-  LOGGING_INFO(Gpu_voxels_helpers, host_variable << endl);
-  return error;
-}
+    /* Helper functions that can be used for debugging
+     * surround with HANDLE_CUDA_ERROR(     ) for error handling
+     */
 
-// as above, with info text
-template<class T>
-cudaError_t cuPrintDeviceVariable(T* dev_variable, const char text[])
-{
-  LOGGING_INFO(Gpu_voxels_helpers, text << endl);
-  return cuPrintDeviceVariable(dev_variable);
-}
+     // print single device variable
+    template<class T>
+    cudaError_t cuPrintDeviceVariable(T* dev_variable)
+    {
+        T host_variable;
+        cudaError_t error = cudaMemcpy(&host_variable, dev_variable, sizeof(T), cudaMemcpyDeviceToHost);
+        LOGGING_INFO(Gpu_voxels_helpers, host_variable << endl);
+        return error;
+    }
 
-// print single device pointer
-template<class T>
-cudaError_t cuPrintDevicePointer(T* dev_pointer)
-{
-  T* host_pointer;
-  cudaError_t error = cudaMemcpy(&host_pointer, dev_pointer, sizeof(T*), cudaMemcpyDeviceToHost);
-  LOGGING_INFO(Gpu_voxels_helpers, host_pointer << endl);
-  return error;
-}
+    // as above, with info text
+    template<class T>
+    cudaError_t cuPrintDeviceVariable(T* dev_variable, const char text[])
+    {
+        LOGGING_INFO(Gpu_voxels_helpers, text << endl);
+        return cuPrintDeviceVariable(dev_variable);
+    }
 
-// as above, with info text
-template<class T>
-cudaError_t cuPrintDevicePointer(T* dev_pointer, const char text[])
-{
-  LOGGING_INFO(Gpu_voxels_helpers, text << endl);
-  return cuPrintDevicePointer(dev_pointer);
-}
+    // print single device pointer
+    template<class T>
+    cudaError_t cuPrintDevicePointer(T* dev_pointer)
+    {
+        T* host_pointer;
+        cudaError_t error = cudaMemcpy(&host_pointer, dev_pointer, sizeof(T*), cudaMemcpyDeviceToHost);
+        LOGGING_INFO(Gpu_voxels_helpers, host_pointer << endl);
+        return error;
+    }
 
-// print device array, array_size held on host
-template<class T>
-cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int array_size)
-{
-  // create host array
-  T* host_array = new T[array_size];
-  // fill host array with contents of device array
-  cudaError_t error = cudaMemcpy(host_array, dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
+    // as above, with info text
+    template<class T>
+    cudaError_t cuPrintDevicePointer(T* dev_pointer, const char text[])
+    {
+        LOGGING_INFO(Gpu_voxels_helpers, text << endl);
+        return cuPrintDevicePointer(dev_pointer);
+    }
 
-  for (unsigned int i = 0; i < array_size; i++)
-  {
-    std::stringstream s;
-    s << i << ": " << host_array[i];
-    LOGGING_INFO(Gpu_voxels_helpers, s.str() << endl);
-  }
-  LOGGING_INFO(Gpu_voxels_helpers, endl);
-  delete[] host_array;
-  return error;
-}
+    // print device array, array_size held on host
+    template<class T>
+    cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int array_size)
+    {
+        // create host array
+        auto host_array = std::vector<T>(array_size);
+        // fill host array with contents of device array
+        const cudaError_t error = cudaMemcpy(host_array.data(), dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
 
-template<class T>
-void cuAllocAndCopyArray(T* array, uint32_t size, T** dev_pointer)
-{
-  HANDLE_CUDA_ERROR(cudaMalloc((void** )dev_pointer, sizeof(T) * size));
-  cudaDeviceSynchronize();
-  HANDLE_CUDA_ERROR(cudaMemcpy(*dev_pointer, &array[0], sizeof(T) * size, cudaMemcpyHostToDevice));
-}
+        for (unsigned int i = 0; i < array_size; i++)
+        {
+            std::stringstream s;
+            s << i << ": " << host_array[i];
+            LOGGING_INFO(Gpu_voxels_helpers, s.str() << endl);
+        }
+        LOGGING_INFO(Gpu_voxels_helpers, endl);
+        return error;
+    }
 
-// as above, with info text
-template<class T>
-cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int array_size, const char text[])
-{
-  LOGGING_INFO(Gpu_voxels_helpers, text << endl);
-  return cuPrintDeviceArray(dev_array, array_size);
-}
+    template<class T>
+    void cuAllocAndCopyArray(T* array, uint32_t size, T** dev_pointer)
+    {
+        HANDLE_CUDA_ERROR(cudaMalloc((void**)dev_pointer, sizeof(T) * size));
+        cudaDeviceSynchronize();
+        HANDLE_CUDA_ERROR(cudaMemcpy(*dev_pointer, &array[0], sizeof(T) * size, cudaMemcpyHostToDevice));
+    }
 
-// print device array, array size also held on device
-template<class T>
-cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int* device_array_size)
-{
-  // copy array size
-  unsigned int array_size;
-  cudaError_t error1 = cudaMemcpy(&array_size, device_array_size, sizeof(unsigned int),
-                                  cudaMemcpyDeviceToHost);
+    // as above, with info text
+    template<class T>
+    cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int array_size, const char text[])
+    {
+        LOGGING_INFO(Gpu_voxels_helpers, text << endl);
+        return cuPrintDeviceArray(dev_array, array_size);
+    }
 
-  // create host array
-  T* host_array = new T[array_size];
-  // fill host array with contents of device array
-  cudaError_t error2 = cudaMemcpy(host_array, dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
+    // print device array, array size also held on device
+    template<class T>
+    cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int* device_array_size)
+    {
+        // copy array size
+        unsigned int array_size;
+        const cudaError_t error1 = cudaMemcpy(&array_size, device_array_size, sizeof(unsigned int),
+            cudaMemcpyDeviceToHost);
 
-  for (unsigned int i = 0; i < array_size; i++)
-  {
-    std::stringstream s;
-    s << i << ": " << host_array[i];
-    LOGGING_INFO(Gpu_voxels_helpers, s.str() << endl);
-  }
-  LOGGING_INFO(Gpu_voxels_helpers, endl);
-  delete[] host_array;
-  if (error1 == cudaSuccess)
-  {
-    return error2;
-  }
-  else
-  {
-    return error1;
-  }
-}
+        // create host array
+        auto host_array = std::vector<T>(array_size);
+        // fill host array with contents of device array
+        const cudaError_t error2 = cudaMemcpy(host_array.data(), dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
 
-// as above, with info text
-template<class T>
-cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int* device_array_size, const char text[])
-{
-  LOGGING_INFO(Gpu_voxels_helpers, text << endl);
-  return cuPrintDeviceArray(dev_array, device_array_size);
-}
+        for (unsigned int i = 0; i < array_size; i++)
+        {
+            std::stringstream s;
+            s << i << ": " << host_array[i];
+            LOGGING_INFO(Gpu_voxels_helpers, s.str() << endl);
+        }
+        LOGGING_INFO(Gpu_voxels_helpers, endl);
+        if (error1 == cudaSuccess)
+        {
+            return error2;
+        }
+        else
+        {
+            return error1;
+        }
+    }
+
+    // as above, with info text
+    template<class T>
+    cudaError_t cuPrintDeviceArray(T* dev_array, unsigned int* device_array_size, const char text[])
+    {
+        LOGGING_INFO(Gpu_voxels_helpers, text << endl);
+        return cuPrintDeviceArray(dev_array, device_array_size);
+    }
 
 } // end of namespace
 #endif

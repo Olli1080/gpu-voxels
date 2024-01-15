@@ -20,7 +20,7 @@
  *
  *\brief   Saves all necessary stuff to draw a primitive array.
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VISUALIZATION_PRIMITIVE_ARRAY_CONTEXT_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_PRIMITIVE_ARRAY_CONTEXT_H_INCLUDED
 
@@ -38,46 +38,43 @@
 
 
 namespace gpu_voxels {
-namespace visualization {
+	namespace visualization {
 
-typedef std::pair<glm::vec4, glm::vec4> colorPair;
+		typedef std::pair<glm::vec4, glm::vec4> colorPair;
 
-class PrimitiveArrayContext: public DataContext
-{
-public:
-  PrimitiveArrayContext() :
-  m_prim_type(primitive_array::ePRIM_INITIAL_VALUE)
-  {
-  }
+		class PrimitiveArrayContext : public DataContext
+		{
+		public:
 
-  /**
-   * Create a default context for the given voxel map.
-   */
-  PrimitiveArrayContext(std::string prim_array_name) :
-  m_prim_type(primitive_array::ePRIM_INITIAL_VALUE)
-  {
-    m_map_name = prim_array_name;
+			PrimitiveArrayContext() :
+				m_prim_type(primitive_array::ePRIM_INITIAL_VALUE)
+			{}
 
-    m_default_prim = new Cuboid(glm::vec4(0.f, 0.f, 0.f, 1.f),
-                                glm::vec3(0.f, 0.f, 0.f),
-                                glm::vec3(1.f, 1.f, 1.f));
-  }
+			/**
+			 * Create a default context for the given voxel map.
+			 */
+			PrimitiveArrayContext(const std::string& prim_array_name) :
+				m_prim_type(primitive_array::ePRIM_INITIAL_VALUE)
+			{
+				m_map_name = prim_array_name;
 
-  virtual void updateVBOOffsets()
-  {
-    LOGGING_ERROR_C(Context, PrimitiveArrayContext, "updateVBOOffsets Function NOT IMPLEMENTED!" << endl);
-  }
+				m_default_prim = std::make_unique<Cuboid>(glm::vec4(0.f, 0.f, 0.f, 1.f),
+					glm::vec3(0.f, 0.f, 0.f),
+					glm::vec3(1.f, 1.f, 1.f));
+			}
 
-  virtual void updateCudaLaunchVariables(Vector3ui supervoxel_size = Vector3ui(1))
-  {
-    LOGGING_ERROR_C(Context, PrimitiveArrayContext, "updateCudaLaunchVariables Function NOT IMPLEMENTED!" << endl);
-  }
+			void updateVBOOffsets() override
+			{
+				LOGGING_ERROR_C(Context, PrimitiveArrayContext, "updateVBOOffsets Function NOT IMPLEMENTED!" << endl);
+			}
 
-  primitive_array::PrimitiveType m_prim_type;
+			void updateCudaLaunchVariables(Vector3ui supervoxel_size = Vector3ui::Ones()) override
+			{
+				LOGGING_ERROR_C(Context, PrimitiveArrayContext, "updateCudaLaunchVariables Function NOT IMPLEMENTED!" << endl);
+			}
 
-};
-
+			primitive_array::PrimitiveType m_prim_type;
+		};
+	}  // end of ns
 }  // end of ns
-}  // end of ns
-
 #endif

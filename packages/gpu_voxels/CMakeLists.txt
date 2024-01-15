@@ -1,6 +1,9 @@
+cmake_minimum_required(VERSION 3.15)
+
+project(gpu_voxels CXX)
 # this is for emacs file handling -*- mode: cmake; indent-tabs-mode: nil -*-
 
-SET(CMAKE_CXX_STANDARD 11) # comment out to deactivate C++11 when using ROS indigo to avoid incompatibilities
+SET(CMAKE_CXX_STANDARD 17) # comment out to deactivate C++11 when using ROS indigo to avoid incompatibilities
 
 # --- To be used by other modules ---
 SET(GPU_VOXELS_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_BINARY_DIR}/src" CACHE INTERNAL "")
@@ -136,7 +139,7 @@ MESSAGE(STATUS "----------------------------------------------------------------
 # Change these lines to increase performance if your GPU's compute capability is higher
 # GPU-Voxels requires GPU CUDA capabilities >= 2.0
 #SET(ICMAKER_CUDA_COMPUTE_VERSION 20)
-SET(ICMAKER_CUDA_COMPUTE_VERSION 35)
+SET(ICMAKER_CUDA_COMPUTE_VERSION 89)
 
 SET(ICMAKER_CUDA_ARCH compute_${ICMAKER_CUDA_COMPUTE_VERSION})
 SET(ICMAKER_CUDA_CODE compute_${ICMAKER_CUDA_COMPUTE_VERSION})

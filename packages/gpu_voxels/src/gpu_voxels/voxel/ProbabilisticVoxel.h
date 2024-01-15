@@ -19,117 +19,122 @@
  * \date    2014-07-08
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXEL_PROBABILISTIC_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_PROBABILISTIC_VOXEL_H_INCLUDED
 
 #include <gpu_voxels/voxel/AbstractVoxel.h>
 #include <gpu_voxels/helpers/common_defines.h>
 
+#include <thrust/detail/minmax.h>
+
 namespace gpu_voxels {
 
-/**
- * @brief Probabilistic voxel type with probability in log-odd representation
- */
-class ProbabilisticVoxel: public AbstractVoxel
-{
-public:
+	/**
+	 * @brief Probabilistic voxel type with probability in log-odd representation
+	 */
+	class ProbabilisticVoxel : public AbstractVoxel
+	{
+	public:
+
+		__host__ __device__
+		static Probability floatToProbability(const float val)
+		{
+			float tmp = (std::max)((std::min)(1.0f, val), 0.0f);
+			tmp = (tmp * (float(MAX_PROBABILITY) - float(MIN_PROBABILITY))) + MIN_PROBABILITY;
+			return static_cast<Probability>(tmp);
+		}
+
+		__host__ __device__
+
+		static float probabilityToFloat(const Probability val)
+		{
+			return (float(val) - float(MIN_PROBABILITY)) / (float(MAX_PROBABILITY) - float(MIN_PROBABILITY));
+		}
 
 
-__host__ __device__
-inline static Probability floatToProbability(const float val)
-{
-  float tmp = MAX( MIN(1.0f, val), 0.0f);
-  tmp = (tmp * (float(MAX_PROBABILITY) - float(MIN_PROBABILITY))) + MIN_PROBABILITY;
-  return Probability(tmp);
-}
+		/**
+		 * @brief ProbabilisticVoxel
+		 */
+		__host__ __device__
+		ProbabilisticVoxel();
 
-__host__ __device__
-inline static float probabilityToFloat(const Probability val)
-{
-  return (float(val) - float(MIN_PROBABILITY)) / (float(MAX_PROBABILITY) - float(MIN_PROBABILITY));
-}
+		__host__ __device__
+		ProbabilisticVoxel(Probability p);
 
+		__host__ __device__
+		~ProbabilisticVoxel();
 
-  /**
-   * @brief ProbabilisticVoxel
-   */
-  __host__ __device__
-  ProbabilisticVoxel();
+		/**
+		 * @brief updateOccupancy Updates the occupancy of this voxel based on the log-odd representation.
+		 * @param occupancy A new occupancy measurement.
+		 * @return Returns the updated occupancy.
+		 */
+		__host__   __device__
+		Probability updateOccupancy(Probability occupancy);
 
-  __host__ __device__
-  ~ProbabilisticVoxel();
+		/**
+		 * @brief occupancy Write reference.
+		 * @return
+		 */
+		__host__   __device__
+		Probability& occupancy();
 
-  /**
-   * @brief updateOccupancy Updates the occupancy of this voxel based on the log-odd representation.
-   * @param occupancy A new occupancy measurement.
-   * @return Returns the updated occupancy.
-   */
-  __host__   __device__
-  Probability updateOccupancy(const Probability occupancy);
+		/**
+		 * @brief occupancy Read-only reference.
+		 * @return
+		 */
+		__host__   __device__
+		[[nodiscard]] const Probability& occupancy() const;
 
-  /**
-   * @brief occupancy Write reference.
-   * @return
-   */
-  __host__   __device__
-  Probability& occupancy();
+		/**
+		 * @brief getOccupancy Read-only access per copy
+		 * @return
+		 */
+		__host__   __device__
+		[[nodiscard]] Probability getOccupancy() const;
 
-  /**
-   * @brief occupancy Read-only reference.
-   * @return
-   */
-  __host__   __device__
-   const Probability& occupancy() const;
+		__host__   __device__
+		void insert(BitVoxelMeaning voxel_meaning);
 
-  /**
-   * @brief getOccupancy Read-only access per copy
-   * @return
-   */
-  __host__   __device__
-  Probability getOccupancy() const;
+		__host__ __device__
+		static ProbabilisticVoxel reduce(ProbabilisticVoxel voxel, ProbabilisticVoxel other_voxel);
 
-  __host__   __device__
-  void insert(const BitVoxelMeaning voxel_meaning);
+		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
+		{
+			__host__ __device__
+				ProbabilisticVoxel operator()(const ProbabilisticVoxel& a, const ProbabilisticVoxel& b) const
+			{
+				ProbabilisticVoxel tmp = a;
+				tmp.updateOccupancy(b.getOccupancy());
+				return tmp;
+			}
+		};
 
-  __host__ __device__
-  static ProbabilisticVoxel reduce(const ProbabilisticVoxel voxel, const ProbabilisticVoxel other_voxel);
-
-  struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
-  {
-    __host__ __device__
-    ProbabilisticVoxel operator()(const ProbabilisticVoxel& a, const ProbabilisticVoxel& b) const
-    {
-      ProbabilisticVoxel tmp = a;
-      tmp.updateOccupancy(b.getOccupancy());
-      return tmp;
-    }
-  };
-
-  __host__ __device__
-  bool isOccupied(float col_threshold) const;
+		__host__ __device__
+			[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 
-  template<typename T>
-  __host__
-  friend T& operator<<(T& os, const ProbabilisticVoxel& dt)
-  {
-    os << int(dt.getOccupancy());
-    return os;
-  }
+		template<typename T>
+		__host__
+		friend T& operator<<(T& os, const ProbabilisticVoxel& dt)
+		{
+			os << static_cast<int>(dt.getOccupancy());
+			return os;
+		}
 
-  __host__
-  friend std::istream& operator>>(std::istream& in, ProbabilisticVoxel& dt)
-  {
-    Probability tmp;
-    in >> tmp;
-    dt.occupancy() = tmp;
-    return in;
-  }
+		__host__
+		friend std::istream& operator>>(std::istream& in, ProbabilisticVoxel& dt)
+		{
+			Probability tmp;
+			in >> tmp;
+			dt.occupancy() = tmp;
+			return in;
+		}
 
-protected:
-  Probability m_occupancy;
-};
+	protected:
+		Probability m_occupancy;
+	};
 
 } // end of ns
 

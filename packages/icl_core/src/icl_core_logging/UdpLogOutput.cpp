@@ -23,28 +23,28 @@ namespace logging {
 
 REGISTER_LOG_OUTPUT_STREAM(UDP, &UdpLogOutput::create)
 
-LogOutputStream *UdpLogOutput::create(const icl_core::String& name, const icl_core::String& config_prefix,
+LogOutputStream *UdpLogOutput::create(const std::string& name, const std::string& config_prefix,
                                       icl_core::logging::LogLevel log_level)
 {
   return new UdpLogOutput(name, config_prefix, log_level);
 }
 
-UdpLogOutput::UdpLogOutput(const icl_core::String& name, const icl_core::String& config_prefix,
+UdpLogOutput::UdpLogOutput(const std::string& name, const std::string& config_prefix,
                            icl_core::logging::LogLevel log_level)
   : LogOutputStream(name, config_prefix, log_level),
     m_socket(-1)
 {
   // Get the server configuration.
-  icl_core::String server_host;
-  if (!icl_core::config::get<icl_core::String>(config_prefix + "/Host", server_host))
+  std::string server_host;
+  if (!icl_core::config::get<std::string>(config_prefix + "/Host", server_host))
   {
     std::cerr << "No Host specified for UDP log output stream " << config_prefix << std::endl;
   }
 
-  icl_core::String server_port =
-    icl_core::config::getDefault<icl_core::String>(config_prefix + "/Port", "60000");
+  std::string server_port =
+    icl_core::config::getDefault<std::string>(config_prefix + "/Port", "60000");
 
-  if (!icl_core::config::get<icl_core::String>(config_prefix + "/SystemName", m_system_name))
+  if (!icl_core::config::get<std::string>(config_prefix + "/SystemName", m_system_name))
   {
     std::cerr << "No SystemName specified for UDP log output stream " << config_prefix << std::endl;
   }
@@ -107,7 +107,7 @@ void UdpLogOutput::pushImpl(const LogMessage& log_message)
   }
 }
 
-icl_core::String UdpLogOutput::escape(icl_core::String str) const
+std::string UdpLogOutput::escape(std::string str) const
 {
   // TODO: Which characters have to be escaped to ensure that a
   // correct SQL statement is created?

@@ -16,60 +16,59 @@
  * \date    2010-04-28
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_CORE_CONFIG_CONFIG_VALUE_DEFAULT_H_INCLUDED
 #define ICL_CORE_CONFIG_CONFIG_VALUE_DEFAULT_H_INCLUDED
 
-#include <icl_core/BaseTypes.h>
-#include <icl_core/TemplateHelper.h>
+#include <string>
 
-#include "icl_core_config/ConfigHelper.h"
 #include "icl_core_config/ConfigValue.h"
 #include "icl_core_config/Util.h"
 
 #define CONFIG_VALUE_DEFAULT(key, value, default_value)                 \
-  (new icl_core::config::ConfigValueDefault<ICL_CORE_CONFIG_TYPEOF(value)>(key, value, default_value))
+  (new icl_core::config::ConfigValueDefault<decltype(value)>(key, value, default_value))
 
 namespace icl_core {
-namespace config {
+	namespace config {
 
-/*! Typed "container" class for batch reading of configuration
- *  parameters with a default value.
- */
-template <typename T>
-class ConfigValueDefault : public ConfigValue<T>
-{
-public:
-  /*! Create a placeholder for later batch reading of configuration
-   *  parameters.
-   */
-  ConfigValueDefault(const icl_core::String& key,
-                     typename icl_core::ConvertToRef<T>::ToRef value,
-                     typename icl_core::ConvertToRef<T>::ToConstRef default_value)
-    : ConfigValue<T>(key, value),
-      m_default_value(default_value)
-  { }
+		/*! Typed "container" class for batch reading of configuration
+		 *  parameters with a default value.
+		 */
+		template <typename T>
+		class ConfigValueDefault : public ConfigValue<T>
+		{
+		public:
+			/*! Create a placeholder for later batch reading of configuration
+			 *  parameters.
+			 */
+			ConfigValueDefault(const std::string& key,
+				T& value,
+				const T& default_value)
+				: ConfigValue<T>(key, value),
+				m_default_value(default_value)
+			{ }
 
-  /*! We need a virtual destructor!
-   */
-  virtual ~ConfigValueDefault() {}
+			/*! We need a virtual destructor!
+			 */
+			~ConfigValueDefault() override {}
 
-  /*! Actually read the configuration parameter.
-   */
-  virtual bool get(std::string const & prefix, icl_core::logging::LogStream& log_stream) const
-  {
-    if (!ConfigValue<T>::get(prefix, log_stream))
-    {
-      this->m_value = m_default_value;
-      this->m_str_value = impl::hexical_cast<icl_core::String>(this->m_value);
-    }
-    return true;
-  }
+			/*! Actually read the configuration parameter.
+			 */
+			bool get(std::string const& prefix, icl_core::logging::LogStream& log_stream) const override
+			{
+				if (!ConfigValue<T>::get(prefix, log_stream))
+				{
+					this->m_value = m_default_value;
+					this->m_str_value = impl::hexical_cast<std::string>(this->m_value);
+				}
+				return true;
+			}
 
-private:
-  typename icl_core::ConvertToRef<T>::ToConstRef m_default_value;
-};
+		private:
+			const T& m_default_value;
+		};
 
-}}
+	}
+}
 
 #endif

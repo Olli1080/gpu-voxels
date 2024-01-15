@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
     icl_core::config::ConfigParameter("filename:", "f", "/Filename",
                                        "The filename of the log database."));
   icl_core::config::initialize(argc, argv);
-  icl_core::String db_filename;
-  if (!icl_core::config::get<icl_core::String>("/Filename", db_filename))
+  std::string db_filename;
+  if (!icl_core::config::get<std::string>("/Filename", db_filename))
   {
     std::cerr << "No database file specified!" << std::endl << std::endl;
     icl_core::config::Getopt::instance().printHelp();

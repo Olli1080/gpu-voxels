@@ -25,34 +25,51 @@
 #ifndef GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGEROCTREES_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGEROCTREES_H_INCLUDED
 
-#include <boost/lexical_cast.hpp>
+#include <memory>
+
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
+#include <gpu_visualization/SharedMemoryManager.h>
 
-namespace gpu_voxels {
-namespace visualization {
-
-// forward declaration so we don't have to include the header
-// which contains boost code
-class SharedMemoryManager;
-
-class SharedMemoryManagerOctrees
+namespace gpu_voxels
 {
-public:
-  SharedMemoryManagerOctrees();
-  ~SharedMemoryManagerOctrees();
-  uint32_t getNumberOfOctreesToDraw();
-  std::string getNameOfOctree(const uint32_t index);
-  bool getOctreeVisualizationData(Cube*& cubes, uint32_t& size,const uint32_t index);
-  void setView(Vector3ui start_voxel, Vector3ui end_voxel);
-  void setOctreeBufferSwappedToFalse(const uint32_t index);
-  bool hasOctreeBufferSwapped(const uint32_t index);
-  void setOctreeOccupancyThreshold(const uint32_t index, Probability threshold);
-  bool getSuperVoxelSize(uint32_t & sdim);
-  void setSuperVoxelSize(uint32_t sdim);
-private:
-  SharedMemoryManager* shmm;
+	struct Cube;
 }
-;
-} //end of namespace visualization
+
+typedef int8_t Probability;
+
+namespace gpu_voxels
+{
+	namespace visualization
+	{
+		
+		class SharedMemoryManager;
+		class SharedMemoryManagerOctrees
+		{
+		public:
+
+			SharedMemoryManagerOctrees();
+
+			[[nodiscard]] uint32_t getNumberOfOctreesToDraw() const;
+
+			[[nodiscard]] std::string getNameOfOctree(uint32_t index) const;
+
+			[[nodiscard]] bool getOctreeVisualizationData(Cube*& cubes, uint32_t& size, uint32_t index) const;
+
+			void setView(const Vector3ui& start_voxel, const Vector3ui& end_voxel);
+
+			void setOctreeBufferSwappedToFalse(uint32_t index);
+			[[nodiscard]] bool hasOctreeBufferSwapped(uint32_t index) const;
+
+			void setOctreeOccupancyThreshold(uint32_t index, Probability threshold);
+
+			[[nodiscard]] bool getSuperVoxelSize(uint32_t& sdim) const;
+			void setSuperVoxelSize(uint32_t sdim);
+
+		private:
+
+			std::unique_ptr<SharedMemoryManager> shmm;
+		}
+		;
+	} //end of namespace visualization
 } //end of namespace gpu_voxels
 #endif /* GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGEROCTREES_H_INCLUDED */

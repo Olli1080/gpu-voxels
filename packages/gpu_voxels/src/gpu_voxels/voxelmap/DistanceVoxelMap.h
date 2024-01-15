@@ -26,113 +26,119 @@
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
 #include <gpu_voxels/voxel/DistanceVoxel.h>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
-#include <boost/shared_ptr.hpp>
 
-using namespace gpu_voxels;
+#include <gpu_voxels/voxel/DistanceVoxel.hpp>
 
-typedef DistanceVoxel::extract_byte_distance::free_space_t free_space_t;
-typedef DistanceVoxel::init_floodfill_distance::manhattan_dist_t manhattan_dist_t;
+typedef gpu_voxels::DistanceVoxel::extract_byte_distance::free_space_t free_space_t;
+typedef gpu_voxels::DistanceVoxel::init_floodfill_distance::manhattan_dist_t manhattan_dist_t;
 
 namespace gpu_voxels {
-namespace voxelmap {
+    namespace voxelmap {
 
-class DistanceVoxelMap: public TemplateVoxelMap<DistanceVoxel>
-{
-public:
-  typedef DistanceVoxel Voxel;
-  typedef TemplateVoxelMap<Voxel> Base;
+        typedef unsigned int uint;
 
-  DistanceVoxelMap(const Vector3ui dim, const float voxel_side_length, const MapType map_type);
-  DistanceVoxelMap(Voxel* dev_data, const Vector3ui dim, const float voxel_side_length, const MapType map_type);
+        class DistanceVoxelMap : public TemplateVoxelMap<DistanceVoxel>
+        {
+        public:
 
-  virtual MapType getTemplateType() const { return MT_DISTANCE_VOXELMAP; }
+            typedef DistanceVoxel Voxel;
+            typedef TemplateVoxelMap<Voxel> Base;
 
-  virtual size_t collideWithTypes(const GpuVoxelsMapSharedPtr other, BitVectorVoxel&  meanings_in_collision, float coll_threshold = 1.0, const Vector3ui &offset = Vector3ui());
+            DistanceVoxelMap(Vector3ui dim, float voxel_side_length, MapType map_type);
+            DistanceVoxelMap(Voxel* dev_data, Vector3ui dim, float voxel_side_length, MapType map_type);
+            ~DistanceVoxelMap() override = default;
 
-//  virtual ~BitVoxelMap();
+            MapType getTemplateType() const override { return MT_DISTANCE_VOXELMAP; }
 
-  virtual bool insertMetaPointCloudWithSelfCollisionCheck(const MetaPointCloud *robot_links,
-                                                          const std::vector<BitVoxelMeaning>& voxel_meanings = std::vector<BitVoxelMeaning>(),
-                                                          const std::vector<BitVector<BIT_VECTOR_LENGTH> >& collision_masks = std::vector<BitVector<BIT_VECTOR_LENGTH> >(),
-                                                          BitVector<BIT_VECTOR_LENGTH>* colliding_meanings = NULL);
+            virtual size_t collideWithTypes(GpuVoxelsMapSharedPtr other, BitVectorVoxel& meanings_in_collision, float coll_threshold = 1.f, const Vector3ui& offset = Vector3ui::Zero());
 
-  virtual void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning);
+            
 
-//protected:
-//  virtual void clearVoxelMapRemoteLock(const uint32_t bit_index);
+            bool insertMetaPointCloudWithSelfCollisionCheck(const MetaPointCloud* robot_links,
+                const std::vector<BitVoxelMeaning>& voxel_meanings = {},
+                const std::vector<BitVector<BIT_VECTOR_LENGTH>>& collision_masks = {},
+                BitVector<BIT_VECTOR_LENGTH>* colliding_meanings = nullptr) override;
 
-public:
+            void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning) override;
 
-  virtual bool mergeOccupied(const boost::shared_ptr<ProbVoxelMap> other, const Vector3ui &voxel_offset = Vector3ui(), float occupancy_threshold = 0.5);
+            //protected:
+            //  virtual void clearVoxelMapRemoteLock(const uint32_t bit_index);
 
-  void jumpFlood3D(int block_size = cMAX_THREADS_PER_BLOCK, int debug = 0, bool logging_reinit = false);
-  void exactDistances3D(std::vector<Vector3f>& points);
-  void parallelBanding3D(uint32_t m1 = 1, uint32_t m2 = 1, uint32_t m3 = 1, uint32_t m1_blocksize = gpu_voxels::PBA_DEFAULT_M1_BLOCK_SIZE, uint32_t m2_blocksize = gpu_voxels::PBA_DEFAULT_M2_BLOCK_SIZE, uint32_t m3_blocksize = gpu_voxels::PBA_DEFAULT_M3_BLOCK_SIZE, bool detailtimer = false);
+        public:
 
-  void fill_pba_uninit(DistanceVoxelMap& other);
-  void fill_pba_uninit();
+            virtual bool mergeOccupied(std::shared_ptr<ProbVoxelMap> other, const Vector3ui& voxel_offset = Vector3ui::Zero(), float occupancy_threshold = 0.5f);
 
-  DistanceVoxel::pba_dist_t getSquaredObstacleDistance(const Vector3ui& pos);
-  DistanceVoxel::pba_dist_t getSquaredObstacleDistance(uint x, uint y, uint z);
-  DistanceVoxel::pba_dist_t getObstacleDistance(const Vector3ui& pos);
-  DistanceVoxel::pba_dist_t getObstacleDistance(uint x, uint y, uint z);
-  
-  void getSquaredDistancesToHost(std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
-  void getSquaredDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
-  
-  void getDistancesToHost(std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
-  void getDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
+            void jumpFlood3D(int block_size = cMAX_THREADS_PER_BLOCK, int debug = 0, bool logging_reinit = false);
+            void exactDistances3D(std::vector<Vector3f>& points);
+            void parallelBanding3D(uint32_t m1 = 1, uint32_t m2 = 1, uint32_t m3 = 1, 
+                uint32_t m1_blocksize = gpu_voxels::PBA_DEFAULT_M1_BLOCK_SIZE, 
+                uint32_t m2_blocksize = gpu_voxels::PBA_DEFAULT_M2_BLOCK_SIZE, 
+                uint32_t m3_blocksize = gpu_voxels::PBA_DEFAULT_M3_BLOCK_SIZE, 
+                bool detailtimer = false);
 
-  void extract_distances(free_space_t* dev_distances, int robot_radius) const;
-  void init_floodfill(free_space_t* dev_distances, manhattan_dist_t* dev_manhattan_distances, uint robot_radius);
+            void fill_pba_uninit(DistanceVoxelMap& other);
+            void fill_pba_uninit();
 
-  DistanceVoxel::accumulated_diff differences3D(const boost::shared_ptr<DistanceVoxelMap> other_map, int debug = 0, bool logging_reinit = true);
-};
+            DistanceVoxel::pba_dist_t getSquaredObstacleDistance(const Vector3ui& pos) const;
+            DistanceVoxel::pba_dist_t getSquaredObstacleDistance(uint x, uint y, uint z) const;
+            DistanceVoxel::pba_dist_t getObstacleDistance(const Vector3ui& pos) const;
+            DistanceVoxel::pba_dist_t getObstacleDistance(uint x, uint y, uint z) const;
 
-struct mergeOccupiedOperator
-{
-  typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
+            void getSquaredDistancesToHost(const std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
+            void getSquaredDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
 
-  Vector3ui map_dim;
-  Vector3ui offset;
+            void getDistancesToHost(std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
+            void getDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
 
-  mergeOccupiedOperator(const Vector3ui &ref_map_dim, const Vector3ui &coord_offset)
-  {
-    offset = coord_offset;
-    map_dim = ref_map_dim;
-  }
+            void extract_distances(free_space_t* dev_distances, int robot_radius) const;
+            void init_floodfill(free_space_t* dev_distances, manhattan_dist_t* dev_manhattan_distances, uint robot_radius);
 
-  __host__ __device__
-  DistanceVoxel operator()(const inputTuple &input) const
-  {
+            DistanceVoxel::accumulated_diff differences3D(std::shared_ptr<DistanceVoxelMap> other_map, int debug = 0, bool logging_reinit = true);
+        };
 
-    uint index = thrust::get<1>(input);
+        struct mergeOccupiedOperator
+        {
+            typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
 
-    // get int coords of voxel; use map_dim
-    Vector3ui coords = mapToVoxels(index, map_dim);
+            Vector3ui map_dim;
+            Vector3ui offset;
 
-    // add offset
-    return DistanceVoxel(coords + offset);
-  }
-};
+            mergeOccupiedOperator(const Vector3ui& ref_map_dim, const Vector3ui& coord_offset)
+            {
+                offset = coord_offset;
+                map_dim = ref_map_dim;
+            }
 
-struct probVoxelOccupied
-{
-  typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
-  Probability occ_threshold;
+            __host__ __device__
+            DistanceVoxel operator()(const inputTuple& input) const
+            {
+	            const uint index = thrust::get<1>(input);
 
-  probVoxelOccupied(Probability occ_threshold_)
-  {
-    occ_threshold = occ_threshold_;
-  }
+                // get int coords of voxel; use map_dim
+                const Vector3ui coords = mapToVoxels(index, map_dim);
 
-  __host__ __device__
-  bool operator()(const inputTuple &input) const
-  {
-    return thrust::get<0>(input).getOccupancy() > occ_threshold;
-  }
-};
+                // add offset
+                return { coords + offset };
+            }
+        };
 
-} // end of namespace voxelmap
+        struct probVoxelOccupied
+        {
+            typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
+            Probability occ_threshold;
+
+            probVoxelOccupied(Probability occ_threshold_)
+            {
+                occ_threshold = occ_threshold_;
+            }
+
+            __host__ __device__
+            bool operator()(const inputTuple& input) const
+            {
+                return thrust::get<0>(input).getOccupancy() > occ_threshold;
+            }
+        };
+
+    } // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif // DISTANCEVOXELMAP_H

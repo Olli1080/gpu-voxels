@@ -15,92 +15,92 @@
  * \author  Klaus Uhl <uhl@fzi.de>
  * \date    2010-04-28
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_CORE_CONFIG_CONFIG_ENUM_H_INCLUDED
 #define ICL_CORE_CONFIG_CONFIG_ENUM_H_INCLUDED
 
-#include <icl_core/BaseTypes.h>
-#include <icl_core/EnumHelper.h>
-#include <icl_core/TemplateHelper.h>
+#include <string>
 
-#include "icl_core_config/ConfigHelper.h"
+#include <icl_core/EnumHelper.h>
+
 #include "icl_core_config/ConfigManager.h"
 #include "icl_core_config/ConfigValueIface.h"
 
 #define CONFIG_ENUM(key, value, descriptions)                           \
-  (new icl_core::config::ConfigEnum<ICL_CORE_CONFIG_TYPEOF(value)>(key, value, descriptions))
+  (new icl_core::config::ConfigEnum<decltype(value)>(key, value, descriptions))
 
 namespace icl_core {
-namespace config {
+	namespace config {
 
-/*! Typed "container" class for batch reading of configuration parameters.
- */
-template <typename T>
-class ConfigEnum : public impl::ConfigValueIface
-{
-public:
-  /*! Create a placeholder for later batch reading of configuration
-   *  parameters.
-   */
-  ConfigEnum(const icl_core::String& key,
-             typename icl_core::ConvertToRef<T>::ToRef value,
-             const char * const *descriptions,
-             const char *end_marker = NULL)
-    : m_key(key),
-      m_value(value),
-      m_descriptions(descriptions),
-      m_end_marker(end_marker)
-  { }
+		/*! Typed "container" class for batch reading of configuration parameters.
+		 */
+		template <typename T>
+		class ConfigEnum : public impl::ConfigValueIface
+		{
+		public:
+			/*! Create a placeholder for later batch reading of configuration
+			 *  parameters.
+			 */
+			ConfigEnum(const std::string& key,
+				T& value,
+				const char* const* descriptions,
+				const char* end_marker = nullptr)
+				: m_key(key),
+				m_value(value),
+				m_descriptions(descriptions),
+				m_end_marker(end_marker)
+			{ }
 
-  /*! We need a virtual destructor!
-   */
-  virtual ~ConfigEnum() {}
+			/*! We need a virtual destructor!
+			 */
+			~ConfigEnum() override {}
 
-  /*! Actually read the configuration parameter.
-   */
-  virtual bool get(std::string const & prefix, icl_core::logging::LogStream& log_stream) const
-  {
-    if (ConfigManager::instance().get(prefix + m_key, m_str_value))
-    {
-      int32_t raw_value;
-      if (icl_core::string2Enum(m_str_value, raw_value, m_descriptions, m_end_marker))
-      {
-        m_value = T(raw_value);
-        return true;
-      }
-      else
-      {
-        return false;
-      }
-    }
-    else
-    {
-      return false;
-    }
-  }
+			/*! Actually read the configuration parameter.
+			 */
+			bool get(std::string const& prefix, icl_core::logging::LogStream& log_stream) const override
+			{
+				if (ConfigManager::instance().get(prefix + m_key, m_str_value))
+				{
+					int32_t raw_value;
+					if (icl_core::string2Enum(m_str_value, raw_value, m_descriptions, m_end_marker))
+					{
+						m_value = T(raw_value);
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
 
-  /*! Return the configuration key.
-   */
-  virtual icl_core::String key() const
-  {
-    return m_key;
-  }
+			/*! Return the configuration key.
+			 */
+			std::string key() const override
+			{
+				return m_key;
+			}
 
-  /*! Return the value as string.
-   */
-  virtual icl_core::String stringValue() const
-  {
-    return m_str_value;
-  }
+			/*! Return the value as string.
+			 */
+			std::string stringValue() const override
+			{
+				return m_str_value;
+			}
 
-protected:
-  icl_core::String m_key;
-  mutable icl_core::String m_str_value;
-  typename icl_core::ConvertToRef<T>::ToRef m_value;
-  const char * const *m_descriptions;
-  const char *m_end_marker;
-};
+		protected:
+			std::string m_key;
+			mutable std::string m_str_value;
+			T& m_value;
+			const char* const* m_descriptions;
+			const char* m_end_marker;
+		};
 
-}}
+	}
+}
 
 #endif

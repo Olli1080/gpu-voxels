@@ -10,38 +10,34 @@
  * \date    2014-07-10
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #include "VoxelMap.hpp"
 
 namespace gpu_voxels {
 
-template class BitVector<BIT_VECTOR_LENGTH>;
-template class BitVoxel<BIT_VECTOR_LENGTH>;
+	template class BitVector<BIT_VECTOR_LENGTH>;
+	template class BitVoxel<BIT_VECTOR_LENGTH>;
 
-namespace voxelmap {
+	namespace voxelmap {
 
-// ############################### BitVoxelMap ######################################
-// Explicit instantiation of template class to link against from other files where this template is used
-template class BitVoxelMap<BIT_VECTOR_LENGTH>;
+		// ############################### BitVoxelMap ######################################
+		// Explicit instantiation of template class to link against from other files where this template is used
+		template class BitVoxelMap<BIT_VECTOR_LENGTH>;
 
-// ##################################################################################
+		// ##################################################################################
 
-template uint32_t BitVoxelMap<BIT_VECTOR_LENGTH>::collisionCheckBitvector<SVCollider>(const BitVoxelMap<BIT_VECTOR_LENGTH>*, SVCollider, BitVector<BIT_VECTOR_LENGTH>&, const uint16_t);
-template uint32_t BitVoxelMap<BIT_VECTOR_LENGTH>::collisionCheckBitvector<SVCollider>(const ProbVoxelMap*, SVCollider, BitVector<BIT_VECTOR_LENGTH>&, const uint16_t);
+		template uint32_t BitVoxelMap<BIT_VECTOR_LENGTH>::collisionCheckBitvector<SVCollider>(const BitVoxelMap<BIT_VECTOR_LENGTH>*, SVCollider, BitVector<BIT_VECTOR_LENGTH>&, const uint16_t);
+		template uint32_t BitVoxelMap<BIT_VECTOR_LENGTH>::collisionCheckBitvector<SVCollider>(const ProbVoxelMap*, SVCollider, BitVector<BIT_VECTOR_LENGTH>&, const uint16_t);
 
-// ############################### TemplateVoxelMap ######################################
-// Explicitly instantiate template methods to enable GCC to link agains NVCC compiled objects
-template uint32_t TemplateVoxelMap<ProbabilisticVoxel>::collisionCheckWithCounter<ProbabilisticVoxel, DefaultCollider>(
-                                                                TemplateVoxelMap<ProbabilisticVoxel>*, DefaultCollider);
+		// ############################### TemplateVoxelMap ######################################
+		// Explicitly instantiate template methods to enable GCC to link against NVCC compiled objects
+		template uint32_t TemplateVoxelMap<ProbabilisticVoxel>::collisionCheckWithCounter<ProbabilisticVoxel, DefaultCollider>(TemplateVoxelMap<ProbabilisticVoxel>*, DefaultCollider);
 
-// ############################### ProbVoxelMap (inherits from TemplateVoxelMap) ######################################
-// Explicitly instantiate template methods to enable GCC to link agains NVCC compiled objects
-template void ProbVoxelMap::insertSensorData<BIT_VECTOR_LENGTH>(const PointCloud&, const Vector3f&, const bool, const bool,
-                                                                const BitVoxelMeaning, BitVoxel<BIT_VECTOR_LENGTH>*);
+		// ############################### ProbVoxelMap (inherits from TemplateVoxelMap) ######################################
+		// Explicitly instantiate template methods to enable GCC to link agains NVCC compiled objects
+		template void ProbVoxelMap::insertSensorData<BIT_VECTOR_LENGTH>(const PointCloud&, const Vector3f&, const bool, const bool, const BitVoxelMeaning, BitVoxel<BIT_VECTOR_LENGTH>*);
 
+		// ##################################################################################
 
-
-// ##################################################################################
-
-} // end of namespace
+	} // end of namespace
 } // end of namespace

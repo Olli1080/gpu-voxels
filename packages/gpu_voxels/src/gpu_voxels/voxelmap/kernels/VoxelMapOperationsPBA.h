@@ -50,62 +50,62 @@ DAMAGE.
  * \date    2010-2016
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_H_INCLUDED
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_H_INCLUDED
 
 namespace gpu_voxels {
-namespace voxelmap {
+	namespace voxelmap {
 
-/**
- * PBA phase 1: flood obstacles within band slice to right
- */
-template<typename InputIterator1, typename InputIterator2>
-__global__ void kernelPBAphase1FloodZ(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size);
+		/**
+		 * PBA phase 1: flood obstacles within band slice to right
+		 */
+		template<typename InputIterator1, typename InputIterator2>
+		__global__ void kernelPBAphase1FloodZ(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size);
 
-/**
- * PBA phase 1: collect possible begins and ends to this band from other bands
- */
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase1PropagateInterband(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
+		/**
+		 * PBA phase 1: collect possible begins and ends to this band from other bands
+		 */
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase1PropagateInterband(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
-/**
- * PBA phase 1: update band using new top and bottom pixels; top and bottom in input; transform output voxel
- */
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase1Update(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
+		/**
+		 * PBA phase 1: update band using new top and bottom pixels; top and bottom in input; transform output voxel
+		 */
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase1Update(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
-/**
- * PBA phase 2
- */
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase2ProximateBackpointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
+		/**
+		 * PBA phase 2
+		 */
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase2ProximateBackpointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase2CreateForwardPointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase2CreateForwardPointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase2MergeBands(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase2MergeBands(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
-/**
- * PBA phase 3
- */
-template<typename InputIterator1, typename InputIterator2>
-__global__
-void kernelPBAphase3Distances(InputIterator1 input, InputIterator2 output, const Vector3ui dims, bool calc_distance);
+		/**
+		 * PBA phase 3
+		 */
+		template<typename InputIterator1, typename InputIterator2>
+		__global__
+			void kernelPBAphase3Distances(InputIterator1 input, InputIterator2 output, const Vector3ui dims, bool calc_distance);
 
-/**
- * in-place transpose x/y coordinates within every z-layer
- */
-template<typename InputIterator>
-__global__
-void kernelPBA3DTransposeXY(InputIterator input);
+		/**
+		 * in-place transpose x/y coordinates within every z-layer
+		 */
+		template<typename InputIterator>
+		__global__
+			void kernelPBA3DTransposeXY(InputIterator input);
 
-} // end of namespace voxelmap
+	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

@@ -24,33 +24,38 @@
 #ifndef GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERPRIMITIVEARRAYS_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERPRIMITIVEARRAYS_H_INCLUDED
 
-#include <boost/lexical_cast.hpp>
-#include <cuda_runtime.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+//#include <cuda_runtime.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/primitive_array/PrimitiveArray.h>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_visualization/logging/logging_visualization.h>
+#include <gpu_visualization/SharedMemoryManager.h>
+
+#include <memory>
 
 namespace gpu_voxels {
-namespace visualization {
+	namespace visualization {
 
-class SharedMemoryManager;
+		class SharedMemoryManager;
 
-class SharedMemoryManagerPrimitiveArrays
-{
-public:
-  SharedMemoryManagerPrimitiveArrays();
-  ~SharedMemoryManagerPrimitiveArrays();
-  uint32_t getNumberOfPrimitiveArraysToDraw();
-  bool getPrimitivePositions(const uint32_t index, Vector4f **d_positions, uint32_t& size, primitive_array::PrimitiveType& type);
-  bool hasPrimitiveBufferChanged(const uint32_t index);
-  void setPrimitiveBufferChangedToFalse(const uint32_t index);
-  std::string getNameOfPrimitiveArray(const uint32_t index);
+		class SharedMemoryManagerPrimitiveArrays
+		{
+		public:
 
-private:
-  SharedMemoryManager* shmm;
-};
-} //end of namespace visualization
+			SharedMemoryManagerPrimitiveArrays();
+			~SharedMemoryManagerPrimitiveArrays();
+
+			uint32_t getNumberOfPrimitiveArraysToDraw() const;
+			bool getPrimitivePositions(const uint32_t index, Vector4f** d_positions, uint32_t& size, primitive_array::PrimitiveType& type) const;
+			bool hasPrimitiveBufferChanged(const uint32_t index) const;
+			void setPrimitiveBufferChangedToFalse(const uint32_t index);
+			std::string getNameOfPrimitiveArray(const uint32_t index) const;
+
+		private:
+
+			std::unique_ptr<SharedMemoryManager> shmm;
+		};
+	} //end of namespace visualization
 } //end of namespace gpu_voxels
 #endif /* GPU_VOXELS_VISUALIZATION_SHAREDMEMORYMANAGERPRIMITIVEARRAYS_H_INCLUDED */

@@ -24,10 +24,9 @@
 #define LOGGING_CUDA_H_
 
 #include <icl_core_logging/Logging.h>
-namespace gpu_voxels {
-
-DECLARE_LOG_STREAM(CudaLog)
-
-using icl_core::logging::endl;
+namespace gpu_voxels
+{
+	DECLARE_LOG_STREAM(CudaLog)
+	using icl_core::logging::endl;
 }
 #endif /* LOGGING_CUDA_H_ */

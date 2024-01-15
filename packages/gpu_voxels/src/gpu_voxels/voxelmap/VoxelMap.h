@@ -19,7 +19,7 @@
  * \date    2014-07-09
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXELMAP_VOXELMAP_H_INCLUDED
 #define GPU_VOXELS_VOXELMAP_VOXELMAP_H_INCLUDED
 
@@ -29,10 +29,10 @@
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
-namespace voxelmap {
+	namespace voxelmap {
 
 
-} // end of namespace
+	} // end of namespace
 } // end of namespace
 
 #endif

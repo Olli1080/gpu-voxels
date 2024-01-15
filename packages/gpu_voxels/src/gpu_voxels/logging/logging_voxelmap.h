@@ -24,10 +24,10 @@
 #define LOGGING_VOXELMAP_H_
 
 #include <icl_core_logging/Logging.h>
-namespace gpu_voxels {
+namespace gpu_voxels
+{
+	DECLARE_LOG_STREAM(VoxelmapLog)
 
-DECLARE_LOG_STREAM(VoxelmapLog)
-
-using icl_core::logging::endl;
+	using icl_core::logging::endl;
 }
 #endif /* LOGGING_VOXELMAP_H_ */

@@ -22,8 +22,7 @@
 //----------------------------------------------------------------------
 #include <gpu_voxels/logging/logging_cuda.h>
 
-namespace gpu_voxels {
-
-REGISTER_LOG_STREAM(CudaLog);
-
+namespace gpu_voxels
+{
+	REGISTER_LOG_STREAM(CudaLog);
 }

@@ -19,20 +19,20 @@
  * \date    2014-07-10
  *
  */
-//----------------------------------------------------------------------/*
+ //----------------------------------------------------------------------/*
 #ifndef GPU_VOXELS_VOXELMAP_VOXELMAP_HPP_INCLUDED
 #define GPU_VOXELS_VOXELMAP_VOXELMAP_HPP_INCLUDED
 
 #include "VoxelMap.h"
-#include <gpu_voxels/voxelmap/ProbVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/ProbVoxelMap.cuhpp>
 #include <gpu_voxels/voxelmap/BitVoxelMap.hpp>
-#include <gpu_voxels/voxelmap/DistanceVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/DistanceVoxelMap.h>
 
 namespace gpu_voxels {
-namespace voxelmap {
+	namespace voxelmap {
 
 
-} // end of namespace
+	} // end of namespace
 } // end of namespace
 
 #endif

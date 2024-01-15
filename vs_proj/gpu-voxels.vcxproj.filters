@@ -1,0 +1,422 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx;cu</Extensions>
+    </Filter>
+    <Filter Include="Quelldateien\helpers" />
+    <Filter Include="Quelldateien\helpers_highlevel" />
+    <Filter Include="Quelldateien\logging" />
+    <Filter Include="Quelldateien\octree" />
+    <Filter Include="Headerdateien">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd;cuh;cuhpp</Extensions>
+    </Filter>
+    <Filter Include="Headerdateien\helpers" />
+    <Filter Include="Headerdateien\helpers_highlevel" />
+    <Filter Include="Headerdateien\logging" />
+    <Filter Include="Headerdateien\octree" />
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxelsMap.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BinvoxFileReader.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\GeometryGeneration.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\Kinect.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MathHelpers.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PcdFileReader.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointcloudFileHandler.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\XyzFileReader.cpp">
+      <Filter>Quelldateien\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_cuda.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_gpu_voxels.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_gpu_voxels_helpers.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_octree.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_primitive_array.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_robot.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxellist.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxelmap.cpp">
+      <Filter>Quelldateien\logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\VisNTree.cpp">
+      <Filter>Quelldateien\octree</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisPrimitiveArray.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisProvider.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisTemplateVoxelList.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisVoxelList.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisVoxelMap.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_handling.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicLink.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicChain.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxelsMap.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BinvoxFileReader.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cuhpp">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\CollisionInterfaces.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\common_defines.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_datatypes.hpp">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_handling.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_handling.hpp">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_matrices.hpp">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\cuda_vectors.hpp">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\FileReaderInterface.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\GeometryGeneration.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\kernels\MetaPointCloudOperations.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\Kinect.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MathHelpers.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MetaPointCloud.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PcdFileReader.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointCloud.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointcloudFileHandler.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\XyzFileReader.h">
+      <Filter>Headerdateien\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers_highlevel\DistanceMapConverter.h">
+      <Filter>Headerdateien\helpers_highlevel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_cuda.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_gpu_voxels.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_gpu_voxels_helpers.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_octree.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_primitive_array.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_robot.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxellist.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxelmap.h">
+      <Filter>Headerdateien\logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\ManagedMap.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\ManagedPrimitiveArray.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\DataTypes.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\DefaultCollider.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\EnvironmentNodes.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\EnvNodesProbabilistic.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\EnvNodesProbCommon.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\GvlNTree.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\GvlNTree.hpp">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_common.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_Octree.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_PointCloud.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_traverse.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Morton.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Nodes.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.hpp">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTreeData.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Octree.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\PointCloud.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\RobotNodes.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Sensor.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\SensorModel.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\VisNTree.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\VisNTree.hpp">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Voxel.h">
+      <Filter>Headerdateien\octree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisPrimitiveArray.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisProvider.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisTemplateVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisTemplateVoxelList.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisualizerInterface.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\DistanceVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperations.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperations.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperationsPBA.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperationsPBA.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapTests.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapTests.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cuhpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\AbstractVoxel.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DistanceVoxel.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DistanceVoxel.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\ProbabilisticVoxel.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\ProbabilisticVoxel.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\SVCollider.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\SVCollider.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\constants.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicChain.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicLink.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\CommonValues.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\robot\robot_interface.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MetaPointCloud.cu">
+      <Filter>Quelldateien\helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointCloud.cu">
+      <Filter>Quelldateien\helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers_highlevel\DistanceMapConverter.cu">
+      <Filter>Quelldateien\helpers_highlevel</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\EnvironmentNodes.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_PointCloud.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\shared_voxel.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Extract.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Intersect.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\IntersectVMap.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\LoadBalance.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Propagate.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh">
+      <Filter>Headerdateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Octree.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\PointCloud.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\RobotNodes.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Sensor.cu">
+      <Filter>Quelldateien\octree</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperations.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapTests.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\SVCollider.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\kernels\MetaPointCloudOperations.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\DistanceVoxelMap.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

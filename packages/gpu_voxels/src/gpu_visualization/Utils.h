@@ -21,46 +21,43 @@
  * \brief This file contains some helper functions.
  *
  */
-//----------------------------------------------------------------------
+ //----------------------------------------------------------------------
 #ifndef GPU_VOXELS_VISUALIZATION_UTILS_H_INCLUDED
 #define GPU_VOXELS_VISUALIZATION_UTILS_H_INCLUDED
 
 
 #include <gpu_visualization/Camera.h>
-#include <gpu_voxels/helpers/cuda_datatypes.h>
+#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 
-#include <gpu_visualization/logging/logging_visualization.h>
-#include <sstream>
-
 namespace gpu_voxels {
-namespace visualization {
+	namespace visualization {
 
-void ExitOnGLError(std::string);
+		void ExitOnGLError(const std::string&);
 
-std::string typeToString(BitVoxelMeaning type);
-std::string typeToString(MapType type);
+		std::string typeToString(BitVoxelMeaning type);
+		std::string typeToString(MapType type);
 
-// data format converter functions
-__inline__ glm::vec3 convertFromVector3uiToVec3(gpu_voxels::Vector3ui v)
-{
-  glm::vec3 r;
-  r.x = (float) v.x;
-  r.y = (float) v.y;
-  r.z = (float) v.z;
-  return r;
-}
+		// data format converter functions
+		__inline__ glm::vec3 convertFromVector3uiToVec3(gpu_voxels::Vector3ui v)
+		{
+			glm::vec3 r;
+			r.x = static_cast<float>(v.x());
+			r.y = static_cast<float>(v.y());
+			r.z = static_cast<float>(v.z());
+			return r;
+		}
 
-__inline__ gpu_voxels::Vector3ui convertFromVec3ToVector3ui(glm::vec3 v)
-{
-  gpu_voxels::Vector3ui r;
-  r.x = (uint32_t) v.x;
-  r.y = (uint32_t) v.y;
-  r.z = (uint32_t) v.z;
-  return r;
-}
+		__inline__ gpu_voxels::Vector3ui convertFromVec3ToVector3ui(const glm::vec3& v)
+		{
+			gpu_voxels::Vector3ui r;
+			r.x() = static_cast<uint32_t>(v.x);
+			r.y() = static_cast<uint32_t>(v.y);
+			r.z() = static_cast<uint32_t>(v.z);
+			return r;
+		}
 
-} // end of namespace visualization
+	} // end of namespace visualization
 } // end of namespace gpu_voxels
 
 #endif

@@ -24,19 +24,20 @@
 #define LOGGING_OCTREE_H_
 
 #include <icl_core_logging/Logging.h>
-namespace gpu_voxels {
+namespace gpu_voxels
+{
+	DECLARE_LOG_STREAM(OctreeLog)
+	DECLARE_LOG_STREAM(OctreeDebugLog)
+	DECLARE_LOG_STREAM(OctreeDebugEXLog)
+	DECLARE_LOG_STREAM(OctreeFreespaceLog)
+	DECLARE_LOG_STREAM(OctreeInsertLog)
+	DECLARE_LOG_STREAM(OctreePropagateLog)
+	DECLARE_LOG_STREAM(OctreeCountBeforeExtractLog)
+	DECLARE_LOG_STREAM(OctreeExtractCubeLog)
+	DECLARE_LOG_STREAM(OctreeRebuildLog)
+	DECLARE_LOG_STREAM(OctreeFreeBoundingBoxLog)
+	DECLARE_LOG_STREAM(OctreeDepthCallbackLog)
 
-DECLARE_LOG_STREAM(OctreeLog)
-DECLARE_LOG_STREAM(OctreeDebugLog)
-DECLARE_LOG_STREAM(OctreeDebugEXLog)
-DECLARE_LOG_STREAM(OctreeFreespaceLog)
-DECLARE_LOG_STREAM(OctreeInsertLog)
-DECLARE_LOG_STREAM(OctreePropagateLog)
-DECLARE_LOG_STREAM(OctreeCountBeforeExtractLog)
-DECLARE_LOG_STREAM(OctreeExtractCubeLog)
-DECLARE_LOG_STREAM(OctreeRebuildLog)
-DECLARE_LOG_STREAM(OctreeFreeBoundingBoxLog)
-DECLARE_LOG_STREAM(OctreeDepthCallbackLog)
-using icl_core::logging::endl;
+	using icl_core::logging::endl;
 }
 #endif /* LOGGING_OCTREE_H_ */

@@ -24,10 +24,10 @@
 #define LOGGING_ROBOT_H_
 
 #include <icl_core_logging/Logging.h>
-namespace gpu_voxels {
+namespace gpu_voxels
+{
+	DECLARE_LOG_STREAM(RobotLog)
 
-DECLARE_LOG_STREAM(RobotLog)
-
-using icl_core::logging::endl;
+	using icl_core::logging::endl;
 }
 #endif /* LOGGING_ROBOT_H_ */
