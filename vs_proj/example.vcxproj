@@ -5,9 +5,11 @@
      $(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerEnvironment>GPU_VOXELS_MODEL_PATH=$(ProjectDir)..\packages\gpu_voxels\models$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerEnvironment>GPU_VOXELS_MODEL_PATH=$(ProjectDir)..\packages\gpu_voxels\models$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
