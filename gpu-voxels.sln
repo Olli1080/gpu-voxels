@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example", "vs_proj\example.vcxproj", "{14A468E7-5486-433D-B9D2-E574217FF094}"
 	ProjectSection(ProjectDependencies) = postProject
 		{43E7E0DC-7D19-446A-BD8F-3C3BA6589D30} = {43E7E0DC-7D19-446A-BD8F-3C3BA6589D30}
+		{6730F45F-6052-40BC-9BC7-7176CEBC90AB} = {6730F45F-6052-40BC-9BC7-7176CEBC90AB}
 		{F8193563-F994-489E-85B1-5129666E868C} = {F8193563-F994-489E-85B1-5129666E868C}
 	EndProjectSection
 EndProject
@@ -21,6 +22,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gpu-voxels", "vs_proj\gpu-v
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "icl_core", "vs_proj\icl_core.vcxproj", "{43E7E0DC-7D19-446A-BD8F-3C3BA6589D30}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grpc_server", "vs_proj\grpc_server.vcxproj", "{6730F45F-6052-40BC-9BC7-7176CEBC90AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +47,10 @@ Global
 		{43E7E0DC-7D19-446A-BD8F-3C3BA6589D30}.Debug|x64.Build.0 = Debug|x64
 		{43E7E0DC-7D19-446A-BD8F-3C3BA6589D30}.Release|x64.ActiveCfg = Release|x64
 		{43E7E0DC-7D19-446A-BD8F-3C3BA6589D30}.Release|x64.Build.0 = Release|x64
+		{6730F45F-6052-40BC-9BC7-7176CEBC90AB}.Debug|x64.ActiveCfg = Debug|x64
+		{6730F45F-6052-40BC-9BC7-7176CEBC90AB}.Debug|x64.Build.0 = Debug|x64
+		{6730F45F-6052-40BC-9BC7-7176CEBC90AB}.Release|x64.ActiveCfg = Release|x64
+		{6730F45F-6052-40BC-9BC7-7176CEBC90AB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

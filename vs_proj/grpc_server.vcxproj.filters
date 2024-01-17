@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\debug.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\debug.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\robot.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\robot.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\debug.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\debug.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\robot.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\robot.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\services.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\services.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\util.h" />
+  </ItemGroup>
+</Project>

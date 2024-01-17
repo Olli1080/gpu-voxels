@@ -39,6 +39,7 @@
 #include <mutex>
 #include <ranges>
 #include <set>
+#include <grpcpp/server.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/impl/point_types.hpp>
@@ -46,6 +47,9 @@
 #include <pcl/io/ply_io.h>
 
 #include "gpu_voxels/helpers/MathHelpers.h"
+
+#include <grpc_voxels/grpc_server.h>
+#include <grpc_voxels/util.h>
 
 using namespace gpu_voxels;
 
@@ -356,7 +360,9 @@ int main(int argc, char* argv[])
     }*/
     gvl->visualizeMap(robot_id);
 
-    gvl->setRobotBaseTransformation("myRobot", Eigen::Affine3f(Eigen::Translation3f(radius, radius, down)).matrix());
+    const Eigen::Matrix4f origin = Eigen::Affine3f(Eigen::Translation3f(radius, radius, down)).matrix();
+
+    gvl->setRobotBaseTransformation("myRobot", origin);
 
     /*constexpr float ratio_delta = 0.01f;
     for (int i = 0; i < 1; ++i)
@@ -414,6 +420,14 @@ int main(int argc, char* argv[])
         //gvl->insertRobotIntoMap("myRobot", robot_id, eBVM_OCCUPIED);
     }*/
 
+    VoxelServer server;
+    auto server_thread = std::thread([&]()
+        {
+            server.run_server();
+        });
+    boost::signals2::signal<void(const VoxelRobot&)> sig;
+    sig.connect(server.voxel_service.voxel_slot);
+
     while (running)
     {
         auto t0 = std::chrono::steady_clock::now();
@@ -466,6 +480,10 @@ int main(int argc, char* argv[])
 
         const auto& dev_data = robotMap->getDeviceData();
         auto final_result = voxelmap::extract_visual_voxels(dev_data, dim);
+        sig(VoxelRobot{ sl, origin, final_result });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        
 
         /*
         for (uint32_t z = 0; z < dim.z(); ++z)
@@ -520,6 +538,7 @@ int main(int argc, char* argv[])
         // We assume that the robot will be updated in the next loop, so we clear the map.
         //gvl->clearMap(robot_id);
     }
+    server.server->Shutdown();
     gvl.reset();
     return 0;
 }

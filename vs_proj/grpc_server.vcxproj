@@ -5,11 +5,9 @@
      $(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerEnvironment>GPU_VOXELS_MODEL_PATH=$(ProjectDir)..\packages\gpu_voxels\models$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerEnvironment>GPU_VOXELS_MODEL_PATH=$(ProjectDir)..\packages\gpu_voxels\models$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
@@ -23,33 +21,66 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\packages\gpu_voxels\src\examples\RobotVsEnvironment.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\debug.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\debug.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\robot.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\robot.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\debug.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\debug.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\depth_image.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\robot.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\robot.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\services.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\services.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\util.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{14A468E7-5486-433D-B9D2-E574217FF094}</ProjectGuid>
+    <ProjectGuid>{6730F45F-6052-40BC-9BC7-7176CEBC90AB}</ProjectGuid>
     <RootNamespace>gpuvoxelsvs22</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(CUDAPropsPath)\CUDA 12.3.props" />
-  </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -66,9 +97,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
@@ -76,14 +107,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\icl_core.lib;$(SolutionDir)$(Platform)\$(Configuration)\gpu-voxels.lib;$(SolutionDir)$(Platform)\$(Configuration)\grpc_server.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <CudaCompile>
-      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
-      <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
-      <MaxRegCount>63</MaxRegCount>
-      <GPUDebugInfo>false</GPUDebugInfo>
-    </CudaCompile>
+    <Lib>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -91,9 +119,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -101,16 +129,11 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\icl_core.lib;$(SolutionDir)$(Platform)\$(Configuration)\gpu-voxels.lib;$(SolutionDir)$(Platform)\$(Configuration)\grpc_server.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <CudaCompile>
-      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
-      <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
-      <MaxRegCount>63</MaxRegCount>
-    </CudaCompile>
+    <Lib>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(CUDAPropsPath)\CUDA 12.3.targets" />
-  </ImportGroup>
 </Project>
