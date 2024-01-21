@@ -400,4 +400,32 @@ namespace server
 
 		return out;
 	}
+
+	template<>
+	inline generated::joints convert(const Eigen::Vector<float, 7>& v)
+	{
+		generated::joints out;
+		out.set_theta_1(v[0]);
+		out.set_theta_2(v[1]);
+		out.set_theta_3(v[2]);
+		out.set_theta_4(v[3]);
+		out.set_theta_5(v[4]);
+		out.set_theta_6(v[5]);
+		out.set_theta_7(v[6]);
+
+		return out;
+	}
+
+	template<>
+	inline generated::tcps convert(const std::vector<Eigen::Vector3f>& v)
+	{
+		generated::tcps out;
+		auto out_data = *out.mutable_points();
+		out_data.Reserve(v.size());
+		for (const auto& val : v)
+			out_data.Add(convert<generated::vertex_3d>(val));
+
+		return out;
+	}
+
 }

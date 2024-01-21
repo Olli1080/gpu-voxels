@@ -53,11 +53,21 @@ class robot_com final {
     std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::voxels>> PrepareAsynctransmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::voxels>>(PrepareAsynctransmit_voxelsRaw(context, request, cq));
     }
+    std::unique_ptr< ::grpc::ClientReaderInterface< ::generated::tcps>> transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+      return std::unique_ptr< ::grpc::ClientReaderInterface< ::generated::tcps>>(transmit_tcpsRaw(context, request));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::tcps>> Asynctransmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::tcps>>(Asynctransmit_tcpsRaw(context, request, cq, tag));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::tcps>> PrepareAsynctransmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::generated::tcps>>(PrepareAsynctransmit_tcpsRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
       virtual void transmit_joints(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::joints>* reactor) = 0;
       virtual void transmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::voxels>* reactor) = 0;
+      virtual void transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::tcps>* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -69,6 +79,9 @@ class robot_com final {
     virtual ::grpc::ClientReaderInterface< ::generated::voxels>* transmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::generated::voxels>* Asynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::generated::voxels>* PrepareAsynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderInterface< ::generated::tcps>* transmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::generated::tcps>* Asynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderInterface< ::generated::tcps>* PrepareAsynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -91,11 +104,21 @@ class robot_com final {
     std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::voxels>> PrepareAsynctransmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::voxels>>(PrepareAsynctransmit_voxelsRaw(context, request, cq));
     }
+    std::unique_ptr< ::grpc::ClientReader< ::generated::tcps>> transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+      return std::unique_ptr< ::grpc::ClientReader< ::generated::tcps>>(transmit_tcpsRaw(context, request));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::tcps>> Asynctransmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::tcps>>(Asynctransmit_tcpsRaw(context, request, cq, tag));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::tcps>> PrepareAsynctransmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReader< ::generated::tcps>>(PrepareAsynctransmit_tcpsRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
       void transmit_joints(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::joints>* reactor) override;
       void transmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::voxels>* reactor) override;
+      void transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::tcps>* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -113,8 +136,12 @@ class robot_com final {
     ::grpc::ClientReader< ::generated::voxels>* transmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) override;
     ::grpc::ClientAsyncReader< ::generated::voxels>* Asynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) override;
     ::grpc::ClientAsyncReader< ::generated::voxels>* PrepareAsynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReader< ::generated::tcps>* transmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) override;
+    ::grpc::ClientAsyncReader< ::generated::tcps>* Asynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReader< ::generated::tcps>* PrepareAsynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_transmit_joints_;
     const ::grpc::internal::RpcMethod rpcmethod_transmit_voxels_;
+    const ::grpc::internal::RpcMethod rpcmethod_transmit_tcps_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -124,6 +151,7 @@ class robot_com final {
     virtual ~Service();
     virtual ::grpc::Status transmit_joints(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::joints>* writer);
     virtual ::grpc::Status transmit_voxels(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::voxels>* writer);
+    virtual ::grpc::Status transmit_tcps(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::tcps>* writer);
   };
   template <class BaseClass>
   class WithAsyncMethod_transmit_joints : public BaseClass {
@@ -165,7 +193,27 @@ class robot_com final {
       ::grpc::Service::RequestAsyncServerStreaming(1, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_transmit_joints<WithAsyncMethod_transmit_voxels<Service > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodAsync(2);
+    }
+    ~WithAsyncMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void Requesttransmit_tcps(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncWriter< ::generated::tcps>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncServerStreaming(2, context, request, writer, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_transmit_joints<WithAsyncMethod_transmit_voxels<WithAsyncMethod_transmit_tcps<Service > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_transmit_joints : public BaseClass {
    private:
@@ -210,7 +258,29 @@ class robot_com final {
     virtual ::grpc::ServerWriteReactor< ::generated::voxels>* transmit_voxels(
       ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_transmit_joints<WithCallbackMethod_transmit_voxels<Service > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackServerStreamingHandler< ::google::protobuf::Empty, ::generated::tcps>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request) { return this->transmit_tcps(context, request); }));
+    }
+    ~WithCallbackMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerWriteReactor< ::generated::tcps>* transmit_tcps(
+      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_transmit_joints<WithCallbackMethod_transmit_voxels<WithCallbackMethod_transmit_tcps<Service > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_transmit_joints : public BaseClass {
@@ -242,6 +312,23 @@ class robot_com final {
     }
     // disable synchronous version of this method
     ::grpc::Status transmit_voxels(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::voxels>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodGeneric(2);
+    }
+    ~WithGenericMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -287,6 +374,26 @@ class robot_com final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodRaw(2);
+    }
+    ~WithRawMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void Requesttransmit_tcps(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncServerStreaming(2, context, request, writer, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_transmit_joints : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
@@ -328,6 +435,28 @@ class robot_com final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerWriteReactor< ::grpc::ByteBuffer>* transmit_voxels(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->transmit_tcps(context, request); }));
+    }
+    ~WithRawCallbackMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerWriteReactor< ::grpc::ByteBuffer>* transmit_tcps(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/)  { return nullptr; }
   };
   typedef Service StreamedUnaryService;
@@ -385,8 +514,35 @@ class robot_com final {
     // replace default version of method with split streamed
     virtual ::grpc::Status Streamedtransmit_voxels(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::google::protobuf::Empty,::generated::voxels>* server_split_streamer) = 0;
   };
-  typedef WithSplitStreamingMethod_transmit_joints<WithSplitStreamingMethod_transmit_voxels<Service > > SplitStreamedService;
-  typedef WithSplitStreamingMethod_transmit_joints<WithSplitStreamingMethod_transmit_voxels<Service > > StreamedService;
+  template <class BaseClass>
+  class WithSplitStreamingMethod_transmit_tcps : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithSplitStreamingMethod_transmit_tcps() {
+      ::grpc::Service::MarkMethodStreamed(2,
+        new ::grpc::internal::SplitServerStreamingHandler<
+          ::google::protobuf::Empty, ::generated::tcps>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerSplitStreamer<
+                     ::google::protobuf::Empty, ::generated::tcps>* streamer) {
+                       return this->Streamedtransmit_tcps(context,
+                         streamer);
+                  }));
+    }
+    ~WithSplitStreamingMethod_transmit_tcps() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status transmit_tcps(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::grpc::ServerWriter< ::generated::tcps>* /*writer*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with split streamed
+    virtual ::grpc::Status Streamedtransmit_tcps(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::google::protobuf::Empty,::generated::tcps>* server_split_streamer) = 0;
+  };
+  typedef WithSplitStreamingMethod_transmit_joints<WithSplitStreamingMethod_transmit_voxels<WithSplitStreamingMethod_transmit_tcps<Service > > > SplitStreamedService;
+  typedef WithSplitStreamingMethod_transmit_joints<WithSplitStreamingMethod_transmit_voxels<WithSplitStreamingMethod_transmit_tcps<Service > > > StreamedService;
 };
 
 }  // namespace generated

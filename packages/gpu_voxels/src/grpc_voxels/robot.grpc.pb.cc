@@ -24,6 +24,7 @@ namespace generated {
 static const char* robot_com_method_names[] = {
   "/generated.robot_com/transmit_joints",
   "/generated.robot_com/transmit_voxels",
+  "/generated.robot_com/transmit_tcps",
 };
 
 std::unique_ptr< robot_com::Stub> robot_com::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -35,6 +36,7 @@ std::unique_ptr< robot_com::Stub> robot_com::NewStub(const std::shared_ptr< ::gr
 robot_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
   : channel_(channel), rpcmethod_transmit_joints_(robot_com_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_transmit_voxels_(robot_com_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_transmit_tcps_(robot_com_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
 ::grpc::ClientReader< ::generated::joints>* robot_com::Stub::transmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
@@ -69,6 +71,22 @@ void robot_com::Stub::async::transmit_voxels(::grpc::ClientContext* context, con
   return ::grpc::internal::ClientAsyncReaderFactory< ::generated::voxels>::Create(channel_.get(), cq, rpcmethod_transmit_voxels_, context, request, false, nullptr);
 }
 
+::grpc::ClientReader< ::generated::tcps>* robot_com::Stub::transmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::tcps>::Create(channel_.get(), rpcmethod_transmit_tcps_, context, request);
+}
+
+void robot_com::Stub::async::transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::tcps>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::tcps>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_tcps_, context, request, reactor);
+}
+
+::grpc::ClientAsyncReader< ::generated::tcps>* robot_com::Stub::Asynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::tcps>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, true, tag);
+}
+
+::grpc::ClientAsyncReader< ::generated::tcps>* robot_com::Stub::PrepareAsynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::tcps>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, false, nullptr);
+}
+
 robot_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       robot_com_method_names[0],
@@ -90,6 +108,16 @@ robot_com::Service::Service() {
              ::grpc::ServerWriter<::generated::voxels>* writer) {
                return service->transmit_voxels(ctx, req, writer);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      robot_com_method_names[2],
+      ::grpc::internal::RpcMethod::SERVER_STREAMING,
+      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::tcps>(
+          [](robot_com::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::grpc::ServerWriter<::generated::tcps>* writer) {
+               return service->transmit_tcps(ctx, req, writer);
+             }, this)));
 }
 
 robot_com::Service::~Service() {
@@ -109,6 +137,12 @@ robot_com::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status robot_com::Service::transmit_tcps(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::tcps>* writer) {
+  (void) context;
+  (void) request;
+  (void) writer;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 
 }  // namespace generated
-

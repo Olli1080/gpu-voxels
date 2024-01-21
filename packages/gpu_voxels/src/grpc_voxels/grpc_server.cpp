@@ -5,7 +5,25 @@
 #include <grpcpp/health_check_service_interface.h>
 
 VoxelService::VoxelService()
-	: voxel_slot([this](const VoxelRobot& data) { handle_voxels(data); })
+	: voxel_slot([this](const VoxelRobot& data) { handle_voxels(data); }),
+	joint_slot([this](const Eigen::Vector<float, 7>& data)
+	{
+			std::unique_lock lock(joint_mutex);
+			if (stop_flag)
+				return;
+
+			joint_buffer = std::make_unique<generated::joints>(server::convert<generated::joints>(data));
+			joint_cv.notify_one();
+	}),
+	tcps_slot([this](const std::vector<Eigen::Vector3f>& data)
+	{
+			std::unique_lock lock(tcps_mutex);
+			if (stop_flag)
+				return;
+
+			tcps_buffer = std::make_unique<generated::tcps>(server::convert<generated::tcps>(data));
+			tcps_cv.notify_one();
+	})
 {}
 
 VoxelService::~VoxelService()
@@ -37,6 +55,46 @@ grpc::Status VoxelService::transmit_voxels(
 	return grpc::Status::OK;
 }
 
+grpc::Status VoxelService::transmit_joints(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::joints>* writer)
+{
+	writer->SendInitialMetadata();
+
+	while (true)
+	{
+		std::unique_lock lock(joint_mutex);
+		cv.wait(lock, [this]() { return !!joint_buffer || stop_flag; });
+
+		if (stop_flag)
+			break;
+
+		if (!writer->Write(*joint_buffer))
+			return grpc::Status::CANCELLED;
+
+		joint_buffer.reset();
+	}
+	return grpc::Status::OK;
+}
+
+grpc::Status VoxelService::transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::tcps>* writer)
+{
+	writer->SendInitialMetadata();
+
+	while (true)
+	{
+		std::unique_lock lock(tcps_mutex);
+		cv.wait(lock, [this]() { return !!tcps_buffer || stop_flag; });
+
+		if (stop_flag)
+			break;
+
+		if (!writer->Write(*tcps_buffer))
+			return grpc::Status::CANCELLED;
+
+		tcps_buffer.reset();
+	}
+	return grpc::Status::OK;
+}
+
 void VoxelService::handle_voxels(const VoxelRobot& data)
 {
 	std::unique_lock lock(mutex);
@@ -50,10 +108,13 @@ void VoxelService::handle_voxels(const VoxelRobot& data)
 
 void VoxelService::stop()
 {
-	std::unique_lock lock(mutex);
+	std::scoped_lock lock(mutex, joint_mutex, tcps_mutex);
 	stop_flag = true;
-	cv.notify_one();
+	cv.notify_all();
+	joint_cv.notify_all();
+	tcps_cv.notify_all();
 }
+
 
 
 
