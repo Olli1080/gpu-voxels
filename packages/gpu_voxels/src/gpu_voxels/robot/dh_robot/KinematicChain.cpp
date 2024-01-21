@@ -27,11 +27,10 @@ namespace gpu_voxels
 		KinematicChain<convention>::KinematicChain(const std::vector<std::string>& linknames,
 			const std::vector<robot::DHParameters<convention>>& dh_params,
 			const MetaPointCloud& pointclouds,
-			Matrix4f base_transformation)
-			: m_base_transformation(std::move(base_transformation))
+			const Matrix4f& base_transformation)
 		{
 			m_links_meta_cloud = std::make_unique<MetaPointCloud>(pointclouds);
-			init(linknames, dh_params);
+			init(linknames, dh_params, base_transformation);
 		}
 
 		template<DHConvention convention>
@@ -39,20 +38,18 @@ namespace gpu_voxels
 			const std::vector<robot::DHParameters<convention>>& dh_params,
 			const std::vector<std::string>& paths_to_pointclouds,
 			bool use_model_path,
-			Matrix4f base_transformation)
-			: m_base_transformation(std::move(base_transformation))
+			const Matrix4f& base_transformation)
 		{
 			// The untransformed point clouds
 			m_links_meta_cloud = std::make_unique<MetaPointCloud>(paths_to_pointclouds, paths_to_pointclouds, use_model_path);
-			init(linknames, dh_params);
+			init(linknames, dh_params, base_transformation);
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::init(const std::vector<std::string>& linknames,
-			const std::vector<robot::DHParameters<convention>>& dh_params)
+			const std::vector<robot::DHParameters<convention>>& dh_params,
+			const Matrix4f& base_transformation)
 		{
-			m_linknames = linknames;
-
 			// sanity check:
 			if (linknames.size() != dh_params.size())
 			{
@@ -60,6 +57,7 @@ namespace gpu_voxels
 					"Number of linknames does not fit number of DH parameters. EXITING!" << endl);
 				exit(-1);
 			}
+			const size_t size = linknames.size();
 			//  std::map<uint16_t, std::string> cloud_names = m_links_meta_cloud->getCloudNames();
 			//  for (size_t i = 0; i < linknames.size(); i++)
 			//  {
@@ -71,7 +69,11 @@ namespace gpu_voxels
 			//    }
 			//  }
 
-			for (size_t i = 0; i < dh_params.size(); i++)
+			m_linknames = linknames;
+			m_transforms = std::vector<Matrix4f>(size + 1, Matrix4f::Identity());
+			m_transforms.front() = base_transformation;
+
+			for (size_t i = 0; i < size; ++i)
 				m_links[linknames[i]] = std::make_shared<KinematicLink<convention>>(dh_params[i]);
 
 
@@ -88,8 +90,6 @@ namespace gpu_voxels
 			if (dirty >= static_cast<int>(m_linknames.size()))
 				return;
 
-			Matrix4f transformation = m_base_transformation;
-
 			std::list<std::tuple<uint16_t, Matrix4f>> subcloud_transforms;
 			// Iterate over all links and transform pointclouds with the according name
 			// if no pointcloud was found, still the transformation has to be calculated for the next link.
@@ -100,10 +100,7 @@ namespace gpu_voxels
 				{
 					const auto pc_num = m_links_meta_cloud->getCloudNumber(linkname);
 					if (pc_num.has_value())
-					{
-						subcloud_transforms.emplace_back(pc_num.value(), transformation);
-						//m_links_meta_cloud->transformSubCloud(pc_num.value(), transformation, *m_transformed_links_meta_cloud);
-					}
+						subcloud_transforms.emplace_back(pc_num.value(), m_transforms[idx]);
 				}
 				// TODO:: this documentation is outdated
 				// Sending the actual transformation for this link to the GPU.
@@ -111,7 +108,7 @@ namespace gpu_voxels
 				// but to link pointcloud i+1, i+2...
 				Matrix4f m_dh_transformation;
 				m_links[linkname]->getMatrixRepresentation(m_dh_transformation);
-				transformation = transformation * m_dh_transformation;
+				m_transforms[idx + 1] = m_transforms[idx] * m_dh_transformation;
 				//std::cout << "Trafo Matrix ["<< linkname <<"] = " << m_dh_transformation  << std::endl;
 				//std::cout << "Accumulated Trafo Matrix ["<< linkname <<"] = " << transformation << std::endl;
 				++idx;
@@ -185,6 +182,7 @@ namespace gpu_voxels
 		void KinematicChain<convention>::updatePointcloud(const std::string& link_name, const std::vector<Vector3f>& cloud)
 		{
 			dirty = -1;
+			//auto idx = std::ranges::find(m_linknames);
 			m_links_meta_cloud->updatePointCloud(link_name, cloud, true);
 		}
 
@@ -192,13 +190,13 @@ namespace gpu_voxels
 		void KinematicChain<convention>::setBaseTransformation(const Matrix4f& base_transformation)
 		{
 			dirty = -1;
-			m_base_transformation = base_transformation;
+			m_transforms.front() = base_transformation;
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::getBaseTransformation(Matrix4f& base_transformation) const
 		{
-			base_transformation = m_base_transformation;
+			base_transformation = m_transforms.front();
 		}
 
 		template class KinematicChain<CLASSIC>;

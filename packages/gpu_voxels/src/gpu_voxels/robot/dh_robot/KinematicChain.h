@@ -55,7 +55,7 @@ namespace gpu_voxels {
 				const std::vector<robot::DHParameters<convention>>& dh_params,
 				const std::vector<std::string>& paths_to_pointclouds,
 				bool use_model_path,
-				Matrix4f base_transformation = Matrix4f::Identity());
+				const Matrix4f& base_transformation = Matrix4f::Identity());
 
 			/*!
 			 * \brief KinematicChain constructor that takes existing pointcloud
@@ -72,7 +72,7 @@ namespace gpu_voxels {
 			KinematicChain(const std::vector<std::string>& linknames,
 				const std::vector<robot::DHParameters<convention>>& dh_params,
 				const MetaPointCloud& pointclouds,
-				Matrix4f base_transformation = Matrix4f::Identity());
+				const Matrix4f& base_transformation = Matrix4f::Identity());
 
 			__host__
 			~KinematicChain() override = default;
@@ -142,11 +142,14 @@ namespace gpu_voxels {
 		private:
 
 			void init(const std::vector<std::string>& linknames,
-				const std::vector<robot::DHParameters<convention>>& dh_params);
+				const std::vector<robot::DHParameters<convention>>& dh_params,
+				const Matrix4f& base_transformation
+			);
 
 			void performPointCloudTransformation();
 
 			std::vector<std::string> m_linknames;
+			std::vector<Matrix4f> m_transforms;
 			std::unique_ptr<MetaPointCloud> m_links_meta_cloud;
 			std::unique_ptr<MetaPointCloud> m_transformed_links_meta_cloud;
 
@@ -157,7 +160,6 @@ namespace gpu_voxels {
 			/* host stored contents */
 			//! pointer to the kinematic links
 			std::map<std::string, KinematicLinkSharedPtr<convention>> m_links;
-			Matrix4f m_base_transformation;
 		};
 
 	} // end of namespace
