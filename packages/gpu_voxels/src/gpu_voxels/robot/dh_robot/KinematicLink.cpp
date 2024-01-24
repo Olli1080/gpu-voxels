@@ -14,9 +14,10 @@
 #include "KinematicLink.h"
 #include "gpu_voxels/logging/logging_robot.h"
 
-namespace gpu_voxels {
-	namespace robot {
-
+namespace gpu_voxels
+{
+	namespace robot
+	{
 		template<>
 		void DHParameters<CLASSIC>::convertDHtoM(Matrix4f& m) const
 		{

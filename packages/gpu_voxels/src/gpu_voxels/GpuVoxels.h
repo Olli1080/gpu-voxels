@@ -256,6 +256,7 @@ namespace gpu_voxels {
 		bool setRobotConfiguration(const std::string& robot_name, const robot::JointValueMap& jointmap);
 
 		bool setRobotBaseTransformation(const std::string& robot_name, const Matrix4f& transformation);
+		bool getRobotTransformation(const std::string& robot_name, size_t idx, Matrix4f& transformation);
 
 		/*!
 		 * \brief updateRobotPart Changes the geometry of a single robot link. This is useful when changing a tool,

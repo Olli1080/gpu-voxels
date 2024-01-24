@@ -29,9 +29,10 @@
 
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 
-namespace gpu_voxels {
-    namespace robot {
-
+namespace gpu_voxels
+{
+    namespace robot
+	{
         enum DHJointType
         {
             REVOLUTE = 0,

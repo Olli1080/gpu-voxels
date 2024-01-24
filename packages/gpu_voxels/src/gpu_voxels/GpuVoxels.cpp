@@ -376,6 +376,16 @@ namespace gpu_voxels {
         return true;
     }
 
+    bool GpuVoxels::getRobotTransformation(const std::string& robot_name, size_t idx, Matrix4f& transformation)
+    {
+        const auto rob = getRobot(robot_name);
+        if (!rob)
+            return false;
+
+        transformation = rob->getTransform(idx);
+        return true;
+    }
+
     bool GpuVoxels::getRobotConfiguration(const std::string& robot_name, robot::JointValueMap& jointmap)
     {
         const auto rob = getRobot(robot_name);

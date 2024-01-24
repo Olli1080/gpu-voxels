@@ -31,9 +31,10 @@
 #include <gpu_voxels/helpers/MetaPointCloud.h>
 #include <gpu_voxels/robot/dh_robot/KinematicLink.h>
 
-namespace gpu_voxels {
-	namespace robot {
-
+namespace gpu_voxels
+{
+	namespace robot
+	{
 		template<DHConvention convention>
 		class KinematicChain : public RobotInterface
 		{
@@ -135,6 +136,9 @@ namespace gpu_voxels {
 
 			void getBaseTransformation(Matrix4f& base_transformation) const override;
 
+			[[nodiscard]] Matrix4f getTransform(size_t idx) const override;
+			//[[nodiscard]] Vector3f transform_point(const Eigen::Vector3f& p) const override;
+
 			//! for testing purposes
 			//__host__
 			//void transformPointAlongChain(Vector3f point);
@@ -148,14 +152,25 @@ namespace gpu_voxels {
 
 			void performPointCloudTransformation();
 
+			//allows to maybe just compute transformed points on lower transformation levels
+			void recompute_transforms(size_t until) const;
+
+			[[nodiscard]] bool is_pointcloud_dirty() const;
+			[[nodiscard]] bool is_transform_dirty() const;
+
+			void set_transform_dirty(size_t i);
+
 			std::vector<std::string> m_linknames;
-			std::vector<Matrix4f> m_transforms;
+			mutable std::vector<Matrix4f> m_transforms;
 			std::unique_ptr<MetaPointCloud> m_links_meta_cloud;
 			std::unique_ptr<MetaPointCloud> m_transformed_links_meta_cloud;
 
-			//indicates from where parts of the transformation have to be updated
-			//-1 means base_transformation also changed
-			int dirty = -1;
+			
+			mutable size_t dirty_pcl = 0;
+
+			//indicates from where parts of the transformation or pcl have to be updated
+			//0 means base_transformation also changed
+			mutable size_t dirty_transforms = 0;
 
 			/* host stored contents */
 			//! pointer to the kinematic links
