@@ -421,12 +421,24 @@ int main(int argc, char* argv[])
     }*/
 
     VoxelServer server;
+    boost::signals2::signal<void(const VoxelRobot&)> sig;
+    sig.connect(server.voxel_service.voxel_slot);
+
+    boost::signals2::signal<void(const std::vector<Eigen::Vector3f>&)> sig_tcp;
+    sig_tcp.connect(server.voxel_service.tcps_slot);
+
+    boost::signals2::signal<void(const Eigen::Vector<float, 7>&)> sig_joint;
+    sig_joint.connect(server.voxel_service.joint_slot);
+
+    std::vector<Eigen::Vector3f> tcp_points;
+    tcp_points.reserve(20000);
+
     auto server_thread = std::thread([&]()
         {
             server.run_server();
         });
-    boost::signals2::signal<void(const VoxelRobot&)> sig;
-    sig.connect(server.voxel_service.voxel_slot);
+
+    std::this_thread::sleep_for(std::chrono::seconds{10});
 
     while (running)
     {
@@ -482,7 +494,28 @@ int main(int argc, char* argv[])
         auto final_result = voxelmap::extract_visual_voxels(dev_data, dim);
         sig(VoxelRobot{ sl, origin, final_result });
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        Matrix4f tcp_trafo;
+        gvl->getRobotTransformation("myRobot", 8, tcp_trafo);
+        
+        tcp_points.emplace_back((origin.inverse() * tcp_trafo.block<4, 1>(0, 3)).block<3, 1>(0, 0));
+        sig_tcp(tcp_points);
+
+        {
+            Eigen::Vector<float, 7> joints;
+            joints << 
+                myRobotJointValues["franka/link0.binvox"],
+                myRobotJointValues["franka/link1.binvox"],
+                myRobotJointValues["franka/link2.binvox"],
+                myRobotJointValues["franka/link3.binvox"],
+                myRobotJointValues["franka/link4.binvox"],
+                myRobotJointValues["franka/link5.binvox"],
+                myRobotJointValues["franka/link6.binvox"],
+                myRobotJointValues["franka/link7.binvox"];
+
+            sig_joint(joints);
+        }
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(200ms);
         
 
         /*

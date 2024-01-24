@@ -420,7 +420,7 @@ namespace server
 	inline generated::tcps convert(const std::vector<Eigen::Vector3f>& v)
 	{
 		generated::tcps out;
-		auto out_data = *out.mutable_points();
+		auto& out_data = *out.mutable_points();
 		out_data.Reserve(v.size());
 		for (const auto& val : v)
 			out_data.Add(convert<generated::vertex_3d>(val));
