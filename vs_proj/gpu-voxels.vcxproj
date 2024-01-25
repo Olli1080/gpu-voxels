@@ -5,10 +5,12 @@
      $(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)..\..\build\temp\$(Platform)_$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\build\$(Platform)_$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)..\..\build\temp\$(Platform)_$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\build\$(Platform)_$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -63,7 +65,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;..\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
@@ -90,7 +92,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_BUILD_GVL_WITH_PCL_SUPPORT_;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;..\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>

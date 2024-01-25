@@ -5,10 +5,12 @@
      $(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)..\..\build\temp\$(Platform)_$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\build\$(Platform)_$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)..\..\build\temp\$(Platform)_$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\..\build\$(Platform)_$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
