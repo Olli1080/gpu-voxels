@@ -82,6 +82,7 @@
       <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
       <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
       <MaxRegCount>63</MaxRegCount>
+      <GPUDebugInfo>false</GPUDebugInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -28,7 +28,7 @@
 
 #include <map>
 #include <string>
-#include "gpu_voxels/helpers/MetaPointCloud.h"
+#include <gpu_voxels/helpers/MetaPointCloud.h>
 
 namespace gpu_voxels
 {
@@ -100,6 +100,13 @@ namespace gpu_voxels
 			virtual void setBaseTransformation(const Matrix4f& base_transformation) = 0;
 
 			virtual void getBaseTransformation(Matrix4f& base_transformation) const = 0;
+
+			[[nodiscard]] virtual Matrix4f getTransform(size_t idx) const = 0;
+			/**
+			 * \brief 
+			 * \return transforms a point into tcp coords
+			 */
+			//[[nodiscard]] virtual Vector3f transform_point(const Vector3f& p) const = 0;
 		};
 
 	} // namespace robot

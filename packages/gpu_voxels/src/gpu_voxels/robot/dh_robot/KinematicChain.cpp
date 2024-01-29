@@ -27,11 +27,10 @@ namespace gpu_voxels
 		KinematicChain<convention>::KinematicChain(const std::vector<std::string>& linknames,
 			const std::vector<robot::DHParameters<convention>>& dh_params,
 			const MetaPointCloud& pointclouds,
-			Matrix4f base_transformation)
-			: m_base_transformation(std::move(base_transformation))
+			const Matrix4f& base_transformation)
 		{
 			m_links_meta_cloud = std::make_unique<MetaPointCloud>(pointclouds);
-			init(linknames, dh_params);
+			init(linknames, dh_params, base_transformation);
 		}
 
 		template<DHConvention convention>
@@ -39,20 +38,18 @@ namespace gpu_voxels
 			const std::vector<robot::DHParameters<convention>>& dh_params,
 			const std::vector<std::string>& paths_to_pointclouds,
 			bool use_model_path,
-			Matrix4f base_transformation)
-			: m_base_transformation(std::move(base_transformation))
+			const Matrix4f& base_transformation)
 		{
 			// The untransformed point clouds
 			m_links_meta_cloud = std::make_unique<MetaPointCloud>(paths_to_pointclouds, paths_to_pointclouds, use_model_path);
-			init(linknames, dh_params);
+			init(linknames, dh_params, base_transformation);
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::init(const std::vector<std::string>& linknames,
-			const std::vector<robot::DHParameters<convention>>& dh_params)
+			const std::vector<robot::DHParameters<convention>>& dh_params,
+			const Matrix4f& base_transformation)
 		{
-			m_linknames = linknames;
-
 			// sanity check:
 			if (linknames.size() != dh_params.size())
 			{
@@ -60,6 +57,7 @@ namespace gpu_voxels
 					"Number of linknames does not fit number of DH parameters. EXITING!" << endl);
 				exit(-1);
 			}
+			const size_t size = linknames.size();
 			//  std::map<uint16_t, std::string> cloud_names = m_links_meta_cloud->getCloudNames();
 			//  for (size_t i = 0; i < linknames.size(); i++)
 			//  {
@@ -71,7 +69,11 @@ namespace gpu_voxels
 			//    }
 			//  }
 
-			for (size_t i = 0; i < dh_params.size(); i++)
+			m_linknames = linknames;
+			m_transforms = std::vector<Matrix4f>(size + 1, Matrix4f::Identity());
+			m_transforms.front() = base_transformation;
+
+			for (size_t i = 0; i < size; ++i)
 				m_links[linknames[i]] = std::make_shared<KinematicLink<convention>>(dh_params[i]);
 
 
@@ -85,41 +87,66 @@ namespace gpu_voxels
 		template<DHConvention convention>
 		void KinematicChain<convention>::performPointCloudTransformation()
 		{
-			if (dirty >= static_cast<int>(m_linknames.size()))
+			if (!is_pointcloud_dirty())
 				return;
 
-			Matrix4f transformation = m_base_transformation;
+			recompute_transforms(m_transforms.size());
 
 			std::list<std::tuple<uint16_t, Matrix4f>> subcloud_transforms;
 			// Iterate over all links and transform pointclouds with the according name
 			// if no pointcloud was found, still the transformation has to be calculated for the next link.
-			int idx = 0;
+			size_t idx = 0;
 			for (const auto& linkname : m_linknames)
 			{
-				if (idx >= dirty)
+				if (idx >= dirty_pcl)
 				{
 					const auto pc_num = m_links_meta_cloud->getCloudNumber(linkname);
 					if (pc_num.has_value())
-					{
-						subcloud_transforms.emplace_back(pc_num.value(), transformation);
-						//m_links_meta_cloud->transformSubCloud(pc_num.value(), transformation, *m_transformed_links_meta_cloud);
-					}
+						subcloud_transforms.emplace_back(pc_num.value(), m_transforms[idx]);
 				}
-				// TODO:: this documentation is outdated
-				// Sending the actual transformation for this link to the GPU.
-				// This means the DH Transformation i is not applied to link-pointcloud i,
-				// but to link pointcloud i+1, i+2...
-				Matrix4f m_dh_transformation;
-				m_links[linkname]->getMatrixRepresentation(m_dh_transformation);
-				transformation = transformation * m_dh_transformation;
-				//std::cout << "Trafo Matrix ["<< linkname <<"] = " << m_dh_transformation  << std::endl;
-				//std::cout << "Accumulated Trafo Matrix ["<< linkname <<"] = " << transformation << std::endl;
 				++idx;
 			}
 
 			m_links_meta_cloud->transformSubClouds(subcloud_transforms, *m_transformed_links_meta_cloud);
 
-			dirty = m_linknames.size();
+			dirty_pcl = m_linknames.size();
+		}
+
+		template<DHConvention convention>
+		void KinematicChain<convention>::recompute_transforms(size_t until) const
+		{
+			if (until == 0) //because of unsigned loop comparison
+				return;
+
+			for (size_t i = dirty_transforms; i < until - 1; ++i)
+			{
+				Matrix4f m_dh_transformation;
+				m_links.at(m_linknames[i])->getMatrixRepresentation(m_dh_transformation);
+				m_transforms[i + 1] = m_transforms[i] * m_dh_transformation;
+			}
+			dirty_transforms = m_transforms.size();
+		}
+
+		template<DHConvention convention>
+		bool KinematicChain<convention>::is_pointcloud_dirty() const
+		{
+			return dirty_pcl < m_linknames.size();
+		}
+
+		template<DHConvention convention>
+		bool KinematicChain<convention>::is_transform_dirty() const
+		{
+			return dirty_transforms < m_transforms.size();
+		}
+
+		template<DHConvention convention>
+		void KinematicChain<convention>::set_transform_dirty(size_t i)
+		{
+			if (i >= dirty_transforms)
+				return;
+
+			dirty_transforms = i;
+			dirty_pcl = (std::min)(i, dirty_pcl);
 		}
 
 		template<DHConvention convention>
@@ -136,11 +163,8 @@ namespace gpu_voxels
 
 				link->setJointValue(joint_values.at(name));
 
-				if (dirty > 0)
-				{
-					auto pos = std::ranges::find(m_linknames, name);
-					dirty = (std::min)(static_cast<int>(std::distance(m_linknames.begin(), pos)), dirty);
-				}
+				if (dirty_transforms > 0)
+					set_transform_dirty(std::distance(m_linknames.begin(), std::ranges::find(m_linknames, name)));
 			}
 		}
 
@@ -184,22 +208,54 @@ namespace gpu_voxels
 		template<DHConvention convention>
 		void KinematicChain<convention>::updatePointcloud(const std::string& link_name, const std::vector<Vector3f>& cloud)
 		{
-			dirty = -1;
+			//TODO:: potentially only this pointcloud has to be transformed but it does also transform all following ones
+			dirty_pcl = std::distance(m_linknames.begin(), std::ranges::find(m_linknames, link_name));
 			m_links_meta_cloud->updatePointCloud(link_name, cloud, true);
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::setBaseTransformation(const Matrix4f& base_transformation)
 		{
-			dirty = -1;
-			m_base_transformation = base_transformation;
+			if (base_transformation == m_transforms.front())
+				return;
+
+			set_transform_dirty(0);
+			m_transforms.front() = base_transformation;
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::getBaseTransformation(Matrix4f& base_transformation) const
 		{
-			base_transformation = m_base_transformation;
+			base_transformation = m_transforms.front();
 		}
+		template<DHConvention convention>
+		Matrix4f KinematicChain<convention>::getTransform(size_t idx) const
+		{
+			if (idx >= m_transforms.size())
+			{
+				LOGGING_ERROR_C(RobotLog, KinematicChain,
+					"Invalid idx for transform! returning identity instead" << endl);
+				return Matrix4f::Identity();
+			}
+
+			recompute_transforms(idx);
+
+			return m_transforms[idx];
+		}
+
+		/*
+		template<DHConvention convention>
+		Vector3f KinematicChain<convention>::transform_point(const Vector3f& p) const
+		{
+			recompute_transforms(m_transforms.size());
+
+			const auto& trafo = m_transforms.back();
+
+			Vector3f result = trafo.block<3, 1>(0, 3);
+			result += trafo.block<3, 3>(0, 0) * p;
+
+			return result;
+		}*/
 
 		template class KinematicChain<CLASSIC>;
 		template class KinematicChain<CRAIGS>;

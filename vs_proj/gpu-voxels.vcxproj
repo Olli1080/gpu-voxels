@@ -82,6 +82,7 @@
       <Keep>false</Keep>
       <MaxRegCount>63</MaxRegCount>
       <KeepDir>$(CudaIntDir)\%(RelativeDir)</KeepDir>
+      <GPUDebugInfo>false</GPUDebugInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -231,7 +232,6 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\SVCollider.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <!--ClCompile Include="..\packages\gpu_voxels\src\examples\RobotVsEnvironment.cpp" /-->
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxelsMap.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BinvoxFileReader.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\GeometryGeneration.cpp" />
