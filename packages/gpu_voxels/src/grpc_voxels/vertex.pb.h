@@ -28,6 +28,7 @@
 #include <google/protobuf/message_lite.h>
 #include <google/protobuf/repeated_field.h>  // IWYU pragma: export
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
+#include "meta_data.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_vertex_2eproto
@@ -42,6 +43,15 @@ struct TableStruct_vertex_2eproto {
   static const uint32_t offsets[];
 };
 namespace generated {
+class Matrix;
+struct MatrixDefaultTypeInternal;
+extern MatrixDefaultTypeInternal _Matrix_default_instance_;
+class Matrix_TF_Meta;
+struct Matrix_TF_MetaDefaultTypeInternal;
+extern Matrix_TF_MetaDefaultTypeInternal _Matrix_TF_Meta_default_instance_;
+class Vertex_3D_Meta;
+struct Vertex_3D_MetaDefaultTypeInternal;
+extern Vertex_3D_MetaDefaultTypeInternal _Vertex_3D_Meta_default_instance_;
 class aabb;
 struct aabbDefaultTypeInternal;
 extern aabbDefaultTypeInternal _aabb_default_instance_;
@@ -51,9 +61,6 @@ extern colorDefaultTypeInternal _color_default_instance_;
 class color_array;
 struct color_arrayDefaultTypeInternal;
 extern color_arrayDefaultTypeInternal _color_array_default_instance_;
-class matrix;
-struct matrixDefaultTypeInternal;
-extern matrixDefaultTypeInternal _matrix_default_instance_;
 class mesh_data;
 struct mesh_dataDefaultTypeInternal;
 extern mesh_dataDefaultTypeInternal _mesh_data_default_instance_;
@@ -86,10 +93,12 @@ struct vertex_4d_arrayDefaultTypeInternal;
 extern vertex_4d_arrayDefaultTypeInternal _vertex_4d_array_default_instance_;
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
+template<> ::generated::Matrix* Arena::CreateMaybeMessage<::generated::Matrix>(Arena*);
+template<> ::generated::Matrix_TF_Meta* Arena::CreateMaybeMessage<::generated::Matrix_TF_Meta>(Arena*);
+template<> ::generated::Vertex_3D_Meta* Arena::CreateMaybeMessage<::generated::Vertex_3D_Meta>(Arena*);
 template<> ::generated::aabb* Arena::CreateMaybeMessage<::generated::aabb>(Arena*);
 template<> ::generated::color* Arena::CreateMaybeMessage<::generated::color>(Arena*);
 template<> ::generated::color_array* Arena::CreateMaybeMessage<::generated::color_array>(Arena*);
-template<> ::generated::matrix* Arena::CreateMaybeMessage<::generated::matrix>(Arena*);
 template<> ::generated::mesh_data* Arena::CreateMaybeMessage<::generated::mesh_data>(Arena*);
 template<> ::generated::named_request* Arena::CreateMaybeMessage<::generated::named_request>(Arena*);
 template<> ::generated::obb* Arena::CreateMaybeMessage<::generated::obb>(Arena*);
@@ -1037,24 +1046,24 @@ class color final :
 };
 // -------------------------------------------------------------------
 
-class matrix final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.matrix) */ {
+class Matrix final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Matrix) */ {
  public:
-  inline matrix() : matrix(nullptr) {}
-  ~matrix() override;
-  explicit PROTOBUF_CONSTEXPR matrix(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Matrix() : Matrix(nullptr) {}
+  ~Matrix() override;
+  explicit PROTOBUF_CONSTEXPR Matrix(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  matrix(const matrix& from);
-  matrix(matrix&& from) noexcept
-    : matrix() {
+  Matrix(const Matrix& from);
+  Matrix(Matrix&& from) noexcept
+    : Matrix() {
     *this = ::std::move(from);
   }
 
-  inline matrix& operator=(const matrix& from) {
+  inline Matrix& operator=(const Matrix& from) {
     CopyFrom(from);
     return *this;
   }
-  inline matrix& operator=(matrix&& from) noexcept {
+  inline Matrix& operator=(Matrix&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -1068,20 +1077,20 @@ class matrix final :
     return *this;
   }
 
-  static const matrix& default_instance() {
+  static const Matrix& default_instance() {
     return *internal_default_instance();
   }
-  static inline const matrix* internal_default_instance() {
-    return reinterpret_cast<const matrix*>(
-               &_matrix_default_instance_);
+  static inline const Matrix* internal_default_instance() {
+    return reinterpret_cast<const Matrix*>(
+               &_Matrix_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     6;
 
-  friend void swap(matrix& a, matrix& b) {
+  friend void swap(Matrix& a, Matrix& b) {
     a.Swap(&b);
   }
-  inline void Swap(matrix* other) {
+  inline void Swap(Matrix* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -1094,7 +1103,7 @@ class matrix final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(matrix* other) {
+  void UnsafeArenaSwap(Matrix* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -1102,12 +1111,12 @@ class matrix final :
 
   // implements Message ----------------------------------------------
 
-  matrix* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<matrix>(arena);
+  Matrix* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Matrix>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const matrix& from);
-  void MergeFrom(const matrix& from);
+  void CopyFrom(const Matrix& from);
+  void MergeFrom(const Matrix& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -1121,15 +1130,15 @@ class matrix final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(matrix* other);
+  void InternalSwap(Matrix* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.matrix";
+    return "generated.Matrix";
   }
   protected:
-  explicit matrix(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Matrix(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -1184,7 +1193,7 @@ class matrix final :
   void _internal_set_cols(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:generated.matrix)
+  // @@protoc_insertion_point(class_scope:generated.Matrix)
  private:
   class _Internal;
 
@@ -2291,6 +2300,326 @@ class named_request final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_vertex_2eproto;
 };
+// -------------------------------------------------------------------
+
+class Matrix_TF_Meta final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Matrix_TF_Meta) */ {
+ public:
+  inline Matrix_TF_Meta() : Matrix_TF_Meta(nullptr) {}
+  ~Matrix_TF_Meta() override;
+  explicit PROTOBUF_CONSTEXPR Matrix_TF_Meta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Matrix_TF_Meta(const Matrix_TF_Meta& from);
+  Matrix_TF_Meta(Matrix_TF_Meta&& from) noexcept
+    : Matrix_TF_Meta() {
+    *this = ::std::move(from);
+  }
+
+  inline Matrix_TF_Meta& operator=(const Matrix_TF_Meta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Matrix_TF_Meta& operator=(Matrix_TF_Meta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const Matrix_TF_Meta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Matrix_TF_Meta* internal_default_instance() {
+    return reinterpret_cast<const Matrix_TF_Meta*>(
+               &_Matrix_TF_Meta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    14;
+
+  friend void swap(Matrix_TF_Meta& a, Matrix_TF_Meta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Matrix_TF_Meta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Matrix_TF_Meta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Matrix_TF_Meta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Matrix_TF_Meta>(arena);
+  }
+  void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
+  void CopyFrom(const Matrix_TF_Meta& from);
+  void MergeFrom(const Matrix_TF_Meta& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Matrix_TF_Meta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "generated.Matrix_TF_Meta";
+  }
+  protected:
+  explicit Matrix_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  std::string GetTypeName() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kMatrixFieldNumber = 1,
+    kTransformationMetaFieldNumber = 2,
+  };
+  // .generated.Matrix matrix = 1;
+  bool has_matrix() const;
+  private:
+  bool _internal_has_matrix() const;
+  public:
+  void clear_matrix();
+  const ::generated::Matrix& matrix() const;
+  PROTOBUF_NODISCARD ::generated::Matrix* release_matrix();
+  ::generated::Matrix* mutable_matrix();
+  void set_allocated_matrix(::generated::Matrix* matrix);
+  private:
+  const ::generated::Matrix& _internal_matrix() const;
+  ::generated::Matrix* _internal_mutable_matrix();
+  public:
+  void unsafe_arena_set_allocated_matrix(
+      ::generated::Matrix* matrix);
+  ::generated::Matrix* unsafe_arena_release_matrix();
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  bool has_transformation_meta() const;
+  private:
+  bool _internal_has_transformation_meta() const;
+  public:
+  void clear_transformation_meta();
+  const ::generated::Transformation_Meta& transformation_meta() const;
+  PROTOBUF_NODISCARD ::generated::Transformation_Meta* release_transformation_meta();
+  ::generated::Transformation_Meta* mutable_transformation_meta();
+  void set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta);
+  private:
+  const ::generated::Transformation_Meta& _internal_transformation_meta() const;
+  ::generated::Transformation_Meta* _internal_mutable_transformation_meta();
+  public:
+  void unsafe_arena_set_allocated_transformation_meta(
+      ::generated::Transformation_Meta* transformation_meta);
+  ::generated::Transformation_Meta* unsafe_arena_release_transformation_meta();
+
+  // @@protoc_insertion_point(class_scope:generated.Matrix_TF_Meta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::generated::Matrix* matrix_;
+    ::generated::Transformation_Meta* transformation_meta_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_vertex_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Vertex_3D_Meta final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Vertex_3D_Meta) */ {
+ public:
+  inline Vertex_3D_Meta() : Vertex_3D_Meta(nullptr) {}
+  ~Vertex_3D_Meta() override;
+  explicit PROTOBUF_CONSTEXPR Vertex_3D_Meta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Vertex_3D_Meta(const Vertex_3D_Meta& from);
+  Vertex_3D_Meta(Vertex_3D_Meta&& from) noexcept
+    : Vertex_3D_Meta() {
+    *this = ::std::move(from);
+  }
+
+  inline Vertex_3D_Meta& operator=(const Vertex_3D_Meta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Vertex_3D_Meta& operator=(Vertex_3D_Meta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const Vertex_3D_Meta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Vertex_3D_Meta* internal_default_instance() {
+    return reinterpret_cast<const Vertex_3D_Meta*>(
+               &_Vertex_3D_Meta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    15;
+
+  friend void swap(Vertex_3D_Meta& a, Vertex_3D_Meta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Vertex_3D_Meta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Vertex_3D_Meta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Vertex_3D_Meta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Vertex_3D_Meta>(arena);
+  }
+  void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
+  void CopyFrom(const Vertex_3D_Meta& from);
+  void MergeFrom(const Vertex_3D_Meta& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Vertex_3D_Meta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "generated.Vertex_3D_Meta";
+  }
+  protected:
+  explicit Vertex_3D_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  std::string GetTypeName() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVertexFieldNumber = 1,
+    kTransformationMetaFieldNumber = 2,
+  };
+  // .generated.vertex_3d vertex = 1;
+  bool has_vertex() const;
+  private:
+  bool _internal_has_vertex() const;
+  public:
+  void clear_vertex();
+  const ::generated::vertex_3d& vertex() const;
+  PROTOBUF_NODISCARD ::generated::vertex_3d* release_vertex();
+  ::generated::vertex_3d* mutable_vertex();
+  void set_allocated_vertex(::generated::vertex_3d* vertex);
+  private:
+  const ::generated::vertex_3d& _internal_vertex() const;
+  ::generated::vertex_3d* _internal_mutable_vertex();
+  public:
+  void unsafe_arena_set_allocated_vertex(
+      ::generated::vertex_3d* vertex);
+  ::generated::vertex_3d* unsafe_arena_release_vertex();
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  bool has_transformation_meta() const;
+  private:
+  bool _internal_has_transformation_meta() const;
+  public:
+  void clear_transformation_meta();
+  const ::generated::Transformation_Meta& transformation_meta() const;
+  PROTOBUF_NODISCARD ::generated::Transformation_Meta* release_transformation_meta();
+  ::generated::Transformation_Meta* mutable_transformation_meta();
+  void set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta);
+  private:
+  const ::generated::Transformation_Meta& _internal_transformation_meta() const;
+  ::generated::Transformation_Meta* _internal_mutable_transformation_meta();
+  public:
+  void unsafe_arena_set_allocated_transformation_meta(
+      ::generated::Transformation_Meta* transformation_meta);
+  ::generated::Transformation_Meta* unsafe_arena_release_transformation_meta();
+
+  // @@protoc_insertion_point(class_scope:generated.Vertex_3D_Meta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::generated::vertex_3d* vertex_;
+    ::generated::Transformation_Meta* transformation_meta_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_vertex_2eproto;
+};
 // ===================================================================
 
 
@@ -2774,92 +3103,92 @@ inline void color::set_a(uint32_t value) {
 
 // -------------------------------------------------------------------
 
-// matrix
+// Matrix
 
 // uint32 rows = 1;
-inline void matrix::clear_rows() {
+inline void Matrix::clear_rows() {
   _impl_.rows_ = 0u;
 }
-inline uint32_t matrix::_internal_rows() const {
+inline uint32_t Matrix::_internal_rows() const {
   return _impl_.rows_;
 }
-inline uint32_t matrix::rows() const {
-  // @@protoc_insertion_point(field_get:generated.matrix.rows)
+inline uint32_t Matrix::rows() const {
+  // @@protoc_insertion_point(field_get:generated.Matrix.rows)
   return _internal_rows();
 }
-inline void matrix::_internal_set_rows(uint32_t value) {
+inline void Matrix::_internal_set_rows(uint32_t value) {
   
   _impl_.rows_ = value;
 }
-inline void matrix::set_rows(uint32_t value) {
+inline void Matrix::set_rows(uint32_t value) {
   _internal_set_rows(value);
-  // @@protoc_insertion_point(field_set:generated.matrix.rows)
+  // @@protoc_insertion_point(field_set:generated.Matrix.rows)
 }
 
 // uint32 cols = 2;
-inline void matrix::clear_cols() {
+inline void Matrix::clear_cols() {
   _impl_.cols_ = 0u;
 }
-inline uint32_t matrix::_internal_cols() const {
+inline uint32_t Matrix::_internal_cols() const {
   return _impl_.cols_;
 }
-inline uint32_t matrix::cols() const {
-  // @@protoc_insertion_point(field_get:generated.matrix.cols)
+inline uint32_t Matrix::cols() const {
+  // @@protoc_insertion_point(field_get:generated.Matrix.cols)
   return _internal_cols();
 }
-inline void matrix::_internal_set_cols(uint32_t value) {
+inline void Matrix::_internal_set_cols(uint32_t value) {
   
   _impl_.cols_ = value;
 }
-inline void matrix::set_cols(uint32_t value) {
+inline void Matrix::set_cols(uint32_t value) {
   _internal_set_cols(value);
-  // @@protoc_insertion_point(field_set:generated.matrix.cols)
+  // @@protoc_insertion_point(field_set:generated.Matrix.cols)
 }
 
 // repeated float data = 3 [packed = true];
-inline int matrix::_internal_data_size() const {
+inline int Matrix::_internal_data_size() const {
   return _impl_.data_.size();
 }
-inline int matrix::data_size() const {
+inline int Matrix::data_size() const {
   return _internal_data_size();
 }
-inline void matrix::clear_data() {
+inline void Matrix::clear_data() {
   _impl_.data_.Clear();
 }
-inline float matrix::_internal_data(int index) const {
+inline float Matrix::_internal_data(int index) const {
   return _impl_.data_.Get(index);
 }
-inline float matrix::data(int index) const {
-  // @@protoc_insertion_point(field_get:generated.matrix.data)
+inline float Matrix::data(int index) const {
+  // @@protoc_insertion_point(field_get:generated.Matrix.data)
   return _internal_data(index);
 }
-inline void matrix::set_data(int index, float value) {
+inline void Matrix::set_data(int index, float value) {
   _impl_.data_.Set(index, value);
-  // @@protoc_insertion_point(field_set:generated.matrix.data)
+  // @@protoc_insertion_point(field_set:generated.Matrix.data)
 }
-inline void matrix::_internal_add_data(float value) {
+inline void Matrix::_internal_add_data(float value) {
   _impl_.data_.Add(value);
 }
-inline void matrix::add_data(float value) {
+inline void Matrix::add_data(float value) {
   _internal_add_data(value);
-  // @@protoc_insertion_point(field_add:generated.matrix.data)
+  // @@protoc_insertion_point(field_add:generated.Matrix.data)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-matrix::_internal_data() const {
+Matrix::_internal_data() const {
   return _impl_.data_;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-matrix::data() const {
-  // @@protoc_insertion_point(field_list:generated.matrix.data)
+Matrix::data() const {
+  // @@protoc_insertion_point(field_list:generated.Matrix.data)
   return _internal_data();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-matrix::_internal_mutable_data() {
+Matrix::_internal_mutable_data() {
   return &_impl_.data_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-matrix::mutable_data() {
-  // @@protoc_insertion_point(field_mutable_list:generated.matrix.data)
+Matrix::mutable_data() {
+  // @@protoc_insertion_point(field_mutable_list:generated.Matrix.data)
   return _internal_mutable_data();
 }
 
@@ -3738,9 +4067,375 @@ inline void named_request::set_allocated_name(std::string* name) {
   // @@protoc_insertion_point(field_set_allocated:generated.named_request.name)
 }
 
+// -------------------------------------------------------------------
+
+// Matrix_TF_Meta
+
+// .generated.Matrix matrix = 1;
+inline bool Matrix_TF_Meta::_internal_has_matrix() const {
+  return this != internal_default_instance() && _impl_.matrix_ != nullptr;
+}
+inline bool Matrix_TF_Meta::has_matrix() const {
+  return _internal_has_matrix();
+}
+inline void Matrix_TF_Meta::clear_matrix() {
+  if (GetArenaForAllocation() == nullptr && _impl_.matrix_ != nullptr) {
+    delete _impl_.matrix_;
+  }
+  _impl_.matrix_ = nullptr;
+}
+inline const ::generated::Matrix& Matrix_TF_Meta::_internal_matrix() const {
+  const ::generated::Matrix* p = _impl_.matrix_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Matrix&>(
+      ::generated::_Matrix_default_instance_);
+}
+inline const ::generated::Matrix& Matrix_TF_Meta::matrix() const {
+  // @@protoc_insertion_point(field_get:generated.Matrix_TF_Meta.matrix)
+  return _internal_matrix();
+}
+inline void Matrix_TF_Meta::unsafe_arena_set_allocated_matrix(
+    ::generated::Matrix* matrix) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.matrix_);
+  }
+  _impl_.matrix_ = matrix;
+  if (matrix) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Matrix_TF_Meta.matrix)
+}
+inline ::generated::Matrix* Matrix_TF_Meta::release_matrix() {
+  
+  ::generated::Matrix* temp = _impl_.matrix_;
+  _impl_.matrix_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Matrix* Matrix_TF_Meta::unsafe_arena_release_matrix() {
+  // @@protoc_insertion_point(field_release:generated.Matrix_TF_Meta.matrix)
+  
+  ::generated::Matrix* temp = _impl_.matrix_;
+  _impl_.matrix_ = nullptr;
+  return temp;
+}
+inline ::generated::Matrix* Matrix_TF_Meta::_internal_mutable_matrix() {
+  
+  if (_impl_.matrix_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Matrix>(GetArenaForAllocation());
+    _impl_.matrix_ = p;
+  }
+  return _impl_.matrix_;
+}
+inline ::generated::Matrix* Matrix_TF_Meta::mutable_matrix() {
+  ::generated::Matrix* _msg = _internal_mutable_matrix();
+  // @@protoc_insertion_point(field_mutable:generated.Matrix_TF_Meta.matrix)
+  return _msg;
+}
+inline void Matrix_TF_Meta::set_allocated_matrix(::generated::Matrix* matrix) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.matrix_;
+  }
+  if (matrix) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(matrix);
+    if (message_arena != submessage_arena) {
+      matrix = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, matrix, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.matrix_ = matrix;
+  // @@protoc_insertion_point(field_set_allocated:generated.Matrix_TF_Meta.matrix)
+}
+
+// optional .generated.Transformation_Meta transformation_meta = 2;
+inline bool Matrix_TF_Meta::_internal_has_transformation_meta() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.transformation_meta_ != nullptr);
+  return value;
+}
+inline bool Matrix_TF_Meta::has_transformation_meta() const {
+  return _internal_has_transformation_meta();
+}
+inline const ::generated::Transformation_Meta& Matrix_TF_Meta::_internal_transformation_meta() const {
+  const ::generated::Transformation_Meta* p = _impl_.transformation_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Transformation_Meta&>(
+      ::generated::_Transformation_Meta_default_instance_);
+}
+inline const ::generated::Transformation_Meta& Matrix_TF_Meta::transformation_meta() const {
+  // @@protoc_insertion_point(field_get:generated.Matrix_TF_Meta.transformation_meta)
+  return _internal_transformation_meta();
+}
+inline void Matrix_TF_Meta::unsafe_arena_set_allocated_transformation_meta(
+    ::generated::Transformation_Meta* transformation_meta) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  if (transformation_meta) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Matrix_TF_Meta.transformation_meta)
+}
+inline ::generated::Transformation_Meta* Matrix_TF_Meta::release_transformation_meta() {
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Transformation_Meta* Matrix_TF_Meta::unsafe_arena_release_transformation_meta() {
+  // @@protoc_insertion_point(field_release:generated.Matrix_TF_Meta.transformation_meta)
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+  return temp;
+}
+inline ::generated::Transformation_Meta* Matrix_TF_Meta::_internal_mutable_transformation_meta() {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  if (_impl_.transformation_meta_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Transformation_Meta>(GetArenaForAllocation());
+    _impl_.transformation_meta_ = p;
+  }
+  return _impl_.transformation_meta_;
+}
+inline ::generated::Transformation_Meta* Matrix_TF_Meta::mutable_transformation_meta() {
+  ::generated::Transformation_Meta* _msg = _internal_mutable_transformation_meta();
+  // @@protoc_insertion_point(field_mutable:generated.Matrix_TF_Meta.transformation_meta)
+  return _msg;
+}
+inline void Matrix_TF_Meta::set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  if (transformation_meta) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transformation_meta));
+    if (message_arena != submessage_arena) {
+      transformation_meta = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transformation_meta, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  // @@protoc_insertion_point(field_set_allocated:generated.Matrix_TF_Meta.transformation_meta)
+}
+
+// -------------------------------------------------------------------
+
+// Vertex_3D_Meta
+
+// .generated.vertex_3d vertex = 1;
+inline bool Vertex_3D_Meta::_internal_has_vertex() const {
+  return this != internal_default_instance() && _impl_.vertex_ != nullptr;
+}
+inline bool Vertex_3D_Meta::has_vertex() const {
+  return _internal_has_vertex();
+}
+inline void Vertex_3D_Meta::clear_vertex() {
+  if (GetArenaForAllocation() == nullptr && _impl_.vertex_ != nullptr) {
+    delete _impl_.vertex_;
+  }
+  _impl_.vertex_ = nullptr;
+}
+inline const ::generated::vertex_3d& Vertex_3D_Meta::_internal_vertex() const {
+  const ::generated::vertex_3d* p = _impl_.vertex_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::vertex_3d&>(
+      ::generated::_vertex_3d_default_instance_);
+}
+inline const ::generated::vertex_3d& Vertex_3D_Meta::vertex() const {
+  // @@protoc_insertion_point(field_get:generated.Vertex_3D_Meta.vertex)
+  return _internal_vertex();
+}
+inline void Vertex_3D_Meta::unsafe_arena_set_allocated_vertex(
+    ::generated::vertex_3d* vertex) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vertex_);
+  }
+  _impl_.vertex_ = vertex;
+  if (vertex) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Vertex_3D_Meta.vertex)
+}
+inline ::generated::vertex_3d* Vertex_3D_Meta::release_vertex() {
+  
+  ::generated::vertex_3d* temp = _impl_.vertex_;
+  _impl_.vertex_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::vertex_3d* Vertex_3D_Meta::unsafe_arena_release_vertex() {
+  // @@protoc_insertion_point(field_release:generated.Vertex_3D_Meta.vertex)
+  
+  ::generated::vertex_3d* temp = _impl_.vertex_;
+  _impl_.vertex_ = nullptr;
+  return temp;
+}
+inline ::generated::vertex_3d* Vertex_3D_Meta::_internal_mutable_vertex() {
+  
+  if (_impl_.vertex_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::vertex_3d>(GetArenaForAllocation());
+    _impl_.vertex_ = p;
+  }
+  return _impl_.vertex_;
+}
+inline ::generated::vertex_3d* Vertex_3D_Meta::mutable_vertex() {
+  ::generated::vertex_3d* _msg = _internal_mutable_vertex();
+  // @@protoc_insertion_point(field_mutable:generated.Vertex_3D_Meta.vertex)
+  return _msg;
+}
+inline void Vertex_3D_Meta::set_allocated_vertex(::generated::vertex_3d* vertex) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.vertex_;
+  }
+  if (vertex) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(vertex);
+    if (message_arena != submessage_arena) {
+      vertex = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, vertex, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.vertex_ = vertex;
+  // @@protoc_insertion_point(field_set_allocated:generated.Vertex_3D_Meta.vertex)
+}
+
+// optional .generated.Transformation_Meta transformation_meta = 2;
+inline bool Vertex_3D_Meta::_internal_has_transformation_meta() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.transformation_meta_ != nullptr);
+  return value;
+}
+inline bool Vertex_3D_Meta::has_transformation_meta() const {
+  return _internal_has_transformation_meta();
+}
+inline const ::generated::Transformation_Meta& Vertex_3D_Meta::_internal_transformation_meta() const {
+  const ::generated::Transformation_Meta* p = _impl_.transformation_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Transformation_Meta&>(
+      ::generated::_Transformation_Meta_default_instance_);
+}
+inline const ::generated::Transformation_Meta& Vertex_3D_Meta::transformation_meta() const {
+  // @@protoc_insertion_point(field_get:generated.Vertex_3D_Meta.transformation_meta)
+  return _internal_transformation_meta();
+}
+inline void Vertex_3D_Meta::unsafe_arena_set_allocated_transformation_meta(
+    ::generated::Transformation_Meta* transformation_meta) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  if (transformation_meta) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Vertex_3D_Meta.transformation_meta)
+}
+inline ::generated::Transformation_Meta* Vertex_3D_Meta::release_transformation_meta() {
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Transformation_Meta* Vertex_3D_Meta::unsafe_arena_release_transformation_meta() {
+  // @@protoc_insertion_point(field_release:generated.Vertex_3D_Meta.transformation_meta)
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+  return temp;
+}
+inline ::generated::Transformation_Meta* Vertex_3D_Meta::_internal_mutable_transformation_meta() {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  if (_impl_.transformation_meta_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Transformation_Meta>(GetArenaForAllocation());
+    _impl_.transformation_meta_ = p;
+  }
+  return _impl_.transformation_meta_;
+}
+inline ::generated::Transformation_Meta* Vertex_3D_Meta::mutable_transformation_meta() {
+  ::generated::Transformation_Meta* _msg = _internal_mutable_transformation_meta();
+  // @@protoc_insertion_point(field_mutable:generated.Vertex_3D_Meta.transformation_meta)
+  return _msg;
+}
+inline void Vertex_3D_Meta::set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  if (transformation_meta) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transformation_meta));
+    if (message_arena != submessage_arena) {
+      transformation_meta = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transformation_meta, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  // @@protoc_insertion_point(field_set_allocated:generated.Vertex_3D_Meta.transformation_meta)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -30,6 +30,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/empty.pb.h>
 #include "vertex.pb.h"
+#include "meta_data.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_robot_2eproto
@@ -44,43 +45,51 @@ struct TableStruct_robot_2eproto {
   static const uint32_t offsets[];
 };
 namespace generated {
-class joints;
-struct jointsDefaultTypeInternal;
-extern jointsDefaultTypeInternal _joints_default_instance_;
-class tcps;
-struct tcpsDefaultTypeInternal;
-extern tcpsDefaultTypeInternal _tcps_default_instance_;
-class voxels;
-struct voxelsDefaultTypeInternal;
-extern voxelsDefaultTypeInternal _voxels_default_instance_;
+class Joints;
+struct JointsDefaultTypeInternal;
+extern JointsDefaultTypeInternal _Joints_default_instance_;
+class Tcps;
+struct TcpsDefaultTypeInternal;
+extern TcpsDefaultTypeInternal _Tcps_default_instance_;
+class Tcps_TF_Meta;
+struct Tcps_TF_MetaDefaultTypeInternal;
+extern Tcps_TF_MetaDefaultTypeInternal _Tcps_TF_Meta_default_instance_;
+class Voxel_TF_Meta;
+struct Voxel_TF_MetaDefaultTypeInternal;
+extern Voxel_TF_MetaDefaultTypeInternal _Voxel_TF_Meta_default_instance_;
+class Voxels;
+struct VoxelsDefaultTypeInternal;
+extern VoxelsDefaultTypeInternal _Voxels_default_instance_;
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
-template<> ::generated::joints* Arena::CreateMaybeMessage<::generated::joints>(Arena*);
-template<> ::generated::tcps* Arena::CreateMaybeMessage<::generated::tcps>(Arena*);
-template<> ::generated::voxels* Arena::CreateMaybeMessage<::generated::voxels>(Arena*);
+template<> ::generated::Joints* Arena::CreateMaybeMessage<::generated::Joints>(Arena*);
+template<> ::generated::Tcps* Arena::CreateMaybeMessage<::generated::Tcps>(Arena*);
+template<> ::generated::Tcps_TF_Meta* Arena::CreateMaybeMessage<::generated::Tcps_TF_Meta>(Arena*);
+template<> ::generated::Voxel_TF_Meta* Arena::CreateMaybeMessage<::generated::Voxel_TF_Meta>(Arena*);
+template<> ::generated::Voxels* Arena::CreateMaybeMessage<::generated::Voxels>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace generated {
 
 // ===================================================================
 
-class joints final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.joints) */ {
+class Joints final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Joints) */ {
  public:
-  inline joints() : joints(nullptr) {}
-  ~joints() override;
-  explicit PROTOBUF_CONSTEXPR joints(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Joints() : Joints(nullptr) {}
+  ~Joints() override;
+  explicit PROTOBUF_CONSTEXPR Joints(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  joints(const joints& from);
-  joints(joints&& from) noexcept
-    : joints() {
+  Joints(const Joints& from);
+  Joints(Joints&& from) noexcept
+    : Joints() {
     *this = ::std::move(from);
   }
 
-  inline joints& operator=(const joints& from) {
+  inline Joints& operator=(const Joints& from) {
     CopyFrom(from);
     return *this;
   }
-  inline joints& operator=(joints&& from) noexcept {
+  inline Joints& operator=(Joints&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -94,20 +103,20 @@ class joints final :
     return *this;
   }
 
-  static const joints& default_instance() {
+  static const Joints& default_instance() {
     return *internal_default_instance();
   }
-  static inline const joints* internal_default_instance() {
-    return reinterpret_cast<const joints*>(
-               &_joints_default_instance_);
+  static inline const Joints* internal_default_instance() {
+    return reinterpret_cast<const Joints*>(
+               &_Joints_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     0;
 
-  friend void swap(joints& a, joints& b) {
+  friend void swap(Joints& a, Joints& b) {
     a.Swap(&b);
   }
-  inline void Swap(joints* other) {
+  inline void Swap(Joints* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -120,7 +129,7 @@ class joints final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(joints* other) {
+  void UnsafeArenaSwap(Joints* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -128,12 +137,12 @@ class joints final :
 
   // implements Message ----------------------------------------------
 
-  joints* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<joints>(arena);
+  Joints* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Joints>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const joints& from);
-  void MergeFrom(const joints& from);
+  void CopyFrom(const Joints& from);
+  void MergeFrom(const Joints& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -147,15 +156,15 @@ class joints final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(joints* other);
+  void InternalSwap(Joints* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.joints";
+    return "generated.Joints";
   }
   protected:
-  explicit joints(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Joints(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -237,7 +246,7 @@ class joints final :
   void _internal_set_theta_7(float value);
   public:
 
-  // @@protoc_insertion_point(class_scope:generated.joints)
+  // @@protoc_insertion_point(class_scope:generated.Joints)
  private:
   class _Internal;
 
@@ -259,24 +268,24 @@ class joints final :
 };
 // -------------------------------------------------------------------
 
-class voxels final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.voxels) */ {
+class Voxels final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Voxels) */ {
  public:
-  inline voxels() : voxels(nullptr) {}
-  ~voxels() override;
-  explicit PROTOBUF_CONSTEXPR voxels(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Voxels() : Voxels(nullptr) {}
+  ~Voxels() override;
+  explicit PROTOBUF_CONSTEXPR Voxels(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  voxels(const voxels& from);
-  voxels(voxels&& from) noexcept
-    : voxels() {
+  Voxels(const Voxels& from);
+  Voxels(Voxels&& from) noexcept
+    : Voxels() {
     *this = ::std::move(from);
   }
 
-  inline voxels& operator=(const voxels& from) {
+  inline Voxels& operator=(const Voxels& from) {
     CopyFrom(from);
     return *this;
   }
-  inline voxels& operator=(voxels&& from) noexcept {
+  inline Voxels& operator=(Voxels&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -290,20 +299,20 @@ class voxels final :
     return *this;
   }
 
-  static const voxels& default_instance() {
+  static const Voxels& default_instance() {
     return *internal_default_instance();
   }
-  static inline const voxels* internal_default_instance() {
-    return reinterpret_cast<const voxels*>(
-               &_voxels_default_instance_);
+  static inline const Voxels* internal_default_instance() {
+    return reinterpret_cast<const Voxels*>(
+               &_Voxels_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     1;
 
-  friend void swap(voxels& a, voxels& b) {
+  friend void swap(Voxels& a, Voxels& b) {
     a.Swap(&b);
   }
-  inline void Swap(voxels* other) {
+  inline void Swap(Voxels* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -316,7 +325,7 @@ class voxels final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(voxels* other) {
+  void UnsafeArenaSwap(Voxels* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -324,12 +333,12 @@ class voxels final :
 
   // implements Message ----------------------------------------------
 
-  voxels* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<voxels>(arena);
+  Voxels* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Voxels>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const voxels& from);
-  void MergeFrom(const voxels& from);
+  void CopyFrom(const Voxels& from);
+  void MergeFrom(const Voxels& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -343,15 +352,15 @@ class voxels final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(voxels* other);
+  void InternalSwap(Voxels* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.voxels";
+    return "generated.Voxels";
   }
   protected:
-  explicit voxels(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Voxels(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -384,23 +393,23 @@ class voxels final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >&
       voxel_coords() const;
 
-  // .generated.matrix robot_origin = 1;
+  // .generated.Matrix robot_origin = 1;
   bool has_robot_origin() const;
   private:
   bool _internal_has_robot_origin() const;
   public:
   void clear_robot_origin();
-  const ::generated::matrix& robot_origin() const;
-  PROTOBUF_NODISCARD ::generated::matrix* release_robot_origin();
-  ::generated::matrix* mutable_robot_origin();
-  void set_allocated_robot_origin(::generated::matrix* robot_origin);
+  const ::generated::Matrix& robot_origin() const;
+  PROTOBUF_NODISCARD ::generated::Matrix* release_robot_origin();
+  ::generated::Matrix* mutable_robot_origin();
+  void set_allocated_robot_origin(::generated::Matrix* robot_origin);
   private:
-  const ::generated::matrix& _internal_robot_origin() const;
-  ::generated::matrix* _internal_mutable_robot_origin();
+  const ::generated::Matrix& _internal_robot_origin() const;
+  ::generated::Matrix* _internal_mutable_robot_origin();
   public:
   void unsafe_arena_set_allocated_robot_origin(
-      ::generated::matrix* robot_origin);
-  ::generated::matrix* unsafe_arena_release_robot_origin();
+      ::generated::Matrix* robot_origin);
+  ::generated::Matrix* unsafe_arena_release_robot_origin();
 
   // float voxel_side_length = 2;
   void clear_voxel_side_length();
@@ -411,7 +420,7 @@ class voxels final :
   void _internal_set_voxel_side_length(float value);
   public:
 
-  // @@protoc_insertion_point(class_scope:generated.voxels)
+  // @@protoc_insertion_point(class_scope:generated.Voxels)
  private:
   class _Internal;
 
@@ -420,7 +429,7 @@ class voxels final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui > voxel_coords_;
-    ::generated::matrix* robot_origin_;
+    ::generated::Matrix* robot_origin_;
     float voxel_side_length_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -429,24 +438,24 @@ class voxels final :
 };
 // -------------------------------------------------------------------
 
-class tcps final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.tcps) */ {
+class Tcps final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Tcps) */ {
  public:
-  inline tcps() : tcps(nullptr) {}
-  ~tcps() override;
-  explicit PROTOBUF_CONSTEXPR tcps(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Tcps() : Tcps(nullptr) {}
+  ~Tcps() override;
+  explicit PROTOBUF_CONSTEXPR Tcps(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  tcps(const tcps& from);
-  tcps(tcps&& from) noexcept
-    : tcps() {
+  Tcps(const Tcps& from);
+  Tcps(Tcps&& from) noexcept
+    : Tcps() {
     *this = ::std::move(from);
   }
 
-  inline tcps& operator=(const tcps& from) {
+  inline Tcps& operator=(const Tcps& from) {
     CopyFrom(from);
     return *this;
   }
-  inline tcps& operator=(tcps&& from) noexcept {
+  inline Tcps& operator=(Tcps&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -460,20 +469,20 @@ class tcps final :
     return *this;
   }
 
-  static const tcps& default_instance() {
+  static const Tcps& default_instance() {
     return *internal_default_instance();
   }
-  static inline const tcps* internal_default_instance() {
-    return reinterpret_cast<const tcps*>(
-               &_tcps_default_instance_);
+  static inline const Tcps* internal_default_instance() {
+    return reinterpret_cast<const Tcps*>(
+               &_Tcps_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     2;
 
-  friend void swap(tcps& a, tcps& b) {
+  friend void swap(Tcps& a, Tcps& b) {
     a.Swap(&b);
   }
-  inline void Swap(tcps* other) {
+  inline void Swap(Tcps* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -486,7 +495,7 @@ class tcps final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(tcps* other) {
+  void UnsafeArenaSwap(Tcps* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -494,12 +503,12 @@ class tcps final :
 
   // implements Message ----------------------------------------------
 
-  tcps* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<tcps>(arena);
+  Tcps* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Tcps>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const tcps& from);
-  void MergeFrom(const tcps& from);
+  void CopyFrom(const Tcps& from);
+  void MergeFrom(const Tcps& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -513,15 +522,15 @@ class tcps final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(tcps* other);
+  void InternalSwap(Tcps* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.tcps";
+    return "generated.Tcps";
   }
   protected:
-  explicit tcps(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Tcps(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -552,7 +561,7 @@ class tcps final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d >&
       points() const;
 
-  // @@protoc_insertion_point(class_scope:generated.tcps)
+  // @@protoc_insertion_point(class_scope:generated.Tcps)
  private:
   class _Internal;
 
@@ -566,6 +575,326 @@ class tcps final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_robot_2eproto;
 };
+// -------------------------------------------------------------------
+
+class Voxel_TF_Meta final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Voxel_TF_Meta) */ {
+ public:
+  inline Voxel_TF_Meta() : Voxel_TF_Meta(nullptr) {}
+  ~Voxel_TF_Meta() override;
+  explicit PROTOBUF_CONSTEXPR Voxel_TF_Meta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Voxel_TF_Meta(const Voxel_TF_Meta& from);
+  Voxel_TF_Meta(Voxel_TF_Meta&& from) noexcept
+    : Voxel_TF_Meta() {
+    *this = ::std::move(from);
+  }
+
+  inline Voxel_TF_Meta& operator=(const Voxel_TF_Meta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Voxel_TF_Meta& operator=(Voxel_TF_Meta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const Voxel_TF_Meta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Voxel_TF_Meta* internal_default_instance() {
+    return reinterpret_cast<const Voxel_TF_Meta*>(
+               &_Voxel_TF_Meta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(Voxel_TF_Meta& a, Voxel_TF_Meta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Voxel_TF_Meta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Voxel_TF_Meta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Voxel_TF_Meta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Voxel_TF_Meta>(arena);
+  }
+  void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
+  void CopyFrom(const Voxel_TF_Meta& from);
+  void MergeFrom(const Voxel_TF_Meta& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Voxel_TF_Meta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "generated.Voxel_TF_Meta";
+  }
+  protected:
+  explicit Voxel_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  std::string GetTypeName() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVoxelsFieldNumber = 1,
+    kTransformationMetaFieldNumber = 2,
+  };
+  // .generated.Voxels voxels = 1;
+  bool has_voxels() const;
+  private:
+  bool _internal_has_voxels() const;
+  public:
+  void clear_voxels();
+  const ::generated::Voxels& voxels() const;
+  PROTOBUF_NODISCARD ::generated::Voxels* release_voxels();
+  ::generated::Voxels* mutable_voxels();
+  void set_allocated_voxels(::generated::Voxels* voxels);
+  private:
+  const ::generated::Voxels& _internal_voxels() const;
+  ::generated::Voxels* _internal_mutable_voxels();
+  public:
+  void unsafe_arena_set_allocated_voxels(
+      ::generated::Voxels* voxels);
+  ::generated::Voxels* unsafe_arena_release_voxels();
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  bool has_transformation_meta() const;
+  private:
+  bool _internal_has_transformation_meta() const;
+  public:
+  void clear_transformation_meta();
+  const ::generated::Transformation_Meta& transformation_meta() const;
+  PROTOBUF_NODISCARD ::generated::Transformation_Meta* release_transformation_meta();
+  ::generated::Transformation_Meta* mutable_transformation_meta();
+  void set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta);
+  private:
+  const ::generated::Transformation_Meta& _internal_transformation_meta() const;
+  ::generated::Transformation_Meta* _internal_mutable_transformation_meta();
+  public:
+  void unsafe_arena_set_allocated_transformation_meta(
+      ::generated::Transformation_Meta* transformation_meta);
+  ::generated::Transformation_Meta* unsafe_arena_release_transformation_meta();
+
+  // @@protoc_insertion_point(class_scope:generated.Voxel_TF_Meta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::generated::Voxels* voxels_;
+    ::generated::Transformation_Meta* transformation_meta_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_robot_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Tcps_TF_Meta final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Tcps_TF_Meta) */ {
+ public:
+  inline Tcps_TF_Meta() : Tcps_TF_Meta(nullptr) {}
+  ~Tcps_TF_Meta() override;
+  explicit PROTOBUF_CONSTEXPR Tcps_TF_Meta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Tcps_TF_Meta(const Tcps_TF_Meta& from);
+  Tcps_TF_Meta(Tcps_TF_Meta&& from) noexcept
+    : Tcps_TF_Meta() {
+    *this = ::std::move(from);
+  }
+
+  inline Tcps_TF_Meta& operator=(const Tcps_TF_Meta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Tcps_TF_Meta& operator=(Tcps_TF_Meta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const Tcps_TF_Meta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Tcps_TF_Meta* internal_default_instance() {
+    return reinterpret_cast<const Tcps_TF_Meta*>(
+               &_Tcps_TF_Meta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(Tcps_TF_Meta& a, Tcps_TF_Meta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Tcps_TF_Meta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Tcps_TF_Meta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Tcps_TF_Meta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Tcps_TF_Meta>(arena);
+  }
+  void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
+  void CopyFrom(const Tcps_TF_Meta& from);
+  void MergeFrom(const Tcps_TF_Meta& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Tcps_TF_Meta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "generated.Tcps_TF_Meta";
+  }
+  protected:
+  explicit Tcps_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  std::string GetTypeName() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTcpsFieldNumber = 1,
+    kTransformationMetaFieldNumber = 2,
+  };
+  // .generated.Tcps tcps = 1;
+  bool has_tcps() const;
+  private:
+  bool _internal_has_tcps() const;
+  public:
+  void clear_tcps();
+  const ::generated::Tcps& tcps() const;
+  PROTOBUF_NODISCARD ::generated::Tcps* release_tcps();
+  ::generated::Tcps* mutable_tcps();
+  void set_allocated_tcps(::generated::Tcps* tcps);
+  private:
+  const ::generated::Tcps& _internal_tcps() const;
+  ::generated::Tcps* _internal_mutable_tcps();
+  public:
+  void unsafe_arena_set_allocated_tcps(
+      ::generated::Tcps* tcps);
+  ::generated::Tcps* unsafe_arena_release_tcps();
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  bool has_transformation_meta() const;
+  private:
+  bool _internal_has_transformation_meta() const;
+  public:
+  void clear_transformation_meta();
+  const ::generated::Transformation_Meta& transformation_meta() const;
+  PROTOBUF_NODISCARD ::generated::Transformation_Meta* release_transformation_meta();
+  ::generated::Transformation_Meta* mutable_transformation_meta();
+  void set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta);
+  private:
+  const ::generated::Transformation_Meta& _internal_transformation_meta() const;
+  ::generated::Transformation_Meta* _internal_mutable_transformation_meta();
+  public:
+  void unsafe_arena_set_allocated_transformation_meta(
+      ::generated::Transformation_Meta* transformation_meta);
+  ::generated::Transformation_Meta* unsafe_arena_release_transformation_meta();
+
+  // @@protoc_insertion_point(class_scope:generated.Tcps_TF_Meta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::generated::Tcps* tcps_;
+    ::generated::Transformation_Meta* transformation_meta_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_robot_2eproto;
+};
 // ===================================================================
 
 
@@ -575,170 +904,170 @@ class tcps final :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
-// joints
+// Joints
 
 // float theta_1 = 1;
-inline void joints::clear_theta_1() {
+inline void Joints::clear_theta_1() {
   _impl_.theta_1_ = 0;
 }
-inline float joints::_internal_theta_1() const {
+inline float Joints::_internal_theta_1() const {
   return _impl_.theta_1_;
 }
-inline float joints::theta_1() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_1)
+inline float Joints::theta_1() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_1)
   return _internal_theta_1();
 }
-inline void joints::_internal_set_theta_1(float value) {
+inline void Joints::_internal_set_theta_1(float value) {
   
   _impl_.theta_1_ = value;
 }
-inline void joints::set_theta_1(float value) {
+inline void Joints::set_theta_1(float value) {
   _internal_set_theta_1(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_1)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_1)
 }
 
 // float theta_2 = 2;
-inline void joints::clear_theta_2() {
+inline void Joints::clear_theta_2() {
   _impl_.theta_2_ = 0;
 }
-inline float joints::_internal_theta_2() const {
+inline float Joints::_internal_theta_2() const {
   return _impl_.theta_2_;
 }
-inline float joints::theta_2() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_2)
+inline float Joints::theta_2() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_2)
   return _internal_theta_2();
 }
-inline void joints::_internal_set_theta_2(float value) {
+inline void Joints::_internal_set_theta_2(float value) {
   
   _impl_.theta_2_ = value;
 }
-inline void joints::set_theta_2(float value) {
+inline void Joints::set_theta_2(float value) {
   _internal_set_theta_2(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_2)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_2)
 }
 
 // float theta_3 = 3;
-inline void joints::clear_theta_3() {
+inline void Joints::clear_theta_3() {
   _impl_.theta_3_ = 0;
 }
-inline float joints::_internal_theta_3() const {
+inline float Joints::_internal_theta_3() const {
   return _impl_.theta_3_;
 }
-inline float joints::theta_3() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_3)
+inline float Joints::theta_3() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_3)
   return _internal_theta_3();
 }
-inline void joints::_internal_set_theta_3(float value) {
+inline void Joints::_internal_set_theta_3(float value) {
   
   _impl_.theta_3_ = value;
 }
-inline void joints::set_theta_3(float value) {
+inline void Joints::set_theta_3(float value) {
   _internal_set_theta_3(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_3)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_3)
 }
 
 // float theta_4 = 4;
-inline void joints::clear_theta_4() {
+inline void Joints::clear_theta_4() {
   _impl_.theta_4_ = 0;
 }
-inline float joints::_internal_theta_4() const {
+inline float Joints::_internal_theta_4() const {
   return _impl_.theta_4_;
 }
-inline float joints::theta_4() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_4)
+inline float Joints::theta_4() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_4)
   return _internal_theta_4();
 }
-inline void joints::_internal_set_theta_4(float value) {
+inline void Joints::_internal_set_theta_4(float value) {
   
   _impl_.theta_4_ = value;
 }
-inline void joints::set_theta_4(float value) {
+inline void Joints::set_theta_4(float value) {
   _internal_set_theta_4(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_4)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_4)
 }
 
 // float theta_5 = 5;
-inline void joints::clear_theta_5() {
+inline void Joints::clear_theta_5() {
   _impl_.theta_5_ = 0;
 }
-inline float joints::_internal_theta_5() const {
+inline float Joints::_internal_theta_5() const {
   return _impl_.theta_5_;
 }
-inline float joints::theta_5() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_5)
+inline float Joints::theta_5() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_5)
   return _internal_theta_5();
 }
-inline void joints::_internal_set_theta_5(float value) {
+inline void Joints::_internal_set_theta_5(float value) {
   
   _impl_.theta_5_ = value;
 }
-inline void joints::set_theta_5(float value) {
+inline void Joints::set_theta_5(float value) {
   _internal_set_theta_5(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_5)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_5)
 }
 
 // float theta_6 = 6;
-inline void joints::clear_theta_6() {
+inline void Joints::clear_theta_6() {
   _impl_.theta_6_ = 0;
 }
-inline float joints::_internal_theta_6() const {
+inline float Joints::_internal_theta_6() const {
   return _impl_.theta_6_;
 }
-inline float joints::theta_6() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_6)
+inline float Joints::theta_6() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_6)
   return _internal_theta_6();
 }
-inline void joints::_internal_set_theta_6(float value) {
+inline void Joints::_internal_set_theta_6(float value) {
   
   _impl_.theta_6_ = value;
 }
-inline void joints::set_theta_6(float value) {
+inline void Joints::set_theta_6(float value) {
   _internal_set_theta_6(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_6)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_6)
 }
 
 // float theta_7 = 7;
-inline void joints::clear_theta_7() {
+inline void Joints::clear_theta_7() {
   _impl_.theta_7_ = 0;
 }
-inline float joints::_internal_theta_7() const {
+inline float Joints::_internal_theta_7() const {
   return _impl_.theta_7_;
 }
-inline float joints::theta_7() const {
-  // @@protoc_insertion_point(field_get:generated.joints.theta_7)
+inline float Joints::theta_7() const {
+  // @@protoc_insertion_point(field_get:generated.Joints.theta_7)
   return _internal_theta_7();
 }
-inline void joints::_internal_set_theta_7(float value) {
+inline void Joints::_internal_set_theta_7(float value) {
   
   _impl_.theta_7_ = value;
 }
-inline void joints::set_theta_7(float value) {
+inline void Joints::set_theta_7(float value) {
   _internal_set_theta_7(value);
-  // @@protoc_insertion_point(field_set:generated.joints.theta_7)
+  // @@protoc_insertion_point(field_set:generated.Joints.theta_7)
 }
 
 // -------------------------------------------------------------------
 
-// voxels
+// Voxels
 
-// .generated.matrix robot_origin = 1;
-inline bool voxels::_internal_has_robot_origin() const {
+// .generated.Matrix robot_origin = 1;
+inline bool Voxels::_internal_has_robot_origin() const {
   return this != internal_default_instance() && _impl_.robot_origin_ != nullptr;
 }
-inline bool voxels::has_robot_origin() const {
+inline bool Voxels::has_robot_origin() const {
   return _internal_has_robot_origin();
 }
-inline const ::generated::matrix& voxels::_internal_robot_origin() const {
-  const ::generated::matrix* p = _impl_.robot_origin_;
-  return p != nullptr ? *p : reinterpret_cast<const ::generated::matrix&>(
-      ::generated::_matrix_default_instance_);
+inline const ::generated::Matrix& Voxels::_internal_robot_origin() const {
+  const ::generated::Matrix* p = _impl_.robot_origin_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Matrix&>(
+      ::generated::_Matrix_default_instance_);
 }
-inline const ::generated::matrix& voxels::robot_origin() const {
-  // @@protoc_insertion_point(field_get:generated.voxels.robot_origin)
+inline const ::generated::Matrix& Voxels::robot_origin() const {
+  // @@protoc_insertion_point(field_get:generated.Voxels.robot_origin)
   return _internal_robot_origin();
 }
-inline void voxels::unsafe_arena_set_allocated_robot_origin(
-    ::generated::matrix* robot_origin) {
+inline void Voxels::unsafe_arena_set_allocated_robot_origin(
+    ::generated::Matrix* robot_origin) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.robot_origin_);
   }
@@ -748,11 +1077,11 @@ inline void voxels::unsafe_arena_set_allocated_robot_origin(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.voxels.robot_origin)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Voxels.robot_origin)
 }
-inline ::generated::matrix* voxels::release_robot_origin() {
+inline ::generated::Matrix* Voxels::release_robot_origin() {
   
-  ::generated::matrix* temp = _impl_.robot_origin_;
+  ::generated::Matrix* temp = _impl_.robot_origin_;
   _impl_.robot_origin_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -765,27 +1094,27 @@ inline ::generated::matrix* voxels::release_robot_origin() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::matrix* voxels::unsafe_arena_release_robot_origin() {
-  // @@protoc_insertion_point(field_release:generated.voxels.robot_origin)
+inline ::generated::Matrix* Voxels::unsafe_arena_release_robot_origin() {
+  // @@protoc_insertion_point(field_release:generated.Voxels.robot_origin)
   
-  ::generated::matrix* temp = _impl_.robot_origin_;
+  ::generated::Matrix* temp = _impl_.robot_origin_;
   _impl_.robot_origin_ = nullptr;
   return temp;
 }
-inline ::generated::matrix* voxels::_internal_mutable_robot_origin() {
+inline ::generated::Matrix* Voxels::_internal_mutable_robot_origin() {
   
   if (_impl_.robot_origin_ == nullptr) {
-    auto* p = CreateMaybeMessage<::generated::matrix>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::generated::Matrix>(GetArenaForAllocation());
     _impl_.robot_origin_ = p;
   }
   return _impl_.robot_origin_;
 }
-inline ::generated::matrix* voxels::mutable_robot_origin() {
-  ::generated::matrix* _msg = _internal_mutable_robot_origin();
-  // @@protoc_insertion_point(field_mutable:generated.voxels.robot_origin)
+inline ::generated::Matrix* Voxels::mutable_robot_origin() {
+  ::generated::Matrix* _msg = _internal_mutable_robot_origin();
+  // @@protoc_insertion_point(field_mutable:generated.Voxels.robot_origin)
   return _msg;
 }
-inline void voxels::set_allocated_robot_origin(::generated::matrix* robot_origin) {
+inline void Voxels::set_allocated_robot_origin(::generated::Matrix* robot_origin) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.robot_origin_);
@@ -803,110 +1132,476 @@ inline void voxels::set_allocated_robot_origin(::generated::matrix* robot_origin
     
   }
   _impl_.robot_origin_ = robot_origin;
-  // @@protoc_insertion_point(field_set_allocated:generated.voxels.robot_origin)
+  // @@protoc_insertion_point(field_set_allocated:generated.Voxels.robot_origin)
 }
 
 // float voxel_side_length = 2;
-inline void voxels::clear_voxel_side_length() {
+inline void Voxels::clear_voxel_side_length() {
   _impl_.voxel_side_length_ = 0;
 }
-inline float voxels::_internal_voxel_side_length() const {
+inline float Voxels::_internal_voxel_side_length() const {
   return _impl_.voxel_side_length_;
 }
-inline float voxels::voxel_side_length() const {
-  // @@protoc_insertion_point(field_get:generated.voxels.voxel_side_length)
+inline float Voxels::voxel_side_length() const {
+  // @@protoc_insertion_point(field_get:generated.Voxels.voxel_side_length)
   return _internal_voxel_side_length();
 }
-inline void voxels::_internal_set_voxel_side_length(float value) {
+inline void Voxels::_internal_set_voxel_side_length(float value) {
   
   _impl_.voxel_side_length_ = value;
 }
-inline void voxels::set_voxel_side_length(float value) {
+inline void Voxels::set_voxel_side_length(float value) {
   _internal_set_voxel_side_length(value);
-  // @@protoc_insertion_point(field_set:generated.voxels.voxel_side_length)
+  // @@protoc_insertion_point(field_set:generated.Voxels.voxel_side_length)
 }
 
 // repeated .generated.vertex_3d_ui voxel_coords = 3;
-inline int voxels::_internal_voxel_coords_size() const {
+inline int Voxels::_internal_voxel_coords_size() const {
   return _impl_.voxel_coords_.size();
 }
-inline int voxels::voxel_coords_size() const {
+inline int Voxels::voxel_coords_size() const {
   return _internal_voxel_coords_size();
 }
-inline ::generated::vertex_3d_ui* voxels::mutable_voxel_coords(int index) {
-  // @@protoc_insertion_point(field_mutable:generated.voxels.voxel_coords)
+inline ::generated::vertex_3d_ui* Voxels::mutable_voxel_coords(int index) {
+  // @@protoc_insertion_point(field_mutable:generated.Voxels.voxel_coords)
   return _impl_.voxel_coords_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >*
-voxels::mutable_voxel_coords() {
-  // @@protoc_insertion_point(field_mutable_list:generated.voxels.voxel_coords)
+Voxels::mutable_voxel_coords() {
+  // @@protoc_insertion_point(field_mutable_list:generated.Voxels.voxel_coords)
   return &_impl_.voxel_coords_;
 }
-inline const ::generated::vertex_3d_ui& voxels::_internal_voxel_coords(int index) const {
+inline const ::generated::vertex_3d_ui& Voxels::_internal_voxel_coords(int index) const {
   return _impl_.voxel_coords_.Get(index);
 }
-inline const ::generated::vertex_3d_ui& voxels::voxel_coords(int index) const {
-  // @@protoc_insertion_point(field_get:generated.voxels.voxel_coords)
+inline const ::generated::vertex_3d_ui& Voxels::voxel_coords(int index) const {
+  // @@protoc_insertion_point(field_get:generated.Voxels.voxel_coords)
   return _internal_voxel_coords(index);
 }
-inline ::generated::vertex_3d_ui* voxels::_internal_add_voxel_coords() {
+inline ::generated::vertex_3d_ui* Voxels::_internal_add_voxel_coords() {
   return _impl_.voxel_coords_.Add();
 }
-inline ::generated::vertex_3d_ui* voxels::add_voxel_coords() {
+inline ::generated::vertex_3d_ui* Voxels::add_voxel_coords() {
   ::generated::vertex_3d_ui* _add = _internal_add_voxel_coords();
-  // @@protoc_insertion_point(field_add:generated.voxels.voxel_coords)
+  // @@protoc_insertion_point(field_add:generated.Voxels.voxel_coords)
   return _add;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >&
-voxels::voxel_coords() const {
-  // @@protoc_insertion_point(field_list:generated.voxels.voxel_coords)
+Voxels::voxel_coords() const {
+  // @@protoc_insertion_point(field_list:generated.Voxels.voxel_coords)
   return _impl_.voxel_coords_;
 }
 
 // -------------------------------------------------------------------
 
-// tcps
+// Tcps
 
 // repeated .generated.vertex_3d points = 1;
-inline int tcps::_internal_points_size() const {
+inline int Tcps::_internal_points_size() const {
   return _impl_.points_.size();
 }
-inline int tcps::points_size() const {
+inline int Tcps::points_size() const {
   return _internal_points_size();
 }
-inline ::generated::vertex_3d* tcps::mutable_points(int index) {
-  // @@protoc_insertion_point(field_mutable:generated.tcps.points)
+inline ::generated::vertex_3d* Tcps::mutable_points(int index) {
+  // @@protoc_insertion_point(field_mutable:generated.Tcps.points)
   return _impl_.points_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d >*
-tcps::mutable_points() {
-  // @@protoc_insertion_point(field_mutable_list:generated.tcps.points)
+Tcps::mutable_points() {
+  // @@protoc_insertion_point(field_mutable_list:generated.Tcps.points)
   return &_impl_.points_;
 }
-inline const ::generated::vertex_3d& tcps::_internal_points(int index) const {
+inline const ::generated::vertex_3d& Tcps::_internal_points(int index) const {
   return _impl_.points_.Get(index);
 }
-inline const ::generated::vertex_3d& tcps::points(int index) const {
-  // @@protoc_insertion_point(field_get:generated.tcps.points)
+inline const ::generated::vertex_3d& Tcps::points(int index) const {
+  // @@protoc_insertion_point(field_get:generated.Tcps.points)
   return _internal_points(index);
 }
-inline ::generated::vertex_3d* tcps::_internal_add_points() {
+inline ::generated::vertex_3d* Tcps::_internal_add_points() {
   return _impl_.points_.Add();
 }
-inline ::generated::vertex_3d* tcps::add_points() {
+inline ::generated::vertex_3d* Tcps::add_points() {
   ::generated::vertex_3d* _add = _internal_add_points();
-  // @@protoc_insertion_point(field_add:generated.tcps.points)
+  // @@protoc_insertion_point(field_add:generated.Tcps.points)
   return _add;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d >&
-tcps::points() const {
-  // @@protoc_insertion_point(field_list:generated.tcps.points)
+Tcps::points() const {
+  // @@protoc_insertion_point(field_list:generated.Tcps.points)
   return _impl_.points_;
+}
+
+// -------------------------------------------------------------------
+
+// Voxel_TF_Meta
+
+// .generated.Voxels voxels = 1;
+inline bool Voxel_TF_Meta::_internal_has_voxels() const {
+  return this != internal_default_instance() && _impl_.voxels_ != nullptr;
+}
+inline bool Voxel_TF_Meta::has_voxels() const {
+  return _internal_has_voxels();
+}
+inline void Voxel_TF_Meta::clear_voxels() {
+  if (GetArenaForAllocation() == nullptr && _impl_.voxels_ != nullptr) {
+    delete _impl_.voxels_;
+  }
+  _impl_.voxels_ = nullptr;
+}
+inline const ::generated::Voxels& Voxel_TF_Meta::_internal_voxels() const {
+  const ::generated::Voxels* p = _impl_.voxels_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Voxels&>(
+      ::generated::_Voxels_default_instance_);
+}
+inline const ::generated::Voxels& Voxel_TF_Meta::voxels() const {
+  // @@protoc_insertion_point(field_get:generated.Voxel_TF_Meta.voxels)
+  return _internal_voxels();
+}
+inline void Voxel_TF_Meta::unsafe_arena_set_allocated_voxels(
+    ::generated::Voxels* voxels) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.voxels_);
+  }
+  _impl_.voxels_ = voxels;
+  if (voxels) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Voxel_TF_Meta.voxels)
+}
+inline ::generated::Voxels* Voxel_TF_Meta::release_voxels() {
+  
+  ::generated::Voxels* temp = _impl_.voxels_;
+  _impl_.voxels_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Voxels* Voxel_TF_Meta::unsafe_arena_release_voxels() {
+  // @@protoc_insertion_point(field_release:generated.Voxel_TF_Meta.voxels)
+  
+  ::generated::Voxels* temp = _impl_.voxels_;
+  _impl_.voxels_ = nullptr;
+  return temp;
+}
+inline ::generated::Voxels* Voxel_TF_Meta::_internal_mutable_voxels() {
+  
+  if (_impl_.voxels_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Voxels>(GetArenaForAllocation());
+    _impl_.voxels_ = p;
+  }
+  return _impl_.voxels_;
+}
+inline ::generated::Voxels* Voxel_TF_Meta::mutable_voxels() {
+  ::generated::Voxels* _msg = _internal_mutable_voxels();
+  // @@protoc_insertion_point(field_mutable:generated.Voxel_TF_Meta.voxels)
+  return _msg;
+}
+inline void Voxel_TF_Meta::set_allocated_voxels(::generated::Voxels* voxels) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.voxels_;
+  }
+  if (voxels) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(voxels);
+    if (message_arena != submessage_arena) {
+      voxels = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, voxels, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.voxels_ = voxels;
+  // @@protoc_insertion_point(field_set_allocated:generated.Voxel_TF_Meta.voxels)
+}
+
+// optional .generated.Transformation_Meta transformation_meta = 2;
+inline bool Voxel_TF_Meta::_internal_has_transformation_meta() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.transformation_meta_ != nullptr);
+  return value;
+}
+inline bool Voxel_TF_Meta::has_transformation_meta() const {
+  return _internal_has_transformation_meta();
+}
+inline const ::generated::Transformation_Meta& Voxel_TF_Meta::_internal_transformation_meta() const {
+  const ::generated::Transformation_Meta* p = _impl_.transformation_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Transformation_Meta&>(
+      ::generated::_Transformation_Meta_default_instance_);
+}
+inline const ::generated::Transformation_Meta& Voxel_TF_Meta::transformation_meta() const {
+  // @@protoc_insertion_point(field_get:generated.Voxel_TF_Meta.transformation_meta)
+  return _internal_transformation_meta();
+}
+inline void Voxel_TF_Meta::unsafe_arena_set_allocated_transformation_meta(
+    ::generated::Transformation_Meta* transformation_meta) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  if (transformation_meta) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Voxel_TF_Meta.transformation_meta)
+}
+inline ::generated::Transformation_Meta* Voxel_TF_Meta::release_transformation_meta() {
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Transformation_Meta* Voxel_TF_Meta::unsafe_arena_release_transformation_meta() {
+  // @@protoc_insertion_point(field_release:generated.Voxel_TF_Meta.transformation_meta)
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+  return temp;
+}
+inline ::generated::Transformation_Meta* Voxel_TF_Meta::_internal_mutable_transformation_meta() {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  if (_impl_.transformation_meta_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Transformation_Meta>(GetArenaForAllocation());
+    _impl_.transformation_meta_ = p;
+  }
+  return _impl_.transformation_meta_;
+}
+inline ::generated::Transformation_Meta* Voxel_TF_Meta::mutable_transformation_meta() {
+  ::generated::Transformation_Meta* _msg = _internal_mutable_transformation_meta();
+  // @@protoc_insertion_point(field_mutable:generated.Voxel_TF_Meta.transformation_meta)
+  return _msg;
+}
+inline void Voxel_TF_Meta::set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  if (transformation_meta) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transformation_meta));
+    if (message_arena != submessage_arena) {
+      transformation_meta = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transformation_meta, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  // @@protoc_insertion_point(field_set_allocated:generated.Voxel_TF_Meta.transformation_meta)
+}
+
+// -------------------------------------------------------------------
+
+// Tcps_TF_Meta
+
+// .generated.Tcps tcps = 1;
+inline bool Tcps_TF_Meta::_internal_has_tcps() const {
+  return this != internal_default_instance() && _impl_.tcps_ != nullptr;
+}
+inline bool Tcps_TF_Meta::has_tcps() const {
+  return _internal_has_tcps();
+}
+inline void Tcps_TF_Meta::clear_tcps() {
+  if (GetArenaForAllocation() == nullptr && _impl_.tcps_ != nullptr) {
+    delete _impl_.tcps_;
+  }
+  _impl_.tcps_ = nullptr;
+}
+inline const ::generated::Tcps& Tcps_TF_Meta::_internal_tcps() const {
+  const ::generated::Tcps* p = _impl_.tcps_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Tcps&>(
+      ::generated::_Tcps_default_instance_);
+}
+inline const ::generated::Tcps& Tcps_TF_Meta::tcps() const {
+  // @@protoc_insertion_point(field_get:generated.Tcps_TF_Meta.tcps)
+  return _internal_tcps();
+}
+inline void Tcps_TF_Meta::unsafe_arena_set_allocated_tcps(
+    ::generated::Tcps* tcps) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.tcps_);
+  }
+  _impl_.tcps_ = tcps;
+  if (tcps) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Tcps_TF_Meta.tcps)
+}
+inline ::generated::Tcps* Tcps_TF_Meta::release_tcps() {
+  
+  ::generated::Tcps* temp = _impl_.tcps_;
+  _impl_.tcps_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Tcps* Tcps_TF_Meta::unsafe_arena_release_tcps() {
+  // @@protoc_insertion_point(field_release:generated.Tcps_TF_Meta.tcps)
+  
+  ::generated::Tcps* temp = _impl_.tcps_;
+  _impl_.tcps_ = nullptr;
+  return temp;
+}
+inline ::generated::Tcps* Tcps_TF_Meta::_internal_mutable_tcps() {
+  
+  if (_impl_.tcps_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Tcps>(GetArenaForAllocation());
+    _impl_.tcps_ = p;
+  }
+  return _impl_.tcps_;
+}
+inline ::generated::Tcps* Tcps_TF_Meta::mutable_tcps() {
+  ::generated::Tcps* _msg = _internal_mutable_tcps();
+  // @@protoc_insertion_point(field_mutable:generated.Tcps_TF_Meta.tcps)
+  return _msg;
+}
+inline void Tcps_TF_Meta::set_allocated_tcps(::generated::Tcps* tcps) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.tcps_;
+  }
+  if (tcps) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(tcps);
+    if (message_arena != submessage_arena) {
+      tcps = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, tcps, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.tcps_ = tcps;
+  // @@protoc_insertion_point(field_set_allocated:generated.Tcps_TF_Meta.tcps)
+}
+
+// optional .generated.Transformation_Meta transformation_meta = 2;
+inline bool Tcps_TF_Meta::_internal_has_transformation_meta() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.transformation_meta_ != nullptr);
+  return value;
+}
+inline bool Tcps_TF_Meta::has_transformation_meta() const {
+  return _internal_has_transformation_meta();
+}
+inline const ::generated::Transformation_Meta& Tcps_TF_Meta::_internal_transformation_meta() const {
+  const ::generated::Transformation_Meta* p = _impl_.transformation_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Transformation_Meta&>(
+      ::generated::_Transformation_Meta_default_instance_);
+}
+inline const ::generated::Transformation_Meta& Tcps_TF_Meta::transformation_meta() const {
+  // @@protoc_insertion_point(field_get:generated.Tcps_TF_Meta.transformation_meta)
+  return _internal_transformation_meta();
+}
+inline void Tcps_TF_Meta::unsafe_arena_set_allocated_transformation_meta(
+    ::generated::Transformation_Meta* transformation_meta) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  if (transformation_meta) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Tcps_TF_Meta.transformation_meta)
+}
+inline ::generated::Transformation_Meta* Tcps_TF_Meta::release_transformation_meta() {
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Transformation_Meta* Tcps_TF_Meta::unsafe_arena_release_transformation_meta() {
+  // @@protoc_insertion_point(field_release:generated.Tcps_TF_Meta.transformation_meta)
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+  return temp;
+}
+inline ::generated::Transformation_Meta* Tcps_TF_Meta::_internal_mutable_transformation_meta() {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  if (_impl_.transformation_meta_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Transformation_Meta>(GetArenaForAllocation());
+    _impl_.transformation_meta_ = p;
+  }
+  return _impl_.transformation_meta_;
+}
+inline ::generated::Transformation_Meta* Tcps_TF_Meta::mutable_transformation_meta() {
+  ::generated::Transformation_Meta* _msg = _internal_mutable_transformation_meta();
+  // @@protoc_insertion_point(field_mutable:generated.Tcps_TF_Meta.transformation_meta)
+  return _msg;
+}
+inline void Tcps_TF_Meta::set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  if (transformation_meta) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transformation_meta));
+    if (message_arena != submessage_arena) {
+      transformation_meta = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transformation_meta, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  // @@protoc_insertion_point(field_set_allocated:generated.Tcps_TF_Meta.transformation_meta)
 }
 
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

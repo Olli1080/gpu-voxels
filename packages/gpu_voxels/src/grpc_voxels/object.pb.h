@@ -30,6 +30,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/empty.pb.h>
 #include "vertex.pb.h"
+#include "meta_data.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_object_2eproto
@@ -346,23 +347,23 @@ class object_data final :
   std::string* _internal_mutable_prototype_name();
   public:
 
-  // .generated.matrix transform = 2;
+  // .generated.Matrix transform = 2;
   bool has_transform() const;
   private:
   bool _internal_has_transform() const;
   public:
   void clear_transform();
-  const ::generated::matrix& transform() const;
-  PROTOBUF_NODISCARD ::generated::matrix* release_transform();
-  ::generated::matrix* mutable_transform();
-  void set_allocated_transform(::generated::matrix* transform);
+  const ::generated::Matrix& transform() const;
+  PROTOBUF_NODISCARD ::generated::Matrix* release_transform();
+  ::generated::Matrix* mutable_transform();
+  void set_allocated_transform(::generated::Matrix* transform);
   private:
-  const ::generated::matrix& _internal_transform() const;
-  ::generated::matrix* _internal_mutable_transform();
+  const ::generated::Matrix& _internal_transform() const;
+  ::generated::Matrix* _internal_mutable_transform();
   public:
   void unsafe_arena_set_allocated_transform(
-      ::generated::matrix* transform);
-  ::generated::matrix* unsafe_arena_release_transform();
+      ::generated::Matrix* transform);
+  ::generated::Matrix* unsafe_arena_release_transform();
 
   // @@protoc_insertion_point(class_scope:generated.object_data)
  private:
@@ -373,7 +374,7 @@ class object_data final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr prototype_name_;
-    ::generated::matrix* transform_;
+    ::generated::Matrix* transform_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -943,24 +944,24 @@ inline void object_data::set_allocated_prototype_name(std::string* prototype_nam
   // @@protoc_insertion_point(field_set_allocated:generated.object_data.prototype_name)
 }
 
-// .generated.matrix transform = 2;
+// .generated.Matrix transform = 2;
 inline bool object_data::_internal_has_transform() const {
   return this != internal_default_instance() && _impl_.transform_ != nullptr;
 }
 inline bool object_data::has_transform() const {
   return _internal_has_transform();
 }
-inline const ::generated::matrix& object_data::_internal_transform() const {
-  const ::generated::matrix* p = _impl_.transform_;
-  return p != nullptr ? *p : reinterpret_cast<const ::generated::matrix&>(
-      ::generated::_matrix_default_instance_);
+inline const ::generated::Matrix& object_data::_internal_transform() const {
+  const ::generated::Matrix* p = _impl_.transform_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Matrix&>(
+      ::generated::_Matrix_default_instance_);
 }
-inline const ::generated::matrix& object_data::transform() const {
+inline const ::generated::Matrix& object_data::transform() const {
   // @@protoc_insertion_point(field_get:generated.object_data.transform)
   return _internal_transform();
 }
 inline void object_data::unsafe_arena_set_allocated_transform(
-    ::generated::matrix* transform) {
+    ::generated::Matrix* transform) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transform_);
   }
@@ -972,9 +973,9 @@ inline void object_data::unsafe_arena_set_allocated_transform(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.object_data.transform)
 }
-inline ::generated::matrix* object_data::release_transform() {
+inline ::generated::Matrix* object_data::release_transform() {
   
-  ::generated::matrix* temp = _impl_.transform_;
+  ::generated::Matrix* temp = _impl_.transform_;
   _impl_.transform_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -987,27 +988,27 @@ inline ::generated::matrix* object_data::release_transform() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::matrix* object_data::unsafe_arena_release_transform() {
+inline ::generated::Matrix* object_data::unsafe_arena_release_transform() {
   // @@protoc_insertion_point(field_release:generated.object_data.transform)
   
-  ::generated::matrix* temp = _impl_.transform_;
+  ::generated::Matrix* temp = _impl_.transform_;
   _impl_.transform_ = nullptr;
   return temp;
 }
-inline ::generated::matrix* object_data::_internal_mutable_transform() {
+inline ::generated::Matrix* object_data::_internal_mutable_transform() {
   
   if (_impl_.transform_ == nullptr) {
-    auto* p = CreateMaybeMessage<::generated::matrix>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::generated::Matrix>(GetArenaForAllocation());
     _impl_.transform_ = p;
   }
   return _impl_.transform_;
 }
-inline ::generated::matrix* object_data::mutable_transform() {
-  ::generated::matrix* _msg = _internal_mutable_transform();
+inline ::generated::Matrix* object_data::mutable_transform() {
+  ::generated::Matrix* _msg = _internal_mutable_transform();
   // @@protoc_insertion_point(field_mutable:generated.object_data.transform)
   return _msg;
 }
-inline void object_data::set_allocated_transform(::generated::matrix* transform) {
+inline void object_data::set_allocated_transform(::generated::Matrix* transform) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transform_);

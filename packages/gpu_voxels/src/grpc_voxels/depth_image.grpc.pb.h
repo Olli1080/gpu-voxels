@@ -36,22 +36,22 @@ class pcl_com final {
    public:
     virtual ~StubInterface() {}
     // sends point clouds and receives possible correspondence
-    std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::pcl_data>> transmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+    std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::pcl_data>> transmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
       return std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::pcl_data>>(transmit_pcl_dataRaw(context, response));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>> Asynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>> Asynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>>(Asynctransmit_pcl_dataRaw(context, response, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>> PrepareAsynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>> PrepareAsynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>>(PrepareAsynctransmit_pcl_dataRaw(context, response, cq));
     }
-    std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::draco_data>> transmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+    std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::draco_data>> transmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
       return std::unique_ptr< ::grpc::ClientWriterInterface< ::generated::draco_data>>(transmit_draco_dataRaw(context, response));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>> Asynctransmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>> Asynctransmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>>(Asynctransmit_draco_dataRaw(context, response, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>> PrepareAsynctransmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>> PrepareAsynctransmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>>(PrepareAsynctransmit_draco_dataRaw(context, response, cq));
     }
     virtual ::grpc::Status transmit_obb(::grpc::ClientContext* context, const ::generated::obb& request, ::google::protobuf::Empty* response) = 0;
@@ -65,8 +65,8 @@ class pcl_com final {
      public:
       virtual ~async_interface() {}
       // sends point clouds and receives possible correspondence
-      virtual void transmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) = 0;
-      virtual void transmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) = 0;
+      virtual void transmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) = 0;
+      virtual void transmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) = 0;
       virtual void transmit_obb(::grpc::ClientContext* context, const ::generated::obb* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
       virtual void transmit_obb(::grpc::ClientContext* context, const ::generated::obb* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
@@ -74,34 +74,34 @@ class pcl_com final {
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
-    virtual ::grpc::ClientWriterInterface< ::generated::pcl_data>* transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) = 0;
-    virtual ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>* Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>* PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientWriterInterface< ::generated::draco_data>* transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) = 0;
-    virtual ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>* Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>* PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientWriterInterface< ::generated::pcl_data>* transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) = 0;
+    virtual ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>* Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncWriterInterface< ::generated::pcl_data>* PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientWriterInterface< ::generated::draco_data>* transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) = 0;
+    virtual ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>* Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncWriterInterface< ::generated::draco_data>* PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* Asynctransmit_obbRaw(::grpc::ClientContext* context, const ::generated::obb& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsynctransmit_obbRaw(::grpc::ClientContext* context, const ::generated::obb& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
-    std::unique_ptr< ::grpc::ClientWriter< ::generated::pcl_data>> transmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+    std::unique_ptr< ::grpc::ClientWriter< ::generated::pcl_data>> transmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
       return std::unique_ptr< ::grpc::ClientWriter< ::generated::pcl_data>>(transmit_pcl_dataRaw(context, response));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>> Asynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>> Asynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>>(Asynctransmit_pcl_dataRaw(context, response, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>> PrepareAsynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>> PrepareAsynctransmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::pcl_data>>(PrepareAsynctransmit_pcl_dataRaw(context, response, cq));
     }
-    std::unique_ptr< ::grpc::ClientWriter< ::generated::draco_data>> transmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+    std::unique_ptr< ::grpc::ClientWriter< ::generated::draco_data>> transmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
       return std::unique_ptr< ::grpc::ClientWriter< ::generated::draco_data>>(transmit_draco_dataRaw(context, response));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>> Asynctransmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>> Asynctransmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
       return std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>>(Asynctransmit_draco_dataRaw(context, response, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>> PrepareAsynctransmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+    std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>> PrepareAsynctransmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncWriter< ::generated::draco_data>>(PrepareAsynctransmit_draco_dataRaw(context, response, cq));
     }
     ::grpc::Status transmit_obb(::grpc::ClientContext* context, const ::generated::obb& request, ::google::protobuf::Empty* response) override;
@@ -114,8 +114,8 @@ class pcl_com final {
     class async final :
       public StubInterface::async_interface {
      public:
-      void transmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) override;
-      void transmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) override;
+      void transmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) override;
+      void transmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) override;
       void transmit_obb(::grpc::ClientContext* context, const ::generated::obb* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
       void transmit_obb(::grpc::ClientContext* context, const ::generated::obb* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
@@ -129,12 +129,12 @@ class pcl_com final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
-    ::grpc::ClientWriter< ::generated::pcl_data>* transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) override;
-    ::grpc::ClientAsyncWriter< ::generated::pcl_data>* Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncWriter< ::generated::pcl_data>* PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientWriter< ::generated::draco_data>* transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) override;
-    ::grpc::ClientAsyncWriter< ::generated::draco_data>* Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncWriter< ::generated::draco_data>* PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientWriter< ::generated::pcl_data>* transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) override;
+    ::grpc::ClientAsyncWriter< ::generated::pcl_data>* Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncWriter< ::generated::pcl_data>* PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientWriter< ::generated::draco_data>* transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) override;
+    ::grpc::ClientAsyncWriter< ::generated::draco_data>* Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncWriter< ::generated::draco_data>* PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* Asynctransmit_obbRaw(::grpc::ClientContext* context, const ::generated::obb& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsynctransmit_obbRaw(::grpc::ClientContext* context, const ::generated::obb& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_transmit_pcl_data_;
@@ -148,8 +148,8 @@ class pcl_com final {
     Service();
     virtual ~Service();
     // sends point clouds and receives possible correspondence
-    virtual ::grpc::Status transmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::pcl_data>* reader, ::generated::maybe_matrix* response);
-    virtual ::grpc::Status transmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::draco_data>* reader, ::generated::maybe_matrix* response);
+    virtual ::grpc::Status transmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::pcl_data>* reader, ::generated::ICP_Result* response);
+    virtual ::grpc::Status transmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::draco_data>* reader, ::generated::ICP_Result* response);
     virtual ::grpc::Status transmit_obb(::grpc::ServerContext* context, const ::generated::obb* request, ::google::protobuf::Empty* response);
   };
   template <class BaseClass>
@@ -164,11 +164,11 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void Requesttransmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReader< ::generated::maybe_matrix, ::generated::pcl_data>* reader, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void Requesttransmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReader< ::generated::ICP_Result, ::generated::pcl_data>* reader, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncClientStreaming(0, context, reader, new_call_cq, notification_cq, tag);
     }
   };
@@ -184,11 +184,11 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void Requesttransmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReader< ::generated::maybe_matrix, ::generated::draco_data>* reader, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void Requesttransmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReader< ::generated::ICP_Result, ::generated::draco_data>* reader, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncClientStreaming(1, context, reader, new_call_cq, notification_cq, tag);
     }
   };
@@ -220,20 +220,20 @@ class pcl_com final {
    public:
     WithCallbackMethod_transmit_pcl_data() {
       ::grpc::Service::MarkMethodCallback(0,
-          new ::grpc::internal::CallbackClientStreamingHandler< ::generated::pcl_data, ::generated::maybe_matrix>(
+          new ::grpc::internal::CallbackClientStreamingHandler< ::generated::pcl_data, ::generated::ICP_Result>(
             [this](
-                   ::grpc::CallbackServerContext* context, ::generated::maybe_matrix* response) { return this->transmit_pcl_data(context, response); }));
+                   ::grpc::CallbackServerContext* context, ::generated::ICP_Result* response) { return this->transmit_pcl_data(context, response); }));
     }
     ~WithCallbackMethod_transmit_pcl_data() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerReadReactor< ::generated::pcl_data>* transmit_pcl_data(
-      ::grpc::CallbackServerContext* /*context*/, ::generated::maybe_matrix* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, ::generated::ICP_Result* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_transmit_draco_data : public BaseClass {
@@ -242,20 +242,20 @@ class pcl_com final {
    public:
     WithCallbackMethod_transmit_draco_data() {
       ::grpc::Service::MarkMethodCallback(1,
-          new ::grpc::internal::CallbackClientStreamingHandler< ::generated::draco_data, ::generated::maybe_matrix>(
+          new ::grpc::internal::CallbackClientStreamingHandler< ::generated::draco_data, ::generated::ICP_Result>(
             [this](
-                   ::grpc::CallbackServerContext* context, ::generated::maybe_matrix* response) { return this->transmit_draco_data(context, response); }));
+                   ::grpc::CallbackServerContext* context, ::generated::ICP_Result* response) { return this->transmit_draco_data(context, response); }));
     }
     ~WithCallbackMethod_transmit_draco_data() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerReadReactor< ::generated::draco_data>* transmit_draco_data(
-      ::grpc::CallbackServerContext* /*context*/, ::generated::maybe_matrix* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, ::generated::ICP_Result* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_transmit_obb : public BaseClass {
@@ -298,7 +298,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -315,7 +315,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -349,7 +349,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -369,7 +369,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -412,7 +412,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_pcl_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::pcl_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -434,7 +434,7 @@ class pcl_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::maybe_matrix* /*response*/) override {
+    ::grpc::Status transmit_draco_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReader< ::generated::draco_data>* /*reader*/, ::generated::ICP_Result* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }

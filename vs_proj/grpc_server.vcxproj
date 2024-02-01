@@ -28,6 +28,8 @@
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.grpc.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.cc" />
@@ -47,6 +49,8 @@
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.grpc.pb.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\hand_tracking.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.grpc.pb.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.pb.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.grpc.pb.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object.pb.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\object_prototype.grpc.pb.h" />

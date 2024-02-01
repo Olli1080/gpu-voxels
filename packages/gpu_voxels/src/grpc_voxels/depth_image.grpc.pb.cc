@@ -39,35 +39,35 @@ pcl_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, c
   , rpcmethod_transmit_obb_(pcl_com_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
-::grpc::ClientWriter< ::generated::pcl_data>* pcl_com::Stub::transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+::grpc::ClientWriter< ::generated::pcl_data>* pcl_com::Stub::transmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
   return ::grpc::internal::ClientWriterFactory< ::generated::pcl_data>::Create(channel_.get(), rpcmethod_transmit_pcl_data_, context, response);
 }
 
-void pcl_com::Stub::async::transmit_pcl_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) {
+void pcl_com::Stub::async::transmit_pcl_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::pcl_data>* reactor) {
   ::grpc::internal::ClientCallbackWriterFactory< ::generated::pcl_data>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_pcl_data_, context, response, reactor);
 }
 
-::grpc::ClientAsyncWriter< ::generated::pcl_data>* pcl_com::Stub::Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+::grpc::ClientAsyncWriter< ::generated::pcl_data>* pcl_com::Stub::Asynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
   return ::grpc::internal::ClientAsyncWriterFactory< ::generated::pcl_data>::Create(channel_.get(), cq, rpcmethod_transmit_pcl_data_, context, response, true, tag);
 }
 
-::grpc::ClientAsyncWriter< ::generated::pcl_data>* pcl_com::Stub::PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncWriter< ::generated::pcl_data>* pcl_com::Stub::PrepareAsynctransmit_pcl_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
   return ::grpc::internal::ClientAsyncWriterFactory< ::generated::pcl_data>::Create(channel_.get(), cq, rpcmethod_transmit_pcl_data_, context, response, false, nullptr);
 }
 
-::grpc::ClientWriter< ::generated::draco_data>* pcl_com::Stub::transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response) {
+::grpc::ClientWriter< ::generated::draco_data>* pcl_com::Stub::transmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response) {
   return ::grpc::internal::ClientWriterFactory< ::generated::draco_data>::Create(channel_.get(), rpcmethod_transmit_draco_data_, context, response);
 }
 
-void pcl_com::Stub::async::transmit_draco_data(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) {
+void pcl_com::Stub::async::transmit_draco_data(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::ClientWriteReactor< ::generated::draco_data>* reactor) {
   ::grpc::internal::ClientCallbackWriterFactory< ::generated::draco_data>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_draco_data_, context, response, reactor);
 }
 
-::grpc::ClientAsyncWriter< ::generated::draco_data>* pcl_com::Stub::Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq, void* tag) {
+::grpc::ClientAsyncWriter< ::generated::draco_data>* pcl_com::Stub::Asynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq, void* tag) {
   return ::grpc::internal::ClientAsyncWriterFactory< ::generated::draco_data>::Create(channel_.get(), cq, rpcmethod_transmit_draco_data_, context, response, true, tag);
 }
 
-::grpc::ClientAsyncWriter< ::generated::draco_data>* pcl_com::Stub::PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::maybe_matrix* response, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncWriter< ::generated::draco_data>* pcl_com::Stub::PrepareAsynctransmit_draco_dataRaw(::grpc::ClientContext* context, ::generated::ICP_Result* response, ::grpc::CompletionQueue* cq) {
   return ::grpc::internal::ClientAsyncWriterFactory< ::generated::draco_data>::Create(channel_.get(), cq, rpcmethod_transmit_draco_data_, context, response, false, nullptr);
 }
 
@@ -98,21 +98,21 @@ pcl_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       pcl_com_method_names[0],
       ::grpc::internal::RpcMethod::CLIENT_STREAMING,
-      new ::grpc::internal::ClientStreamingHandler< pcl_com::Service, ::generated::pcl_data, ::generated::maybe_matrix>(
+      new ::grpc::internal::ClientStreamingHandler< pcl_com::Service, ::generated::pcl_data, ::generated::ICP_Result>(
           [](pcl_com::Service* service,
              ::grpc::ServerContext* ctx,
              ::grpc::ServerReader<::generated::pcl_data>* reader,
-             ::generated::maybe_matrix* resp) {
+             ::generated::ICP_Result* resp) {
                return service->transmit_pcl_data(ctx, reader, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       pcl_com_method_names[1],
       ::grpc::internal::RpcMethod::CLIENT_STREAMING,
-      new ::grpc::internal::ClientStreamingHandler< pcl_com::Service, ::generated::draco_data, ::generated::maybe_matrix>(
+      new ::grpc::internal::ClientStreamingHandler< pcl_com::Service, ::generated::draco_data, ::generated::ICP_Result>(
           [](pcl_com::Service* service,
              ::grpc::ServerContext* ctx,
              ::grpc::ServerReader<::generated::draco_data>* reader,
-             ::generated::maybe_matrix* resp) {
+             ::generated::ICP_Result* resp) {
                return service->transmit_draco_data(ctx, reader, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
@@ -130,14 +130,14 @@ pcl_com::Service::Service() {
 pcl_com::Service::~Service() {
 }
 
-::grpc::Status pcl_com::Service::transmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::pcl_data>* reader, ::generated::maybe_matrix* response) {
+::grpc::Status pcl_com::Service::transmit_pcl_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::pcl_data>* reader, ::generated::ICP_Result* response) {
   (void) context;
   (void) reader;
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status pcl_com::Service::transmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::draco_data>* reader, ::generated::maybe_matrix* response) {
+::grpc::Status pcl_com::Service::transmit_draco_data(::grpc::ServerContext* context, ::grpc::ServerReader< ::generated::draco_data>* reader, ::generated::ICP_Result* response) {
   (void) context;
   (void) reader;
   (void) response;

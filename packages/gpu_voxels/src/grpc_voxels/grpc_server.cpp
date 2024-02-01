@@ -12,7 +12,7 @@ VoxelService::VoxelService()
 			if (stop_flag)
 				return;
 
-			joint_buffer = std::make_unique<generated::joints>(server::convert<generated::joints>(data));
+			joint_buffer = std::make_unique<generated::Joints>(server::convert<generated::Joints>(data));
 			joint_cv.notify_one();
 	}),
 	tcps_slot([this](const std::vector<Eigen::Vector3f>& data)
@@ -21,7 +21,7 @@ VoxelService::VoxelService()
 			if (stop_flag)
 				return;
 
-			tcps_buffer = std::make_unique<generated::tcps>(server::convert<generated::tcps>(data));
+			tcps_buffer = std::make_unique<generated::Tcps_TF_Meta>(server::convert<generated::Tcps_TF_Meta>(data));
 			tcps_cv.notify_one();
 	})
 {}
@@ -34,7 +34,7 @@ VoxelService::~VoxelService()
 grpc::Status VoxelService::transmit_voxels(
 	::grpc::ServerContext* context, 
 	const::google::protobuf::Empty* request, 
-	::grpc::ServerWriter<::generated::voxels>* writer)
+	::grpc::ServerWriter<::generated::Voxel_TF_Meta>* writer)
 {
 	context->set_compression_algorithm(GRPC_COMPRESS_GZIP);
 	writer->SendInitialMetadata();
@@ -55,7 +55,7 @@ grpc::Status VoxelService::transmit_voxels(
 	return grpc::Status::OK;
 }
 
-grpc::Status VoxelService::transmit_joints(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::joints>* writer)
+grpc::Status VoxelService::transmit_joints(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::Joints>* writer)
 {
 	writer->SendInitialMetadata();
 
@@ -75,7 +75,7 @@ grpc::Status VoxelService::transmit_joints(grpc::ServerContext* context, const g
 	return grpc::Status::OK;
 }
 
-grpc::Status VoxelService::transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::tcps>* writer)
+grpc::Status VoxelService::transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::Tcps_TF_Meta>* writer)
 {
 	writer->SendInitialMetadata();
 
@@ -102,7 +102,7 @@ void VoxelService::handle_voxels(const VoxelRobot& data)
 		return;
 	//overwrite buffer if still didn't change
 	//we don't need outdated voxel visuals anyway
-	buffer = std::make_unique<generated::voxels>(server::convert<generated::voxels>(data));
+	buffer = std::make_unique<generated::Voxel_TF_Meta>(server::convert<generated::Voxel_TF_Meta>(data));
 	cv.notify_one();
 }
 

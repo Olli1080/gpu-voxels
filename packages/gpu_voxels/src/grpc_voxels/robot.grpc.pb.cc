@@ -39,83 +39,83 @@ robot_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel,
   , rpcmethod_transmit_tcps_(robot_com_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
-::grpc::ClientReader< ::generated::joints>* robot_com::Stub::transmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::joints>::Create(channel_.get(), rpcmethod_transmit_joints_, context, request);
+::grpc::ClientReader< ::generated::Joints>* robot_com::Stub::transmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Joints>::Create(channel_.get(), rpcmethod_transmit_joints_, context, request);
 }
 
-void robot_com::Stub::async::transmit_joints(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::joints>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::joints>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_joints_, context, request, reactor);
+void robot_com::Stub::async::transmit_joints(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Joints>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Joints>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_joints_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::joints>* robot_com::Stub::Asynctransmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::joints>::Create(channel_.get(), cq, rpcmethod_transmit_joints_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Joints>* robot_com::Stub::Asynctransmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Joints>::Create(channel_.get(), cq, rpcmethod_transmit_joints_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::joints>* robot_com::Stub::PrepareAsynctransmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::joints>::Create(channel_.get(), cq, rpcmethod_transmit_joints_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Joints>* robot_com::Stub::PrepareAsynctransmit_jointsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Joints>::Create(channel_.get(), cq, rpcmethod_transmit_joints_, context, request, false, nullptr);
 }
 
-::grpc::ClientReader< ::generated::voxels>* robot_com::Stub::transmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::voxels>::Create(channel_.get(), rpcmethod_transmit_voxels_, context, request);
+::grpc::ClientReader< ::generated::Voxel_TF_Meta>* robot_com::Stub::transmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Voxel_TF_Meta>::Create(channel_.get(), rpcmethod_transmit_voxels_, context, request);
 }
 
-void robot_com::Stub::async::transmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::voxels>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::voxels>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_voxels_, context, request, reactor);
+void robot_com::Stub::async::transmit_voxels(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Voxel_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Voxel_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_voxels_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::voxels>* robot_com::Stub::Asynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::voxels>::Create(channel_.get(), cq, rpcmethod_transmit_voxels_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Voxel_TF_Meta>* robot_com::Stub::Asynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Voxel_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_voxels_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::voxels>* robot_com::Stub::PrepareAsynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::voxels>::Create(channel_.get(), cq, rpcmethod_transmit_voxels_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Voxel_TF_Meta>* robot_com::Stub::PrepareAsynctransmit_voxelsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Voxel_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_voxels_, context, request, false, nullptr);
 }
 
-::grpc::ClientReader< ::generated::tcps>* robot_com::Stub::transmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::tcps>::Create(channel_.get(), rpcmethod_transmit_tcps_, context, request);
+::grpc::ClientReader< ::generated::Tcps_TF_Meta>* robot_com::Stub::transmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Tcps_TF_Meta>::Create(channel_.get(), rpcmethod_transmit_tcps_, context, request);
 }
 
-void robot_com::Stub::async::transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::tcps>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::tcps>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_tcps_, context, request, reactor);
+void robot_com::Stub::async::transmit_tcps(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Tcps_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Tcps_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_tcps_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::tcps>* robot_com::Stub::Asynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::tcps>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Tcps_TF_Meta>* robot_com::Stub::Asynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Tcps_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::tcps>* robot_com::Stub::PrepareAsynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::tcps>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Tcps_TF_Meta>* robot_com::Stub::PrepareAsynctransmit_tcpsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Tcps_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_tcps_, context, request, false, nullptr);
 }
 
 robot_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       robot_com_method_names[0],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::joints>(
+      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::Joints>(
           [](robot_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::joints>* writer) {
+             ::grpc::ServerWriter<::generated::Joints>* writer) {
                return service->transmit_joints(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       robot_com_method_names[1],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::voxels>(
+      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::Voxel_TF_Meta>(
           [](robot_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::voxels>* writer) {
+             ::grpc::ServerWriter<::generated::Voxel_TF_Meta>* writer) {
                return service->transmit_voxels(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       robot_com_method_names[2],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::tcps>(
+      new ::grpc::internal::ServerStreamingHandler< robot_com::Service, ::google::protobuf::Empty, ::generated::Tcps_TF_Meta>(
           [](robot_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::tcps>* writer) {
+             ::grpc::ServerWriter<::generated::Tcps_TF_Meta>* writer) {
                return service->transmit_tcps(ctx, req, writer);
              }, this)));
 }
@@ -123,21 +123,21 @@ robot_com::Service::Service() {
 robot_com::Service::~Service() {
 }
 
-::grpc::Status robot_com::Service::transmit_joints(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::joints>* writer) {
+::grpc::Status robot_com::Service::transmit_joints(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Joints>* writer) {
   (void) context;
   (void) request;
   (void) writer;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status robot_com::Service::transmit_voxels(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::voxels>* writer) {
+::grpc::Status robot_com::Service::transmit_voxels(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Voxel_TF_Meta>* writer) {
   (void) context;
   (void) request;
   (void) writer;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status robot_com::Service::transmit_tcps(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::tcps>* writer) {
+::grpc::Status robot_com::Service::transmit_tcps(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Tcps_TF_Meta>* writer) {
   (void) context;
   (void) request;
   (void) writer;
@@ -146,3 +146,4 @@ robot_com::Service::~Service() {
 
 
 }  // namespace generated
+

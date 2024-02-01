@@ -10,6 +10,7 @@
 #include "vertex.pb.h"
 #include "object_prototype.pb.h"
 #include "hand_tracking.pb.h"
+#include "meta_data.pb.h"
 #include "robot.pb.h"
 
 //#include "wrapper.hpp"
@@ -29,8 +30,27 @@ namespace server
 	template<typename out, typename in>
 	out convert(const in& v);
 
-	template<typename out, typename in>
-	out convert(const in&& v);
+	//template<typename out, typename in>
+	//out convert(const in&& v);
+
+	inline generated::Transformation_Meta gen_meta()
+	{
+		generated::Transformation_Meta out;
+
+		auto& right = *out.mutable_right();
+		right.set_axis(generated::X);
+		right.set_direction(generated::POSITIVE);
+
+		auto& forward = *out.mutable_forward();
+		forward.set_axis(generated::Y);
+		forward.set_direction(generated::POSITIVE);
+
+		auto& up = *out.mutable_up();
+		up.set_axis(generated::Z);
+		up.set_direction(generated::POSITIVE);
+
+		return out;
+	}
 
 	template<>
 	inline generated::quaternion convert(const Eigen::Quaternionf& in)
@@ -143,7 +163,7 @@ namespace server
 	}*/
 
 	template<int rows, int cols>
-	Eigen::Matrix<float, rows, cols> convert(const generated::matrix& m)
+	Eigen::Matrix<float, rows, cols> convert(const generated::Matrix& m)
 	{
 		Eigen::Matrix<float, rows, cols> matrix(cols, rows);
 		if constexpr (rows >= 0)
@@ -257,9 +277,9 @@ namespace server
 	}
 
 	template<int rows, int cols>
-	generated::matrix convert(const Eigen::Matrix<float, rows, cols>& in)
+	generated::Matrix convert(const Eigen::Matrix<float, rows, cols>& in)
 	{
-		generated::matrix out;
+		generated::Matrix out;
 		out.set_rows(in.rows());
 		out.set_cols(in.cols());
 		auto data = out.mutable_data();
@@ -387,9 +407,9 @@ namespace server
 	}*/
 
 	template<>
-	inline generated::voxels convert(const VoxelRobot& v)
+	inline generated::Voxels convert(const VoxelRobot& v)
 	{
-		generated::voxels out;
+		generated::Voxels out;
 		out.set_voxel_side_length(v.voxel_length);
 		*out.mutable_robot_origin() = convert(v.robot_origin);
 
@@ -402,9 +422,9 @@ namespace server
 	}
 
 	template<>
-	inline generated::joints convert(const Eigen::Vector<float, 7>& v)
+	inline generated::Joints convert(const Eigen::Vector<float, 7>& v)
 	{
-		generated::joints out;
+		generated::Joints out;
 		out.set_theta_1(v[0]);
 		out.set_theta_2(v[1]);
 		out.set_theta_3(v[2]);
@@ -417,9 +437,9 @@ namespace server
 	}
 
 	template<>
-	inline generated::tcps convert(const std::vector<Eigen::Vector3f>& v)
+	inline generated::Tcps convert(const std::vector<Eigen::Vector3f>& v)
 	{
-		generated::tcps out;
+		generated::Tcps out;
 		auto& out_data = *out.mutable_points();
 		out_data.Reserve(v.size());
 		for (const auto& val : v)
@@ -428,4 +448,23 @@ namespace server
 		return out;
 	}
 
+	template<>
+	inline generated::Tcps_TF_Meta convert(const std::vector<Eigen::Vector3f>& v)
+	{
+		generated::Tcps_TF_Meta out;
+		*out.mutable_tcps() = convert<generated::Tcps>(v);
+		*out.mutable_transformation_meta() = gen_meta();
+
+		return out;
+	}
+
+	template<>
+	inline generated::Voxel_TF_Meta convert(const VoxelRobot& v)
+	{
+		generated::Voxel_TF_Meta out;
+		*out.mutable_voxels() = convert<generated::Voxels>(v);
+		*out.mutable_transformation_meta() = gen_meta();
+
+		return out;
+	}
 }

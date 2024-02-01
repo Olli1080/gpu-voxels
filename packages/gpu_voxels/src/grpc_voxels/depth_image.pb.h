@@ -30,6 +30,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/empty.pb.h>
 #include "vertex.pb.h"
+#include "meta_data.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_depth_5fimage_2eproto
@@ -44,19 +45,19 @@ struct TableStruct_depth_5fimage_2eproto {
   static const uint32_t offsets[];
 };
 namespace generated {
+class ICP_Result;
+struct ICP_ResultDefaultTypeInternal;
+extern ICP_ResultDefaultTypeInternal _ICP_Result_default_instance_;
 class draco_data;
 struct draco_dataDefaultTypeInternal;
 extern draco_dataDefaultTypeInternal _draco_data_default_instance_;
-class maybe_matrix;
-struct maybe_matrixDefaultTypeInternal;
-extern maybe_matrixDefaultTypeInternal _maybe_matrix_default_instance_;
 class pcl_data;
 struct pcl_dataDefaultTypeInternal;
 extern pcl_dataDefaultTypeInternal _pcl_data_default_instance_;
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
+template<> ::generated::ICP_Result* Arena::CreateMaybeMessage<::generated::ICP_Result>(Arena*);
 template<> ::generated::draco_data* Arena::CreateMaybeMessage<::generated::draco_data>(Arena*);
-template<> ::generated::maybe_matrix* Arena::CreateMaybeMessage<::generated::maybe_matrix>(Arena*);
 template<> ::generated::pcl_data* Arena::CreateMaybeMessage<::generated::pcl_data>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace generated {
@@ -359,24 +360,24 @@ class draco_data final :
 };
 // -------------------------------------------------------------------
 
-class maybe_matrix final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.maybe_matrix) */ {
+class ICP_Result final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.ICP_Result) */ {
  public:
-  inline maybe_matrix() : maybe_matrix(nullptr) {}
-  ~maybe_matrix() override;
-  explicit PROTOBUF_CONSTEXPR maybe_matrix(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline ICP_Result() : ICP_Result(nullptr) {}
+  ~ICP_Result() override;
+  explicit PROTOBUF_CONSTEXPR ICP_Result(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  maybe_matrix(const maybe_matrix& from);
-  maybe_matrix(maybe_matrix&& from) noexcept
-    : maybe_matrix() {
+  ICP_Result(const ICP_Result& from);
+  ICP_Result(ICP_Result&& from) noexcept
+    : ICP_Result() {
     *this = ::std::move(from);
   }
 
-  inline maybe_matrix& operator=(const maybe_matrix& from) {
+  inline ICP_Result& operator=(const ICP_Result& from) {
     CopyFrom(from);
     return *this;
   }
-  inline maybe_matrix& operator=(maybe_matrix&& from) noexcept {
+  inline ICP_Result& operator=(ICP_Result&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -390,20 +391,20 @@ class maybe_matrix final :
     return *this;
   }
 
-  static const maybe_matrix& default_instance() {
+  static const ICP_Result& default_instance() {
     return *internal_default_instance();
   }
-  static inline const maybe_matrix* internal_default_instance() {
-    return reinterpret_cast<const maybe_matrix*>(
-               &_maybe_matrix_default_instance_);
+  static inline const ICP_Result* internal_default_instance() {
+    return reinterpret_cast<const ICP_Result*>(
+               &_ICP_Result_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     2;
 
-  friend void swap(maybe_matrix& a, maybe_matrix& b) {
+  friend void swap(ICP_Result& a, ICP_Result& b) {
     a.Swap(&b);
   }
-  inline void Swap(maybe_matrix* other) {
+  inline void Swap(ICP_Result* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -416,7 +417,7 @@ class maybe_matrix final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(maybe_matrix* other) {
+  void UnsafeArenaSwap(ICP_Result* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -424,12 +425,12 @@ class maybe_matrix final :
 
   // implements Message ----------------------------------------------
 
-  maybe_matrix* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<maybe_matrix>(arena);
+  ICP_Result* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ICP_Result>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const maybe_matrix& from);
-  void MergeFrom(const maybe_matrix& from);
+  void CopyFrom(const ICP_Result& from);
+  void MergeFrom(const ICP_Result& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -443,15 +444,15 @@ class maybe_matrix final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(maybe_matrix* other);
+  void InternalSwap(ICP_Result* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.maybe_matrix";
+    return "generated.ICP_Result";
   }
   protected:
-  explicit maybe_matrix(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit ICP_Result(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -464,25 +465,25 @@ class maybe_matrix final :
   enum : int {
     kDataFieldNumber = 1,
   };
-  // optional .generated.matrix data = 1;
+  // optional .generated.Matrix_TF_Meta data = 1;
   bool has_data() const;
   private:
   bool _internal_has_data() const;
   public:
   void clear_data();
-  const ::generated::matrix& data() const;
-  PROTOBUF_NODISCARD ::generated::matrix* release_data();
-  ::generated::matrix* mutable_data();
-  void set_allocated_data(::generated::matrix* data);
+  const ::generated::Matrix_TF_Meta& data() const;
+  PROTOBUF_NODISCARD ::generated::Matrix_TF_Meta* release_data();
+  ::generated::Matrix_TF_Meta* mutable_data();
+  void set_allocated_data(::generated::Matrix_TF_Meta* data);
   private:
-  const ::generated::matrix& _internal_data() const;
-  ::generated::matrix* _internal_mutable_data();
+  const ::generated::Matrix_TF_Meta& _internal_data() const;
+  ::generated::Matrix_TF_Meta* _internal_mutable_data();
   public:
   void unsafe_arena_set_allocated_data(
-      ::generated::matrix* data);
-  ::generated::matrix* unsafe_arena_release_data();
+      ::generated::Matrix_TF_Meta* data);
+  ::generated::Matrix_TF_Meta* unsafe_arena_release_data();
 
-  // @@protoc_insertion_point(class_scope:generated.maybe_matrix)
+  // @@protoc_insertion_point(class_scope:generated.ICP_Result)
  private:
   class _Internal;
 
@@ -492,7 +493,7 @@ class maybe_matrix final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::generated::matrix* data_;
+    ::generated::Matrix_TF_Meta* data_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_depth_5fimage_2eproto;
@@ -641,28 +642,28 @@ inline void draco_data::set_timestamp(int64_t value) {
 
 // -------------------------------------------------------------------
 
-// maybe_matrix
+// ICP_Result
 
-// optional .generated.matrix data = 1;
-inline bool maybe_matrix::_internal_has_data() const {
+// optional .generated.Matrix_TF_Meta data = 1;
+inline bool ICP_Result::_internal_has_data() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.data_ != nullptr);
   return value;
 }
-inline bool maybe_matrix::has_data() const {
+inline bool ICP_Result::has_data() const {
   return _internal_has_data();
 }
-inline const ::generated::matrix& maybe_matrix::_internal_data() const {
-  const ::generated::matrix* p = _impl_.data_;
-  return p != nullptr ? *p : reinterpret_cast<const ::generated::matrix&>(
-      ::generated::_matrix_default_instance_);
+inline const ::generated::Matrix_TF_Meta& ICP_Result::_internal_data() const {
+  const ::generated::Matrix_TF_Meta* p = _impl_.data_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Matrix_TF_Meta&>(
+      ::generated::_Matrix_TF_Meta_default_instance_);
 }
-inline const ::generated::matrix& maybe_matrix::data() const {
-  // @@protoc_insertion_point(field_get:generated.maybe_matrix.data)
+inline const ::generated::Matrix_TF_Meta& ICP_Result::data() const {
+  // @@protoc_insertion_point(field_get:generated.ICP_Result.data)
   return _internal_data();
 }
-inline void maybe_matrix::unsafe_arena_set_allocated_data(
-    ::generated::matrix* data) {
+inline void ICP_Result::unsafe_arena_set_allocated_data(
+    ::generated::Matrix_TF_Meta* data) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.data_);
   }
@@ -672,11 +673,11 @@ inline void maybe_matrix::unsafe_arena_set_allocated_data(
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.maybe_matrix.data)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.ICP_Result.data)
 }
-inline ::generated::matrix* maybe_matrix::release_data() {
+inline ::generated::Matrix_TF_Meta* ICP_Result::release_data() {
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::generated::matrix* temp = _impl_.data_;
+  ::generated::Matrix_TF_Meta* temp = _impl_.data_;
   _impl_.data_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -689,27 +690,27 @@ inline ::generated::matrix* maybe_matrix::release_data() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::matrix* maybe_matrix::unsafe_arena_release_data() {
-  // @@protoc_insertion_point(field_release:generated.maybe_matrix.data)
+inline ::generated::Matrix_TF_Meta* ICP_Result::unsafe_arena_release_data() {
+  // @@protoc_insertion_point(field_release:generated.ICP_Result.data)
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::generated::matrix* temp = _impl_.data_;
+  ::generated::Matrix_TF_Meta* temp = _impl_.data_;
   _impl_.data_ = nullptr;
   return temp;
 }
-inline ::generated::matrix* maybe_matrix::_internal_mutable_data() {
+inline ::generated::Matrix_TF_Meta* ICP_Result::_internal_mutable_data() {
   _impl_._has_bits_[0] |= 0x00000001u;
   if (_impl_.data_ == nullptr) {
-    auto* p = CreateMaybeMessage<::generated::matrix>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::generated::Matrix_TF_Meta>(GetArenaForAllocation());
     _impl_.data_ = p;
   }
   return _impl_.data_;
 }
-inline ::generated::matrix* maybe_matrix::mutable_data() {
-  ::generated::matrix* _msg = _internal_mutable_data();
-  // @@protoc_insertion_point(field_mutable:generated.maybe_matrix.data)
+inline ::generated::Matrix_TF_Meta* ICP_Result::mutable_data() {
+  ::generated::Matrix_TF_Meta* _msg = _internal_mutable_data();
+  // @@protoc_insertion_point(field_mutable:generated.ICP_Result.data)
   return _msg;
 }
-inline void maybe_matrix::set_allocated_data(::generated::matrix* data) {
+inline void ICP_Result::set_allocated_data(::generated::Matrix_TF_Meta* data) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.data_);
@@ -727,7 +728,7 @@ inline void maybe_matrix::set_allocated_data(::generated::matrix* data) {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
   _impl_.data_ = data;
-  // @@protoc_insertion_point(field_set_allocated:generated.maybe_matrix.data)
+  // @@protoc_insertion_point(field_set_allocated:generated.ICP_Result.data)
 }
 
 #ifdef __GNUC__

@@ -18,7 +18,7 @@ namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
 namespace generated {
-PROTOBUF_CONSTEXPR joints::joints(
+PROTOBUF_CONSTEXPR Joints::Joints(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.theta_1_)*/0
   , /*decltype(_impl_.theta_2_)*/0
@@ -28,61 +28,91 @@ PROTOBUF_CONSTEXPR joints::joints(
   , /*decltype(_impl_.theta_6_)*/0
   , /*decltype(_impl_.theta_7_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct jointsDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR jointsDefaultTypeInternal()
+struct JointsDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR JointsDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~jointsDefaultTypeInternal() {}
+  ~JointsDefaultTypeInternal() {}
   union {
-    joints _instance;
+    Joints _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 jointsDefaultTypeInternal _joints_default_instance_;
-PROTOBUF_CONSTEXPR voxels::voxels(
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 JointsDefaultTypeInternal _Joints_default_instance_;
+PROTOBUF_CONSTEXPR Voxels::Voxels(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.voxel_coords_)*/{}
   , /*decltype(_impl_.robot_origin_)*/nullptr
   , /*decltype(_impl_.voxel_side_length_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct voxelsDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR voxelsDefaultTypeInternal()
+struct VoxelsDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR VoxelsDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~voxelsDefaultTypeInternal() {}
+  ~VoxelsDefaultTypeInternal() {}
   union {
-    voxels _instance;
+    Voxels _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 voxelsDefaultTypeInternal _voxels_default_instance_;
-PROTOBUF_CONSTEXPR tcps::tcps(
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 VoxelsDefaultTypeInternal _Voxels_default_instance_;
+PROTOBUF_CONSTEXPR Tcps::Tcps(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.points_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct tcpsDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR tcpsDefaultTypeInternal()
+struct TcpsDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR TcpsDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~tcpsDefaultTypeInternal() {}
+  ~TcpsDefaultTypeInternal() {}
   union {
-    tcps _instance;
+    Tcps _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 tcpsDefaultTypeInternal _tcps_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TcpsDefaultTypeInternal _Tcps_default_instance_;
+PROTOBUF_CONSTEXPR Voxel_TF_Meta::Voxel_TF_Meta(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.voxels_)*/nullptr
+  , /*decltype(_impl_.transformation_meta_)*/nullptr} {}
+struct Voxel_TF_MetaDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Voxel_TF_MetaDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~Voxel_TF_MetaDefaultTypeInternal() {}
+  union {
+    Voxel_TF_Meta _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Voxel_TF_MetaDefaultTypeInternal _Voxel_TF_Meta_default_instance_;
+PROTOBUF_CONSTEXPR Tcps_TF_Meta::Tcps_TF_Meta(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.tcps_)*/nullptr
+  , /*decltype(_impl_.transformation_meta_)*/nullptr} {}
+struct Tcps_TF_MetaDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Tcps_TF_MetaDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~Tcps_TF_MetaDefaultTypeInternal() {}
+  union {
+    Tcps_TF_Meta _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Tcps_TF_MetaDefaultTypeInternal _Tcps_TF_Meta_default_instance_;
 }  // namespace generated
 namespace generated {
 
 // ===================================================================
 
-class joints::_Internal {
+class Joints::_Internal {
  public:
 };
 
-joints::joints(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Joints::Joints(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.joints)
+  // @@protoc_insertion_point(arena_constructor:generated.Joints)
 }
-joints::joints(const joints& from)
+Joints::Joints(const Joints& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  joints* const _this = this; (void)_this;
+  Joints* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.theta_1_){}
     , decltype(_impl_.theta_2_){}
@@ -97,10 +127,10 @@ joints::joints(const joints& from)
   ::memcpy(&_impl_.theta_1_, &from._impl_.theta_1_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.theta_7_) -
     reinterpret_cast<char*>(&_impl_.theta_1_)) + sizeof(_impl_.theta_7_));
-  // @@protoc_insertion_point(copy_constructor:generated.joints)
+  // @@protoc_insertion_point(copy_constructor:generated.Joints)
 }
 
-inline void joints::SharedCtor(
+inline void Joints::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -116,8 +146,8 @@ inline void joints::SharedCtor(
   };
 }
 
-joints::~joints() {
-  // @@protoc_insertion_point(destructor:generated.joints)
+Joints::~Joints() {
+  // @@protoc_insertion_point(destructor:generated.Joints)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -125,16 +155,16 @@ joints::~joints() {
   SharedDtor();
 }
 
-inline void joints::SharedDtor() {
+inline void Joints::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
 }
 
-void joints::SetCachedSize(int size) const {
+void Joints::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void joints::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.joints)
+void Joints::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Joints)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -145,7 +175,7 @@ void joints::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* joints::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* Joints::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -230,9 +260,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* joints::_InternalSerialize(
+uint8_t* Joints::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.joints)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Joints)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -310,12 +340,12 @@ uint8_t* joints::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.joints)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Joints)
   return target;
 }
 
-size_t joints::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.joints)
+size_t Joints::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Joints)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -393,15 +423,15 @@ size_t joints::ByteSizeLong() const {
   return total_size;
 }
 
-void joints::CheckTypeAndMergeFrom(
+void Joints::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const joints*>(
+  MergeFrom(*::_pbi::DownCast<const Joints*>(
       &from));
 }
 
-void joints::MergeFrom(const joints& from) {
-  joints* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.joints)
+void Joints::MergeFrom(const Joints& from) {
+  Joints* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Joints)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -458,62 +488,62 @@ void joints::MergeFrom(const joints& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void joints::CopyFrom(const joints& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.joints)
+void Joints::CopyFrom(const Joints& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Joints)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool joints::IsInitialized() const {
+bool Joints::IsInitialized() const {
   return true;
 }
 
-void joints::InternalSwap(joints* other) {
+void Joints::InternalSwap(Joints* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(joints, _impl_.theta_7_)
-      + sizeof(joints::_impl_.theta_7_)
-      - PROTOBUF_FIELD_OFFSET(joints, _impl_.theta_1_)>(
+      PROTOBUF_FIELD_OFFSET(Joints, _impl_.theta_7_)
+      + sizeof(Joints::_impl_.theta_7_)
+      - PROTOBUF_FIELD_OFFSET(Joints, _impl_.theta_1_)>(
           reinterpret_cast<char*>(&_impl_.theta_1_),
           reinterpret_cast<char*>(&other->_impl_.theta_1_));
 }
 
-std::string joints::GetTypeName() const {
-  return "generated.joints";
+std::string Joints::GetTypeName() const {
+  return "generated.Joints";
 }
 
 
 // ===================================================================
 
-class voxels::_Internal {
+class Voxels::_Internal {
  public:
-  static const ::generated::matrix& robot_origin(const voxels* msg);
+  static const ::generated::Matrix& robot_origin(const Voxels* msg);
 };
 
-const ::generated::matrix&
-voxels::_Internal::robot_origin(const voxels* msg) {
+const ::generated::Matrix&
+Voxels::_Internal::robot_origin(const Voxels* msg) {
   return *msg->_impl_.robot_origin_;
 }
-void voxels::clear_robot_origin() {
+void Voxels::clear_robot_origin() {
   if (GetArenaForAllocation() == nullptr && _impl_.robot_origin_ != nullptr) {
     delete _impl_.robot_origin_;
   }
   _impl_.robot_origin_ = nullptr;
 }
-void voxels::clear_voxel_coords() {
+void Voxels::clear_voxel_coords() {
   _impl_.voxel_coords_.Clear();
 }
-voxels::voxels(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Voxels::Voxels(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.voxels)
+  // @@protoc_insertion_point(arena_constructor:generated.Voxels)
 }
-voxels::voxels(const voxels& from)
+Voxels::Voxels(const Voxels& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  voxels* const _this = this; (void)_this;
+  Voxels* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.voxel_coords_){from._impl_.voxel_coords_}
     , decltype(_impl_.robot_origin_){nullptr}
@@ -522,13 +552,13 @@ voxels::voxels(const voxels& from)
 
   _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
   if (from._internal_has_robot_origin()) {
-    _this->_impl_.robot_origin_ = new ::generated::matrix(*from._impl_.robot_origin_);
+    _this->_impl_.robot_origin_ = new ::generated::Matrix(*from._impl_.robot_origin_);
   }
   _this->_impl_.voxel_side_length_ = from._impl_.voxel_side_length_;
-  // @@protoc_insertion_point(copy_constructor:generated.voxels)
+  // @@protoc_insertion_point(copy_constructor:generated.Voxels)
 }
 
-inline void voxels::SharedCtor(
+inline void Voxels::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -540,8 +570,8 @@ inline void voxels::SharedCtor(
   };
 }
 
-voxels::~voxels() {
-  // @@protoc_insertion_point(destructor:generated.voxels)
+Voxels::~Voxels() {
+  // @@protoc_insertion_point(destructor:generated.Voxels)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -549,18 +579,18 @@ voxels::~voxels() {
   SharedDtor();
 }
 
-inline void voxels::SharedDtor() {
+inline void Voxels::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.voxel_coords_.~RepeatedPtrField();
   if (this != internal_default_instance()) delete _impl_.robot_origin_;
 }
 
-void voxels::SetCachedSize(int size) const {
+void Voxels::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void voxels::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.voxels)
+void Voxels::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Voxels)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -574,13 +604,13 @@ void voxels::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* voxels::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* Voxels::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .generated.matrix robot_origin = 1;
+      // .generated.Matrix robot_origin = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_robot_origin(), ptr);
@@ -632,13 +662,13 @@ failure:
 #undef CHK_
 }
 
-uint8_t* voxels::_InternalSerialize(
+uint8_t* Voxels::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.voxels)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Voxels)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .generated.matrix robot_origin = 1;
+  // .generated.Matrix robot_origin = 1;
   if (this->_internal_has_robot_origin()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::robot_origin(this),
@@ -667,12 +697,12 @@ uint8_t* voxels::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.voxels)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Voxels)
   return target;
 }
 
-size_t voxels::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.voxels)
+size_t Voxels::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Voxels)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -686,7 +716,7 @@ size_t voxels::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // .generated.matrix robot_origin = 1;
+  // .generated.Matrix robot_origin = 1;
   if (this->_internal_has_robot_origin()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -710,22 +740,22 @@ size_t voxels::ByteSizeLong() const {
   return total_size;
 }
 
-void voxels::CheckTypeAndMergeFrom(
+void Voxels::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const voxels*>(
+  MergeFrom(*::_pbi::DownCast<const Voxels*>(
       &from));
 }
 
-void voxels::MergeFrom(const voxels& from) {
-  voxels* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.voxels)
+void Voxels::MergeFrom(const Voxels& from) {
+  Voxels* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Voxels)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   _this->_impl_.voxel_coords_.MergeFrom(from._impl_.voxel_coords_);
   if (from._internal_has_robot_origin()) {
-    _this->_internal_mutable_robot_origin()->::generated::matrix::MergeFrom(
+    _this->_internal_mutable_robot_origin()->::generated::Matrix::MergeFrom(
         from._internal_robot_origin());
   }
   static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
@@ -738,61 +768,61 @@ void voxels::MergeFrom(const voxels& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void voxels::CopyFrom(const voxels& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.voxels)
+void Voxels::CopyFrom(const Voxels& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Voxels)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool voxels::IsInitialized() const {
+bool Voxels::IsInitialized() const {
   return true;
 }
 
-void voxels::InternalSwap(voxels* other) {
+void Voxels::InternalSwap(Voxels* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.voxel_coords_.InternalSwap(&other->_impl_.voxel_coords_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(voxels, _impl_.voxel_side_length_)
-      + sizeof(voxels::_impl_.voxel_side_length_)
-      - PROTOBUF_FIELD_OFFSET(voxels, _impl_.robot_origin_)>(
+      PROTOBUF_FIELD_OFFSET(Voxels, _impl_.voxel_side_length_)
+      + sizeof(Voxels::_impl_.voxel_side_length_)
+      - PROTOBUF_FIELD_OFFSET(Voxels, _impl_.robot_origin_)>(
           reinterpret_cast<char*>(&_impl_.robot_origin_),
           reinterpret_cast<char*>(&other->_impl_.robot_origin_));
 }
 
-std::string voxels::GetTypeName() const {
-  return "generated.voxels";
+std::string Voxels::GetTypeName() const {
+  return "generated.Voxels";
 }
 
 
 // ===================================================================
 
-class tcps::_Internal {
+class Tcps::_Internal {
  public:
 };
 
-void tcps::clear_points() {
+void Tcps::clear_points() {
   _impl_.points_.Clear();
 }
-tcps::tcps(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Tcps::Tcps(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.tcps)
+  // @@protoc_insertion_point(arena_constructor:generated.Tcps)
 }
-tcps::tcps(const tcps& from)
+Tcps::Tcps(const Tcps& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  tcps* const _this = this; (void)_this;
+  Tcps* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.points_){from._impl_.points_}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
-  // @@protoc_insertion_point(copy_constructor:generated.tcps)
+  // @@protoc_insertion_point(copy_constructor:generated.Tcps)
 }
 
-inline void tcps::SharedCtor(
+inline void Tcps::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -802,8 +832,8 @@ inline void tcps::SharedCtor(
   };
 }
 
-tcps::~tcps() {
-  // @@protoc_insertion_point(destructor:generated.tcps)
+Tcps::~Tcps() {
+  // @@protoc_insertion_point(destructor:generated.Tcps)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -811,17 +841,17 @@ tcps::~tcps() {
   SharedDtor();
 }
 
-inline void tcps::SharedDtor() {
+inline void Tcps::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.points_.~RepeatedPtrField();
 }
 
-void tcps::SetCachedSize(int size) const {
+void Tcps::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void tcps::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.tcps)
+void Tcps::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Tcps)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -830,7 +860,7 @@ void tcps::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* tcps::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* Tcps::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -872,9 +902,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* tcps::_InternalSerialize(
+uint8_t* Tcps::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.tcps)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Tcps)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -890,12 +920,12 @@ uint8_t* tcps::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.tcps)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Tcps)
   return target;
 }
 
-size_t tcps::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.tcps)
+size_t Tcps::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Tcps)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -917,15 +947,15 @@ size_t tcps::ByteSizeLong() const {
   return total_size;
 }
 
-void tcps::CheckTypeAndMergeFrom(
+void Tcps::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const tcps*>(
+  MergeFrom(*::_pbi::DownCast<const Tcps*>(
       &from));
 }
 
-void tcps::MergeFrom(const tcps& from) {
-  tcps* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.tcps)
+void Tcps::MergeFrom(const Tcps& from) {
+  Tcps* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Tcps)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -934,42 +964,564 @@ void tcps::MergeFrom(const tcps& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void tcps::CopyFrom(const tcps& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.tcps)
+void Tcps::CopyFrom(const Tcps& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Tcps)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool tcps::IsInitialized() const {
+bool Tcps::IsInitialized() const {
   return true;
 }
 
-void tcps::InternalSwap(tcps* other) {
+void Tcps::InternalSwap(Tcps* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.points_.InternalSwap(&other->_impl_.points_);
 }
 
-std::string tcps::GetTypeName() const {
-  return "generated.tcps";
+std::string Tcps::GetTypeName() const {
+  return "generated.Tcps";
+}
+
+
+// ===================================================================
+
+class Voxel_TF_Meta::_Internal {
+ public:
+  using HasBits = decltype(std::declval<Voxel_TF_Meta>()._impl_._has_bits_);
+  static const ::generated::Voxels& voxels(const Voxel_TF_Meta* msg);
+  static const ::generated::Transformation_Meta& transformation_meta(const Voxel_TF_Meta* msg);
+  static void set_has_transformation_meta(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+};
+
+const ::generated::Voxels&
+Voxel_TF_Meta::_Internal::voxels(const Voxel_TF_Meta* msg) {
+  return *msg->_impl_.voxels_;
+}
+const ::generated::Transformation_Meta&
+Voxel_TF_Meta::_Internal::transformation_meta(const Voxel_TF_Meta* msg) {
+  return *msg->_impl_.transformation_meta_;
+}
+void Voxel_TF_Meta::clear_transformation_meta() {
+  if (_impl_.transformation_meta_ != nullptr) _impl_.transformation_meta_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+Voxel_TF_Meta::Voxel_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:generated.Voxel_TF_Meta)
+}
+Voxel_TF_Meta::Voxel_TF_Meta(const Voxel_TF_Meta& from)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
+  Voxel_TF_Meta* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.voxels_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}};
+
+  _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+  if (from._internal_has_voxels()) {
+    _this->_impl_.voxels_ = new ::generated::Voxels(*from._impl_.voxels_);
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_impl_.transformation_meta_ = new ::generated::Transformation_Meta(*from._impl_.transformation_meta_);
+  }
+  // @@protoc_insertion_point(copy_constructor:generated.Voxel_TF_Meta)
+}
+
+inline void Voxel_TF_Meta::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.voxels_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}
+  };
+}
+
+Voxel_TF_Meta::~Voxel_TF_Meta() {
+  // @@protoc_insertion_point(destructor:generated.Voxel_TF_Meta)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Voxel_TF_Meta::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.voxels_;
+  if (this != internal_default_instance()) delete _impl_.transformation_meta_;
+}
+
+void Voxel_TF_Meta::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Voxel_TF_Meta::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Voxel_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.voxels_ != nullptr) {
+    delete _impl_.voxels_;
+  }
+  _impl_.voxels_ = nullptr;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    GOOGLE_DCHECK(_impl_.transformation_meta_ != nullptr);
+    _impl_.transformation_meta_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<std::string>();
+}
+
+const char* Voxel_TF_Meta::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .generated.Voxels voxels = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_voxels(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .generated.Transformation_Meta transformation_meta = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_transformation_meta(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<std::string>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Voxel_TF_Meta::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Voxel_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .generated.Voxels voxels = 1;
+  if (this->_internal_has_voxels()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::voxels(this),
+        _Internal::voxels(this).GetCachedSize(), target, stream);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  if (_internal_has_transformation_meta()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::transformation_meta(this),
+        _Internal::transformation_meta(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
+        static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Voxel_TF_Meta)
+  return target;
+}
+
+size_t Voxel_TF_Meta::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Voxel_TF_Meta)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .generated.Voxels voxels = 1;
+  if (this->_internal_has_voxels()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.voxels_);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.transformation_meta_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    total_size += _internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size();
+  }
+  int cached_size = ::_pbi::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void Voxel_TF_Meta::CheckTypeAndMergeFrom(
+    const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
+  MergeFrom(*::_pbi::DownCast<const Voxel_TF_Meta*>(
+      &from));
+}
+
+void Voxel_TF_Meta::MergeFrom(const Voxel_TF_Meta& from) {
+  Voxel_TF_Meta* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Voxel_TF_Meta)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_voxels()) {
+    _this->_internal_mutable_voxels()->::generated::Voxels::MergeFrom(
+        from._internal_voxels());
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_internal_mutable_transformation_meta()->::generated::Transformation_Meta::MergeFrom(
+        from._internal_transformation_meta());
+  }
+  _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+}
+
+void Voxel_TF_Meta::CopyFrom(const Voxel_TF_Meta& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Voxel_TF_Meta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Voxel_TF_Meta::IsInitialized() const {
+  return true;
+}
+
+void Voxel_TF_Meta::InternalSwap(Voxel_TF_Meta* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Voxel_TF_Meta, _impl_.transformation_meta_)
+      + sizeof(Voxel_TF_Meta::_impl_.transformation_meta_)
+      - PROTOBUF_FIELD_OFFSET(Voxel_TF_Meta, _impl_.voxels_)>(
+          reinterpret_cast<char*>(&_impl_.voxels_),
+          reinterpret_cast<char*>(&other->_impl_.voxels_));
+}
+
+std::string Voxel_TF_Meta::GetTypeName() const {
+  return "generated.Voxel_TF_Meta";
+}
+
+
+// ===================================================================
+
+class Tcps_TF_Meta::_Internal {
+ public:
+  using HasBits = decltype(std::declval<Tcps_TF_Meta>()._impl_._has_bits_);
+  static const ::generated::Tcps& tcps(const Tcps_TF_Meta* msg);
+  static const ::generated::Transformation_Meta& transformation_meta(const Tcps_TF_Meta* msg);
+  static void set_has_transformation_meta(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+};
+
+const ::generated::Tcps&
+Tcps_TF_Meta::_Internal::tcps(const Tcps_TF_Meta* msg) {
+  return *msg->_impl_.tcps_;
+}
+const ::generated::Transformation_Meta&
+Tcps_TF_Meta::_Internal::transformation_meta(const Tcps_TF_Meta* msg) {
+  return *msg->_impl_.transformation_meta_;
+}
+void Tcps_TF_Meta::clear_transformation_meta() {
+  if (_impl_.transformation_meta_ != nullptr) _impl_.transformation_meta_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+Tcps_TF_Meta::Tcps_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:generated.Tcps_TF_Meta)
+}
+Tcps_TF_Meta::Tcps_TF_Meta(const Tcps_TF_Meta& from)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
+  Tcps_TF_Meta* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.tcps_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}};
+
+  _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+  if (from._internal_has_tcps()) {
+    _this->_impl_.tcps_ = new ::generated::Tcps(*from._impl_.tcps_);
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_impl_.transformation_meta_ = new ::generated::Transformation_Meta(*from._impl_.transformation_meta_);
+  }
+  // @@protoc_insertion_point(copy_constructor:generated.Tcps_TF_Meta)
+}
+
+inline void Tcps_TF_Meta::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.tcps_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}
+  };
+}
+
+Tcps_TF_Meta::~Tcps_TF_Meta() {
+  // @@protoc_insertion_point(destructor:generated.Tcps_TF_Meta)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Tcps_TF_Meta::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.tcps_;
+  if (this != internal_default_instance()) delete _impl_.transformation_meta_;
+}
+
+void Tcps_TF_Meta::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Tcps_TF_Meta::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Tcps_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.tcps_ != nullptr) {
+    delete _impl_.tcps_;
+  }
+  _impl_.tcps_ = nullptr;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    GOOGLE_DCHECK(_impl_.transformation_meta_ != nullptr);
+    _impl_.transformation_meta_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<std::string>();
+}
+
+const char* Tcps_TF_Meta::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .generated.Tcps tcps = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_tcps(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .generated.Transformation_Meta transformation_meta = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_transformation_meta(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<std::string>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Tcps_TF_Meta::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Tcps_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .generated.Tcps tcps = 1;
+  if (this->_internal_has_tcps()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::tcps(this),
+        _Internal::tcps(this).GetCachedSize(), target, stream);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  if (_internal_has_transformation_meta()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::transformation_meta(this),
+        _Internal::transformation_meta(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
+        static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Tcps_TF_Meta)
+  return target;
+}
+
+size_t Tcps_TF_Meta::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Tcps_TF_Meta)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .generated.Tcps tcps = 1;
+  if (this->_internal_has_tcps()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.tcps_);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.transformation_meta_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    total_size += _internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size();
+  }
+  int cached_size = ::_pbi::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void Tcps_TF_Meta::CheckTypeAndMergeFrom(
+    const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
+  MergeFrom(*::_pbi::DownCast<const Tcps_TF_Meta*>(
+      &from));
+}
+
+void Tcps_TF_Meta::MergeFrom(const Tcps_TF_Meta& from) {
+  Tcps_TF_Meta* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Tcps_TF_Meta)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_tcps()) {
+    _this->_internal_mutable_tcps()->::generated::Tcps::MergeFrom(
+        from._internal_tcps());
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_internal_mutable_transformation_meta()->::generated::Transformation_Meta::MergeFrom(
+        from._internal_transformation_meta());
+  }
+  _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+}
+
+void Tcps_TF_Meta::CopyFrom(const Tcps_TF_Meta& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Tcps_TF_Meta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Tcps_TF_Meta::IsInitialized() const {
+  return true;
+}
+
+void Tcps_TF_Meta::InternalSwap(Tcps_TF_Meta* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Tcps_TF_Meta, _impl_.transformation_meta_)
+      + sizeof(Tcps_TF_Meta::_impl_.transformation_meta_)
+      - PROTOBUF_FIELD_OFFSET(Tcps_TF_Meta, _impl_.tcps_)>(
+          reinterpret_cast<char*>(&_impl_.tcps_),
+          reinterpret_cast<char*>(&other->_impl_.tcps_));
+}
+
+std::string Tcps_TF_Meta::GetTypeName() const {
+  return "generated.Tcps_TF_Meta";
 }
 
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::generated::joints*
-Arena::CreateMaybeMessage< ::generated::joints >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::joints >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Joints*
+Arena::CreateMaybeMessage< ::generated::Joints >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Joints >(arena);
 }
-template<> PROTOBUF_NOINLINE ::generated::voxels*
-Arena::CreateMaybeMessage< ::generated::voxels >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::voxels >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Voxels*
+Arena::CreateMaybeMessage< ::generated::Voxels >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Voxels >(arena);
 }
-template<> PROTOBUF_NOINLINE ::generated::tcps*
-Arena::CreateMaybeMessage< ::generated::tcps >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::tcps >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Tcps*
+Arena::CreateMaybeMessage< ::generated::Tcps >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Tcps >(arena);
+}
+template<> PROTOBUF_NOINLINE ::generated::Voxel_TF_Meta*
+Arena::CreateMaybeMessage< ::generated::Voxel_TF_Meta >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Voxel_TF_Meta >(arena);
+}
+template<> PROTOBUF_NOINLINE ::generated::Tcps_TF_Meta*
+Arena::CreateMaybeMessage< ::generated::Tcps_TF_Meta >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Tcps_TF_Meta >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

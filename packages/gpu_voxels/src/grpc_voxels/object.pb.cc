@@ -334,10 +334,10 @@ std::string colored_box::GetTypeName() const {
 
 class object_data::_Internal {
  public:
-  static const ::generated::matrix& transform(const object_data* msg);
+  static const ::generated::Matrix& transform(const object_data* msg);
 };
 
-const ::generated::matrix&
+const ::generated::Matrix&
 object_data::_Internal::transform(const object_data* msg) {
   return *msg->_impl_.transform_;
 }
@@ -371,7 +371,7 @@ object_data::object_data(const object_data& from)
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_transform()) {
-    _this->_impl_.transform_ = new ::generated::matrix(*from._impl_.transform_);
+    _this->_impl_.transform_ = new ::generated::Matrix(*from._impl_.transform_);
   }
   // @@protoc_insertion_point(copy_constructor:generated.object_data)
 }
@@ -440,7 +440,7 @@ const char* object_data::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // .generated.matrix transform = 2;
+      // .generated.Matrix transform = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_transform(), ptr);
@@ -487,7 +487,7 @@ uint8_t* object_data::_InternalSerialize(
         1, this->_internal_prototype_name(), target);
   }
 
-  // .generated.matrix transform = 2;
+  // .generated.Matrix transform = 2;
   if (this->_internal_has_transform()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(2, _Internal::transform(this),
@@ -517,7 +517,7 @@ size_t object_data::ByteSizeLong() const {
         this->_internal_prototype_name());
   }
 
-  // .generated.matrix transform = 2;
+  // .generated.Matrix transform = 2;
   if (this->_internal_has_transform()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -549,7 +549,7 @@ void object_data::MergeFrom(const object_data& from) {
     _this->_internal_set_prototype_name(from._internal_prototype_name());
   }
   if (from._internal_has_transform()) {
-    _this->_internal_mutable_transform()->::generated::matrix::MergeFrom(
+    _this->_internal_mutable_transform()->::generated::Matrix::MergeFrom(
         from._internal_transform());
   }
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);

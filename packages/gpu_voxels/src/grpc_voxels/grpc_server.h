@@ -20,9 +20,9 @@ public:
 	VoxelService();
 	~VoxelService() override;
 
-	grpc::Status transmit_voxels(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter<::generated::voxels>* writer) override;
-	grpc::Status transmit_joints(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::joints>* writer) override;
-	grpc::Status transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::tcps>* writer) override;
+	grpc::Status transmit_voxels(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter<::generated::Voxel_TF_Meta>* writer) override;
+	grpc::Status transmit_joints(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::Joints>* writer) override;
+	grpc::Status transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::Tcps_TF_Meta>* writer) override;
 
 	boost::signals2::slot<void(const VoxelRobot&)> voxel_slot;
 	boost::signals2::slot<void(const Eigen::Vector<float, 7>&)> joint_slot;
@@ -34,19 +34,19 @@ private:
 
 	void handle_voxels(const VoxelRobot& data);
 
-	std::unique_ptr<generated::voxels> buffer;
+	std::unique_ptr<generated::Voxel_TF_Meta> buffer;
 
 	std::condition_variable cv;
 	std::mutex mutex;
 	bool stop_flag = false;
 
 
-	std::unique_ptr<generated::joints> joint_buffer;
+	std::unique_ptr<generated::Joints> joint_buffer;
 	std::condition_variable joint_cv;
 	std::mutex joint_mutex;
 
 
-	std::unique_ptr<generated::tcps> tcps_buffer;
+	std::unique_ptr<generated::Tcps_TF_Meta> tcps_buffer;
 	std::condition_variable tcps_cv;
 	std::mutex tcps_mutex;
 };

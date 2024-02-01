@@ -31,6 +31,7 @@
 #include <google/protobuf/generated_enum_util.h>
 #include <google/protobuf/empty.pb.h>
 #include "vertex.pb.h"
+#include "meta_data.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_hand_5ftracking_2eproto
