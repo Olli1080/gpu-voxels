@@ -30,6 +30,9 @@ namespace server
 	template<typename out, typename in>
 	out convert(const in& v);
 
+	template<typename out, typename in>
+	out convert_meta(const in& v, bool send_meta);
+
 	//template<typename out, typename in>
 	//out convert(const in&& v);
 
@@ -449,21 +452,25 @@ namespace server
 	}
 
 	template<>
-	inline generated::Tcps_TF_Meta convert(const std::vector<Eigen::Vector3f>& v)
+	inline generated::Tcps_TF_Meta convert_meta(const std::vector<Eigen::Vector3f>& v, bool send_meta)
 	{
 		generated::Tcps_TF_Meta out;
 		*out.mutable_tcps() = convert<generated::Tcps>(v);
-		*out.mutable_transformation_meta() = gen_meta();
+
+		if (send_meta)
+			*out.mutable_transformation_meta() = gen_meta();
 
 		return out;
 	}
 
 	template<>
-	inline generated::Voxel_TF_Meta convert(const VoxelRobot& v)
+	inline generated::Voxel_TF_Meta convert_meta(const VoxelRobot& v, bool send_meta)
 	{
 		generated::Voxel_TF_Meta out;
 		*out.mutable_voxels() = convert<generated::Voxels>(v);
-		*out.mutable_transformation_meta() = gen_meta();
+
+		if (send_meta)
+			*out.mutable_transformation_meta() = gen_meta();
 
 		return out;
 	}
