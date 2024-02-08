@@ -86,9 +86,9 @@ namespace server
 	}
 
 	template<>
-	inline generated::vertex_3d_ui convert(const Eigen::Vector<uint32_t, 3>& v)
+	inline generated::index_3d convert(const Eigen::Vector<uint32_t, 3>& v)
 	{
-		generated::vertex_3d_ui out;
+		generated::index_3d out;
 		out.set_x(v.x());
 		out.set_y(v.y());
 		out.set_z(v.z());
@@ -416,10 +416,10 @@ namespace server
 		out.set_voxel_side_length(v.voxel_length);
 		*out.mutable_robot_origin() = convert(v.robot_origin);
 
-		auto& voxel_coords = *out.mutable_voxel_coords();
+		auto& voxel_coords = *out.mutable_voxel_indices();
 		voxel_coords.Reserve(v.voxels.size());
 		for (const auto& voxel_coord : v.voxels)
-			voxel_coords.Add(convert<generated::vertex_3d_ui>(voxel_coord));
+			voxel_coords.Add(convert<generated::index_3d>(voxel_coord));
 
 		return out;
 	}

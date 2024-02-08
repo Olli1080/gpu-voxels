@@ -35,30 +35,30 @@ mesh_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, 
   : channel_(channel), rpcmethod_transmit_mesh_data_(mesh_com_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
   {}
 
-::grpc::ClientReaderWriter< ::generated::named_request, ::generated::mesh_data>* mesh_com::Stub::transmit_mesh_dataRaw(::grpc::ClientContext* context) {
-  return ::grpc::internal::ClientReaderWriterFactory< ::generated::named_request, ::generated::mesh_data>::Create(channel_.get(), rpcmethod_transmit_mesh_data_, context);
+::grpc::ClientReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* mesh_com::Stub::transmit_mesh_dataRaw(::grpc::ClientContext* context) {
+  return ::grpc::internal::ClientReaderWriterFactory< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>::Create(channel_.get(), rpcmethod_transmit_mesh_data_, context);
 }
 
-void mesh_com::Stub::async::transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::mesh_data>* reactor) {
-  ::grpc::internal::ClientCallbackReaderWriterFactory< ::generated::named_request,::generated::mesh_data>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_mesh_data_, context, reactor);
+void mesh_com::Stub::async::transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::Mesh_Data_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderWriterFactory< ::generated::named_request,::generated::Mesh_Data_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_mesh_data_, context, reactor);
 }
 
-::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>* mesh_com::Stub::Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::mesh_data>::Create(channel_.get(), cq, rpcmethod_transmit_mesh_data_, context, true, tag);
+::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* mesh_com::Stub::Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_mesh_data_, context, true, tag);
 }
 
-::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>* mesh_com::Stub::PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::mesh_data>::Create(channel_.get(), cq, rpcmethod_transmit_mesh_data_, context, false, nullptr);
+::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* mesh_com::Stub::PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_mesh_data_, context, false, nullptr);
 }
 
 mesh_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       mesh_com_method_names[0],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
-      new ::grpc::internal::BidiStreamingHandler< mesh_com::Service, ::generated::named_request, ::generated::mesh_data>(
+      new ::grpc::internal::BidiStreamingHandler< mesh_com::Service, ::generated::named_request, ::generated::Mesh_Data_TF_Meta>(
           [](mesh_com::Service* service,
              ::grpc::ServerContext* ctx,
-             ::grpc::ServerReaderWriter<::generated::mesh_data,
+             ::grpc::ServerReaderWriter<::generated::Mesh_Data_TF_Meta,
              ::generated::named_request>* stream) {
                return service->transmit_mesh_data(ctx, stream);
              }, this)));
@@ -67,7 +67,7 @@ mesh_com::Service::Service() {
 mesh_com::Service::~Service() {
 }
 
-::grpc::Status mesh_com::Service::transmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* stream) {
+::grpc::Status mesh_com::Service::transmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* stream) {
   (void) context;
   (void) stream;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");

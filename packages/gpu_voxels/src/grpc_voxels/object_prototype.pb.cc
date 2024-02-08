@@ -18,7 +18,7 @@ namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
 namespace generated {
-PROTOBUF_CONSTEXPR object_prototype::object_prototype(
+PROTOBUF_CONSTEXPR Object_Prototype::Object_Prototype(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.mesh_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -26,55 +26,70 @@ PROTOBUF_CONSTEXPR object_prototype::object_prototype(
   , /*decltype(_impl_.bounding_box_)*/nullptr
   , /*decltype(_impl_.mean_color_)*/nullptr
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct object_prototypeDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR object_prototypeDefaultTypeInternal()
+struct Object_PrototypeDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Object_PrototypeDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~object_prototypeDefaultTypeInternal() {}
+  ~Object_PrototypeDefaultTypeInternal() {}
   union {
-    object_prototype _instance;
+    Object_Prototype _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 object_prototypeDefaultTypeInternal _object_prototype_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Object_PrototypeDefaultTypeInternal _Object_Prototype_default_instance_;
+PROTOBUF_CONSTEXPR Object_Prototype_TF_Meta::Object_Prototype_TF_Meta(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.object_prototype_)*/nullptr
+  , /*decltype(_impl_.transformation_meta_)*/nullptr} {}
+struct Object_Prototype_TF_MetaDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Object_Prototype_TF_MetaDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~Object_Prototype_TF_MetaDefaultTypeInternal() {}
+  union {
+    Object_Prototype_TF_Meta _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Object_Prototype_TF_MetaDefaultTypeInternal _Object_Prototype_TF_Meta_default_instance_;
 }  // namespace generated
 namespace generated {
 
 // ===================================================================
 
-class object_prototype::_Internal {
+class Object_Prototype::_Internal {
  public:
-  static const ::generated::aabb& bounding_box(const object_prototype* msg);
-  static const ::generated::color& mean_color(const object_prototype* msg);
+  static const ::generated::aabb& bounding_box(const Object_Prototype* msg);
+  static const ::generated::color& mean_color(const Object_Prototype* msg);
 };
 
 const ::generated::aabb&
-object_prototype::_Internal::bounding_box(const object_prototype* msg) {
+Object_Prototype::_Internal::bounding_box(const Object_Prototype* msg) {
   return *msg->_impl_.bounding_box_;
 }
 const ::generated::color&
-object_prototype::_Internal::mean_color(const object_prototype* msg) {
+Object_Prototype::_Internal::mean_color(const Object_Prototype* msg) {
   return *msg->_impl_.mean_color_;
 }
-void object_prototype::clear_bounding_box() {
+void Object_Prototype::clear_bounding_box() {
   if (GetArenaForAllocation() == nullptr && _impl_.bounding_box_ != nullptr) {
     delete _impl_.bounding_box_;
   }
   _impl_.bounding_box_ = nullptr;
 }
-void object_prototype::clear_mean_color() {
+void Object_Prototype::clear_mean_color() {
   if (GetArenaForAllocation() == nullptr && _impl_.mean_color_ != nullptr) {
     delete _impl_.mean_color_;
   }
   _impl_.mean_color_ = nullptr;
 }
-object_prototype::object_prototype(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Object_Prototype::Object_Prototype(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.object_prototype)
+  // @@protoc_insertion_point(arena_constructor:generated.Object_Prototype)
 }
-object_prototype::object_prototype(const object_prototype& from)
+Object_Prototype::Object_Prototype(const Object_Prototype& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  object_prototype* const _this = this; (void)_this;
+  Object_Prototype* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.mesh_name_){}
     , decltype(_impl_.name_){}
@@ -114,10 +129,10 @@ object_prototype::object_prototype(const object_prototype& from)
   if (from._internal_has_mean_color()) {
     _this->_impl_.mean_color_ = new ::generated::color(*from._impl_.mean_color_);
   }
-  // @@protoc_insertion_point(copy_constructor:generated.object_prototype)
+  // @@protoc_insertion_point(copy_constructor:generated.Object_Prototype)
 }
 
-inline void object_prototype::SharedCtor(
+inline void Object_Prototype::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -143,8 +158,8 @@ inline void object_prototype::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
-object_prototype::~object_prototype() {
-  // @@protoc_insertion_point(destructor:generated.object_prototype)
+Object_Prototype::~Object_Prototype() {
+  // @@protoc_insertion_point(destructor:generated.Object_Prototype)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -152,7 +167,7 @@ object_prototype::~object_prototype() {
   SharedDtor();
 }
 
-inline void object_prototype::SharedDtor() {
+inline void Object_Prototype::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.mesh_name_.Destroy();
   _impl_.name_.Destroy();
@@ -161,12 +176,12 @@ inline void object_prototype::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.mean_color_;
 }
 
-void object_prototype::SetCachedSize(int size) const {
+void Object_Prototype::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void object_prototype::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.object_prototype)
+void Object_Prototype::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Object_Prototype)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -185,7 +200,7 @@ void object_prototype::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* object_prototype::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* Object_Prototype::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -260,9 +275,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* object_prototype::_InternalSerialize(
+uint8_t* Object_Prototype::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.object_prototype)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Object_Prototype)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -285,7 +300,7 @@ uint8_t* object_prototype::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_mesh_name().data(), static_cast<int>(this->_internal_mesh_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "generated.object_prototype.mesh_name");
+      "generated.Object_Prototype.mesh_name");
     target = stream->WriteStringMaybeAliased(
         3, this->_internal_mesh_name(), target);
   }
@@ -295,7 +310,7 @@ uint8_t* object_prototype::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_name().data(), static_cast<int>(this->_internal_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "generated.object_prototype.name");
+      "generated.Object_Prototype.name");
     target = stream->WriteStringMaybeAliased(
         4, this->_internal_name(), target);
   }
@@ -305,7 +320,7 @@ uint8_t* object_prototype::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_type().data(), static_cast<int>(this->_internal_type().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "generated.object_prototype.type");
+      "generated.Object_Prototype.type");
     target = stream->WriteStringMaybeAliased(
         5, this->_internal_type(), target);
   }
@@ -314,12 +329,12 @@ uint8_t* object_prototype::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.object_prototype)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Object_Prototype)
   return target;
 }
 
-size_t object_prototype::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.object_prototype)
+size_t Object_Prototype::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Object_Prototype)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -369,15 +384,15 @@ size_t object_prototype::ByteSizeLong() const {
   return total_size;
 }
 
-void object_prototype::CheckTypeAndMergeFrom(
+void Object_Prototype::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const object_prototype*>(
+  MergeFrom(*::_pbi::DownCast<const Object_Prototype*>(
       &from));
 }
 
-void object_prototype::MergeFrom(const object_prototype& from) {
-  object_prototype* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.object_prototype)
+void Object_Prototype::MergeFrom(const Object_Prototype& from) {
+  Object_Prototype* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Object_Prototype)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -402,18 +417,18 @@ void object_prototype::MergeFrom(const object_prototype& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void object_prototype::CopyFrom(const object_prototype& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.object_prototype)
+void Object_Prototype::CopyFrom(const Object_Prototype& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Object_Prototype)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool object_prototype::IsInitialized() const {
+bool Object_Prototype::IsInitialized() const {
   return true;
 }
 
-void object_prototype::InternalSwap(object_prototype* other) {
+void Object_Prototype::InternalSwap(Object_Prototype* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
@@ -431,24 +446,285 @@ void object_prototype::InternalSwap(object_prototype* other) {
       &other->_impl_.type_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(object_prototype, _impl_.mean_color_)
-      + sizeof(object_prototype::_impl_.mean_color_)
-      - PROTOBUF_FIELD_OFFSET(object_prototype, _impl_.bounding_box_)>(
+      PROTOBUF_FIELD_OFFSET(Object_Prototype, _impl_.mean_color_)
+      + sizeof(Object_Prototype::_impl_.mean_color_)
+      - PROTOBUF_FIELD_OFFSET(Object_Prototype, _impl_.bounding_box_)>(
           reinterpret_cast<char*>(&_impl_.bounding_box_),
           reinterpret_cast<char*>(&other->_impl_.bounding_box_));
 }
 
-std::string object_prototype::GetTypeName() const {
-  return "generated.object_prototype";
+std::string Object_Prototype::GetTypeName() const {
+  return "generated.Object_Prototype";
+}
+
+
+// ===================================================================
+
+class Object_Prototype_TF_Meta::_Internal {
+ public:
+  using HasBits = decltype(std::declval<Object_Prototype_TF_Meta>()._impl_._has_bits_);
+  static const ::generated::Object_Prototype& object_prototype(const Object_Prototype_TF_Meta* msg);
+  static const ::generated::Transformation_Meta& transformation_meta(const Object_Prototype_TF_Meta* msg);
+  static void set_has_transformation_meta(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+};
+
+const ::generated::Object_Prototype&
+Object_Prototype_TF_Meta::_Internal::object_prototype(const Object_Prototype_TF_Meta* msg) {
+  return *msg->_impl_.object_prototype_;
+}
+const ::generated::Transformation_Meta&
+Object_Prototype_TF_Meta::_Internal::transformation_meta(const Object_Prototype_TF_Meta* msg) {
+  return *msg->_impl_.transformation_meta_;
+}
+void Object_Prototype_TF_Meta::clear_transformation_meta() {
+  if (_impl_.transformation_meta_ != nullptr) _impl_.transformation_meta_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+Object_Prototype_TF_Meta::Object_Prototype_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:generated.Object_Prototype_TF_Meta)
+}
+Object_Prototype_TF_Meta::Object_Prototype_TF_Meta(const Object_Prototype_TF_Meta& from)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
+  Object_Prototype_TF_Meta* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.object_prototype_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}};
+
+  _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+  if (from._internal_has_object_prototype()) {
+    _this->_impl_.object_prototype_ = new ::generated::Object_Prototype(*from._impl_.object_prototype_);
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_impl_.transformation_meta_ = new ::generated::Transformation_Meta(*from._impl_.transformation_meta_);
+  }
+  // @@protoc_insertion_point(copy_constructor:generated.Object_Prototype_TF_Meta)
+}
+
+inline void Object_Prototype_TF_Meta::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.object_prototype_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}
+  };
+}
+
+Object_Prototype_TF_Meta::~Object_Prototype_TF_Meta() {
+  // @@protoc_insertion_point(destructor:generated.Object_Prototype_TF_Meta)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Object_Prototype_TF_Meta::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.object_prototype_;
+  if (this != internal_default_instance()) delete _impl_.transformation_meta_;
+}
+
+void Object_Prototype_TF_Meta::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Object_Prototype_TF_Meta::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Object_Prototype_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.object_prototype_ != nullptr) {
+    delete _impl_.object_prototype_;
+  }
+  _impl_.object_prototype_ = nullptr;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    GOOGLE_DCHECK(_impl_.transformation_meta_ != nullptr);
+    _impl_.transformation_meta_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<std::string>();
+}
+
+const char* Object_Prototype_TF_Meta::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .generated.Object_Prototype object_prototype = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_object_prototype(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .generated.Transformation_Meta transformation_meta = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_transformation_meta(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<std::string>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Object_Prototype_TF_Meta::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Object_Prototype_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .generated.Object_Prototype object_prototype = 1;
+  if (this->_internal_has_object_prototype()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::object_prototype(this),
+        _Internal::object_prototype(this).GetCachedSize(), target, stream);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  if (_internal_has_transformation_meta()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::transformation_meta(this),
+        _Internal::transformation_meta(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
+        static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Object_Prototype_TF_Meta)
+  return target;
+}
+
+size_t Object_Prototype_TF_Meta::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Object_Prototype_TF_Meta)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .generated.Object_Prototype object_prototype = 1;
+  if (this->_internal_has_object_prototype()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.object_prototype_);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.transformation_meta_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    total_size += _internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size();
+  }
+  int cached_size = ::_pbi::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void Object_Prototype_TF_Meta::CheckTypeAndMergeFrom(
+    const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
+  MergeFrom(*::_pbi::DownCast<const Object_Prototype_TF_Meta*>(
+      &from));
+}
+
+void Object_Prototype_TF_Meta::MergeFrom(const Object_Prototype_TF_Meta& from) {
+  Object_Prototype_TF_Meta* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Object_Prototype_TF_Meta)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_object_prototype()) {
+    _this->_internal_mutable_object_prototype()->::generated::Object_Prototype::MergeFrom(
+        from._internal_object_prototype());
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_internal_mutable_transformation_meta()->::generated::Transformation_Meta::MergeFrom(
+        from._internal_transformation_meta());
+  }
+  _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+}
+
+void Object_Prototype_TF_Meta::CopyFrom(const Object_Prototype_TF_Meta& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Object_Prototype_TF_Meta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Object_Prototype_TF_Meta::IsInitialized() const {
+  return true;
+}
+
+void Object_Prototype_TF_Meta::InternalSwap(Object_Prototype_TF_Meta* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Object_Prototype_TF_Meta, _impl_.transformation_meta_)
+      + sizeof(Object_Prototype_TF_Meta::_impl_.transformation_meta_)
+      - PROTOBUF_FIELD_OFFSET(Object_Prototype_TF_Meta, _impl_.object_prototype_)>(
+          reinterpret_cast<char*>(&_impl_.object_prototype_),
+          reinterpret_cast<char*>(&other->_impl_.object_prototype_));
+}
+
+std::string Object_Prototype_TF_Meta::GetTypeName() const {
+  return "generated.Object_Prototype_TF_Meta";
 }
 
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::generated::object_prototype*
-Arena::CreateMaybeMessage< ::generated::object_prototype >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::object_prototype >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Object_Prototype*
+Arena::CreateMaybeMessage< ::generated::Object_Prototype >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Object_Prototype >(arena);
+}
+template<> PROTOBUF_NOINLINE ::generated::Object_Prototype_TF_Meta*
+Arena::CreateMaybeMessage< ::generated::Object_Prototype_TF_Meta >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Object_Prototype_TF_Meta >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

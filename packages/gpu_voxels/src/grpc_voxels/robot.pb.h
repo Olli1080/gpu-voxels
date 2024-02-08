@@ -371,27 +371,27 @@ class Voxels final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kVoxelCoordsFieldNumber = 3,
+    kVoxelIndicesFieldNumber = 3,
     kRobotOriginFieldNumber = 1,
     kVoxelSideLengthFieldNumber = 2,
   };
-  // repeated .generated.vertex_3d_ui voxel_coords = 3;
-  int voxel_coords_size() const;
+  // repeated .generated.index_3d voxel_indices = 3;
+  int voxel_indices_size() const;
   private:
-  int _internal_voxel_coords_size() const;
+  int _internal_voxel_indices_size() const;
   public:
-  void clear_voxel_coords();
-  ::generated::vertex_3d_ui* mutable_voxel_coords(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >*
-      mutable_voxel_coords();
+  void clear_voxel_indices();
+  ::generated::index_3d* mutable_voxel_indices(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::index_3d >*
+      mutable_voxel_indices();
   private:
-  const ::generated::vertex_3d_ui& _internal_voxel_coords(int index) const;
-  ::generated::vertex_3d_ui* _internal_add_voxel_coords();
+  const ::generated::index_3d& _internal_voxel_indices(int index) const;
+  ::generated::index_3d* _internal_add_voxel_indices();
   public:
-  const ::generated::vertex_3d_ui& voxel_coords(int index) const;
-  ::generated::vertex_3d_ui* add_voxel_coords();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >&
-      voxel_coords() const;
+  const ::generated::index_3d& voxel_indices(int index) const;
+  ::generated::index_3d* add_voxel_indices();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::index_3d >&
+      voxel_indices() const;
 
   // .generated.Matrix robot_origin = 1;
   bool has_robot_origin() const;
@@ -428,7 +428,7 @@ class Voxels final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui > voxel_coords_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::index_3d > voxel_indices_;
     ::generated::Matrix* robot_origin_;
     float voxel_side_length_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -1155,41 +1155,41 @@ inline void Voxels::set_voxel_side_length(float value) {
   // @@protoc_insertion_point(field_set:generated.Voxels.voxel_side_length)
 }
 
-// repeated .generated.vertex_3d_ui voxel_coords = 3;
-inline int Voxels::_internal_voxel_coords_size() const {
-  return _impl_.voxel_coords_.size();
+// repeated .generated.index_3d voxel_indices = 3;
+inline int Voxels::_internal_voxel_indices_size() const {
+  return _impl_.voxel_indices_.size();
 }
-inline int Voxels::voxel_coords_size() const {
-  return _internal_voxel_coords_size();
+inline int Voxels::voxel_indices_size() const {
+  return _internal_voxel_indices_size();
 }
-inline ::generated::vertex_3d_ui* Voxels::mutable_voxel_coords(int index) {
-  // @@protoc_insertion_point(field_mutable:generated.Voxels.voxel_coords)
-  return _impl_.voxel_coords_.Mutable(index);
+inline ::generated::index_3d* Voxels::mutable_voxel_indices(int index) {
+  // @@protoc_insertion_point(field_mutable:generated.Voxels.voxel_indices)
+  return _impl_.voxel_indices_.Mutable(index);
 }
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >*
-Voxels::mutable_voxel_coords() {
-  // @@protoc_insertion_point(field_mutable_list:generated.Voxels.voxel_coords)
-  return &_impl_.voxel_coords_;
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::index_3d >*
+Voxels::mutable_voxel_indices() {
+  // @@protoc_insertion_point(field_mutable_list:generated.Voxels.voxel_indices)
+  return &_impl_.voxel_indices_;
 }
-inline const ::generated::vertex_3d_ui& Voxels::_internal_voxel_coords(int index) const {
-  return _impl_.voxel_coords_.Get(index);
+inline const ::generated::index_3d& Voxels::_internal_voxel_indices(int index) const {
+  return _impl_.voxel_indices_.Get(index);
 }
-inline const ::generated::vertex_3d_ui& Voxels::voxel_coords(int index) const {
-  // @@protoc_insertion_point(field_get:generated.Voxels.voxel_coords)
-  return _internal_voxel_coords(index);
+inline const ::generated::index_3d& Voxels::voxel_indices(int index) const {
+  // @@protoc_insertion_point(field_get:generated.Voxels.voxel_indices)
+  return _internal_voxel_indices(index);
 }
-inline ::generated::vertex_3d_ui* Voxels::_internal_add_voxel_coords() {
-  return _impl_.voxel_coords_.Add();
+inline ::generated::index_3d* Voxels::_internal_add_voxel_indices() {
+  return _impl_.voxel_indices_.Add();
 }
-inline ::generated::vertex_3d_ui* Voxels::add_voxel_coords() {
-  ::generated::vertex_3d_ui* _add = _internal_add_voxel_coords();
-  // @@protoc_insertion_point(field_add:generated.Voxels.voxel_coords)
+inline ::generated::index_3d* Voxels::add_voxel_indices() {
+  ::generated::index_3d* _add = _internal_add_voxel_indices();
+  // @@protoc_insertion_point(field_add:generated.Voxels.voxel_indices)
   return _add;
 }
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::vertex_3d_ui >&
-Voxels::voxel_coords() const {
-  // @@protoc_insertion_point(field_list:generated.Voxels.voxel_coords)
-  return _impl_.voxel_coords_;
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::generated::index_3d >&
+Voxels::voxel_indices() const {
+  // @@protoc_insertion_point(field_list:generated.Voxels.voxel_indices)
+  return _impl_.voxel_indices_;
 }
 
 // -------------------------------------------------------------------

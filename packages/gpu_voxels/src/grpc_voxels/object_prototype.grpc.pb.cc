@@ -35,30 +35,30 @@ object_prototype_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface
   : channel_(channel), rpcmethod_transmit_object_prototype_(object_prototype_com_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
   {}
 
-::grpc::ClientReaderWriter< ::generated::named_request, ::generated::object_prototype>* object_prototype_com::Stub::transmit_object_prototypeRaw(::grpc::ClientContext* context) {
-  return ::grpc::internal::ClientReaderWriterFactory< ::generated::named_request, ::generated::object_prototype>::Create(channel_.get(), rpcmethod_transmit_object_prototype_, context);
+::grpc::ClientReaderWriter< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>* object_prototype_com::Stub::transmit_object_prototypeRaw(::grpc::ClientContext* context) {
+  return ::grpc::internal::ClientReaderWriterFactory< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>::Create(channel_.get(), rpcmethod_transmit_object_prototype_, context);
 }
 
-void object_prototype_com::Stub::async::transmit_object_prototype(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::object_prototype>* reactor) {
-  ::grpc::internal::ClientCallbackReaderWriterFactory< ::generated::named_request,::generated::object_prototype>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_object_prototype_, context, reactor);
+void object_prototype_com::Stub::async::transmit_object_prototype(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::Object_Prototype_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderWriterFactory< ::generated::named_request,::generated::Object_Prototype_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_object_prototype_, context, reactor);
 }
 
-::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::object_prototype>* object_prototype_com::Stub::Asynctransmit_object_prototypeRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::object_prototype>::Create(channel_.get(), cq, rpcmethod_transmit_object_prototype_, context, true, tag);
+::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>* object_prototype_com::Stub::Asynctransmit_object_prototypeRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_object_prototype_, context, true, tag);
 }
 
-::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::object_prototype>* object_prototype_com::Stub::PrepareAsynctransmit_object_prototypeRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::object_prototype>::Create(channel_.get(), cq, rpcmethod_transmit_object_prototype_, context, false, nullptr);
+::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>* object_prototype_com::Stub::PrepareAsynctransmit_object_prototypeRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::generated::named_request, ::generated::Object_Prototype_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_object_prototype_, context, false, nullptr);
 }
 
 object_prototype_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       object_prototype_com_method_names[0],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
-      new ::grpc::internal::BidiStreamingHandler< object_prototype_com::Service, ::generated::named_request, ::generated::object_prototype>(
+      new ::grpc::internal::BidiStreamingHandler< object_prototype_com::Service, ::generated::named_request, ::generated::Object_Prototype_TF_Meta>(
           [](object_prototype_com::Service* service,
              ::grpc::ServerContext* ctx,
-             ::grpc::ServerReaderWriter<::generated::object_prototype,
+             ::grpc::ServerReaderWriter<::generated::Object_Prototype_TF_Meta,
              ::generated::named_request>* stream) {
                return service->transmit_object_prototype(ctx, stream);
              }, this)));
@@ -67,7 +67,7 @@ object_prototype_com::Service::Service() {
 object_prototype_com::Service::~Service() {
 }
 
-::grpc::Status object_prototype_com::Service::transmit_object_prototype(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::object_prototype, ::generated::named_request>* stream) {
+::grpc::Status object_prototype_com::Service::transmit_object_prototype(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::Object_Prototype_TF_Meta, ::generated::named_request>* stream) {
   (void) context;
   (void) stream;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");

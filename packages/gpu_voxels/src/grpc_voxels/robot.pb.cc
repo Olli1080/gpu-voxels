@@ -39,7 +39,7 @@ struct JointsDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 JointsDefaultTypeInternal _Joints_default_instance_;
 PROTOBUF_CONSTEXPR Voxels::Voxels(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.voxel_coords_)*/{}
+    /*decltype(_impl_.voxel_indices_)*/{}
   , /*decltype(_impl_.robot_origin_)*/nullptr
   , /*decltype(_impl_.voxel_side_length_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -532,8 +532,8 @@ void Voxels::clear_robot_origin() {
   }
   _impl_.robot_origin_ = nullptr;
 }
-void Voxels::clear_voxel_coords() {
-  _impl_.voxel_coords_.Clear();
+void Voxels::clear_voxel_indices() {
+  _impl_.voxel_indices_.Clear();
 }
 Voxels::Voxels(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -545,7 +545,7 @@ Voxels::Voxels(const Voxels& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
   Voxels* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.voxel_coords_){from._impl_.voxel_coords_}
+      decltype(_impl_.voxel_indices_){from._impl_.voxel_indices_}
     , decltype(_impl_.robot_origin_){nullptr}
     , decltype(_impl_.voxel_side_length_){}
     , /*decltype(_impl_._cached_size_)*/{}};
@@ -563,7 +563,7 @@ inline void Voxels::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.voxel_coords_){arena}
+      decltype(_impl_.voxel_indices_){arena}
     , decltype(_impl_.robot_origin_){nullptr}
     , decltype(_impl_.voxel_side_length_){0}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -581,7 +581,7 @@ Voxels::~Voxels() {
 
 inline void Voxels::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.voxel_coords_.~RepeatedPtrField();
+  _impl_.voxel_indices_.~RepeatedPtrField();
   if (this != internal_default_instance()) delete _impl_.robot_origin_;
 }
 
@@ -595,7 +595,7 @@ void Voxels::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.voxel_coords_.Clear();
+  _impl_.voxel_indices_.Clear();
   if (GetArenaForAllocation() == nullptr && _impl_.robot_origin_ != nullptr) {
     delete _impl_.robot_origin_;
   }
@@ -626,13 +626,13 @@ const char* Voxels::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // repeated .generated.vertex_3d_ui voxel_coords = 3;
+      // repeated .generated.index_3d voxel_indices = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_voxel_coords(), ptr);
+            ptr = ctx->ParseMessage(_internal_add_voxel_indices(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
@@ -685,10 +685,10 @@ uint8_t* Voxels::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_voxel_side_length(), target);
   }
 
-  // repeated .generated.vertex_3d_ui voxel_coords = 3;
+  // repeated .generated.index_3d voxel_indices = 3;
   for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_voxel_coords_size()); i < n; i++) {
-    const auto& repfield = this->_internal_voxel_coords(i);
+      n = static_cast<unsigned>(this->_internal_voxel_indices_size()); i < n; i++) {
+    const auto& repfield = this->_internal_voxel_indices(i);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
         InternalWriteMessage(3, repfield, repfield.GetCachedSize(), target, stream);
   }
@@ -709,9 +709,9 @@ size_t Voxels::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .generated.vertex_3d_ui voxel_coords = 3;
-  total_size += 1UL * this->_internal_voxel_coords_size();
-  for (const auto& msg : this->_impl_.voxel_coords_) {
+  // repeated .generated.index_3d voxel_indices = 3;
+  total_size += 1UL * this->_internal_voxel_indices_size();
+  for (const auto& msg : this->_impl_.voxel_indices_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -753,7 +753,7 @@ void Voxels::MergeFrom(const Voxels& from) {
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.voxel_coords_.MergeFrom(from._impl_.voxel_coords_);
+  _this->_impl_.voxel_indices_.MergeFrom(from._impl_.voxel_indices_);
   if (from._internal_has_robot_origin()) {
     _this->_internal_mutable_robot_origin()->::generated::Matrix::MergeFrom(
         from._internal_robot_origin());
@@ -782,7 +782,7 @@ bool Voxels::IsInitialized() const {
 void Voxels::InternalSwap(Voxels* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.voxel_coords_.InternalSwap(&other->_impl_.voxel_coords_);
+  _impl_.voxel_indices_.InternalSwap(&other->_impl_.voxel_indices_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Voxels, _impl_.voxel_side_length_)
       + sizeof(Voxels::_impl_.voxel_side_length_)

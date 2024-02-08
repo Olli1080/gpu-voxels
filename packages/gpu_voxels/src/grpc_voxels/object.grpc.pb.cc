@@ -39,83 +39,83 @@ object_com::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel
   , rpcmethod_delete_object_(object_com_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
-::grpc::ClientReader< ::generated::object_instance>* object_com::Stub::sync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::object_instance>::Create(channel_.get(), rpcmethod_sync_objects_, context, request);
+::grpc::ClientReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::sync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), rpcmethod_sync_objects_, context, request);
 }
 
-void object_com::Stub::async::sync_objects(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::object_instance>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::object_instance>::Create(stub_->channel_.get(), stub_->rpcmethod_sync_objects_, context, request, reactor);
+void object_com::Stub::async::sync_objects(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Object_Instance_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_sync_objects_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::object_instance>* object_com::Stub::Asyncsync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::object_instance>::Create(channel_.get(), cq, rpcmethod_sync_objects_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::Asyncsync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), cq, rpcmethod_sync_objects_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::object_instance>* object_com::Stub::PrepareAsyncsync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::object_instance>::Create(channel_.get(), cq, rpcmethod_sync_objects_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::PrepareAsyncsync_objectsRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), cq, rpcmethod_sync_objects_, context, request, false, nullptr);
 }
 
-::grpc::ClientReader< ::generated::object_instance>* object_com::Stub::transmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::object_instance>::Create(channel_.get(), rpcmethod_transmit_object_, context, request);
+::grpc::ClientReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::transmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), rpcmethod_transmit_object_, context, request);
 }
 
-void object_com::Stub::async::transmit_object(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::object_instance>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::object_instance>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_object_, context, request, reactor);
+void object_com::Stub::async::transmit_object(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Object_Instance_TF_Meta>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(stub_->channel_.get(), stub_->rpcmethod_transmit_object_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::object_instance>* object_com::Stub::Asynctransmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::object_instance>::Create(channel_.get(), cq, rpcmethod_transmit_object_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::Asynctransmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_object_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::object_instance>* object_com::Stub::PrepareAsynctransmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::object_instance>::Create(channel_.get(), cq, rpcmethod_transmit_object_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Object_Instance_TF_Meta>* object_com::Stub::PrepareAsynctransmit_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Object_Instance_TF_Meta>::Create(channel_.get(), cq, rpcmethod_transmit_object_, context, request, false, nullptr);
 }
 
-::grpc::ClientReader< ::generated::delete_request>* object_com::Stub::delete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
-  return ::grpc::internal::ClientReaderFactory< ::generated::delete_request>::Create(channel_.get(), rpcmethod_delete_object_, context, request);
+::grpc::ClientReader< ::generated::Delete_Request>* object_com::Stub::delete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request) {
+  return ::grpc::internal::ClientReaderFactory< ::generated::Delete_Request>::Create(channel_.get(), rpcmethod_delete_object_, context, request);
 }
 
-void object_com::Stub::async::delete_object(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::delete_request>* reactor) {
-  ::grpc::internal::ClientCallbackReaderFactory< ::generated::delete_request>::Create(stub_->channel_.get(), stub_->rpcmethod_delete_object_, context, request, reactor);
+void object_com::Stub::async::delete_object(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::grpc::ClientReadReactor< ::generated::Delete_Request>* reactor) {
+  ::grpc::internal::ClientCallbackReaderFactory< ::generated::Delete_Request>::Create(stub_->channel_.get(), stub_->rpcmethod_delete_object_, context, request, reactor);
 }
 
-::grpc::ClientAsyncReader< ::generated::delete_request>* object_com::Stub::Asyncdelete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::delete_request>::Create(channel_.get(), cq, rpcmethod_delete_object_, context, request, true, tag);
+::grpc::ClientAsyncReader< ::generated::Delete_Request>* object_com::Stub::Asyncdelete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Delete_Request>::Create(channel_.get(), cq, rpcmethod_delete_object_, context, request, true, tag);
 }
 
-::grpc::ClientAsyncReader< ::generated::delete_request>* object_com::Stub::PrepareAsyncdelete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::delete_request>::Create(channel_.get(), cq, rpcmethod_delete_object_, context, request, false, nullptr);
+::grpc::ClientAsyncReader< ::generated::Delete_Request>* object_com::Stub::PrepareAsyncdelete_objectRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderFactory< ::generated::Delete_Request>::Create(channel_.get(), cq, rpcmethod_delete_object_, context, request, false, nullptr);
 }
 
 object_com::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       object_com_method_names[0],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::object_instance>(
+      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::Object_Instance_TF_Meta>(
           [](object_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::object_instance>* writer) {
+             ::grpc::ServerWriter<::generated::Object_Instance_TF_Meta>* writer) {
                return service->sync_objects(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       object_com_method_names[1],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::object_instance>(
+      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::Object_Instance_TF_Meta>(
           [](object_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::object_instance>* writer) {
+             ::grpc::ServerWriter<::generated::Object_Instance_TF_Meta>* writer) {
                return service->transmit_object(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       object_com_method_names[2],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
-      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::delete_request>(
+      new ::grpc::internal::ServerStreamingHandler< object_com::Service, ::google::protobuf::Empty, ::generated::Delete_Request>(
           [](object_com::Service* service,
              ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
-             ::grpc::ServerWriter<::generated::delete_request>* writer) {
+             ::grpc::ServerWriter<::generated::Delete_Request>* writer) {
                return service->delete_object(ctx, req, writer);
              }, this)));
 }
@@ -123,21 +123,21 @@ object_com::Service::Service() {
 object_com::Service::~Service() {
 }
 
-::grpc::Status object_com::Service::sync_objects(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::object_instance>* writer) {
+::grpc::Status object_com::Service::sync_objects(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Object_Instance_TF_Meta>* writer) {
   (void) context;
   (void) request;
   (void) writer;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status object_com::Service::transmit_object(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::object_instance>* writer) {
+::grpc::Status object_com::Service::transmit_object(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Object_Instance_TF_Meta>* writer) {
   (void) context;
   (void) request;
   (void) writer;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status object_com::Service::delete_object(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::delete_request>* writer) {
+::grpc::Status object_com::Service::delete_object(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::grpc::ServerWriter< ::generated::Delete_Request>* writer) {
   (void) context;
   (void) request;
   (void) writer;

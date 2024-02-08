@@ -33,21 +33,36 @@ struct vertex_3dDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 vertex_3dDefaultTypeInternal _vertex_3d_default_instance_;
-PROTOBUF_CONSTEXPR vertex_3d_ui::vertex_3d_ui(
+PROTOBUF_CONSTEXPR Rotation_3d::Rotation_3d(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.roll_)*/0
+  , /*decltype(_impl_.pitch_)*/0
+  , /*decltype(_impl_.yaw_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct Rotation_3dDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Rotation_3dDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~Rotation_3dDefaultTypeInternal() {}
+  union {
+    Rotation_3d _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Rotation_3dDefaultTypeInternal _Rotation_3d_default_instance_;
+PROTOBUF_CONSTEXPR index_3d::index_3d(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.x_)*/0u
   , /*decltype(_impl_.y_)*/0u
   , /*decltype(_impl_.z_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct vertex_3d_uiDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR vertex_3d_uiDefaultTypeInternal()
+struct index_3dDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR index_3dDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~vertex_3d_uiDefaultTypeInternal() {}
+  ~index_3dDefaultTypeInternal() {}
   union {
-    vertex_3d_ui _instance;
+    index_3d _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 vertex_3d_uiDefaultTypeInternal _vertex_3d_ui_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 index_3dDefaultTypeInternal _index_3d_default_instance_;
 PROTOBUF_CONSTEXPR quaternion::quaternion(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.x_)*/0
@@ -163,7 +178,7 @@ struct color_arrayDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 color_arrayDefaultTypeInternal _color_array_default_instance_;
-PROTOBUF_CONSTEXPR mesh_data::mesh_data(
+PROTOBUF_CONSTEXPR Mesh_Data::Mesh_Data(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
@@ -173,15 +188,15 @@ PROTOBUF_CONSTEXPR mesh_data::mesh_data(
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.vertex_normals_)*/nullptr
   , /*decltype(_impl_.vertex_colors_)*/nullptr} {}
-struct mesh_dataDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR mesh_dataDefaultTypeInternal()
+struct Mesh_DataDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Mesh_DataDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~mesh_dataDefaultTypeInternal() {}
+  ~Mesh_DataDefaultTypeInternal() {}
   union {
-    mesh_data _instance;
+    Mesh_Data _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 mesh_dataDefaultTypeInternal _mesh_data_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Mesh_DataDefaultTypeInternal _Mesh_Data_default_instance_;
 PROTOBUF_CONSTEXPR aabb::aabb(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.diagonal_)*/nullptr
@@ -238,6 +253,21 @@ struct Matrix_TF_MetaDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Matrix_TF_MetaDefaultTypeInternal _Matrix_TF_Meta_default_instance_;
+PROTOBUF_CONSTEXPR Mesh_Data_TF_Meta::Mesh_Data_TF_Meta(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.mesh_data_)*/nullptr
+  , /*decltype(_impl_.transformation_meta_)*/nullptr} {}
+struct Mesh_Data_TF_MetaDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR Mesh_Data_TF_MetaDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~Mesh_Data_TF_MetaDefaultTypeInternal() {}
+  union {
+    Mesh_Data_TF_Meta _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 Mesh_Data_TF_MetaDefaultTypeInternal _Mesh_Data_TF_Meta_default_instance_;
 PROTOBUF_CONSTEXPR Vertex_3D_Meta::Vertex_3D_Meta(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_._has_bits_)*/{}
@@ -531,19 +561,292 @@ std::string vertex_3d::GetTypeName() const {
 
 // ===================================================================
 
-class vertex_3d_ui::_Internal {
+class Rotation_3d::_Internal {
  public:
 };
 
-vertex_3d_ui::vertex_3d_ui(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Rotation_3d::Rotation_3d(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.vertex_3d_ui)
+  // @@protoc_insertion_point(arena_constructor:generated.Rotation_3d)
 }
-vertex_3d_ui::vertex_3d_ui(const vertex_3d_ui& from)
+Rotation_3d::Rotation_3d(const Rotation_3d& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  vertex_3d_ui* const _this = this; (void)_this;
+  Rotation_3d* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.roll_){}
+    , decltype(_impl_.pitch_){}
+    , decltype(_impl_.yaw_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+  ::memcpy(&_impl_.roll_, &from._impl_.roll_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.yaw_) -
+    reinterpret_cast<char*>(&_impl_.roll_)) + sizeof(_impl_.yaw_));
+  // @@protoc_insertion_point(copy_constructor:generated.Rotation_3d)
+}
+
+inline void Rotation_3d::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.roll_){0}
+    , decltype(_impl_.pitch_){0}
+    , decltype(_impl_.yaw_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+Rotation_3d::~Rotation_3d() {
+  // @@protoc_insertion_point(destructor:generated.Rotation_3d)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Rotation_3d::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void Rotation_3d::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Rotation_3d::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Rotation_3d)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.roll_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.yaw_) -
+      reinterpret_cast<char*>(&_impl_.roll_)) + sizeof(_impl_.yaw_));
+  _internal_metadata_.Clear<std::string>();
+}
+
+const char* Rotation_3d::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float roll = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.roll_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float pitch = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _impl_.pitch_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float yaw = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.yaw_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<std::string>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Rotation_3d::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Rotation_3d)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float roll = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_roll = this->_internal_roll();
+  uint32_t raw_roll;
+  memcpy(&raw_roll, &tmp_roll, sizeof(tmp_roll));
+  if (raw_roll != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_roll(), target);
+  }
+
+  // float pitch = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_pitch = this->_internal_pitch();
+  uint32_t raw_pitch;
+  memcpy(&raw_pitch, &tmp_pitch, sizeof(tmp_pitch));
+  if (raw_pitch != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_pitch(), target);
+  }
+
+  // float yaw = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_yaw = this->_internal_yaw();
+  uint32_t raw_yaw;
+  memcpy(&raw_yaw, &tmp_yaw, sizeof(tmp_yaw));
+  if (raw_yaw != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_yaw(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
+        static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Rotation_3d)
+  return target;
+}
+
+size_t Rotation_3d::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Rotation_3d)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float roll = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_roll = this->_internal_roll();
+  uint32_t raw_roll;
+  memcpy(&raw_roll, &tmp_roll, sizeof(tmp_roll));
+  if (raw_roll != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float pitch = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_pitch = this->_internal_pitch();
+  uint32_t raw_pitch;
+  memcpy(&raw_pitch, &tmp_pitch, sizeof(tmp_pitch));
+  if (raw_pitch != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float yaw = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_yaw = this->_internal_yaw();
+  uint32_t raw_yaw;
+  memcpy(&raw_yaw, &tmp_yaw, sizeof(tmp_yaw));
+  if (raw_yaw != 0) {
+    total_size += 1 + 4;
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    total_size += _internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size();
+  }
+  int cached_size = ::_pbi::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void Rotation_3d::CheckTypeAndMergeFrom(
+    const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
+  MergeFrom(*::_pbi::DownCast<const Rotation_3d*>(
+      &from));
+}
+
+void Rotation_3d::MergeFrom(const Rotation_3d& from) {
+  Rotation_3d* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Rotation_3d)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_roll = from._internal_roll();
+  uint32_t raw_roll;
+  memcpy(&raw_roll, &tmp_roll, sizeof(tmp_roll));
+  if (raw_roll != 0) {
+    _this->_internal_set_roll(from._internal_roll());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_pitch = from._internal_pitch();
+  uint32_t raw_pitch;
+  memcpy(&raw_pitch, &tmp_pitch, sizeof(tmp_pitch));
+  if (raw_pitch != 0) {
+    _this->_internal_set_pitch(from._internal_pitch());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_yaw = from._internal_yaw();
+  uint32_t raw_yaw;
+  memcpy(&raw_yaw, &tmp_yaw, sizeof(tmp_yaw));
+  if (raw_yaw != 0) {
+    _this->_internal_set_yaw(from._internal_yaw());
+  }
+  _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+}
+
+void Rotation_3d::CopyFrom(const Rotation_3d& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Rotation_3d)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Rotation_3d::IsInitialized() const {
+  return true;
+}
+
+void Rotation_3d::InternalSwap(Rotation_3d* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Rotation_3d, _impl_.yaw_)
+      + sizeof(Rotation_3d::_impl_.yaw_)
+      - PROTOBUF_FIELD_OFFSET(Rotation_3d, _impl_.roll_)>(
+          reinterpret_cast<char*>(&_impl_.roll_),
+          reinterpret_cast<char*>(&other->_impl_.roll_));
+}
+
+std::string Rotation_3d::GetTypeName() const {
+  return "generated.Rotation_3d";
+}
+
+
+// ===================================================================
+
+class index_3d::_Internal {
+ public:
+};
+
+index_3d::index_3d(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:generated.index_3d)
+}
+index_3d::index_3d(const index_3d& from)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
+  index_3d* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.x_){}
     , decltype(_impl_.y_){}
@@ -554,10 +857,10 @@ vertex_3d_ui::vertex_3d_ui(const vertex_3d_ui& from)
   ::memcpy(&_impl_.x_, &from._impl_.x_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.z_) -
     reinterpret_cast<char*>(&_impl_.x_)) + sizeof(_impl_.z_));
-  // @@protoc_insertion_point(copy_constructor:generated.vertex_3d_ui)
+  // @@protoc_insertion_point(copy_constructor:generated.index_3d)
 }
 
-inline void vertex_3d_ui::SharedCtor(
+inline void index_3d::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -569,8 +872,8 @@ inline void vertex_3d_ui::SharedCtor(
   };
 }
 
-vertex_3d_ui::~vertex_3d_ui() {
-  // @@protoc_insertion_point(destructor:generated.vertex_3d_ui)
+index_3d::~index_3d() {
+  // @@protoc_insertion_point(destructor:generated.index_3d)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -578,16 +881,16 @@ vertex_3d_ui::~vertex_3d_ui() {
   SharedDtor();
 }
 
-inline void vertex_3d_ui::SharedDtor() {
+inline void index_3d::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
 }
 
-void vertex_3d_ui::SetCachedSize(int size) const {
+void index_3d::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void vertex_3d_ui::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.vertex_3d_ui)
+void index_3d::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.index_3d)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -598,7 +901,7 @@ void vertex_3d_ui::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* vertex_3d_ui::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* index_3d::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -651,9 +954,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* vertex_3d_ui::_InternalSerialize(
+uint8_t* index_3d::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.vertex_3d_ui)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.index_3d)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -679,12 +982,12 @@ uint8_t* vertex_3d_ui::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.vertex_3d_ui)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.index_3d)
   return target;
 }
 
-size_t vertex_3d_ui::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.vertex_3d_ui)
+size_t index_3d::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.index_3d)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -714,15 +1017,15 @@ size_t vertex_3d_ui::ByteSizeLong() const {
   return total_size;
 }
 
-void vertex_3d_ui::CheckTypeAndMergeFrom(
+void index_3d::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const vertex_3d_ui*>(
+  MergeFrom(*::_pbi::DownCast<const index_3d*>(
       &from));
 }
 
-void vertex_3d_ui::MergeFrom(const vertex_3d_ui& from) {
-  vertex_3d_ui* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.vertex_3d_ui)
+void index_3d::MergeFrom(const index_3d& from) {
+  index_3d* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.index_3d)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -739,30 +1042,30 @@ void vertex_3d_ui::MergeFrom(const vertex_3d_ui& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void vertex_3d_ui::CopyFrom(const vertex_3d_ui& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.vertex_3d_ui)
+void index_3d::CopyFrom(const index_3d& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.index_3d)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool vertex_3d_ui::IsInitialized() const {
+bool index_3d::IsInitialized() const {
   return true;
 }
 
-void vertex_3d_ui::InternalSwap(vertex_3d_ui* other) {
+void index_3d::InternalSwap(index_3d* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(vertex_3d_ui, _impl_.z_)
-      + sizeof(vertex_3d_ui::_impl_.z_)
-      - PROTOBUF_FIELD_OFFSET(vertex_3d_ui, _impl_.x_)>(
+      PROTOBUF_FIELD_OFFSET(index_3d, _impl_.z_)
+      + sizeof(index_3d::_impl_.z_)
+      - PROTOBUF_FIELD_OFFSET(index_3d, _impl_.x_)>(
           reinterpret_cast<char*>(&_impl_.x_),
           reinterpret_cast<char*>(&other->_impl_.x_));
 }
 
-std::string vertex_3d_ui::GetTypeName() const {
-  return "generated.vertex_3d_ui";
+std::string index_3d::GetTypeName() const {
+  return "generated.index_3d";
 }
 
 
@@ -2656,36 +2959,36 @@ std::string color_array::GetTypeName() const {
 
 // ===================================================================
 
-class mesh_data::_Internal {
+class Mesh_Data::_Internal {
  public:
-  using HasBits = decltype(std::declval<mesh_data>()._impl_._has_bits_);
-  static const ::generated::vertex_3d_array& vertex_normals(const mesh_data* msg);
+  using HasBits = decltype(std::declval<Mesh_Data>()._impl_._has_bits_);
+  static const ::generated::vertex_3d_array& vertex_normals(const Mesh_Data* msg);
   static void set_has_vertex_normals(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static const ::generated::color_array& vertex_colors(const mesh_data* msg);
+  static const ::generated::color_array& vertex_colors(const Mesh_Data* msg);
   static void set_has_vertex_colors(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
 };
 
 const ::generated::vertex_3d_array&
-mesh_data::_Internal::vertex_normals(const mesh_data* msg) {
+Mesh_Data::_Internal::vertex_normals(const Mesh_Data* msg) {
   return *msg->_impl_.vertex_normals_;
 }
 const ::generated::color_array&
-mesh_data::_Internal::vertex_colors(const mesh_data* msg) {
+Mesh_Data::_Internal::vertex_colors(const Mesh_Data* msg) {
   return *msg->_impl_.vertex_colors_;
 }
-mesh_data::mesh_data(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+Mesh_Data::Mesh_Data(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:generated.mesh_data)
+  // @@protoc_insertion_point(arena_constructor:generated.Mesh_Data)
 }
-mesh_data::mesh_data(const mesh_data& from)
+Mesh_Data::Mesh_Data(const Mesh_Data& from)
   : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
-  mesh_data* const _this = this; (void)_this;
+  Mesh_Data* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -2711,10 +3014,10 @@ mesh_data::mesh_data(const mesh_data& from)
   if (from._internal_has_vertex_colors()) {
     _this->_impl_.vertex_colors_ = new ::generated::color_array(*from._impl_.vertex_colors_);
   }
-  // @@protoc_insertion_point(copy_constructor:generated.mesh_data)
+  // @@protoc_insertion_point(copy_constructor:generated.Mesh_Data)
 }
 
-inline void mesh_data::SharedCtor(
+inline void Mesh_Data::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -2734,8 +3037,8 @@ inline void mesh_data::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
-mesh_data::~mesh_data() {
-  // @@protoc_insertion_point(destructor:generated.mesh_data)
+Mesh_Data::~Mesh_Data() {
+  // @@protoc_insertion_point(destructor:generated.Mesh_Data)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
   (void)arena;
     return;
@@ -2743,7 +3046,7 @@ mesh_data::~mesh_data() {
   SharedDtor();
 }
 
-inline void mesh_data::SharedDtor() {
+inline void Mesh_Data::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.vertices_.~RepeatedPtrField();
   _impl_.indices_.~RepeatedField();
@@ -2752,12 +3055,12 @@ inline void mesh_data::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.vertex_colors_;
 }
 
-void mesh_data::SetCachedSize(int size) const {
+void Mesh_Data::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void mesh_data::Clear() {
-// @@protoc_insertion_point(message_clear_start:generated.mesh_data)
+void Mesh_Data::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Mesh_Data)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -2780,7 +3083,7 @@ void mesh_data::Clear() {
   _internal_metadata_.Clear<std::string>();
 }
 
-const char* mesh_data::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* Mesh_Data::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
@@ -2861,9 +3164,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* mesh_data::_InternalSerialize(
+uint8_t* Mesh_Data::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:generated.mesh_data)
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Mesh_Data)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -2889,7 +3192,7 @@ uint8_t* mesh_data::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_name().data(), static_cast<int>(this->_internal_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "generated.mesh_data.name");
+      "generated.Mesh_Data.name");
     target = stream->WriteStringMaybeAliased(
         3, this->_internal_name(), target);
   }
@@ -2912,12 +3215,12 @@ uint8_t* mesh_data::_InternalSerialize(
     target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
         static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:generated.mesh_data)
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Mesh_Data)
   return target;
 }
 
-size_t mesh_data::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:generated.mesh_data)
+size_t Mesh_Data::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Mesh_Data)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -2977,15 +3280,15 @@ size_t mesh_data::ByteSizeLong() const {
   return total_size;
 }
 
-void mesh_data::CheckTypeAndMergeFrom(
+void Mesh_Data::CheckTypeAndMergeFrom(
     const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
-  MergeFrom(*::_pbi::DownCast<const mesh_data*>(
+  MergeFrom(*::_pbi::DownCast<const Mesh_Data*>(
       &from));
 }
 
-void mesh_data::MergeFrom(const mesh_data& from) {
-  mesh_data* const _this = this;
-  // @@protoc_insertion_point(class_specific_merge_from_start:generated.mesh_data)
+void Mesh_Data::MergeFrom(const Mesh_Data& from) {
+  Mesh_Data* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Mesh_Data)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -3009,18 +3312,18 @@ void mesh_data::MergeFrom(const mesh_data& from) {
   _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
 }
 
-void mesh_data::CopyFrom(const mesh_data& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:generated.mesh_data)
+void Mesh_Data::CopyFrom(const Mesh_Data& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Mesh_Data)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool mesh_data::IsInitialized() const {
+bool Mesh_Data::IsInitialized() const {
   return true;
 }
 
-void mesh_data::InternalSwap(mesh_data* other) {
+void Mesh_Data::InternalSwap(Mesh_Data* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
@@ -3033,15 +3336,15 @@ void mesh_data::InternalSwap(mesh_data* other) {
       &other->_impl_.name_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(mesh_data, _impl_.vertex_colors_)
-      + sizeof(mesh_data::_impl_.vertex_colors_)
-      - PROTOBUF_FIELD_OFFSET(mesh_data, _impl_.vertex_normals_)>(
+      PROTOBUF_FIELD_OFFSET(Mesh_Data, _impl_.vertex_colors_)
+      + sizeof(Mesh_Data::_impl_.vertex_colors_)
+      - PROTOBUF_FIELD_OFFSET(Mesh_Data, _impl_.vertex_normals_)>(
           reinterpret_cast<char*>(&_impl_.vertex_normals_),
           reinterpret_cast<char*>(&other->_impl_.vertex_normals_));
 }
 
-std::string mesh_data::GetTypeName() const {
-  return "generated.mesh_data";
+std::string Mesh_Data::GetTypeName() const {
+  return "generated.Mesh_Data";
 }
 
 
@@ -3991,6 +4294,263 @@ std::string Matrix_TF_Meta::GetTypeName() const {
 
 // ===================================================================
 
+class Mesh_Data_TF_Meta::_Internal {
+ public:
+  using HasBits = decltype(std::declval<Mesh_Data_TF_Meta>()._impl_._has_bits_);
+  static const ::generated::Mesh_Data& mesh_data(const Mesh_Data_TF_Meta* msg);
+  static const ::generated::Transformation_Meta& transformation_meta(const Mesh_Data_TF_Meta* msg);
+  static void set_has_transformation_meta(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+};
+
+const ::generated::Mesh_Data&
+Mesh_Data_TF_Meta::_Internal::mesh_data(const Mesh_Data_TF_Meta* msg) {
+  return *msg->_impl_.mesh_data_;
+}
+const ::generated::Transformation_Meta&
+Mesh_Data_TF_Meta::_Internal::transformation_meta(const Mesh_Data_TF_Meta* msg) {
+  return *msg->_impl_.transformation_meta_;
+}
+void Mesh_Data_TF_Meta::clear_transformation_meta() {
+  if (_impl_.transformation_meta_ != nullptr) _impl_.transformation_meta_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+Mesh_Data_TF_Meta::Mesh_Data_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:generated.Mesh_Data_TF_Meta)
+}
+Mesh_Data_TF_Meta::Mesh_Data_TF_Meta(const Mesh_Data_TF_Meta& from)
+  : ::PROTOBUF_NAMESPACE_ID::MessageLite() {
+  Mesh_Data_TF_Meta* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.mesh_data_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}};
+
+  _internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+  if (from._internal_has_mesh_data()) {
+    _this->_impl_.mesh_data_ = new ::generated::Mesh_Data(*from._impl_.mesh_data_);
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_impl_.transformation_meta_ = new ::generated::Transformation_Meta(*from._impl_.transformation_meta_);
+  }
+  // @@protoc_insertion_point(copy_constructor:generated.Mesh_Data_TF_Meta)
+}
+
+inline void Mesh_Data_TF_Meta::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.mesh_data_){nullptr}
+    , decltype(_impl_.transformation_meta_){nullptr}
+  };
+}
+
+Mesh_Data_TF_Meta::~Mesh_Data_TF_Meta() {
+  // @@protoc_insertion_point(destructor:generated.Mesh_Data_TF_Meta)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<std::string>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Mesh_Data_TF_Meta::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.mesh_data_;
+  if (this != internal_default_instance()) delete _impl_.transformation_meta_;
+}
+
+void Mesh_Data_TF_Meta::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Mesh_Data_TF_Meta::Clear() {
+// @@protoc_insertion_point(message_clear_start:generated.Mesh_Data_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.mesh_data_ != nullptr) {
+    delete _impl_.mesh_data_;
+  }
+  _impl_.mesh_data_ = nullptr;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    GOOGLE_DCHECK(_impl_.transformation_meta_ != nullptr);
+    _impl_.transformation_meta_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<std::string>();
+}
+
+const char* Mesh_Data_TF_Meta::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .generated.Mesh_Data mesh_data = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_mesh_data(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .generated.Transformation_Meta transformation_meta = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_transformation_meta(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<std::string>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Mesh_Data_TF_Meta::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:generated.Mesh_Data_TF_Meta)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .generated.Mesh_Data mesh_data = 1;
+  if (this->_internal_has_mesh_data()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::mesh_data(this),
+        _Internal::mesh_data(this).GetCachedSize(), target, stream);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  if (_internal_has_transformation_meta()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::transformation_meta(this),
+        _Internal::transformation_meta(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = stream->WriteRaw(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).data(),
+        static_cast<int>(_internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:generated.Mesh_Data_TF_Meta)
+  return target;
+}
+
+size_t Mesh_Data_TF_Meta::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:generated.Mesh_Data_TF_Meta)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .generated.Mesh_Data mesh_data = 1;
+  if (this->_internal_has_mesh_data()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.mesh_data_);
+  }
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.transformation_meta_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    total_size += _internal_metadata_.unknown_fields<std::string>(::PROTOBUF_NAMESPACE_ID::internal::GetEmptyString).size();
+  }
+  int cached_size = ::_pbi::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void Mesh_Data_TF_Meta::CheckTypeAndMergeFrom(
+    const ::PROTOBUF_NAMESPACE_ID::MessageLite& from) {
+  MergeFrom(*::_pbi::DownCast<const Mesh_Data_TF_Meta*>(
+      &from));
+}
+
+void Mesh_Data_TF_Meta::MergeFrom(const Mesh_Data_TF_Meta& from) {
+  Mesh_Data_TF_Meta* const _this = this;
+  // @@protoc_insertion_point(class_specific_merge_from_start:generated.Mesh_Data_TF_Meta)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_mesh_data()) {
+    _this->_internal_mutable_mesh_data()->::generated::Mesh_Data::MergeFrom(
+        from._internal_mesh_data());
+  }
+  if (from._internal_has_transformation_meta()) {
+    _this->_internal_mutable_transformation_meta()->::generated::Transformation_Meta::MergeFrom(
+        from._internal_transformation_meta());
+  }
+  _this->_internal_metadata_.MergeFrom<std::string>(from._internal_metadata_);
+}
+
+void Mesh_Data_TF_Meta::CopyFrom(const Mesh_Data_TF_Meta& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:generated.Mesh_Data_TF_Meta)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Mesh_Data_TF_Meta::IsInitialized() const {
+  return true;
+}
+
+void Mesh_Data_TF_Meta::InternalSwap(Mesh_Data_TF_Meta* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Mesh_Data_TF_Meta, _impl_.transformation_meta_)
+      + sizeof(Mesh_Data_TF_Meta::_impl_.transformation_meta_)
+      - PROTOBUF_FIELD_OFFSET(Mesh_Data_TF_Meta, _impl_.mesh_data_)>(
+          reinterpret_cast<char*>(&_impl_.mesh_data_),
+          reinterpret_cast<char*>(&other->_impl_.mesh_data_));
+}
+
+std::string Mesh_Data_TF_Meta::GetTypeName() const {
+  return "generated.Mesh_Data_TF_Meta";
+}
+
+
+// ===================================================================
+
 class Vertex_3D_Meta::_Internal {
  public:
   using HasBits = decltype(std::declval<Vertex_3D_Meta>()._impl_._has_bits_);
@@ -4253,9 +4813,13 @@ template<> PROTOBUF_NOINLINE ::generated::vertex_3d*
 Arena::CreateMaybeMessage< ::generated::vertex_3d >(Arena* arena) {
   return Arena::CreateMessageInternal< ::generated::vertex_3d >(arena);
 }
-template<> PROTOBUF_NOINLINE ::generated::vertex_3d_ui*
-Arena::CreateMaybeMessage< ::generated::vertex_3d_ui >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::vertex_3d_ui >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Rotation_3d*
+Arena::CreateMaybeMessage< ::generated::Rotation_3d >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Rotation_3d >(arena);
+}
+template<> PROTOBUF_NOINLINE ::generated::index_3d*
+Arena::CreateMaybeMessage< ::generated::index_3d >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::index_3d >(arena);
 }
 template<> PROTOBUF_NOINLINE ::generated::quaternion*
 Arena::CreateMaybeMessage< ::generated::quaternion >(Arena* arena) {
@@ -4289,9 +4853,9 @@ template<> PROTOBUF_NOINLINE ::generated::color_array*
 Arena::CreateMaybeMessage< ::generated::color_array >(Arena* arena) {
   return Arena::CreateMessageInternal< ::generated::color_array >(arena);
 }
-template<> PROTOBUF_NOINLINE ::generated::mesh_data*
-Arena::CreateMaybeMessage< ::generated::mesh_data >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::generated::mesh_data >(arena);
+template<> PROTOBUF_NOINLINE ::generated::Mesh_Data*
+Arena::CreateMaybeMessage< ::generated::Mesh_Data >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Mesh_Data >(arena);
 }
 template<> PROTOBUF_NOINLINE ::generated::aabb*
 Arena::CreateMaybeMessage< ::generated::aabb >(Arena* arena) {
@@ -4308,6 +4872,10 @@ Arena::CreateMaybeMessage< ::generated::named_request >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::generated::Matrix_TF_Meta*
 Arena::CreateMaybeMessage< ::generated::Matrix_TF_Meta >(Arena* arena) {
   return Arena::CreateMessageInternal< ::generated::Matrix_TF_Meta >(arena);
+}
+template<> PROTOBUF_NOINLINE ::generated::Mesh_Data_TF_Meta*
+Arena::CreateMaybeMessage< ::generated::Mesh_Data_TF_Meta >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::generated::Mesh_Data_TF_Meta >(arena);
 }
 template<> PROTOBUF_NOINLINE ::generated::Vertex_3D_Meta*
 Arena::CreateMaybeMessage< ::generated::Vertex_3D_Meta >(Arena* arena) {

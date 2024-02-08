@@ -35,44 +35,44 @@ class mesh_com final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
-    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>> transmit_mesh_data(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>>(transmit_mesh_dataRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> transmit_mesh_data(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(transmit_mesh_dataRaw(context));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>> Asynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>>(Asynctransmit_mesh_dataRaw(context, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> Asynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(Asynctransmit_mesh_dataRaw(context, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>> PrepareAsynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>>(PrepareAsynctransmit_mesh_dataRaw(context, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> PrepareAsynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(PrepareAsynctransmit_mesh_dataRaw(context, cq));
     }
     class async_interface {
      public:
       virtual ~async_interface() {}
-      virtual void transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::mesh_data>* reactor) = 0;
+      virtual void transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::Mesh_Data_TF_Meta>* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
-    virtual ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>* transmit_mesh_dataRaw(::grpc::ClientContext* context) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>* Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::mesh_data>* PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* transmit_mesh_dataRaw(::grpc::ClientContext* context) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
-    std::unique_ptr< ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::mesh_data>> transmit_mesh_data(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::mesh_data>>(transmit_mesh_dataRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> transmit_mesh_data(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(transmit_mesh_dataRaw(context));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>> Asynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>>(Asynctransmit_mesh_dataRaw(context, cq, tag));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> Asynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(Asynctransmit_mesh_dataRaw(context, cq, tag));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>> PrepareAsynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>>(PrepareAsynctransmit_mesh_dataRaw(context, cq));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>> PrepareAsynctransmit_mesh_data(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>>(PrepareAsynctransmit_mesh_dataRaw(context, cq));
     }
     class async final :
       public StubInterface::async_interface {
      public:
-      void transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::mesh_data>* reactor) override;
+      void transmit_mesh_data(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::generated::named_request,::generated::Mesh_Data_TF_Meta>* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -84,9 +84,9 @@ class mesh_com final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
-    ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::mesh_data>* transmit_mesh_dataRaw(::grpc::ClientContext* context) override;
-    ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>* Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::mesh_data>* PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* transmit_mesh_dataRaw(::grpc::ClientContext* context) override;
+    ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* Asynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReaderWriter< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* PrepareAsynctransmit_mesh_dataRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_transmit_mesh_data_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
@@ -95,7 +95,7 @@ class mesh_com final {
    public:
     Service();
     virtual ~Service();
-    virtual ::grpc::Status transmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* stream);
+    virtual ::grpc::Status transmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* stream);
   };
   template <class BaseClass>
   class WithAsyncMethod_transmit_mesh_data : public BaseClass {
@@ -109,11 +109,11 @@ class mesh_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* /*stream*/)  override {
+    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void Requesttransmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::generated::mesh_data, ::generated::named_request>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void Requesttransmit_mesh_data(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncBidiStreaming(0, context, stream, new_call_cq, notification_cq, tag);
     }
   };
@@ -125,7 +125,7 @@ class mesh_com final {
    public:
     WithCallbackMethod_transmit_mesh_data() {
       ::grpc::Service::MarkMethodCallback(0,
-          new ::grpc::internal::CallbackBidiHandler< ::generated::named_request, ::generated::mesh_data>(
+          new ::grpc::internal::CallbackBidiHandler< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>(
             [this](
                    ::grpc::CallbackServerContext* context) { return this->transmit_mesh_data(context); }));
     }
@@ -133,11 +133,11 @@ class mesh_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* /*stream*/)  override {
+    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerBidiReactor< ::generated::named_request, ::generated::mesh_data>* transmit_mesh_data(
+    virtual ::grpc::ServerBidiReactor< ::generated::named_request, ::generated::Mesh_Data_TF_Meta>* transmit_mesh_data(
       ::grpc::CallbackServerContext* /*context*/)
       { return nullptr; }
   };
@@ -155,7 +155,7 @@ class mesh_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* /*stream*/)  override {
+    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -172,7 +172,7 @@ class mesh_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* /*stream*/)  override {
+    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -195,7 +195,7 @@ class mesh_com final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::mesh_data, ::generated::named_request>* /*stream*/)  override {
+    ::grpc::Status transmit_mesh_data(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::generated::Mesh_Data_TF_Meta, ::generated::named_request>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }

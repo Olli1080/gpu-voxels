@@ -45,47 +45,51 @@ struct TableStruct_object_2eproto {
   static const uint32_t offsets[];
 };
 namespace generated {
-class colored_box;
-struct colored_boxDefaultTypeInternal;
-extern colored_boxDefaultTypeInternal _colored_box_default_instance_;
-class delete_request;
-struct delete_requestDefaultTypeInternal;
-extern delete_requestDefaultTypeInternal _delete_request_default_instance_;
-class object_data;
-struct object_dataDefaultTypeInternal;
-extern object_dataDefaultTypeInternal _object_data_default_instance_;
-class object_instance;
-struct object_instanceDefaultTypeInternal;
-extern object_instanceDefaultTypeInternal _object_instance_default_instance_;
+class Colored_Box;
+struct Colored_BoxDefaultTypeInternal;
+extern Colored_BoxDefaultTypeInternal _Colored_Box_default_instance_;
+class Delete_Request;
+struct Delete_RequestDefaultTypeInternal;
+extern Delete_RequestDefaultTypeInternal _Delete_Request_default_instance_;
+class Object_Data;
+struct Object_DataDefaultTypeInternal;
+extern Object_DataDefaultTypeInternal _Object_Data_default_instance_;
+class Object_Instance;
+struct Object_InstanceDefaultTypeInternal;
+extern Object_InstanceDefaultTypeInternal _Object_Instance_default_instance_;
+class Object_Instance_TF_Meta;
+struct Object_Instance_TF_MetaDefaultTypeInternal;
+extern Object_Instance_TF_MetaDefaultTypeInternal _Object_Instance_TF_Meta_default_instance_;
 }  // namespace generated
 PROTOBUF_NAMESPACE_OPEN
-template<> ::generated::colored_box* Arena::CreateMaybeMessage<::generated::colored_box>(Arena*);
-template<> ::generated::delete_request* Arena::CreateMaybeMessage<::generated::delete_request>(Arena*);
-template<> ::generated::object_data* Arena::CreateMaybeMessage<::generated::object_data>(Arena*);
-template<> ::generated::object_instance* Arena::CreateMaybeMessage<::generated::object_instance>(Arena*);
+template<> ::generated::Colored_Box* Arena::CreateMaybeMessage<::generated::Colored_Box>(Arena*);
+template<> ::generated::Delete_Request* Arena::CreateMaybeMessage<::generated::Delete_Request>(Arena*);
+template<> ::generated::Object_Data* Arena::CreateMaybeMessage<::generated::Object_Data>(Arena*);
+template<> ::generated::Object_Instance* Arena::CreateMaybeMessage<::generated::Object_Instance>(Arena*);
+template<> ::generated::Object_Instance_TF_Meta* Arena::CreateMaybeMessage<::generated::Object_Instance_TF_Meta>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace generated {
 
 // ===================================================================
 
-class colored_box final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.colored_box) */ {
+class Colored_Box final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Colored_Box) */ {
  public:
-  inline colored_box() : colored_box(nullptr) {}
-  ~colored_box() override;
-  explicit PROTOBUF_CONSTEXPR colored_box(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Colored_Box() : Colored_Box(nullptr) {}
+  ~Colored_Box() override;
+  explicit PROTOBUF_CONSTEXPR Colored_Box(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  colored_box(const colored_box& from);
-  colored_box(colored_box&& from) noexcept
-    : colored_box() {
+  Colored_Box(const Colored_Box& from);
+  Colored_Box(Colored_Box&& from) noexcept
+    : Colored_Box() {
     *this = ::std::move(from);
   }
 
-  inline colored_box& operator=(const colored_box& from) {
+  inline Colored_Box& operator=(const Colored_Box& from) {
     CopyFrom(from);
     return *this;
   }
-  inline colored_box& operator=(colored_box&& from) noexcept {
+  inline Colored_Box& operator=(Colored_Box&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -99,20 +103,20 @@ class colored_box final :
     return *this;
   }
 
-  static const colored_box& default_instance() {
+  static const Colored_Box& default_instance() {
     return *internal_default_instance();
   }
-  static inline const colored_box* internal_default_instance() {
-    return reinterpret_cast<const colored_box*>(
-               &_colored_box_default_instance_);
+  static inline const Colored_Box* internal_default_instance() {
+    return reinterpret_cast<const Colored_Box*>(
+               &_Colored_Box_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     0;
 
-  friend void swap(colored_box& a, colored_box& b) {
+  friend void swap(Colored_Box& a, Colored_Box& b) {
     a.Swap(&b);
   }
-  inline void Swap(colored_box* other) {
+  inline void Swap(Colored_Box* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -125,7 +129,7 @@ class colored_box final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(colored_box* other) {
+  void UnsafeArenaSwap(Colored_Box* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -133,12 +137,12 @@ class colored_box final :
 
   // implements Message ----------------------------------------------
 
-  colored_box* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<colored_box>(arena);
+  Colored_Box* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Colored_Box>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const colored_box& from);
-  void MergeFrom(const colored_box& from);
+  void CopyFrom(const Colored_Box& from);
+  void MergeFrom(const Colored_Box& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -152,15 +156,15 @@ class colored_box final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(colored_box* other);
+  void InternalSwap(Colored_Box* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.colored_box";
+    return "generated.Colored_Box";
   }
   protected:
-  explicit colored_box(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Colored_Box(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -210,7 +214,7 @@ class colored_box final :
       ::generated::color* box_color);
   ::generated::color* unsafe_arena_release_box_color();
 
-  // @@protoc_insertion_point(class_scope:generated.colored_box)
+  // @@protoc_insertion_point(class_scope:generated.Colored_Box)
  private:
   class _Internal;
 
@@ -227,24 +231,24 @@ class colored_box final :
 };
 // -------------------------------------------------------------------
 
-class object_data final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.object_data) */ {
+class Object_Data final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Object_Data) */ {
  public:
-  inline object_data() : object_data(nullptr) {}
-  ~object_data() override;
-  explicit PROTOBUF_CONSTEXPR object_data(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Object_Data() : Object_Data(nullptr) {}
+  ~Object_Data() override;
+  explicit PROTOBUF_CONSTEXPR Object_Data(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  object_data(const object_data& from);
-  object_data(object_data&& from) noexcept
-    : object_data() {
+  Object_Data(const Object_Data& from);
+  Object_Data(Object_Data&& from) noexcept
+    : Object_Data() {
     *this = ::std::move(from);
   }
 
-  inline object_data& operator=(const object_data& from) {
+  inline Object_Data& operator=(const Object_Data& from) {
     CopyFrom(from);
     return *this;
   }
-  inline object_data& operator=(object_data&& from) noexcept {
+  inline Object_Data& operator=(Object_Data&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -258,20 +262,20 @@ class object_data final :
     return *this;
   }
 
-  static const object_data& default_instance() {
+  static const Object_Data& default_instance() {
     return *internal_default_instance();
   }
-  static inline const object_data* internal_default_instance() {
-    return reinterpret_cast<const object_data*>(
-               &_object_data_default_instance_);
+  static inline const Object_Data* internal_default_instance() {
+    return reinterpret_cast<const Object_Data*>(
+               &_Object_Data_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     1;
 
-  friend void swap(object_data& a, object_data& b) {
+  friend void swap(Object_Data& a, Object_Data& b) {
     a.Swap(&b);
   }
-  inline void Swap(object_data* other) {
+  inline void Swap(Object_Data* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -284,7 +288,7 @@ class object_data final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(object_data* other) {
+  void UnsafeArenaSwap(Object_Data* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -292,12 +296,12 @@ class object_data final :
 
   // implements Message ----------------------------------------------
 
-  object_data* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<object_data>(arena);
+  Object_Data* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Object_Data>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const object_data& from);
-  void MergeFrom(const object_data& from);
+  void CopyFrom(const Object_Data& from);
+  void MergeFrom(const Object_Data& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -311,15 +315,15 @@ class object_data final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(object_data* other);
+  void InternalSwap(Object_Data* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.object_data";
+    return "generated.Object_Data";
   }
   protected:
-  explicit object_data(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Object_Data(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -365,7 +369,7 @@ class object_data final :
       ::generated::Matrix* transform);
   ::generated::Matrix* unsafe_arena_release_transform();
 
-  // @@protoc_insertion_point(class_scope:generated.object_data)
+  // @@protoc_insertion_point(class_scope:generated.Object_Data)
  private:
   class _Internal;
 
@@ -382,24 +386,24 @@ class object_data final :
 };
 // -------------------------------------------------------------------
 
-class object_instance final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.object_instance) */ {
+class Object_Instance final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Object_Instance) */ {
  public:
-  inline object_instance() : object_instance(nullptr) {}
-  ~object_instance() override;
-  explicit PROTOBUF_CONSTEXPR object_instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Object_Instance() : Object_Instance(nullptr) {}
+  ~Object_Instance() override;
+  explicit PROTOBUF_CONSTEXPR Object_Instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  object_instance(const object_instance& from);
-  object_instance(object_instance&& from) noexcept
-    : object_instance() {
+  Object_Instance(const Object_Instance& from);
+  Object_Instance(Object_Instance&& from) noexcept
+    : Object_Instance() {
     *this = ::std::move(from);
   }
 
-  inline object_instance& operator=(const object_instance& from) {
+  inline Object_Instance& operator=(const Object_Instance& from) {
     CopyFrom(from);
     return *this;
   }
-  inline object_instance& operator=(object_instance&& from) noexcept {
+  inline Object_Instance& operator=(Object_Instance&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -413,7 +417,7 @@ class object_instance final :
     return *this;
   }
 
-  static const object_instance& default_instance() {
+  static const Object_Instance& default_instance() {
     return *internal_default_instance();
   }
   enum DataCase {
@@ -422,17 +426,17 @@ class object_instance final :
     DATA_NOT_SET = 0,
   };
 
-  static inline const object_instance* internal_default_instance() {
-    return reinterpret_cast<const object_instance*>(
-               &_object_instance_default_instance_);
+  static inline const Object_Instance* internal_default_instance() {
+    return reinterpret_cast<const Object_Instance*>(
+               &_Object_Instance_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     2;
 
-  friend void swap(object_instance& a, object_instance& b) {
+  friend void swap(Object_Instance& a, Object_Instance& b) {
     a.Swap(&b);
   }
-  inline void Swap(object_instance* other) {
+  inline void Swap(Object_Instance* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -445,7 +449,7 @@ class object_instance final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(object_instance* other) {
+  void UnsafeArenaSwap(Object_Instance* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -453,12 +457,12 @@ class object_instance final :
 
   // implements Message ----------------------------------------------
 
-  object_instance* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<object_instance>(arena);
+  Object_Instance* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Object_Instance>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const object_instance& from);
-  void MergeFrom(const object_instance& from);
+  void CopyFrom(const Object_Instance& from);
+  void MergeFrom(const Object_Instance& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -472,15 +476,15 @@ class object_instance final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(object_instance* other);
+  void InternalSwap(Object_Instance* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.object_instance";
+    return "generated.Object_Instance";
   }
   protected:
-  explicit object_instance(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Object_Instance(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -509,45 +513,45 @@ class object_instance final :
   std::string* _internal_mutable_id();
   public:
 
-  // .generated.object_data obj = 2;
+  // .generated.Object_Data obj = 2;
   bool has_obj() const;
   private:
   bool _internal_has_obj() const;
   public:
   void clear_obj();
-  const ::generated::object_data& obj() const;
-  PROTOBUF_NODISCARD ::generated::object_data* release_obj();
-  ::generated::object_data* mutable_obj();
-  void set_allocated_obj(::generated::object_data* obj);
+  const ::generated::Object_Data& obj() const;
+  PROTOBUF_NODISCARD ::generated::Object_Data* release_obj();
+  ::generated::Object_Data* mutable_obj();
+  void set_allocated_obj(::generated::Object_Data* obj);
   private:
-  const ::generated::object_data& _internal_obj() const;
-  ::generated::object_data* _internal_mutable_obj();
+  const ::generated::Object_Data& _internal_obj() const;
+  ::generated::Object_Data* _internal_mutable_obj();
   public:
   void unsafe_arena_set_allocated_obj(
-      ::generated::object_data* obj);
-  ::generated::object_data* unsafe_arena_release_obj();
+      ::generated::Object_Data* obj);
+  ::generated::Object_Data* unsafe_arena_release_obj();
 
-  // .generated.colored_box box = 3;
+  // .generated.Colored_Box box = 3;
   bool has_box() const;
   private:
   bool _internal_has_box() const;
   public:
   void clear_box();
-  const ::generated::colored_box& box() const;
-  PROTOBUF_NODISCARD ::generated::colored_box* release_box();
-  ::generated::colored_box* mutable_box();
-  void set_allocated_box(::generated::colored_box* box);
+  const ::generated::Colored_Box& box() const;
+  PROTOBUF_NODISCARD ::generated::Colored_Box* release_box();
+  ::generated::Colored_Box* mutable_box();
+  void set_allocated_box(::generated::Colored_Box* box);
   private:
-  const ::generated::colored_box& _internal_box() const;
-  ::generated::colored_box* _internal_mutable_box();
+  const ::generated::Colored_Box& _internal_box() const;
+  ::generated::Colored_Box* _internal_mutable_box();
   public:
   void unsafe_arena_set_allocated_box(
-      ::generated::colored_box* box);
-  ::generated::colored_box* unsafe_arena_release_box();
+      ::generated::Colored_Box* box);
+  ::generated::Colored_Box* unsafe_arena_release_box();
 
   void clear_data();
   DataCase data_case() const;
-  // @@protoc_insertion_point(class_scope:generated.object_instance)
+  // @@protoc_insertion_point(class_scope:generated.Object_Instance)
  private:
   class _Internal;
   void set_has_obj();
@@ -564,8 +568,8 @@ class object_instance final :
     union DataUnion {
       constexpr DataUnion() : _constinit_{} {}
         ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
-      ::generated::object_data* obj_;
-      ::generated::colored_box* box_;
+      ::generated::Object_Data* obj_;
+      ::generated::Colored_Box* box_;
     } data_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     uint32_t _oneof_case_[1];
@@ -576,24 +580,24 @@ class object_instance final :
 };
 // -------------------------------------------------------------------
 
-class delete_request final :
-    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.delete_request) */ {
+class Delete_Request final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Delete_Request) */ {
  public:
-  inline delete_request() : delete_request(nullptr) {}
-  ~delete_request() override;
-  explicit PROTOBUF_CONSTEXPR delete_request(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline Delete_Request() : Delete_Request(nullptr) {}
+  ~Delete_Request() override;
+  explicit PROTOBUF_CONSTEXPR Delete_Request(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  delete_request(const delete_request& from);
-  delete_request(delete_request&& from) noexcept
-    : delete_request() {
+  Delete_Request(const Delete_Request& from);
+  Delete_Request(Delete_Request&& from) noexcept
+    : Delete_Request() {
     *this = ::std::move(from);
   }
 
-  inline delete_request& operator=(const delete_request& from) {
+  inline Delete_Request& operator=(const Delete_Request& from) {
     CopyFrom(from);
     return *this;
   }
-  inline delete_request& operator=(delete_request&& from) noexcept {
+  inline Delete_Request& operator=(Delete_Request&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -607,20 +611,20 @@ class delete_request final :
     return *this;
   }
 
-  static const delete_request& default_instance() {
+  static const Delete_Request& default_instance() {
     return *internal_default_instance();
   }
-  static inline const delete_request* internal_default_instance() {
-    return reinterpret_cast<const delete_request*>(
-               &_delete_request_default_instance_);
+  static inline const Delete_Request* internal_default_instance() {
+    return reinterpret_cast<const Delete_Request*>(
+               &_Delete_Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     3;
 
-  friend void swap(delete_request& a, delete_request& b) {
+  friend void swap(Delete_Request& a, Delete_Request& b) {
     a.Swap(&b);
   }
-  inline void Swap(delete_request* other) {
+  inline void Swap(Delete_Request* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -633,7 +637,7 @@ class delete_request final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(delete_request* other) {
+  void UnsafeArenaSwap(Delete_Request* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -641,12 +645,12 @@ class delete_request final :
 
   // implements Message ----------------------------------------------
 
-  delete_request* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<delete_request>(arena);
+  Delete_Request* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Delete_Request>(arena);
   }
   void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
-  void CopyFrom(const delete_request& from);
-  void MergeFrom(const delete_request& from);
+  void CopyFrom(const Delete_Request& from);
+  void MergeFrom(const Delete_Request& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -660,15 +664,15 @@ class delete_request final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const;
-  void InternalSwap(delete_request* other);
+  void InternalSwap(Delete_Request* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "generated.delete_request";
+    return "generated.Delete_Request";
   }
   protected:
-  explicit delete_request(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit Delete_Request(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -695,7 +699,7 @@ class delete_request final :
   std::string* _internal_mutable_id();
   public:
 
-  // @@protoc_insertion_point(class_scope:generated.delete_request)
+  // @@protoc_insertion_point(class_scope:generated.Delete_Request)
  private:
   class _Internal;
 
@@ -709,6 +713,166 @@ class delete_request final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_object_2eproto;
 };
+// -------------------------------------------------------------------
+
+class Object_Instance_TF_Meta final :
+    public ::PROTOBUF_NAMESPACE_ID::MessageLite /* @@protoc_insertion_point(class_definition:generated.Object_Instance_TF_Meta) */ {
+ public:
+  inline Object_Instance_TF_Meta() : Object_Instance_TF_Meta(nullptr) {}
+  ~Object_Instance_TF_Meta() override;
+  explicit PROTOBUF_CONSTEXPR Object_Instance_TF_Meta(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Object_Instance_TF_Meta(const Object_Instance_TF_Meta& from);
+  Object_Instance_TF_Meta(Object_Instance_TF_Meta&& from) noexcept
+    : Object_Instance_TF_Meta() {
+    *this = ::std::move(from);
+  }
+
+  inline Object_Instance_TF_Meta& operator=(const Object_Instance_TF_Meta& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Object_Instance_TF_Meta& operator=(Object_Instance_TF_Meta&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const Object_Instance_TF_Meta& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Object_Instance_TF_Meta* internal_default_instance() {
+    return reinterpret_cast<const Object_Instance_TF_Meta*>(
+               &_Object_Instance_TF_Meta_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(Object_Instance_TF_Meta& a, Object_Instance_TF_Meta& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Object_Instance_TF_Meta* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Object_Instance_TF_Meta* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Object_Instance_TF_Meta* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Object_Instance_TF_Meta>(arena);
+  }
+  void CheckTypeAndMergeFrom(const ::PROTOBUF_NAMESPACE_ID::MessageLite& from)  final;
+  void CopyFrom(const Object_Instance_TF_Meta& from);
+  void MergeFrom(const Object_Instance_TF_Meta& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(Object_Instance_TF_Meta* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "generated.Object_Instance_TF_Meta";
+  }
+  protected:
+  explicit Object_Instance_TF_Meta(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  std::string GetTypeName() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kObjectInstanceFieldNumber = 1,
+    kTransformationMetaFieldNumber = 2,
+  };
+  // .generated.Object_Instance object_instance = 1;
+  bool has_object_instance() const;
+  private:
+  bool _internal_has_object_instance() const;
+  public:
+  void clear_object_instance();
+  const ::generated::Object_Instance& object_instance() const;
+  PROTOBUF_NODISCARD ::generated::Object_Instance* release_object_instance();
+  ::generated::Object_Instance* mutable_object_instance();
+  void set_allocated_object_instance(::generated::Object_Instance* object_instance);
+  private:
+  const ::generated::Object_Instance& _internal_object_instance() const;
+  ::generated::Object_Instance* _internal_mutable_object_instance();
+  public:
+  void unsafe_arena_set_allocated_object_instance(
+      ::generated::Object_Instance* object_instance);
+  ::generated::Object_Instance* unsafe_arena_release_object_instance();
+
+  // optional .generated.Transformation_Meta transformation_meta = 2;
+  bool has_transformation_meta() const;
+  private:
+  bool _internal_has_transformation_meta() const;
+  public:
+  void clear_transformation_meta();
+  const ::generated::Transformation_Meta& transformation_meta() const;
+  PROTOBUF_NODISCARD ::generated::Transformation_Meta* release_transformation_meta();
+  ::generated::Transformation_Meta* mutable_transformation_meta();
+  void set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta);
+  private:
+  const ::generated::Transformation_Meta& _internal_transformation_meta() const;
+  ::generated::Transformation_Meta* _internal_mutable_transformation_meta();
+  public:
+  void unsafe_arena_set_allocated_transformation_meta(
+      ::generated::Transformation_Meta* transformation_meta);
+  ::generated::Transformation_Meta* unsafe_arena_release_transformation_meta();
+
+  // @@protoc_insertion_point(class_scope:generated.Object_Instance_TF_Meta)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::generated::Object_Instance* object_instance_;
+    ::generated::Transformation_Meta* transformation_meta_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_object_2eproto;
+};
 // ===================================================================
 
 
@@ -718,25 +882,25 @@ class delete_request final :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
-// colored_box
+// Colored_Box
 
 // .generated.obb obbox = 1;
-inline bool colored_box::_internal_has_obbox() const {
+inline bool Colored_Box::_internal_has_obbox() const {
   return this != internal_default_instance() && _impl_.obbox_ != nullptr;
 }
-inline bool colored_box::has_obbox() const {
+inline bool Colored_Box::has_obbox() const {
   return _internal_has_obbox();
 }
-inline const ::generated::obb& colored_box::_internal_obbox() const {
+inline const ::generated::obb& Colored_Box::_internal_obbox() const {
   const ::generated::obb* p = _impl_.obbox_;
   return p != nullptr ? *p : reinterpret_cast<const ::generated::obb&>(
       ::generated::_obb_default_instance_);
 }
-inline const ::generated::obb& colored_box::obbox() const {
-  // @@protoc_insertion_point(field_get:generated.colored_box.obbox)
+inline const ::generated::obb& Colored_Box::obbox() const {
+  // @@protoc_insertion_point(field_get:generated.Colored_Box.obbox)
   return _internal_obbox();
 }
-inline void colored_box::unsafe_arena_set_allocated_obbox(
+inline void Colored_Box::unsafe_arena_set_allocated_obbox(
     ::generated::obb* obbox) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.obbox_);
@@ -747,9 +911,9 @@ inline void colored_box::unsafe_arena_set_allocated_obbox(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.colored_box.obbox)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Colored_Box.obbox)
 }
-inline ::generated::obb* colored_box::release_obbox() {
+inline ::generated::obb* Colored_Box::release_obbox() {
   
   ::generated::obb* temp = _impl_.obbox_;
   _impl_.obbox_ = nullptr;
@@ -764,14 +928,14 @@ inline ::generated::obb* colored_box::release_obbox() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::obb* colored_box::unsafe_arena_release_obbox() {
-  // @@protoc_insertion_point(field_release:generated.colored_box.obbox)
+inline ::generated::obb* Colored_Box::unsafe_arena_release_obbox() {
+  // @@protoc_insertion_point(field_release:generated.Colored_Box.obbox)
   
   ::generated::obb* temp = _impl_.obbox_;
   _impl_.obbox_ = nullptr;
   return temp;
 }
-inline ::generated::obb* colored_box::_internal_mutable_obbox() {
+inline ::generated::obb* Colored_Box::_internal_mutable_obbox() {
   
   if (_impl_.obbox_ == nullptr) {
     auto* p = CreateMaybeMessage<::generated::obb>(GetArenaForAllocation());
@@ -779,12 +943,12 @@ inline ::generated::obb* colored_box::_internal_mutable_obbox() {
   }
   return _impl_.obbox_;
 }
-inline ::generated::obb* colored_box::mutable_obbox() {
+inline ::generated::obb* Colored_Box::mutable_obbox() {
   ::generated::obb* _msg = _internal_mutable_obbox();
-  // @@protoc_insertion_point(field_mutable:generated.colored_box.obbox)
+  // @@protoc_insertion_point(field_mutable:generated.Colored_Box.obbox)
   return _msg;
 }
-inline void colored_box::set_allocated_obbox(::generated::obb* obbox) {
+inline void Colored_Box::set_allocated_obbox(::generated::obb* obbox) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.obbox_);
@@ -802,26 +966,26 @@ inline void colored_box::set_allocated_obbox(::generated::obb* obbox) {
     
   }
   _impl_.obbox_ = obbox;
-  // @@protoc_insertion_point(field_set_allocated:generated.colored_box.obbox)
+  // @@protoc_insertion_point(field_set_allocated:generated.Colored_Box.obbox)
 }
 
 // .generated.color box_color = 2;
-inline bool colored_box::_internal_has_box_color() const {
+inline bool Colored_Box::_internal_has_box_color() const {
   return this != internal_default_instance() && _impl_.box_color_ != nullptr;
 }
-inline bool colored_box::has_box_color() const {
+inline bool Colored_Box::has_box_color() const {
   return _internal_has_box_color();
 }
-inline const ::generated::color& colored_box::_internal_box_color() const {
+inline const ::generated::color& Colored_Box::_internal_box_color() const {
   const ::generated::color* p = _impl_.box_color_;
   return p != nullptr ? *p : reinterpret_cast<const ::generated::color&>(
       ::generated::_color_default_instance_);
 }
-inline const ::generated::color& colored_box::box_color() const {
-  // @@protoc_insertion_point(field_get:generated.colored_box.box_color)
+inline const ::generated::color& Colored_Box::box_color() const {
+  // @@protoc_insertion_point(field_get:generated.Colored_Box.box_color)
   return _internal_box_color();
 }
-inline void colored_box::unsafe_arena_set_allocated_box_color(
+inline void Colored_Box::unsafe_arena_set_allocated_box_color(
     ::generated::color* box_color) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.box_color_);
@@ -832,9 +996,9 @@ inline void colored_box::unsafe_arena_set_allocated_box_color(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.colored_box.box_color)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Colored_Box.box_color)
 }
-inline ::generated::color* colored_box::release_box_color() {
+inline ::generated::color* Colored_Box::release_box_color() {
   
   ::generated::color* temp = _impl_.box_color_;
   _impl_.box_color_ = nullptr;
@@ -849,14 +1013,14 @@ inline ::generated::color* colored_box::release_box_color() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::color* colored_box::unsafe_arena_release_box_color() {
-  // @@protoc_insertion_point(field_release:generated.colored_box.box_color)
+inline ::generated::color* Colored_Box::unsafe_arena_release_box_color() {
+  // @@protoc_insertion_point(field_release:generated.Colored_Box.box_color)
   
   ::generated::color* temp = _impl_.box_color_;
   _impl_.box_color_ = nullptr;
   return temp;
 }
-inline ::generated::color* colored_box::_internal_mutable_box_color() {
+inline ::generated::color* Colored_Box::_internal_mutable_box_color() {
   
   if (_impl_.box_color_ == nullptr) {
     auto* p = CreateMaybeMessage<::generated::color>(GetArenaForAllocation());
@@ -864,12 +1028,12 @@ inline ::generated::color* colored_box::_internal_mutable_box_color() {
   }
   return _impl_.box_color_;
 }
-inline ::generated::color* colored_box::mutable_box_color() {
+inline ::generated::color* Colored_Box::mutable_box_color() {
   ::generated::color* _msg = _internal_mutable_box_color();
-  // @@protoc_insertion_point(field_mutable:generated.colored_box.box_color)
+  // @@protoc_insertion_point(field_mutable:generated.Colored_Box.box_color)
   return _msg;
 }
-inline void colored_box::set_allocated_box_color(::generated::color* box_color) {
+inline void Colored_Box::set_allocated_box_color(::generated::color* box_color) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.box_color_);
@@ -887,49 +1051,49 @@ inline void colored_box::set_allocated_box_color(::generated::color* box_color) 
     
   }
   _impl_.box_color_ = box_color;
-  // @@protoc_insertion_point(field_set_allocated:generated.colored_box.box_color)
+  // @@protoc_insertion_point(field_set_allocated:generated.Colored_Box.box_color)
 }
 
 // -------------------------------------------------------------------
 
-// object_data
+// Object_Data
 
 // string prototype_name = 1;
-inline void object_data::clear_prototype_name() {
+inline void Object_Data::clear_prototype_name() {
   _impl_.prototype_name_.ClearToEmpty();
 }
-inline const std::string& object_data::prototype_name() const {
-  // @@protoc_insertion_point(field_get:generated.object_data.prototype_name)
+inline const std::string& Object_Data::prototype_name() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Data.prototype_name)
   return _internal_prototype_name();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void object_data::set_prototype_name(ArgT0&& arg0, ArgT... args) {
+void Object_Data::set_prototype_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.prototype_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:generated.object_data.prototype_name)
+  // @@protoc_insertion_point(field_set:generated.Object_Data.prototype_name)
 }
-inline std::string* object_data::mutable_prototype_name() {
+inline std::string* Object_Data::mutable_prototype_name() {
   std::string* _s = _internal_mutable_prototype_name();
-  // @@protoc_insertion_point(field_mutable:generated.object_data.prototype_name)
+  // @@protoc_insertion_point(field_mutable:generated.Object_Data.prototype_name)
   return _s;
 }
-inline const std::string& object_data::_internal_prototype_name() const {
+inline const std::string& Object_Data::_internal_prototype_name() const {
   return _impl_.prototype_name_.Get();
 }
-inline void object_data::_internal_set_prototype_name(const std::string& value) {
+inline void Object_Data::_internal_set_prototype_name(const std::string& value) {
   
   _impl_.prototype_name_.Set(value, GetArenaForAllocation());
 }
-inline std::string* object_data::_internal_mutable_prototype_name() {
+inline std::string* Object_Data::_internal_mutable_prototype_name() {
   
   return _impl_.prototype_name_.Mutable(GetArenaForAllocation());
 }
-inline std::string* object_data::release_prototype_name() {
-  // @@protoc_insertion_point(field_release:generated.object_data.prototype_name)
+inline std::string* Object_Data::release_prototype_name() {
+  // @@protoc_insertion_point(field_release:generated.Object_Data.prototype_name)
   return _impl_.prototype_name_.Release();
 }
-inline void object_data::set_allocated_prototype_name(std::string* prototype_name) {
+inline void Object_Data::set_allocated_prototype_name(std::string* prototype_name) {
   if (prototype_name != nullptr) {
     
   } else {
@@ -941,26 +1105,26 @@ inline void object_data::set_allocated_prototype_name(std::string* prototype_nam
     _impl_.prototype_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:generated.object_data.prototype_name)
+  // @@protoc_insertion_point(field_set_allocated:generated.Object_Data.prototype_name)
 }
 
 // .generated.Matrix transform = 2;
-inline bool object_data::_internal_has_transform() const {
+inline bool Object_Data::_internal_has_transform() const {
   return this != internal_default_instance() && _impl_.transform_ != nullptr;
 }
-inline bool object_data::has_transform() const {
+inline bool Object_Data::has_transform() const {
   return _internal_has_transform();
 }
-inline const ::generated::Matrix& object_data::_internal_transform() const {
+inline const ::generated::Matrix& Object_Data::_internal_transform() const {
   const ::generated::Matrix* p = _impl_.transform_;
   return p != nullptr ? *p : reinterpret_cast<const ::generated::Matrix&>(
       ::generated::_Matrix_default_instance_);
 }
-inline const ::generated::Matrix& object_data::transform() const {
-  // @@protoc_insertion_point(field_get:generated.object_data.transform)
+inline const ::generated::Matrix& Object_Data::transform() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Data.transform)
   return _internal_transform();
 }
-inline void object_data::unsafe_arena_set_allocated_transform(
+inline void Object_Data::unsafe_arena_set_allocated_transform(
     ::generated::Matrix* transform) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transform_);
@@ -971,9 +1135,9 @@ inline void object_data::unsafe_arena_set_allocated_transform(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.object_data.transform)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Object_Data.transform)
 }
-inline ::generated::Matrix* object_data::release_transform() {
+inline ::generated::Matrix* Object_Data::release_transform() {
   
   ::generated::Matrix* temp = _impl_.transform_;
   _impl_.transform_ = nullptr;
@@ -988,14 +1152,14 @@ inline ::generated::Matrix* object_data::release_transform() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::generated::Matrix* object_data::unsafe_arena_release_transform() {
-  // @@protoc_insertion_point(field_release:generated.object_data.transform)
+inline ::generated::Matrix* Object_Data::unsafe_arena_release_transform() {
+  // @@protoc_insertion_point(field_release:generated.Object_Data.transform)
   
   ::generated::Matrix* temp = _impl_.transform_;
   _impl_.transform_ = nullptr;
   return temp;
 }
-inline ::generated::Matrix* object_data::_internal_mutable_transform() {
+inline ::generated::Matrix* Object_Data::_internal_mutable_transform() {
   
   if (_impl_.transform_ == nullptr) {
     auto* p = CreateMaybeMessage<::generated::Matrix>(GetArenaForAllocation());
@@ -1003,12 +1167,12 @@ inline ::generated::Matrix* object_data::_internal_mutable_transform() {
   }
   return _impl_.transform_;
 }
-inline ::generated::Matrix* object_data::mutable_transform() {
+inline ::generated::Matrix* Object_Data::mutable_transform() {
   ::generated::Matrix* _msg = _internal_mutable_transform();
-  // @@protoc_insertion_point(field_mutable:generated.object_data.transform)
+  // @@protoc_insertion_point(field_mutable:generated.Object_Data.transform)
   return _msg;
 }
-inline void object_data::set_allocated_transform(::generated::Matrix* transform) {
+inline void Object_Data::set_allocated_transform(::generated::Matrix* transform) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transform_);
@@ -1026,49 +1190,49 @@ inline void object_data::set_allocated_transform(::generated::Matrix* transform)
     
   }
   _impl_.transform_ = transform;
-  // @@protoc_insertion_point(field_set_allocated:generated.object_data.transform)
+  // @@protoc_insertion_point(field_set_allocated:generated.Object_Data.transform)
 }
 
 // -------------------------------------------------------------------
 
-// object_instance
+// Object_Instance
 
 // string id = 1;
-inline void object_instance::clear_id() {
+inline void Object_Instance::clear_id() {
   _impl_.id_.ClearToEmpty();
 }
-inline const std::string& object_instance::id() const {
-  // @@protoc_insertion_point(field_get:generated.object_instance.id)
+inline const std::string& Object_Instance::id() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Instance.id)
   return _internal_id();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void object_instance::set_id(ArgT0&& arg0, ArgT... args) {
+void Object_Instance::set_id(ArgT0&& arg0, ArgT... args) {
  
  _impl_.id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:generated.object_instance.id)
+  // @@protoc_insertion_point(field_set:generated.Object_Instance.id)
 }
-inline std::string* object_instance::mutable_id() {
+inline std::string* Object_Instance::mutable_id() {
   std::string* _s = _internal_mutable_id();
-  // @@protoc_insertion_point(field_mutable:generated.object_instance.id)
+  // @@protoc_insertion_point(field_mutable:generated.Object_Instance.id)
   return _s;
 }
-inline const std::string& object_instance::_internal_id() const {
+inline const std::string& Object_Instance::_internal_id() const {
   return _impl_.id_.Get();
 }
-inline void object_instance::_internal_set_id(const std::string& value) {
+inline void Object_Instance::_internal_set_id(const std::string& value) {
   
   _impl_.id_.Set(value, GetArenaForAllocation());
 }
-inline std::string* object_instance::_internal_mutable_id() {
+inline std::string* Object_Instance::_internal_mutable_id() {
   
   return _impl_.id_.Mutable(GetArenaForAllocation());
 }
-inline std::string* object_instance::release_id() {
-  // @@protoc_insertion_point(field_release:generated.object_instance.id)
+inline std::string* Object_Instance::release_id() {
+  // @@protoc_insertion_point(field_release:generated.Object_Instance.id)
   return _impl_.id_.Release();
 }
-inline void object_instance::set_allocated_id(std::string* id) {
+inline void Object_Instance::set_allocated_id(std::string* id) {
   if (id != nullptr) {
     
   } else {
@@ -1080,20 +1244,20 @@ inline void object_instance::set_allocated_id(std::string* id) {
     _impl_.id_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:generated.object_instance.id)
+  // @@protoc_insertion_point(field_set_allocated:generated.Object_Instance.id)
 }
 
-// .generated.object_data obj = 2;
-inline bool object_instance::_internal_has_obj() const {
+// .generated.Object_Data obj = 2;
+inline bool Object_Instance::_internal_has_obj() const {
   return data_case() == kObj;
 }
-inline bool object_instance::has_obj() const {
+inline bool Object_Instance::has_obj() const {
   return _internal_has_obj();
 }
-inline void object_instance::set_has_obj() {
+inline void Object_Instance::set_has_obj() {
   _impl_._oneof_case_[0] = kObj;
 }
-inline void object_instance::clear_obj() {
+inline void Object_Instance::clear_obj() {
   if (_internal_has_obj()) {
     if (GetArenaForAllocation() == nullptr) {
       delete _impl_.data_.obj_;
@@ -1101,11 +1265,11 @@ inline void object_instance::clear_obj() {
     clear_has_data();
   }
 }
-inline ::generated::object_data* object_instance::release_obj() {
-  // @@protoc_insertion_point(field_release:generated.object_instance.obj)
+inline ::generated::Object_Data* Object_Instance::release_obj() {
+  // @@protoc_insertion_point(field_release:generated.Object_Instance.obj)
   if (_internal_has_obj()) {
     clear_has_data();
-    ::generated::object_data* temp = _impl_.data_.obj_;
+    ::generated::Object_Data* temp = _impl_.data_.obj_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -1115,59 +1279,59 @@ inline ::generated::object_data* object_instance::release_obj() {
     return nullptr;
   }
 }
-inline const ::generated::object_data& object_instance::_internal_obj() const {
+inline const ::generated::Object_Data& Object_Instance::_internal_obj() const {
   return _internal_has_obj()
       ? *_impl_.data_.obj_
-      : reinterpret_cast< ::generated::object_data&>(::generated::_object_data_default_instance_);
+      : reinterpret_cast< ::generated::Object_Data&>(::generated::_Object_Data_default_instance_);
 }
-inline const ::generated::object_data& object_instance::obj() const {
-  // @@protoc_insertion_point(field_get:generated.object_instance.obj)
+inline const ::generated::Object_Data& Object_Instance::obj() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Instance.obj)
   return _internal_obj();
 }
-inline ::generated::object_data* object_instance::unsafe_arena_release_obj() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:generated.object_instance.obj)
+inline ::generated::Object_Data* Object_Instance::unsafe_arena_release_obj() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:generated.Object_Instance.obj)
   if (_internal_has_obj()) {
     clear_has_data();
-    ::generated::object_data* temp = _impl_.data_.obj_;
+    ::generated::Object_Data* temp = _impl_.data_.obj_;
     _impl_.data_.obj_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void object_instance::unsafe_arena_set_allocated_obj(::generated::object_data* obj) {
+inline void Object_Instance::unsafe_arena_set_allocated_obj(::generated::Object_Data* obj) {
   clear_data();
   if (obj) {
     set_has_obj();
     _impl_.data_.obj_ = obj;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.object_instance.obj)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Object_Instance.obj)
 }
-inline ::generated::object_data* object_instance::_internal_mutable_obj() {
+inline ::generated::Object_Data* Object_Instance::_internal_mutable_obj() {
   if (!_internal_has_obj()) {
     clear_data();
     set_has_obj();
-    _impl_.data_.obj_ = CreateMaybeMessage< ::generated::object_data >(GetArenaForAllocation());
+    _impl_.data_.obj_ = CreateMaybeMessage< ::generated::Object_Data >(GetArenaForAllocation());
   }
   return _impl_.data_.obj_;
 }
-inline ::generated::object_data* object_instance::mutable_obj() {
-  ::generated::object_data* _msg = _internal_mutable_obj();
-  // @@protoc_insertion_point(field_mutable:generated.object_instance.obj)
+inline ::generated::Object_Data* Object_Instance::mutable_obj() {
+  ::generated::Object_Data* _msg = _internal_mutable_obj();
+  // @@protoc_insertion_point(field_mutable:generated.Object_Instance.obj)
   return _msg;
 }
 
-// .generated.colored_box box = 3;
-inline bool object_instance::_internal_has_box() const {
+// .generated.Colored_Box box = 3;
+inline bool Object_Instance::_internal_has_box() const {
   return data_case() == kBox;
 }
-inline bool object_instance::has_box() const {
+inline bool Object_Instance::has_box() const {
   return _internal_has_box();
 }
-inline void object_instance::set_has_box() {
+inline void Object_Instance::set_has_box() {
   _impl_._oneof_case_[0] = kBox;
 }
-inline void object_instance::clear_box() {
+inline void Object_Instance::clear_box() {
   if (_internal_has_box()) {
     if (GetArenaForAllocation() == nullptr) {
       delete _impl_.data_.box_;
@@ -1175,11 +1339,11 @@ inline void object_instance::clear_box() {
     clear_has_data();
   }
 }
-inline ::generated::colored_box* object_instance::release_box() {
-  // @@protoc_insertion_point(field_release:generated.object_instance.box)
+inline ::generated::Colored_Box* Object_Instance::release_box() {
+  // @@protoc_insertion_point(field_release:generated.Object_Instance.box)
   if (_internal_has_box()) {
     clear_has_data();
-    ::generated::colored_box* temp = _impl_.data_.box_;
+    ::generated::Colored_Box* temp = _impl_.data_.box_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
@@ -1189,97 +1353,97 @@ inline ::generated::colored_box* object_instance::release_box() {
     return nullptr;
   }
 }
-inline const ::generated::colored_box& object_instance::_internal_box() const {
+inline const ::generated::Colored_Box& Object_Instance::_internal_box() const {
   return _internal_has_box()
       ? *_impl_.data_.box_
-      : reinterpret_cast< ::generated::colored_box&>(::generated::_colored_box_default_instance_);
+      : reinterpret_cast< ::generated::Colored_Box&>(::generated::_Colored_Box_default_instance_);
 }
-inline const ::generated::colored_box& object_instance::box() const {
-  // @@protoc_insertion_point(field_get:generated.object_instance.box)
+inline const ::generated::Colored_Box& Object_Instance::box() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Instance.box)
   return _internal_box();
 }
-inline ::generated::colored_box* object_instance::unsafe_arena_release_box() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:generated.object_instance.box)
+inline ::generated::Colored_Box* Object_Instance::unsafe_arena_release_box() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:generated.Object_Instance.box)
   if (_internal_has_box()) {
     clear_has_data();
-    ::generated::colored_box* temp = _impl_.data_.box_;
+    ::generated::Colored_Box* temp = _impl_.data_.box_;
     _impl_.data_.box_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void object_instance::unsafe_arena_set_allocated_box(::generated::colored_box* box) {
+inline void Object_Instance::unsafe_arena_set_allocated_box(::generated::Colored_Box* box) {
   clear_data();
   if (box) {
     set_has_box();
     _impl_.data_.box_ = box;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.object_instance.box)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Object_Instance.box)
 }
-inline ::generated::colored_box* object_instance::_internal_mutable_box() {
+inline ::generated::Colored_Box* Object_Instance::_internal_mutable_box() {
   if (!_internal_has_box()) {
     clear_data();
     set_has_box();
-    _impl_.data_.box_ = CreateMaybeMessage< ::generated::colored_box >(GetArenaForAllocation());
+    _impl_.data_.box_ = CreateMaybeMessage< ::generated::Colored_Box >(GetArenaForAllocation());
   }
   return _impl_.data_.box_;
 }
-inline ::generated::colored_box* object_instance::mutable_box() {
-  ::generated::colored_box* _msg = _internal_mutable_box();
-  // @@protoc_insertion_point(field_mutable:generated.object_instance.box)
+inline ::generated::Colored_Box* Object_Instance::mutable_box() {
+  ::generated::Colored_Box* _msg = _internal_mutable_box();
+  // @@protoc_insertion_point(field_mutable:generated.Object_Instance.box)
   return _msg;
 }
 
-inline bool object_instance::has_data() const {
+inline bool Object_Instance::has_data() const {
   return data_case() != DATA_NOT_SET;
 }
-inline void object_instance::clear_has_data() {
+inline void Object_Instance::clear_has_data() {
   _impl_._oneof_case_[0] = DATA_NOT_SET;
 }
-inline object_instance::DataCase object_instance::data_case() const {
-  return object_instance::DataCase(_impl_._oneof_case_[0]);
+inline Object_Instance::DataCase Object_Instance::data_case() const {
+  return Object_Instance::DataCase(_impl_._oneof_case_[0]);
 }
 // -------------------------------------------------------------------
 
-// delete_request
+// Delete_Request
 
 // string id = 1;
-inline void delete_request::clear_id() {
+inline void Delete_Request::clear_id() {
   _impl_.id_.ClearToEmpty();
 }
-inline const std::string& delete_request::id() const {
-  // @@protoc_insertion_point(field_get:generated.delete_request.id)
+inline const std::string& Delete_Request::id() const {
+  // @@protoc_insertion_point(field_get:generated.Delete_Request.id)
   return _internal_id();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void delete_request::set_id(ArgT0&& arg0, ArgT... args) {
+void Delete_Request::set_id(ArgT0&& arg0, ArgT... args) {
  
  _impl_.id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:generated.delete_request.id)
+  // @@protoc_insertion_point(field_set:generated.Delete_Request.id)
 }
-inline std::string* delete_request::mutable_id() {
+inline std::string* Delete_Request::mutable_id() {
   std::string* _s = _internal_mutable_id();
-  // @@protoc_insertion_point(field_mutable:generated.delete_request.id)
+  // @@protoc_insertion_point(field_mutable:generated.Delete_Request.id)
   return _s;
 }
-inline const std::string& delete_request::_internal_id() const {
+inline const std::string& Delete_Request::_internal_id() const {
   return _impl_.id_.Get();
 }
-inline void delete_request::_internal_set_id(const std::string& value) {
+inline void Delete_Request::_internal_set_id(const std::string& value) {
   
   _impl_.id_.Set(value, GetArenaForAllocation());
 }
-inline std::string* delete_request::_internal_mutable_id() {
+inline std::string* Delete_Request::_internal_mutable_id() {
   
   return _impl_.id_.Mutable(GetArenaForAllocation());
 }
-inline std::string* delete_request::release_id() {
-  // @@protoc_insertion_point(field_release:generated.delete_request.id)
+inline std::string* Delete_Request::release_id() {
+  // @@protoc_insertion_point(field_release:generated.Delete_Request.id)
   return _impl_.id_.Release();
 }
-inline void delete_request::set_allocated_id(std::string* id) {
+inline void Delete_Request::set_allocated_id(std::string* id) {
   if (id != nullptr) {
     
   } else {
@@ -1291,12 +1455,195 @@ inline void delete_request::set_allocated_id(std::string* id) {
     _impl_.id_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:generated.delete_request.id)
+  // @@protoc_insertion_point(field_set_allocated:generated.Delete_Request.id)
+}
+
+// -------------------------------------------------------------------
+
+// Object_Instance_TF_Meta
+
+// .generated.Object_Instance object_instance = 1;
+inline bool Object_Instance_TF_Meta::_internal_has_object_instance() const {
+  return this != internal_default_instance() && _impl_.object_instance_ != nullptr;
+}
+inline bool Object_Instance_TF_Meta::has_object_instance() const {
+  return _internal_has_object_instance();
+}
+inline void Object_Instance_TF_Meta::clear_object_instance() {
+  if (GetArenaForAllocation() == nullptr && _impl_.object_instance_ != nullptr) {
+    delete _impl_.object_instance_;
+  }
+  _impl_.object_instance_ = nullptr;
+}
+inline const ::generated::Object_Instance& Object_Instance_TF_Meta::_internal_object_instance() const {
+  const ::generated::Object_Instance* p = _impl_.object_instance_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Object_Instance&>(
+      ::generated::_Object_Instance_default_instance_);
+}
+inline const ::generated::Object_Instance& Object_Instance_TF_Meta::object_instance() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Instance_TF_Meta.object_instance)
+  return _internal_object_instance();
+}
+inline void Object_Instance_TF_Meta::unsafe_arena_set_allocated_object_instance(
+    ::generated::Object_Instance* object_instance) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.object_instance_);
+  }
+  _impl_.object_instance_ = object_instance;
+  if (object_instance) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Object_Instance_TF_Meta.object_instance)
+}
+inline ::generated::Object_Instance* Object_Instance_TF_Meta::release_object_instance() {
+  
+  ::generated::Object_Instance* temp = _impl_.object_instance_;
+  _impl_.object_instance_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Object_Instance* Object_Instance_TF_Meta::unsafe_arena_release_object_instance() {
+  // @@protoc_insertion_point(field_release:generated.Object_Instance_TF_Meta.object_instance)
+  
+  ::generated::Object_Instance* temp = _impl_.object_instance_;
+  _impl_.object_instance_ = nullptr;
+  return temp;
+}
+inline ::generated::Object_Instance* Object_Instance_TF_Meta::_internal_mutable_object_instance() {
+  
+  if (_impl_.object_instance_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Object_Instance>(GetArenaForAllocation());
+    _impl_.object_instance_ = p;
+  }
+  return _impl_.object_instance_;
+}
+inline ::generated::Object_Instance* Object_Instance_TF_Meta::mutable_object_instance() {
+  ::generated::Object_Instance* _msg = _internal_mutable_object_instance();
+  // @@protoc_insertion_point(field_mutable:generated.Object_Instance_TF_Meta.object_instance)
+  return _msg;
+}
+inline void Object_Instance_TF_Meta::set_allocated_object_instance(::generated::Object_Instance* object_instance) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.object_instance_;
+  }
+  if (object_instance) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(object_instance);
+    if (message_arena != submessage_arena) {
+      object_instance = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, object_instance, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.object_instance_ = object_instance;
+  // @@protoc_insertion_point(field_set_allocated:generated.Object_Instance_TF_Meta.object_instance)
+}
+
+// optional .generated.Transformation_Meta transformation_meta = 2;
+inline bool Object_Instance_TF_Meta::_internal_has_transformation_meta() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.transformation_meta_ != nullptr);
+  return value;
+}
+inline bool Object_Instance_TF_Meta::has_transformation_meta() const {
+  return _internal_has_transformation_meta();
+}
+inline const ::generated::Transformation_Meta& Object_Instance_TF_Meta::_internal_transformation_meta() const {
+  const ::generated::Transformation_Meta* p = _impl_.transformation_meta_;
+  return p != nullptr ? *p : reinterpret_cast<const ::generated::Transformation_Meta&>(
+      ::generated::_Transformation_Meta_default_instance_);
+}
+inline const ::generated::Transformation_Meta& Object_Instance_TF_Meta::transformation_meta() const {
+  // @@protoc_insertion_point(field_get:generated.Object_Instance_TF_Meta.transformation_meta)
+  return _internal_transformation_meta();
+}
+inline void Object_Instance_TF_Meta::unsafe_arena_set_allocated_transformation_meta(
+    ::generated::Transformation_Meta* transformation_meta) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  if (transformation_meta) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:generated.Object_Instance_TF_Meta.transformation_meta)
+}
+inline ::generated::Transformation_Meta* Object_Instance_TF_Meta::release_transformation_meta() {
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::generated::Transformation_Meta* Object_Instance_TF_Meta::unsafe_arena_release_transformation_meta() {
+  // @@protoc_insertion_point(field_release:generated.Object_Instance_TF_Meta.transformation_meta)
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  ::generated::Transformation_Meta* temp = _impl_.transformation_meta_;
+  _impl_.transformation_meta_ = nullptr;
+  return temp;
+}
+inline ::generated::Transformation_Meta* Object_Instance_TF_Meta::_internal_mutable_transformation_meta() {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  if (_impl_.transformation_meta_ == nullptr) {
+    auto* p = CreateMaybeMessage<::generated::Transformation_Meta>(GetArenaForAllocation());
+    _impl_.transformation_meta_ = p;
+  }
+  return _impl_.transformation_meta_;
+}
+inline ::generated::Transformation_Meta* Object_Instance_TF_Meta::mutable_transformation_meta() {
+  ::generated::Transformation_Meta* _msg = _internal_mutable_transformation_meta();
+  // @@protoc_insertion_point(field_mutable:generated.Object_Instance_TF_Meta.transformation_meta)
+  return _msg;
+}
+inline void Object_Instance_TF_Meta::set_allocated_transformation_meta(::generated::Transformation_Meta* transformation_meta) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transformation_meta_);
+  }
+  if (transformation_meta) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transformation_meta));
+    if (message_arena != submessage_arena) {
+      transformation_meta = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transformation_meta, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.transformation_meta_ = transformation_meta;
+  // @@protoc_insertion_point(field_set_allocated:generated.Object_Instance_TF_Meta.transformation_meta)
 }
 
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
