@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "Eigen/Dense"
 #include "pcl/impl/point_types.hpp"
 //#include "tiny_obj_loader.h"
@@ -25,18 +27,33 @@ struct VoxelRobot
 	std::vector<Eigen::Vector<uint32_t, 3>> voxels;
 };
 
+class TF_Stream_Wrapper
+{
+public:
+
+	TF_Stream_Wrapper(generated::Transformation_Meta meta);
+
+	//only returns valid meta on first stream interaction
+	[[nodiscard]] std::optional<generated::Transformation_Meta> get_meta() const;
+
+private:
+
+	generated::Transformation_Meta m_meta;
+	mutable bool first = true;
+};
+
 namespace server
 {
 	template<typename out, typename in>
 	out convert(const in& v);
 
 	template<typename out, typename in>
-	out convert_meta(const in& v, bool send_meta);
+	out convert_meta(const in& v, const TF_Stream_Wrapper& wrapper);
 
 	//template<typename out, typename in>
 	//out convert(const in&& v);
 
-	inline generated::Transformation_Meta gen_meta()
+	inline generated::Transformation_Meta gen_meta_voxels()
 	{
 		generated::Transformation_Meta out;
 
@@ -452,25 +469,25 @@ namespace server
 	}
 
 	template<>
-	inline generated::Tcps_TF_Meta convert_meta(const std::vector<Eigen::Vector3f>& v, bool send_meta)
+	inline generated::Tcps_TF_Meta convert_meta(const std::vector<Eigen::Vector3f>& v, const TF_Stream_Wrapper& wrapper)
 	{
 		generated::Tcps_TF_Meta out;
 		*out.mutable_tcps() = convert<generated::Tcps>(v);
 
-		if (send_meta)
-			*out.mutable_transformation_meta() = gen_meta();
+		if (const auto meta = wrapper.get_meta(); meta.has_value())
+			*out.mutable_transformation_meta() = meta.value();
 
 		return out;
 	}
 
 	template<>
-	inline generated::Voxel_TF_Meta convert_meta(const VoxelRobot& v, bool send_meta)
+	inline generated::Voxel_TF_Meta convert_meta(const VoxelRobot& v, const TF_Stream_Wrapper& wrapper)
 	{
 		generated::Voxel_TF_Meta out;
 		*out.mutable_voxels() = convert<generated::Voxels>(v);
 
-		if (send_meta)
-			*out.mutable_transformation_meta() = gen_meta();
+		if (const auto meta = wrapper.get_meta(); meta.has_value())
+			*out.mutable_transformation_meta() = meta.value();
 
 		return out;
 	}

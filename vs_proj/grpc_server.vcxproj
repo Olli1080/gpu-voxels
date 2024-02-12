@@ -38,6 +38,7 @@
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\robot.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.grpc.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\services.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\util.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.grpc.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.cc" />
   </ItemGroup>

@@ -20,6 +20,7 @@
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\vertex.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.grpc.pb.cc" />
     <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\meta_data.pb.cc" />
+    <ClCompile Include="..\packages\gpu_voxels\src\grpc_voxels\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\packages\gpu_voxels\src\grpc_voxels\grpc_server.h" />

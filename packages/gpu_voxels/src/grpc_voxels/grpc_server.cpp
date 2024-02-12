@@ -38,8 +38,8 @@ grpc::Status VoxelService::transmit_voxels(
 {
 	context->set_compression_algorithm(GRPC_COMPRESS_GZIP);
 	writer->SendInitialMetadata();
-
-	bool first = true;
+	
+	TF_Stream_Wrapper wrapper(server::gen_meta_voxels());
 	while (true)
 	{
 		std::unique_lock lock(mutex);
@@ -48,8 +48,7 @@ grpc::Status VoxelService::transmit_voxels(
 		if (stop_flag)
 			break;
 
-		const auto voxel_send = server::convert_meta<generated::Voxel_TF_Meta>(*buffer, first);
-		first = false;
+		const auto voxel_send = server::convert_meta<generated::Voxel_TF_Meta>(*buffer, wrapper);
 
 		if (!writer->Write(voxel_send))
 			return grpc::Status::CANCELLED;
@@ -82,8 +81,8 @@ grpc::Status VoxelService::transmit_joints(grpc::ServerContext* context, const g
 grpc::Status VoxelService::transmit_tcps(grpc::ServerContext* context, const google::protobuf::Empty* request, grpc::ServerWriter<generated::Tcps_TF_Meta>* writer)
 {
 	writer->SendInitialMetadata();
-	bool first = true;
 
+	TF_Stream_Wrapper wrapper(server::gen_meta_voxels());
 	while (true)
 	{
 		std::unique_lock lock(tcps_mutex);
@@ -92,8 +91,7 @@ grpc::Status VoxelService::transmit_tcps(grpc::ServerContext* context, const goo
 		if (stop_flag)
 			break;
 
-		const auto tcps_send = server::convert_meta<generated::Tcps_TF_Meta>(*tcps_buffer, first);
-		first = false;
+		const auto tcps_send = server::convert_meta<generated::Tcps_TF_Meta>(*tcps_buffer, wrapper);
 
 		if (!writer->Write(tcps_send))
 			return grpc::Status::CANCELLED;
