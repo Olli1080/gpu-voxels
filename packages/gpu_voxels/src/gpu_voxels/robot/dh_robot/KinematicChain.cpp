@@ -238,7 +238,7 @@ namespace gpu_voxels
 				return Matrix4f::Identity();
 			}
 
-			recompute_transforms(idx);
+			recompute_transforms(idx + 1);
 
 			return m_transforms[idx];
 		}
