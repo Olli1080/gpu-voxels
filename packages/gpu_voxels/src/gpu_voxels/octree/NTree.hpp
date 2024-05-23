@@ -1479,7 +1479,7 @@ namespace gpu_voxels {
 			}
 #endif
 
-			h_packed_levels[0] = thrust::make_pair<OctreeVoxelID*, voxel_count>(d_free_space_this_level, num_this_level);
+			h_packed_levels[0] = thrust::make_pair(d_free_space_this_level, num_this_level);
 
 			//  OctreeVoxelID* tmp_ptr = nullptr;
 			//  HANDLE_CUDA_ERROR(cudaMalloc(&tmp_ptr, num_next_level * sizeof(OctreeVoxelID)));
@@ -1566,7 +1566,7 @@ namespace gpu_voxels {
 				assert(checkSorting(d_free_space_this_level, num_this_level));
 
 				// store level pointer
-				h_packed_levels[l] = thrust::make_pair<OctreeVoxelID*, voxel_count>(d_free_space_this_level, num_this_level);
+				h_packed_levels[l] = thrust::make_pair(d_free_space_this_level, num_this_level);
 
 				num_packed_voxel += num_this_level;
 
