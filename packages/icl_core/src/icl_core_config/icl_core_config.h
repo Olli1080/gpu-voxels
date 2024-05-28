@@ -26,7 +26,7 @@
 #  define _IC_BUILDER_ICL_CORE_CONFIG_
 #endif
 
-#include <boost/regex.h>
+#include <regex>
 #include <tinyxml.h>
 #include <icl_core/icl_core.h>
 

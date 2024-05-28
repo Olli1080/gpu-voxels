@@ -4,8 +4,7 @@
             "name": "pcl",
             "features": ["openni2"]
         },
-        "boost-predef",
-	"boost-interprocess",
+	    "boost-interprocess",
         "tinyxml",
         "cppunit",
         "cuda",

@@ -88,8 +88,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\packages\icl_core\src\icl_core\AtScopeEnd.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core\BaseTypes.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core\Deprecate.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core\EnumHelper.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core\icl_core.h" />
@@ -122,10 +120,6 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\MemberValue.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\MemberValueIface.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\Util.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2.hpp" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2Impl.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2Impl.hpp" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\Constants.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\FileLogOutput.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\icl_core_logging.h" />
@@ -140,18 +134,11 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LoggingMacros_SLOGGING.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LoggingMacros_SLOGGING_FMT.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LoggingManager.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\logging_ns.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LogLevel.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LogOutputStream.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LogStream.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\ScopedTimer.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImpl.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImplLxrt.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImplWin32.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SingletonThreadingModels.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\StdErrorLogOutput.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\StdLogOutput.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\tFileLogOutput.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\ThreadStream.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_performance_monitor\ImportExport.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_performance_monitor\logging_performance_monitor.h" />

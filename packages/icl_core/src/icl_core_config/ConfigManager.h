@@ -25,8 +25,6 @@
 #include <list>
 #include <map>
 
-#include <boost/lexical_cast.hpp>
-
 #include "icl_core_config/ConfigIterator.h"
 #include "icl_core_config/ConfigParameter.h"
 #include "icl_core_config/ConfigPositionalParameter.h"
@@ -126,7 +124,11 @@ namespace icl_core {
             template <class T>
             bool setValue(const std::string& key, const T& value)
             {
-	            const auto string_value = boost::lexical_cast<std::string>(value);
+                std::string string_value;
+                if constexpr (std::is_same_v<T, std::string>)
+                    string_value = value;
+                else
+                    string_value = std::to_string(value);
 
                 if (key == "/configfile")
                 {

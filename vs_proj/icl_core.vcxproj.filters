@@ -15,12 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\packages\icl_core\src\icl_core\AtScopeEnd.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core\BaseTypes.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core\Deprecate.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -117,18 +111,6 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\Util.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2Impl.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_crypt\Sha2Impl.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_performance_monitor\ImportExport.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -154,9 +136,6 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\Logging.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\logging_ns.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LoggingMacros_LLOGGING.h">
@@ -195,28 +174,10 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\LogStream.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\ScopedTimer.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImpl.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImplLxrt.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SemaphoreImplWin32.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\SingletonThreadingModels.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\StdErrorLogOutput.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\StdLogOutput.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core_logging\tFileLogOutput.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_logging\ThreadStream.h">

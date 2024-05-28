@@ -10,7 +10,7 @@
 #include "icl_core_logging/UdpLogOutput.h"
 
 #include <netdb.h>
-#include <boost/regex.hpp>
+#include <regex>
 #include <sys/types.h>
 #include <sys/socket.h>
 
