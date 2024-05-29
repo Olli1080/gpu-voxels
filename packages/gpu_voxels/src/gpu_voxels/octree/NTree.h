@@ -39,7 +39,7 @@
 #include <gpu_voxels/octree/DefaultCollider.h>
 
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
-#include <gpu_voxels/helpers/BitVector.cuhpp>
+#include <gpu_voxels/helpers/BitVector.h>
 #include <gpu_voxels/voxelmap/VoxelMap.h>
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
 #include <gpu_voxels/voxellist/TemplateVoxelList.h>

@@ -25,10 +25,7 @@
 
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
-#include <gpu_voxels/voxel/ProbabilisticVoxel.h>
-#include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 #include <gpu_voxels/helpers/CollisionInterfaces.h>
-#include <cstddef>
 
 namespace gpu_voxels {
 	namespace voxelmap {
@@ -102,7 +99,7 @@ namespace gpu_voxels {
 
 			//these are used for self collision checks:
 			size_t m_num_self_collisions_checked_entities;
-			BitVector<BIT_VECTOR_LENGTH>* m_selfcolliding_subclouds_dev;
+			BitVector<length>* m_selfcolliding_subclouds_dev;
 			BitVector<length>* m_collisions_masks_dev;
 			BitVoxelMeaning* m_subcloud_meanings_dev;
 		};

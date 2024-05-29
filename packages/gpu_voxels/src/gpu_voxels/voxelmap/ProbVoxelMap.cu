@@ -1,7 +1,7 @@
 #include "ProbVoxelMap.h"
 
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 
 namespace gpu_voxels {
     namespace voxelmap {

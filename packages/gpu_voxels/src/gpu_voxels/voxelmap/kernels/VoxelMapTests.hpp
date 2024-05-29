@@ -25,7 +25,7 @@
 
 #include "VoxelMapTests.h"
 #include "VoxelMapOperations.h"
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 
 namespace gpu_voxels {
 namespace voxelmap {

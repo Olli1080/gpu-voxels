@@ -20,10 +20,6 @@
 *
 */
 //----------------------------------------------------------------------
-
-#ifndef GPU_VOXELS_VOXELLIST_COUNTINGVOXELLIST_HPP_INCLUDED
-#define GPU_VOXELS_VOXELLIST_COUNTINGVOXELLIST_HPP_INCLUDED
-
 #include "CountingVoxelList.h"
 #include <gpu_voxels/logging/logging_voxellist.h>
 
@@ -37,7 +33,7 @@ namespace gpu_voxels {
 		// using namespace gpu_voxels::voxelmap;
 
 
-		inline CountingVoxelList::CountingVoxelList(const Vector3ui ref_map_dim,
+		CountingVoxelList::CountingVoxelList(const Vector3ui ref_map_dim,
 			const float voxel_side_length,
 			const MapType map_type)
 			: TemplateVoxelList<CountingVoxel, MapVoxelID>(ref_map_dim, voxel_side_length, map_type)
@@ -52,11 +48,7 @@ namespace gpu_voxels {
 			//TODO: check memory allocation for bitmask, colliding_bits, dev_colliding_bits
 		}
 
-
-		inline CountingVoxelList::~CountingVoxelList() = default;
-
-
-		inline void CountingVoxelList::clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning)
+		void CountingVoxelList::clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning)
 		{
 			LOGGING_ERROR_C(
 				VoxellistLog, CountingVoxelList, GPU_VOXELS_MAP_OPERATION_NOT_YET_SUPPORTED << endl);
@@ -88,7 +80,7 @@ namespace gpu_voxels {
 			}
 		};
 
-		inline size_t CountingVoxelList::collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold, const Vector3i& offset)
+		size_t CountingVoxelList::collideWith(const voxellist::BitVectorVoxelList* map, float coll_threshold, const Vector3i& offset)
 		{
 			size_t collisions = (std::numeric_limits<size_t>::max)();
 
@@ -104,7 +96,7 @@ namespace gpu_voxels {
 			return collisions;
 		}
 
-		inline void CountingVoxelList::remove_underpopulated(const int8_t threshold)
+		void CountingVoxelList::remove_underpopulated(const int8_t threshold)
 		{
 			//this->screendump(true); // DEBUG
 
@@ -129,5 +121,3 @@ namespace gpu_voxels {
 
 	} // end namespace voxellist
 } // end namespace gpu_voxels
-
-#endif // GPU_VOXELS_VOXELLIST_COUNTINGVOXELLIST_HPP_INCLUDED

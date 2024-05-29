@@ -29,11 +29,11 @@
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
 
 #include <gpu_voxels/voxel/DefaultCollider.h>
-#include <gpu_voxels/voxelmap/BitVoxelMap.h>
-#include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
+
+#include "gpu_voxels/voxelmap/TemplateVoxelMap.h"
 
 
 /**
@@ -164,13 +164,15 @@ namespace gpu_voxels {
 			 */
 			void insertMetaPointCloud(const MetaPointCloud& meta_point_cloud, const std::vector<BitVoxelMeaning>& voxel_meanings) override;
 
+			//TODO::
 			bool insertMetaPointCloudWithSelfCollisionCheck(const MetaPointCloud* robot_links,
 			                                                const std::vector<BitVoxelMeaning>& voxel_meanings = {},
 			                                                const std::vector<BitVector<BIT_VECTOR_LENGTH>>& collision_masks = {},
 			                                                BitVector<BIT_VECTOR_LENGTH>* colliding_meanings = nullptr) override;
 
-			bool merge(GpuVoxelsMapSharedPtr other, const Vector3f& metric_offset, const BitVoxelMeaning* new_meaning = nullptr) override;
-			bool merge(GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset = Vector3i::Zero(), const BitVoxelMeaning* new_meaning = nullptr) override;
+			bool merge(const GpuVoxelsMapSharedPtr other, const Vector3f& metric_offset, const BitVoxelMeaning* new_meaning = nullptr) override;
+			bool merge(const GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset = Vector3i::Zero(), const BitVoxelMeaning* new_meaning = nullptr) override;
+
 
 			virtual bool subtract(const TemplateVoxelList<Voxel, VoxelIDType>* other, const Vector3f& metric_offset = Vector3f::Zero());
 			virtual bool subtract(const TemplateVoxelList<Voxel, VoxelIDType>* other, const Vector3i& voxel_offset = Vector3i::Zero());
@@ -218,8 +220,9 @@ namespace gpu_voxels {
 			
 			size_t collideVoxellists(const TemplateVoxelList<ProbabilisticVoxel, VoxelIDType>* other, const Vector3i& offset,
 				thrust::device_vector<bool>& collision_stencil) const;
-			
-			size_t collideVoxellists(const TemplateVoxelList<BitVectorVoxel, VoxelIDType>* other, const Vector3i& offset,
+
+			template<size_t length>
+			size_t collideVoxellists(const TemplateVoxelList<BitVoxel<length>, VoxelIDType>* other, const Vector3i& offset,
 				thrust::device_vector<bool>& collision_stencil) const;
 			
 			size_t collideVoxellists(const TemplateVoxelList<CountingVoxel, VoxelIDType>* other, const Vector3i& offset,
@@ -232,8 +235,8 @@ namespace gpu_voxels {
 			 * @param offset Offset of other map to this map
 			 * @return number of collisions
 			 */
-			template<class OtherVoxel, class Collider>
-			size_t collisionCheckWithCollider(const TemplateVoxelList<OtherVoxel, VoxelIDType>* other, Collider collider = DefaultCollider(), const Vector3i& offset = Vector3i::Zero());
+			//template<class OtherVoxel, class Collider>
+			//size_t collisionCheckWithCollider(const TemplateVoxelList<OtherVoxel, VoxelIDType>* other, Collider collider = DefaultCollider(), const Vector3i& offset = Vector3i::Zero());
 
 			/**
 			 * @brief collisionCheckWithCollider
@@ -261,10 +264,11 @@ namespace gpu_voxels {
 
 			struct VoxelToCube
 			{
-				VoxelToCube() {}
+				VoxelToCube() = default;
 
+				template<size_t length>
 				__host__ __device__
-				Cube operator()(const Vector3ui& coords, const BitVectorVoxel& voxel) const {
+				Cube operator()(const Vector3ui& coords, const BitVoxel<length>& voxel) const {
 
 					return { 1, coords, voxel.bitVector() };
 				}
@@ -280,12 +284,16 @@ namespace gpu_voxels {
 						return { 1, coords, eBVM_FREE };
 					}
 				}
+				__host__ __device__
+				Cube operator()(const Vector3ui& coords, const ProbabilisticVoxel& voxel) const {
+					return { 1, coords, static_cast<BitVoxelMeaning>(voxel.getOccupancy() * eBVM_MAX_OCC_PROB) };
+				}
 			};
 
 			/* ======== Variables with content on device ======== */
 			/* Follow the Thrust paradigm: Struct of Vectors */
 			/* need to be public in order to be accessed by TemplateVoxelLists with other template arguments*/
-			thrust::device_vector<VoxelIDType> m_dev_id_list;  // contains the voxel adresses / morton codes (This can not be a Voxel*, as Thrust can not sort pointers)
+			thrust::device_vector<VoxelIDType> m_dev_id_list;  // contains the voxel addresses / morton codes (This can not be a Voxel*, as Thrust can not sort pointers)
 			thrust::device_vector<Vector3ui> m_dev_coord_list; // contains the voxel metric coordinates
 			thrust::device_vector<Voxel> m_dev_list;           // contains the actual data: bitvector or probability
 
@@ -314,6 +322,8 @@ namespace gpu_voxels {
 			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
 		};
 
+		extern template bool TemplateVoxelList<CountingVoxel, MapVoxelID>::merge(const GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset, const BitVoxelMeaning* new_meaning);
+		extern template bool TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::merge(const GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset, const BitVoxelMeaning* new_meaning);
 	} // end of namespace voxellist
 } // end of namespace gpu_voxels
 

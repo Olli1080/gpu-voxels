@@ -14,7 +14,6 @@
 
 #include "AbstractVoxelList.h"
 #include <gpu_voxels/logging/logging_voxellist.h>
-#include <gpu_voxels/helpers/common_defines.h>
 
 /**
  * @namespace gpu_voxels::voxelmap

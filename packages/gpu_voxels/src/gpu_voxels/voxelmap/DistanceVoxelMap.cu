@@ -29,6 +29,7 @@
 
 #include <gpu_voxels/voxelmap/DistanceVoxelMap.h>
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>

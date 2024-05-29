@@ -16,9 +16,9 @@
 
 //TODO:: replace with unified hpp for voxels
 #include <gpu_voxels/voxel/ProbabilisticVoxel.hpp>
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/DistanceVoxel.hpp>
-#include <gpu_voxels/voxel/CountingVoxel.hpp>
+#include <gpu_voxels/voxel/CountingVoxel.h>
 
 #if defined(__INTELLISENSE___) || defined(__RESHARPER__) 
 // in here put whatever is your favorite flavor of intellisense workarounds

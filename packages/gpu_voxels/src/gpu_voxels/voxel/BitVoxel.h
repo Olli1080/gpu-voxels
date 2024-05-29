@@ -24,8 +24,7 @@
 #define GPU_VOXELS_VOXEL_BIT_VOXEL_H_INCLUDED
 
 #include <gpu_voxels/voxel/AbstractVoxel.h>
-#include <gpu_voxels/helpers/BitVector.cuhpp>
-//#include <gpu_voxels/helpers/common_defines.h>
+#include <gpu_voxels/helpers/BitVector.h>
 
 namespace gpu_voxels {
 
@@ -37,16 +36,10 @@ namespace gpu_voxels {
 	{
 	public:
 		__host__ __device__
-		BitVoxel();
+		BitVoxel() = default;
 
 		__host__ __device__
-		~BitVoxel();
-
-		__host__ __device__
-		bool operator==(const BitVoxel<length>& other) const
-		{
-			return m_bit_vector == other.bitVector();
-		}
+		bool operator==(const BitVoxel& other) const;
 
 		__host__ __device__
 		BitVector<length>& bitVector();
@@ -58,25 +51,16 @@ namespace gpu_voxels {
 		void insert(const BitVoxelMeaning voxel_meaning);
 
 		__host__ __device__
-		static BitVoxel<length> reduce(const BitVoxel<length> voxel, const BitVoxel<length> other_voxel);
+		static BitVoxel reduce(const BitVoxel voxel, const BitVoxel other_voxel);
 
 		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
 		{
 			__host__ __device__
-				BitVoxel operator()(const BitVoxel& a, const BitVoxel& b) const
-			{
-				BitVoxel res;
-				res.bitVector() = a.bitVector() | b.bitVector();
-				return res;
-			}
+			BitVoxel operator()(const BitVoxel& a, const BitVoxel& b) const;
 		};
 
 		__host__ __device__
-
-		[[nodiscard]] bool isOccupied(float col_threshold) const
-		{
-			return bitVector().anyNotEmpty();
-		}
+		[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 		/**
 		 * @brief operator >> Overloaded ostream operator. Please note that the output bit string is starting from

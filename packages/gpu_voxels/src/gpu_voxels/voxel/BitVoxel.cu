@@ -14,26 +14,17 @@
 
 //----------------------------------------------------------------------
 /*!\file
-*
-* \author  Felix Mauch <mauch@fzi.de>
-* \date    2015-05-04
-*
-*/
-//----------------------------------------------------------------------
+ *
+ * \author  Florian Drews
+ * \date    2014-07-08
+ *
+ */
+ //----------------------------------------------------------------------/*
 
-#ifndef GPU_VOXELS_VOXELLIST_VOXELLIST_H
-#define GPU_VOXELS_VOXELLIST_VOXELLIST_H
+#include "BitVoxel.cuhpp"
+#include <gpu_voxels/helpers/common_defines.h>
 
-
-#include "VoxelList.h"
-//#include <gpu_voxels/voxelmap/ProbVoxelMap.hpp>
-#include <gpu_voxels/voxellist/BitVoxelList.hpp>
-#include <gpu_voxels/voxellist/CountingVoxelList.hpp>
-
-namespace gpu_voxels {
-namespace voxellist {
-
-
-}
-}
-#endif // GPU_VOXELS_VOXELLIST_VOXELLIST_H
+namespace gpu_voxels
+{
+	template class BitVoxel<BIT_VECTOR_LENGTH>;
+} // end of ns

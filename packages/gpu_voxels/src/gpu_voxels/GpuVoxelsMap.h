@@ -30,7 +30,9 @@
 #include <vector>
 
 #include <gpu_voxels/helpers/MetaPointCloud.h>
-#include <gpu_voxels/helpers/BitVector.cuhpp>
+#include <gpu_voxels/helpers/BitVector.h>
+
+#include "helpers/common_defines.h"
 
 namespace gpu_voxels {
 

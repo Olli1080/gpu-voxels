@@ -24,8 +24,12 @@
 #define GPU_VOXELS_VOXELMAP_TEMPLATE_VOXELMAP_HPP_INCLUDED
 
 #include "TemplateVoxelMap.h"
+
 #include <iostream>
 #include <fstream>
+#include <cfloat>
+
+#include <gpu_voxels/logging/logging_voxelmap.h>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.hpp>
 #include <gpu_voxels/voxel/DefaultCollider.hpp>
 #include <gpu_voxels/voxel/SVCollider.hpp>
@@ -33,8 +37,6 @@
 
 #include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/helpers/MathHelpers.h>
-
-#include <cfloat>
 
 #include <thrust/copy.h>
 #include <thrust/count.h>

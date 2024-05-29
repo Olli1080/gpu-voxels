@@ -24,13 +24,11 @@
 #ifndef GPU_VOXELS_VOXELLIST_BITVOXELLIST_H
 #define GPU_VOXELS_VOXELLIST_BITVOXELLIST_H
 
-#include <gpu_voxels/voxel/BitVoxel.h>
-#include <gpu_voxels/voxel/SVCollider.h>
-#include <gpu_voxels/voxellist/TemplateVoxelList.h>
-#include <gpu_voxels/voxellist/CountingVoxelList.h>
-#include <cstddef>
-
 #include <thrust/host_vector.h>
+
+#include "TemplateVoxelList.h"
+#include "gpu_voxels/helpers/CollisionInterfaces.h"
+#include "gpu_voxels/voxelmap/TemplateVoxelMap.h"
 
 namespace gpu_voxels {
 	namespace voxellist {
@@ -39,12 +37,13 @@ namespace gpu_voxels {
 		 * \brief The BitvectorCollision struct
 		 * Thrust operator that does an AND operation between two bitvector voxels and checks, if any bits are set
 		 */
-		struct BitvectorCollision : public thrust::binary_function<BitVectorVoxel, BitVectorVoxel, bool >
+		template<size_t length>
+		struct BitvectorCollision
 		{
 			__host__ __device__
-				bool operator()(const BitVectorVoxel& lhs, const BitVectorVoxel& rhs) const
+			bool operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs) const
 			{
-				const BitVector<BIT_VECTOR_LENGTH> both_set = lhs.bitVector() & rhs.bitVector();
+				const BitVector<length> both_set = lhs.bitVector() & rhs.bitVector();
 				return !both_set.isZero();
 			}
 		};
@@ -55,7 +54,8 @@ namespace gpu_voxels {
 		 * Same as BitvectorCollision but uses the slower variant that also evaluates a margin of bits around
 		 * the checked bit while doing the AND operation.
 		 */
-		struct BitvectorCollisionWithBitshift : public thrust::binary_function<BitVectorVoxel, BitVectorVoxel, bool >
+		template<size_t length>
+		struct BitvectorCollisionWithBitshift
 		{
 			uint8_t bit_margin;
 			uint32_t sv_offset;
@@ -67,10 +67,10 @@ namespace gpu_voxels {
 			}
 
 			__host__ __device__
-				bool operator()(const BitVectorVoxel& lhs, const BitVectorVoxel& rhs)
+			bool operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs)
 			{
-				BitVector<BIT_VECTOR_LENGTH> collision_result; // TODO: Get rid of this temp variable
-				return bitMarginCollisionCheck<BIT_VECTOR_LENGTH>(lhs.bitVector(), rhs.bitVector(), &collision_result, bit_margin, sv_offset);
+				BitVector<length> collision_result; // TODO: Get rid of this temp variable
+				return bitMarginCollisionCheck<length>(lhs.bitVector(), rhs.bitVector(), &collision_result, bit_margin, sv_offset);
 			}
 		};
 
@@ -78,18 +78,18 @@ namespace gpu_voxels {
 		 * \brief The BitvectorOr struct
 		 * Thrust operator that calculated the OR operation on two BitVectorVoxels
 		 */
-		struct BitvectorOr : public thrust::binary_function<BitVectorVoxel, BitVectorVoxel, BitVector<BIT_VECTOR_LENGTH> >
+		template<size_t length>
+		struct BitvectorOr
 		{
 			__host__ __device__
-				BitVector<BIT_VECTOR_LENGTH> operator()(const BitVectorVoxel& lhs, const BitVectorVoxel& rhs) const
+			BitVector<length> operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs) const
 			{
 				return lhs.bitVector() | rhs.bitVector();
 			}
 		};
 
-
-
-		struct ShiftBitvector : public thrust::unary_function<BitVectorVoxel, BitVectorVoxel>
+		template<size_t length>
+		struct ShiftBitvector
 		{
 			uint8_t shift_size;
 
@@ -99,9 +99,9 @@ namespace gpu_voxels {
 			}
 
 			__host__ __device__
-				BitVectorVoxel operator()(const BitVectorVoxel& input_voxel) const
+			BitVoxel<length> operator()(const BitVoxel<length>& input_voxel) const
 			{
-				BitVectorVoxel ret(input_voxel);
+				BitVoxel<length> ret(input_voxel);
 				performLeftShift(ret.bitVector(), shift_size);
 				return ret;
 			}
@@ -109,7 +109,7 @@ namespace gpu_voxels {
 
 
 		template<std::size_t length, class VoxelIDType>
-		class BitVoxelList : public TemplateVoxelList<BitVectorVoxel, VoxelIDType>,
+		class BitVoxelList : public TemplateVoxelList<BitVoxel<length>, VoxelIDType>,
 			public CollidableWithBitVectorVoxelMap, public CollidableWithProbVoxelMap,
 			public CollidableWithTypesProbVoxelMap,
 			public CollidableWithTypesBitVectorVoxelMap,
@@ -139,13 +139,13 @@ namespace gpu_voxels {
 
 			//Collision Interface
 			size_t collideWith(const voxelmap::ProbVoxelMap* map, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
-			size_t collideWith(const voxelmap::BitVectorVoxelMap* map, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
+			size_t collideWith(const voxelmap::BitVoxelMap<length>* map, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
 			size_t collideWith(const TemplatedBitVectorVoxelList* map, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
-			size_t collideWithTypes(const voxelmap::ProbVoxelMap* map, BitVectorVoxel& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
-			size_t collideWithTypes(const TemplatedBitVectorVoxelList* map, BitVectorVoxel& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
-			size_t collideWithTypes(const voxelmap::BitVectorVoxelMap* map, BitVectorVoxel& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
-			template< class Voxel>
-			size_t collideWithTypeMask(const voxelmap::TemplateVoxelMap<Voxel>* map, const BitVectorVoxel& types_to_check, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero());
+			size_t collideWithTypes(const voxelmap::ProbVoxelMap* map, BitVoxel<length>& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
+			size_t collideWithTypes(const TemplatedBitVectorVoxelList* map, BitVoxel<length>& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
+			size_t collideWithTypes(const voxelmap::BitVoxelMap<length>* map, BitVoxel<length>& types_in_collision, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero()) override;
+			template<class Voxel>
+			size_t collideWithTypeMask(const voxelmap::TemplateVoxelMap<Voxel>* map, const BitVoxel<length>& types_to_check, float coll_threshold = 1.0, const Vector3i& offset = Vector3i::Zero());
 			size_t collideWithBitcheck(const TemplatedBitVectorVoxelList* map, const uint8_t margin = 0, const Vector3i& offset = Vector3i::Zero()) override;
 
 			size_t collideCountingPerMeaning(const GpuVoxelsMapSharedPtr other, std::vector<size_t>& collisions_per_meaning, const Vector3i& offset_ = Vector3i::Zero());
@@ -195,9 +195,9 @@ namespace gpu_voxels {
 
 		private:
 
-			thrust::device_vector<BitVectorVoxel> m_dev_colliding_bits_result_list;
-			thrust::host_vector<BitVectorVoxel> m_colliding_bits_result_list;
-			BitVectorVoxel* m_dev_bitmask;
+			thrust::device_vector<BitVoxel<length>> m_dev_colliding_bits_result_list;
+			thrust::host_vector<BitVoxel<length>> m_colliding_bits_result_list;
+			BitVoxel<length>* m_dev_bitmask;
 
 		};
 

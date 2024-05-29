@@ -26,7 +26,7 @@
 #include <thrust/count.h>
 #include <thrust/transform.h>
 #include <thrust/execution_policy.h>
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxelmap/DistanceVoxelMap.h>
 
 #if defined(__INTELLISENSE___) || defined(__RESHARPER__) 

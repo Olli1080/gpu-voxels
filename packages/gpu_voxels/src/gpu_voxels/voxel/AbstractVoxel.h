@@ -24,7 +24,6 @@
 #define GPU_VOXELS_VOXEL_ABSTRACT_VOXEL_H_INCLUDED
 
 #include <cuda_runtime.h>
-#include <stdint.h>
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
@@ -34,14 +33,14 @@ namespace gpu_voxels {
 	 */
 	class AbstractVoxel
 	{
-		// ##### No virtual inheritance possible since this would blow up the the voxels by the vptr #####
+		// ##### No virtual inheritance possible since this would blow up the voxels by the vptr #####
 
 		/**
 		 * @brief insert Inserts new data into this voxel
 		 * @param voxel_meaning Meaning of the voxel to insert data into
 		 */
 		__host__ __device__
-			void insert(const BitVoxelMeaning voxel_meaning);
+		void insert(const BitVoxelMeaning voxel_meaning);
 
 		/**
 		 * @brief reduce Reduces 'this' and 'other_voxel' into a single voxel
@@ -49,10 +48,10 @@ namespace gpu_voxels {
 		 * @return Reduced voxel
 		 */
 		__host__ __device__
-			AbstractVoxel reduce(const AbstractVoxel other_voxel);
+		AbstractVoxel reduce(const AbstractVoxel other_voxel);
 
 		__host__ __device__
-			bool isOccupied(float col_threshold) const;
+		[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 	};
 

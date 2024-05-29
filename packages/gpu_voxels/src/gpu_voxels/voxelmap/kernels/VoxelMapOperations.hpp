@@ -24,7 +24,7 @@
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_HPP_INCLUDED
 
 #include "VoxelMapOperations.h"
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/DistanceVoxel.hpp>
 
 #include "VoxelMapOperationsPBA.hpp"

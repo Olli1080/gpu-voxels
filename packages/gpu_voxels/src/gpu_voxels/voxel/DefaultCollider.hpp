@@ -26,9 +26,9 @@
 #define GPU_VOXELS_VOXEL_DEFAULT_COLLIDER_HPP_INCLUDED
 
 #include "DefaultCollider.h"
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.hpp>
-#include <gpu_voxels/voxel/CountingVoxel.hpp>
+#include <gpu_voxels/voxel/CountingVoxel.h>
 
 namespace gpu_voxels {
 

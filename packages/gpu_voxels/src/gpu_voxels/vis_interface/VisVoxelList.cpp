@@ -23,6 +23,8 @@
 
 #include "VisVoxelList.h"
 
+#include "gpu_voxels/helpers/cuda_handling.h"
+
 namespace gpu_voxels {
 
 	VisVoxelList::VisVoxelList(voxellist::AbstractVoxelList* voxellist, std::string map_name)

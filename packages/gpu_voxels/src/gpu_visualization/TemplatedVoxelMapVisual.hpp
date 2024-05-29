@@ -8,7 +8,7 @@
 // You can find a copy of this license in LICENSE.txt in the top
 // directory of the source code.
 //
-// © Copyright 2014 FZI Forschungszentrum Informatik, Karlsruhe, Germany
+// ï¿½ Copyright 2014 FZI Forschungszentrum Informatik, Karlsruhe, Germany
 //
 // -- END LICENSE BLOCK ------------------------------------------------
 
@@ -33,7 +33,7 @@
 #include <gpu_voxels/helpers/MathHelpers.h>
 
 #include <gpu_voxels/voxel/DistanceVoxel.hpp>
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.hpp>
 
 #include <thrust/device_ptr.h>

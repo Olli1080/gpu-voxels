@@ -49,7 +49,7 @@ namespace gpu_voxels
 	/*!
 	 * the BitVoxelMeaning determines the belonging of the voxel.
 	 */
-	enum BitVoxelMeaning
+	enum BitVoxelMeaning : uint8_t
 	{
 		eBVM_FREE = 0,
 		eBVM_OCCUPIED = 1,

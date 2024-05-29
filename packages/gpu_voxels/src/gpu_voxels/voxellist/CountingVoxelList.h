@@ -30,6 +30,8 @@
 #include <gpu_voxels/voxellist/BitVoxelList.h>
 #include <cstddef>
 
+#include "gpu_voxels/helpers/CollisionInterfaces.h"
+
 namespace gpu_voxels {
 	namespace voxellist {
 
@@ -45,7 +47,7 @@ namespace gpu_voxels {
 				const float voxel_side_length,
 				const gpu_voxels::MapType map_type);
 
-			~CountingVoxelList() override;
+			~CountingVoxelList() override = default;
 
 			void clearBitVoxelMeaning(BitVoxelMeaning voxel_meaning) override;
 

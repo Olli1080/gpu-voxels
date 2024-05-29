@@ -74,7 +74,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)$(IntDir)icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
@@ -83,6 +83,7 @@
       <MaxRegCount>63</MaxRegCount>
       <KeepDir>$(CudaIntDir)\%(RelativeDir)</KeepDir>
       <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -103,7 +104,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)$(IntDir)icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
@@ -111,6 +112,7 @@
       <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
       <MaxRegCount>63</MaxRegCount>
       <KeepDir>$(CudaIntDir)\%(RelativeDir)</KeepDir>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -118,6 +120,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxelsMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BinvoxFileReader.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\CollisionInterfaces.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\common_defines.h" />
@@ -192,13 +195,14 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.hpp" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.hpp" />
@@ -213,15 +217,29 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cuhpp">
       <FileType>CppHeader</FileType>
     </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\LoadBalance.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\shared_voxel.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Extract.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Intersect.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\IntersectVMap.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Propagate.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\AbstractVoxel.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.hpp" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DistanceVoxel.h" />
@@ -259,6 +277,11 @@
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicLink.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\robot\dh_robot\KinematicChain.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.cpp" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.cpp" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\kernels\MetaPointCloudOperations.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MetaPointCloud.cu" />
@@ -266,27 +289,14 @@
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers_highlevel\DistanceMapConverter.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\EnvironmentNodes.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_PointCloud.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\shared_voxel.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Extract.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Intersect.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\IntersectVMap.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\LoadBalance.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Propagate.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Octree.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\PointCloud.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\RobotNodes.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Sensor.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.cu" />
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.cpp" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperations.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapTests.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.cu" />

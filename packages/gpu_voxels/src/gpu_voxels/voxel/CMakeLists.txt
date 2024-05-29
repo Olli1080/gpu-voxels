@@ -30,7 +30,7 @@ ICMAKER_ADD_SOURCES(
 ICMAKER_ADD_CUDA_FILES(
   AbstractVoxel.h
   BitVoxel.h
-  BitVoxel.hpp
+  BitVoxel.h
   DefaultCollider.cu
   DefaultCollider.h
   DefaultCollider.hpp

@@ -23,13 +23,7 @@
 #ifndef GPU_VOXELS_VOXELMAP_ABSTRACT_VOXELMAP_H_INCLUDED
 #define GPU_VOXELS_VOXELMAP_ABSTRACT_VOXELMAP_H_INCLUDED
 
-#include <gpu_voxels/GpuVoxelsMap.h>
-#include <gpu_voxels/helpers/cuda_datatypes.hpp>
-#include <gpu_voxels/helpers/common_defines.h>
-#include <gpu_voxels/logging/logging_voxelmap.h>
-
-#include <vector>
-#include <string>
+#include "gpu_voxels/GpuVoxelsMap.h"
 
 /**
  * @namespace gpu_voxels::voxelmap

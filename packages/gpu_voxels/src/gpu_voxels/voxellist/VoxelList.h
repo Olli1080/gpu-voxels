@@ -24,8 +24,8 @@
 #ifndef GPU_VOXELS_VOXELLIST_VOXELLIST_H
 #define GPU_VOXELS_VOXELLIST_VOXELLIST_H
 
-
-//#include <gpu_voxels/voxelmap/ProbVoxelMap.h>
+#include <gpu_voxels/voxellist/AbstractVoxelList.h>
+#include <gpu_voxels/voxellist/TemplateVoxelList.h>
 #include <gpu_voxels/voxellist/BitVoxelList.h>
 #include <gpu_voxels/voxellist/CountingVoxelList.h>
 #include <gpu_voxels/helpers/common_defines.h>

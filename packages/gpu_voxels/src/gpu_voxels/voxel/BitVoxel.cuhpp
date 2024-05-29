@@ -24,20 +24,14 @@
 #define GPU_VOXELS_VOXEL_BIT_VOXEL_HPP_INCLUDED
 
 #include "BitVoxel.h"
-#include <gpu_voxels/helpers/BitVector.cuhpp>
 
 namespace gpu_voxels
 {
-	template<std::size_t length>
-	__host__ __device__
-	BitVoxel<length>::BitVoxel() :
-		m_bit_vector()
-	{}
-
-	template<std::size_t length>
-	__host__ __device__
-	BitVoxel<length>::~BitVoxel()
-	{}
+	template <std::size_t length>
+	bool BitVoxel<length>::operator==(const BitVoxel& other) const
+	{
+		return m_bit_vector == other.bitVector();
+	}
 
 	template<std::size_t length>
 	__host__ __device__
@@ -62,13 +56,27 @@ namespace gpu_voxels
 
 	template<std::size_t length>
 	__host__ __device__
-	BitVoxel<length> BitVoxel<length>::reduce(const BitVoxel<length> voxel, const BitVoxel<length> other_voxel)
+	BitVoxel<length> BitVoxel<length>::reduce(const BitVoxel voxel, const BitVoxel other_voxel)
 	{
 		BitVoxel<length> res;
 		res.bitVector() = voxel.bitVector() | other_voxel.bitVector();
 		return res;
 	}
 
+	template <std::size_t length>
+	BitVoxel<length> BitVoxel<length>::reduce_op::operator()(const BitVoxel& a,
+		const BitVoxel& b) const
+	{
+		BitVoxel res;
+		res.bitVector() = a.bitVector() | b.bitVector();
+		return res;
+	}
+
+	template <std::size_t length>
+	bool BitVoxel<length>::isOccupied(float col_threshold) const
+	{
+		return bitVector().anyNotEmpty();
+	}
 } // end of ns
 
 #endif

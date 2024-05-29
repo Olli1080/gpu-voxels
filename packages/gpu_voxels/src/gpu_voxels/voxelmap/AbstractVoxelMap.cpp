@@ -13,6 +13,8 @@
  //----------------------------------------------------------------------
 #include "AbstractVoxelMap.h"
 
+#include <gpu_voxels/logging/logging_voxelmap.h>
+
 /**
  * @namespace gpu_voxels::voxelmap
  * Contains implementation of VoxelMap Datastructure and according operations

@@ -25,7 +25,7 @@
 
 #include <gpu_voxels/octree/Nodes.h>
 #include <gpu_voxels/octree/DataTypes.h>
-#include <gpu_voxels/helpers/BitVector.cuhpp>
+#include <gpu_voxels/helpers/BitVector.h>
 
 namespace gpu_voxels {
 	namespace NTree {

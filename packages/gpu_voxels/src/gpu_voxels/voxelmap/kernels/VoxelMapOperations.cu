@@ -14,8 +14,10 @@
  //#define LOCAL_DEBUG
 #undef LOCAL_DEBUG
 
+#include "gpu_voxels/helpers/BitVector.h"
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include "VoxelMapOperations.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 namespace gpu_voxels {
 	namespace voxelmap {

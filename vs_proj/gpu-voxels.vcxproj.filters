@@ -92,6 +92,10 @@
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\GpuVoxels.h">
@@ -103,7 +107,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BinvoxFileReader.h">
       <Filter>Headerdateien\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cuhpp">
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.h">
       <Filter>Headerdateien\helpers</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\CollisionInterfaces.h">
@@ -289,13 +293,11 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\BitVoxelMap.hpp" />
@@ -314,9 +316,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\AbstractVoxel.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DistanceVoxel.h" />
@@ -336,6 +336,48 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\robot\robot_interface.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\LoadBalance.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\shared_voxel.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Extract.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Intersect.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\IntersectVMap.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Propagate.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cuhpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MetaPointCloud.cu">
@@ -353,42 +395,6 @@
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\kernel_PointCloud.cu">
       <Filter>Quelldateien\octree</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\kernels\shared_voxel.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\AbstractLoadBalancer.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Extract.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Intersect.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\IntersectVMap.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Extract.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Intersect.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\IntersectVMap.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\LoadBalance.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\kernel_config\Propagate.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh">
-      <Filter>Headerdateien\octree</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Octree.cu">
       <Filter>Quelldateien\octree</Filter>
     </CudaCompile>
@@ -402,10 +408,8 @@
       <Filter>Quelldateien\octree</Filter>
     </CudaCompile>
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\AbstractVoxelList.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\AbstractVoxelMap.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapOperations.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\kernels\VoxelMapTests.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.cu" />
@@ -418,5 +422,19 @@
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cu">
       <Filter>Quelldateien</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\BitVector.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu" />
   </ItemGroup>
 </Project>

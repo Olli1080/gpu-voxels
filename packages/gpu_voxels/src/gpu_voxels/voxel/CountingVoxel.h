@@ -23,7 +23,6 @@
 #ifndef GPU_VOXELS_VOXEL_COUNTING_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_COUNTING_VOXEL_H_INCLUDED
 
-#include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/voxel/AbstractVoxel.h>
 
 namespace gpu_voxels {
@@ -38,33 +37,33 @@ namespace gpu_voxels {
 		 * @brief CountingVoxel
 		 */
 		__host__ __device__
-			CountingVoxel();
+		CountingVoxel();
 
 		__host__ __device__
-			~CountingVoxel();
+		~CountingVoxel() = default;
 
 		__host__ __device__
-			[[nodiscard]] bool isOccupied(uint8_t occ_threshold) const;
+		[[nodiscard]] bool isOccupied(uint8_t occ_threshold) const;
 
 		__host__ __device__
-			[[nodiscard]] int8_t getCount() const;
+		[[nodiscard]] int8_t getCount() const;
 
 		__host__ __device__
-			int8_t& count();
+		int8_t& count();
 
 		__host__ __device__
-			[[nodiscard]] const int8_t& count() const;
+		[[nodiscard]] const int8_t& count() const;
 
 		__host__ __device__
-			void insert(const uint32_t voxel_meaning);
+		void insert(const uint32_t voxel_meaning);
 
 		__host__ __device__
-			static CountingVoxel reduce(const CountingVoxel voxel, const CountingVoxel other_voxel);
+		static CountingVoxel reduce(const CountingVoxel voxel, const CountingVoxel other_voxel);
 
 		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
 		{
 			__host__ __device__
-				CountingVoxel operator()(const CountingVoxel& a, const CountingVoxel& b) const
+			CountingVoxel operator()(const CountingVoxel& a, const CountingVoxel& b) const
 			{
 				CountingVoxel tmp = a;
 				tmp.m_count += b.m_count;
@@ -74,14 +73,14 @@ namespace gpu_voxels {
 
 		template <typename T>
 		__host__
-			friend T& operator<<(T& os, const CountingVoxel& dt)
+		friend T& operator<<(T& os, const CountingVoxel& dt)
 		{
 			os << static_cast<int>(dt.m_count);
 			return os;
 		}
 
 		__host__
-			friend std::istream& operator>>(std::istream& in, CountingVoxel& dt)
+		friend std::istream& operator>>(std::istream& in, CountingVoxel& dt)
 		{
 			uint8_t tmp;
 			in >> tmp;

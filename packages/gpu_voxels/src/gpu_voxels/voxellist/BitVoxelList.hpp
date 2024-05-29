@@ -25,8 +25,9 @@
 #define GPU_VOXELS_VOXELLIST_BITVOXELLIST_HPP_INCLUDED
 
 #include "BitVoxelList.h"
+#include "CountingVoxelList.h"
 #include <gpu_voxels/voxellist/TemplateVoxelList.hpp>
-//#include <gpu_voxels/voxelmap/ProbVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 #include <gpu_voxels/logging/logging_voxellist.h>
 #include <thrust/system_error.h>
 #include <thrust/sequence.h>
@@ -41,14 +42,14 @@ namespace gpu_voxels
 
 		template<std::size_t length, class VoxelIDType>
 		BitVoxelList<length, VoxelIDType>::BitVoxelList(const Vector3ui ref_map_dim, const float voxel_side_length, const MapType map_type)
-			: TemplateVoxelList<BitVectorVoxel, VoxelIDType>(ref_map_dim, voxel_side_length, map_type)
+			: TemplateVoxelList<BitVoxel<length>, VoxelIDType>(ref_map_dim, voxel_side_length, map_type)
 		{
 			// We already resize the result vector for Bitvector Checks
 			m_dev_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
 			m_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
 
-			// Allocate a BitVectorVoxel on the device to it use as bitmask for later coll-checks.
-			cudaMalloc(&m_dev_bitmask, sizeof(BitVectorVoxel));
+			// Allocate a BitVoxel<length> on the device to it use as bitmask for later coll-checks.
+			cudaMalloc(&m_dev_bitmask, sizeof(BitVoxel<length>));
 		}
 
 
@@ -70,11 +71,11 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t length, class VoxelIDType>
-		size_t BitVoxelList<length, VoxelIDType>::collideWith(const BitVectorVoxelMap* map, float coll_threshold, const Vector3i& offset)
+		size_t BitVoxelList<length, VoxelIDType>::collideWith(const BitVoxelMap<length>* map, float coll_threshold, const Vector3i& offset)
 		{
 			DefaultCollider collider(coll_threshold);
 			//voxelmap::BitVectorVoxelMap* m = (voxelmap::BitVectorVoxelMap*) other.get();
-			return this->collisionCheckWithCollider(static_cast<const TemplateVoxelMap<BitVectorVoxel>*>(map), collider, offset); // does the locking
+			return this->collisionCheckWithCollider(static_cast<const TemplateVoxelMap<BitVoxel<length>>*>(map), collider, offset); // does the locking
 		}
 
 		template<std::size_t length, class VoxelIDType>
@@ -83,13 +84,13 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
-			const size_t collisions = this->collideVoxellists(static_cast<const TemplateVoxelList<BitVectorVoxel, VoxelIDType>*>(other), offset, collision_stencil);
+			const size_t collisions = this->collideVoxellists(static_cast<const TemplateVoxelList<BitVoxel<length>, VoxelIDType>*>(other), offset, collision_stencil);
 
 			return collisions;
 		}
 
 		template<std::size_t length, class VoxelIDType>
-		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const TemplatedBitVectorVoxelList* map, BitVectorVoxel& types_in_collision, float coll_threshold, const Vector3i& offset)
+		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const TemplatedBitVectorVoxelList* map, BitVoxel<length>& types_in_collision, float coll_threshold, const Vector3i& offset)
 		{
 			//TemplatedBitVectorVoxelList* other = dynamic_cast<TemplatedBitVectorVoxelList*>(map);
 			auto other = map;
@@ -101,19 +102,19 @@ namespace gpu_voxels
 			findMatchingVoxels(other, 0, offset, &matching_voxels_list1, &matching_voxels_list2);
 
 			//========== Now iterate over both shortened lists and inspect the Bitvectors =============
-			thrust::device_vector<BitVectorVoxel> dev_merged_voxel_list(matching_voxels_list1.m_dev_id_list.size());
+			thrust::device_vector<BitVoxel<length>> dev_merged_voxel_list(matching_voxels_list1.m_dev_id_list.size());
 			thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
 				matching_voxels_list2.m_dev_list.begin(),
-				dev_merged_voxel_list.begin(), BitVectorVoxel::reduce_op());
+				dev_merged_voxel_list.begin(), BitVoxel<length>::reduce_op());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
 			types_in_collision = thrust::reduce(dev_merged_voxel_list.begin(), dev_merged_voxel_list.end(),
-				BitVectorVoxel(), BitVectorVoxel::reduce_op());
+				BitVoxel<length>(), BitVoxel<length>::reduce_op());
 			return matching_voxels_list1.m_dev_id_list.size();
 		}
 
 		template<std::size_t length, class VoxelIDType>
-		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const BitVectorVoxelMap* other, BitVectorVoxel& types_in_collision, float coll_threshold, const Vector3i& offset)
+		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const BitVoxelMap<length>* other, BitVoxel<length>& types_in_collision, float coll_threshold, const Vector3i& offset)
 		{
 			// Map Dims have to be equal to be able to compare pointer adresses!
 			if (other->getDimensions() != this->m_ref_map_dim)
@@ -125,14 +126,14 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVectorVoxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
 			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
-			BitVectorVoxel* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
+			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			size_t dynamic_shared_mem_size = sizeof(BitVectorVoxel) * cMAX_THREADS_PER_BLOCK;
+			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
 			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
 				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
@@ -154,7 +155,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t length, class VoxelIDType>
-		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const ProbVoxelMap* map, BitVectorVoxel& types_in_collision, float coll_threshold, const Vector3i& offset)
+		size_t BitVoxelList<length, VoxelIDType>::collideWithTypes(const ProbVoxelMap* map, BitVoxel<length>& types_in_collision, float coll_threshold, const Vector3i& offset)
 		{
 			// Map Dims have to be equal to be able to compare pointer adresses!
 			if (map->getDimensions() != this->m_ref_map_dim)
@@ -169,14 +170,14 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVectorVoxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
 			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
-			BitVectorVoxel* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
+			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			size_t dynamic_shared_mem_size = sizeof(BitVectorVoxel) * cMAX_THREADS_PER_BLOCK;
+			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
 			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
 				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
@@ -200,7 +201,7 @@ namespace gpu_voxels
 		template<std::size_t length, class VoxelIDType>
 		template<class Voxel>
 		size_t BitVoxelList<length, VoxelIDType>::collideWithTypeMask(const TemplateVoxelMap<Voxel>* map,
-			const BitVectorVoxel& types_to_check, float coll_threshold, const Vector3i& offset)
+			const BitVoxel<length>& types_to_check, float coll_threshold, const Vector3i& offset)
 		{
 			// Map Dims have to be equal to be able to compare pointer adresses!
 			if (map->getDimensions() != this->m_ref_map_dim)
@@ -212,10 +213,10 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, map->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVectorVoxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
 			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
 
-			cudaMemcpy(m_dev_bitmask, &types_to_check, sizeof(BitVectorVoxel), cudaMemcpyHostToDevice);
+			cudaMemcpy(m_dev_bitmask, &types_to_check, sizeof(BitVoxel<length>), cudaMemcpyHostToDevice);
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
@@ -261,13 +262,13 @@ namespace gpu_voxels
 			{
 				thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
 					matching_voxels_list2.m_dev_list.begin(),
-					dev_colliding_bits_list.begin(), BitvectorCollision());
+					dev_colliding_bits_list.begin(), BitvectorCollision<length>());
 			}
 			else {
 				// TODO: Think about offset and add as a param
 				thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
 					matching_voxels_list2.m_dev_list.begin(),
-					dev_colliding_bits_list.begin(), BitvectorCollisionWithBitshift(margin, 0));
+					dev_colliding_bits_list.begin(), BitvectorCollisionWithBitshift<length>(margin, 0));
 			}
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			return thrust::count(dev_colliding_bits_list.begin(), dev_colliding_bits_list.end(), true);
@@ -298,7 +299,7 @@ namespace gpu_voxels
 					// Copy it to the host, iterate over all voxels and count the Meanings:
 
 					size_t summed_colls = 0;
-					thrust::host_vector<BitVectorVoxel> h_colliding_voxels;
+					thrust::host_vector<BitVoxel<length>> h_colliding_voxels;
 					h_colliding_voxels = matching_voxels_list1.m_dev_list;
 
 					assert(collisions_per_meaning.size() == BIT_VECTOR_LENGTH);
@@ -332,7 +333,7 @@ namespace gpu_voxels
 					// Copy it to the host, iterate over all voxels and count the Meanings:
 
 					size_t summed_colls = 0;
-					thrust::host_vector<BitVectorVoxel> h_colliding_voxels;
+					thrust::host_vector<BitVoxel<length>> h_colliding_voxels;
 					h_colliding_voxels = matching_voxels_list1.m_dev_list;
 
 					assert(collisions_per_meaning.size() == BIT_VECTOR_LENGTH);
@@ -629,7 +630,7 @@ namespace gpu_voxels
 			{
 				thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(),
 					this->m_dev_list.begin(),
-					ShiftBitvector(shift_size));
+					ShiftBitvector<length>(shift_size));
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			}
 			catch (thrust::system_error& e)
@@ -639,9 +640,10 @@ namespace gpu_voxels
 			}
 		}
 
+		template<size_t length>
 		struct is_not_in_swept_volume_steps
 		{
-			is_not_in_swept_volume_steps(BitVectorVoxel* voxellist, BitVoxelMeaning min_step, BitVoxelMeaning max_step)
+			is_not_in_swept_volume_steps(BitVoxel<length>* voxellist, BitVoxelMeaning min_step, BitVoxelMeaning max_step)
 				: voxellist(voxellist)
 				, min_step(min_step)
 				, max_step(max_step)
@@ -651,7 +653,7 @@ namespace gpu_voxels
 			__device__
 				bool operator()(size_t voxel_listindex)
 			{
-				BitVectorVoxel& voxel = voxellist[voxel_listindex];
+				BitVoxel<length>& voxel = voxellist[voxel_listindex];
 				for (uint32_t meaning = min_step; meaning <= max_step; meaning++)
 				{
 					if (voxel.bitVector().getBit(meaning))
@@ -662,7 +664,7 @@ namespace gpu_voxels
 				return true;
 			}
 
-			BitVectorVoxel* voxellist;
+			BitVoxel<length>* voxellist;
 			BitVoxelMeaning min_step;
 			BitVoxelMeaning max_step;
 		};
@@ -675,7 +677,7 @@ namespace gpu_voxels
 			}
 
 			__device__
-				Vector3ui operator()(size_t listindex)
+			Vector3ui operator()(size_t listindex)
 			{
 				return coordinates[listindex];
 			}

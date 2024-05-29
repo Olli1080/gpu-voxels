@@ -27,7 +27,7 @@
 
 #include <gpu_voxels/octree/GvlNTree.h>
 #include <gpu_voxels/octree/Octree.h>
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 
 namespace gpu_voxels {
 	namespace NTree {

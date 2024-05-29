@@ -20,356 +20,236 @@
  *
  */
 //----------------------------------------------------------------------/*
-#ifndef GPU_VOXELS_BIT_VECTOR_H_INCLUDED
-#define GPU_VOXELS_BIT_VECTOR_H_INCLUDED
+#ifndef GPU_VOXELS_BIT_VECTOR_HPP_INCLUDED
+#define GPU_VOXELS_BIT_VECTOR_HPP_INCLUDED
 
-#include <cstring>
-#include <cstdio>
-#include <bitset>
-
-#include <thrust/functional.h>
+#include <gpu_voxels/helpers/BitVector.h>
 
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/helpers/cuda_handling.h>
 
 namespace gpu_voxels
 {
-    /**
-     * @brief This template class represents a vector of bits with a given number of bits.
-     */
-    template<std::size_t num_bits>
-    class BitVector
+	template<size_t num_bits>
+    __host__ __device__
+	typename BitVector<num_bits>::item_type* BitVector<num_bits>::getByte(uint32_t index)
     {
+        return &m_bytes[index >> 3];
+    }
 
-    public:
-        typedef uint8_t item_type;
-
-    protected:
-
-        /**
-         * @brief getByte Gets the reference to the byte that contains the bit at the given index position (given in bits).
-         * @return Reference to the byte that contains the bit at the given bit index position
-         */
-        __host__ __device__
-        item_type* getByte(uint32_t index)
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits>::BitVector()
+    {
+        if (num_bits % 32 != 0)
         {
-            return &m_bytes[index >> 3];
+            printf("Critical Error: BitVector size must be a multitude of 32 Bits!");
         }
+        assert(num_bits % 32 == 0);
+        clear();
+    }
 
-    public:
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::clear()
+    {
+        memset(m_bytes, 0, sizeof(m_bytes));
+    }
 
-        __host__ __device__
-        BitVector()
-        {
-            if (num_bits % 32 != 0)
-            {
-                printf("Critical Error: BitVector size must be a multitude of 32 Bits!");
-            }
-            assert(num_bits % 32 == 0);
-            clear();
-        }
-
-        /**
-         * @brief clear Sets all bits to zero.
-         */
-        __host__ __device__
-            void clear()
-        {
-            memset(m_bytes, 0, sizeof(m_bytes));
-        }
-
-        /**
-         * @brief operator | Bitwise or-operator
-         * @param o Other operand
-
-         */
-        __host__ __device__
-        BitVector<num_bits> operator|(const BitVector<num_bits>& o) const
-        {
-            BitVector<num_bits> res;
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator|(const BitVector& o) const
+    {
+        BitVector<num_bits> res;
 #if defined(__CUDA_ARCH__)
 # pragma unroll
 #endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                res.m_bytes[i] = m_bytes[i] | o.m_bytes[i];
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = m_bytes[i] | o.m_bytes[i];
 
-            return res;
-        }
+        return res;
+    }
 
-        /**
-         * @brief operator == Bitwise equal comparison
-         * @param o Other operand
-         */
-        __host__ __device__
-        bool operator==(const BitVector<num_bits>& o) const
-        {
+    template<size_t num_bits>
+    __host__ __device__
+	bool BitVector<num_bits>::operator==(const BitVector& o) const
+    {
 #if defined(__CUDA_ARCH__)
 # pragma unroll
 #endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                if (m_bytes[i] != o.m_bytes[i]) return false;
+        for (uint32_t i = 0; i < m_size; ++i)
+            if (m_bytes[i] != o.m_bytes[i]) return false;
 
+        return true;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::operator|=(const BitVector& o)
+    {
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            m_bytes[i] |= o.m_bytes[i];
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator~() const
+    {
+        BitVector res;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = ~m_bytes[i];
+        return res;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator&(const BitVector& o) const
+    {
+        BitVector res;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = m_bytes[i] & o.m_bytes[i];
+        return res;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::isZero() const
+    {
+        bool result = true;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            result &= m_bytes[i] == 0;
+        return result;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::noneButEmpty() const
+    {
+        // Get the first byte which includes eBVM_FREE (Bit 0)
+        // Create a bitmask to exclude eBVM_FREE
+        // Check emptiness of masked first Byte:
+        bool result = !(m_bytes[0] & static_cast<item_type>(254));
+
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 1; i < m_size; ++i)
+            result &= m_bytes[i] == 0;
+        return result;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::anyNotEmpty() const
+    {
+        // Get the first byte which includes eBVM_FREE (Bit 0)
+        // Create a bitmask to exclude eBVM_FREE
+        // Check occupation of masked first Byte:
+        if (m_bytes[0] & static_cast<item_type>(254))
             return true;
-        }
 
-        /**
-         * @brief operator |= Bitwise or-operator
-         * @param o Other operand
-         */
-        __host__ __device__
-            void operator|=(const BitVector<num_bits>& o)
-        {
-#if defined(__CUDA_ARCH__)
-# pragma unroll
-#endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                m_bytes[i] |= o.m_bytes[i];
-        }
-
-        /**
-         * @brief operator ~ Bitwise not-operator
-         * @return Returns the bitwise not of 'this'
-         */
-        __host__ __device__
-            BitVector<num_bits> operator~() const
-        {
-            BitVector<num_bits> res;
-#if defined(__CUDA_ARCH__)
-# pragma unroll
-#endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                res.m_bytes[i] = ~m_bytes[i];
-            return res;
-        }
-
-        /**
-         * @brief operator ~ Bitwise and-operator
-         * @return Returns the bitwise and of 'this'
-         */
-        __host__ __device__
-            BitVector<num_bits> operator&(const BitVector<num_bits>& o) const
-        {
-            BitVector<num_bits> res;
-#if defined(__CUDA_ARCH__)
-# pragma unroll
-#endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                res.m_bytes[i] = m_bytes[i] & o.m_bytes[i];
-            return res;
-        }
-
-        /**
-         * @brief isZero Checks the bit vector for zero
-         * @return True if all bits are zero, false otherwise
-         */
-        __host__ __device__
-        [[nodiscard]] bool isZero() const
-        {
-            bool result = true;
-#if defined(__CUDA_ARCH__)
-# pragma unroll
-#endif
-            for (uint32_t i = 0; i < m_size; ++i)
-                result &= m_bytes[i] == 0;
-            return result;
-        }
-
-        /**
-         * @brief noneButEmpty Checks for semantic emptiness
-         * @return True, if none or only the eBVM_FREE bit is set
-         */
-        __host__ __device__
-        [[nodiscard]] bool noneButEmpty() const
-        {
-	        // Get the first byte which includes eBVM_FREE (Bit 0)
-            // Create a bitmask to exclude eBVM_FREE
-            // Check emptiness of masked first Byte:
-            bool result = !(m_bytes[0] & static_cast<item_type>(254));
 
 #if defined(__CUDA_ARCH__)
 # pragma unroll
 #endif
-            for (uint32_t i = 1; i < m_size; ++i)
-                result &= m_bytes[i] == 0;
-            return result;
-        }
-
-        /**
-         * @brief anyNotEmpty Checks for semantic occupation
-         * @return True, if any bit is set ignoring eBVM_FREE
-         */
-        __host__ __device__
-        [[nodiscard]] bool anyNotEmpty() const
+        for (uint32_t i = 1; i < m_size; ++i)
         {
-            // Get the first byte which includes eBVM_FREE (Bit 0)
-            // Create a bitmask to exclude eBVM_FREE
-            // Check occupation of masked first Byte:
-            if (m_bytes[0] & static_cast<item_type>(254))
+            if (m_bytes[i] != 0)
                 return true;
+        }
+        return false;
+    }
 
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::getBit(const uint32_t index) const
+    {
+        return getByte(index) & (1 << (index & 7));
+    }
 
-#if defined(__CUDA_ARCH__)
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::clearBit(const uint32_t index)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte = *selected_byte & static_cast<item_type>(~(1 << (index & 7)));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::setBit(const uint32_t index)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte |= static_cast<item_type>(1 << (index & 7));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] typename BitVector<num_bits>::item_type BitVector<num_bits>::getByte(const uint32_t index, const uint8_t dummy) const
+    {
+        return m_bytes[index >> 3];
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::setByte(const uint32_t index, const item_type data)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte = data;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::dump()
+    {
+        constexpr size_t byte_size = sizeof(item_type);
+        printf("[");
+        for (uint32_t i = 0; i < num_bits; i += byte_size * 8)
+            printf(" %hu", *getByte(i));
+
+        printf(" ]\n");
+    }
+
+    // This CUDA Code was taken from Florians BitVoxelFlags that got replaced by BitVectors
+    template<size_t num_bits>
+    __device__
+    void BitVector<num_bits>::reduce(BitVector& flags, const int thread_id, const int num_threads,
+        BitVector* shared_mem)
+    {
+        shared_mem[thread_id] = flags;
+        __syncthreads();
+        REDUCE(shared_mem, thread_id, num_threads, | )
+            if (thread_id == 0)
+                flags = shared_mem[0];
+        __syncthreads();
+    }
+
+    template<size_t num_bits>
+    __device__
+    void BitVector<num_bits>::reduceAtomic(BitVector& flags, BitVector& global_flags)
+    {
 # pragma unroll
-#endif
-            for (uint32_t i = 1; i < m_size; ++i)
-            {
-                if (m_bytes[i] != 0)
-                    return true;
-            }
-            return false;
-        }
-
-        /**
-         * @brief getBit Gets the bit at the given bit index.
-         * @return Value of the selected bit.
-         */
-        __host__ __device__
-        [[nodiscard]] bool getBit(const uint32_t index) const
+        // interpret the 4 bytes as interger:
+        for (uint32_t i = 0; i < m_size / 4; i += 4)
         {
-            return getByte(index) & (1 << (index & 7));
+            // This is possible, as Vectors have to be a multiple of 32 Bits
+            int* tmp = (int*)(flags.m_bytes[0] + i);
+            atomicOr((int*)(&global_flags.m_bytes[0] + i), *tmp);
         }
+    }
 
-        /**
-         * @brief clearBit Clears the bit at the given bit index
-         */
-        __host__ __device__
-        void clearBit(const uint32_t index)
-        {
-            item_type* selected_byte = getByte(index);
-            *selected_byte = *selected_byte & static_cast<item_type>(~(1 << (index & 7)));
-        }
-
-        /**
-         * @brief setBit Sets the bit at the given bit index.
-         */
-        __host__ __device__
-        void setBit(const uint32_t index)
-        {
-            item_type* selected_byte = getByte(index);
-            *selected_byte |= static_cast<item_type>(1 << (index & 7));
-        }
-
-        /**
-         * @brief getByte Gets the byte that contains the bit at the given index position (given in Bits).
-         * Note: The dummy argument helps nvcc to distinguish this function from the protected pointer version
-         *
-         * @return Byte that contains the bit at the given bit index position
-         */
-        __host__ __device__
-        [[nodiscard]] item_type getByte(const uint32_t index, const uint8_t dummy = 0) const
-        {
-            return m_bytes[index >> 3];
-        }
-
-        /**
-         * @brief setByte Sets the byte at the given bit index position.
-         * @param index Which byte to set (given in bits)
-         * @param data Data to write into byte
-         */
-        __host__ __device__
-        void setByte(const uint32_t index, const item_type data)
-        {
-            item_type* selected_byte = getByte(index);
-            *selected_byte = data;
-        }
-
-        __host__ __device__
-        void dump()
-        {
-            constexpr size_t byte_size = sizeof(typename BitVector<num_bits>::item_type);
-            printf("[");
-            for (uint32_t i = 0; i < num_bits; i += byte_size * 8)
-                printf(" %hu", *getByte(i));
-
-            printf(" ]\n");
-        }
-
-        /**
-         * @brief operator << Overloaded ostream operator. Please note that the output bit string is starting from
-         * Type 0.
-         */
-        template<typename T>
-        __host__
-        friend T& operator<<(T& os, const BitVector<num_bits>& dt)
-        {
-            constexpr size_t byte_size = sizeof(typename BitVector<num_bits>::item_type);
-            for (uint32_t i = 0; i < num_bits; i += byte_size * 8)
-            {
-                typename BitVector<num_bits>::item_type byte = dt.getByte(i);
-                // reverse bit order
-                byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
-                byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
-                byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
-                std::bitset<byte_size * 8> bs(byte);
-                os << bs.to_string();
-            }
-            return os;
-        }
-
-        /**
-         * @brief operator >> Overloaded istream operator. Please note that the input bit string should
-         * be starting from Type 0 and it should be complete, meaning it should have all Bits defined.
-         */
-        __host__
-        friend std::istream& operator>>(std::istream& in, BitVector<num_bits>& dt)
-        {
-            //TODO: Check the lengths of the input stream!
-            typename BitVector<num_bits>::item_type byte;
-            std::bitset<num_bits> bs;
-            in >> bs;
-            const size_t byte_size = sizeof(typename BitVector<num_bits>::item_type);
-            for (uint32_t i = 0; i < num_bits; i += byte_size * 8)
-            {
-                // The Bit reverse is in here
-                byte = bs[i + 7] + 2 * bs[i + 6] + 4 * bs[i + 5] + 8 * bs[i + 4] + 16 * bs[i + 3] + 32 * bs[i + 2] + 64 * bs[i + 1] + 128 * bs[i + 0];
-
-                // Fill last bit first
-                dt.setByte(static_cast<uint32_t>(num_bits - i - 1), byte);
-            }
-            return in;
-        }
-
-        // This CUDA Code was taken from Florians BitVoxelFlags that got replaced by BitVectors
-#ifdef __CUDA_ARCH__
-        __device__
-            static void reduce(BitVector<num_bits>& flags, const int thread_id, const int num_threads,
-                BitVector<num_bits>* shared_mem)
-        {
-            shared_mem[thread_id] = flags;
-            __syncthreads();
-            REDUCE(shared_mem, thread_id, num_threads, | )
-                if (thread_id == 0)
-                    flags = shared_mem[0];
-            __syncthreads();
-        }
-
-        __device__
-            static void reduceAtomic(BitVector<num_bits>& flags, BitVector<num_bits>& global_flags)
-        {
-# pragma unroll
-            // interpret the 4 bytes as interger:
-            for (uint32_t i = 0; i < m_size / 4; i += 4)
-            {
-                // This is possible, as Vectors have to be a multiple of 32 Bits
-                int* tmp = (int*)(flags.m_bytes[0] + i);
-                atomicOr((int*)(&global_flags.m_bytes[0] + i), *tmp);
-            }
-        }
-#endif
-
-    protected:
-        static constexpr uint32_t m_size = (num_bits + 7) / 8; // the size in Byte; + 7 ensures that no bits get dropped
-        item_type m_bytes[m_size];
-
-    }; // END OF CLASS BitVector
-
-
-    /**
-     * @brief performLeftShift Shifts the bits of a bitvector to the left
-     * (decrease the SV Meaning and therefore shift the bits to the right)
-     * This function sets the non Swept-Volume Meanings to 0!
-     * @param shift_size How many bits to shift. Must be smaller than 56 bits due to buffer size.
-     */
     template<std::size_t num_bits>
     __host__ __device__
     void performLeftShift(BitVector<num_bits>& bit_vector, const uint8_t shift_size)
@@ -483,20 +363,11 @@ namespace gpu_voxels
         return !collisions->isZero();
     }
 
-
-
-    /*!
-     * \brief The BitvectorOr struct
-     * Thrust operator that calculates the OR operation on two BitVectors
-     */
     template<std::size_t num_bits>
-    struct BitvectorOr : public thrust::binary_function<BitVector<num_bits>, BitVector<num_bits>, BitVector<num_bits>>
+    __host__ __device__
+    BitVector<num_bits> BitvectorOr<num_bits>::operator()(const BitVector<num_bits>& lhs, const BitVector<num_bits>& rhs) const
     {
-        __host__ __device__
-        BitVector<num_bits> operator()(const BitVector<num_bits>& lhs, const BitVector<num_bits>& rhs) const
-        {
-            return lhs | rhs;
-        }
-    };
+        return lhs | rhs;
+    }
 } // end of ns
 #endif

@@ -15,8 +15,8 @@
 
 namespace gpu_voxels {
 
-	template class BitVector<BIT_VECTOR_LENGTH>;
-	template class BitVoxel<BIT_VECTOR_LENGTH>;
+	//template class BitVector<BIT_VECTOR_LENGTH>;
+	//template class BitVoxel<BIT_VECTOR_LENGTH>;
 
 	namespace voxelmap {
 

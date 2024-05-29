@@ -38,7 +38,7 @@
 //#include <sys/utsname.h>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
-#include <gpu_voxels/helpers/BitVector.cuhpp>
+#include <gpu_voxels/helpers/BitVector.h>
 
 #include "CommonValues.h"
 

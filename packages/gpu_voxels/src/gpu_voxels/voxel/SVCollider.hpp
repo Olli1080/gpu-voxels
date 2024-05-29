@@ -25,7 +25,7 @@
 #define GPU_VOXELS_VOXEL_DEFAULT_SVCOLLIDER_HPP
 
 #include "SVCollider.h"
-#include <gpu_voxels/voxel/BitVoxel.hpp>
+#include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.hpp>
 
 namespace gpu_voxels {
