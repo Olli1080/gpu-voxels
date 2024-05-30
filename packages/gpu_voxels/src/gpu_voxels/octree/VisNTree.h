@@ -23,6 +23,7 @@
 #ifndef VISNTREE_H_
 #define VISNTREE_H_
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/octree/Octree.h>
 #include <gpu_voxels/vis_interface/VisProvider.h>
 #include <gpu_voxels/helpers/cuda_handling.h>
@@ -52,8 +53,8 @@ namespace gpu_voxels {
 			uint32_t* m_shm_numCubes;
 			bool* m_shm_bufferSwapped;
 			bool m_internal_buffer_1;
-			thrust::device_vector<Cube>* m_d_cubes_1;
-			thrust::device_vector<Cube>* m_d_cubes_2;
+			ThrustDeviceVector<Cube>* m_d_cubes_1;
+			ThrustDeviceVector<Cube>* m_d_cubes_2;
 		};
 	}
 

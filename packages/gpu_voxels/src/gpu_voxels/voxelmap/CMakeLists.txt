@@ -42,7 +42,7 @@ ICMAKER_ADD_CUDA_FILES(
   ProbVoxelMap.h
   ProbVoxelMap.hpp
   TemplateVoxelMap.h
-  TemplateVoxelMap.hpp
+  TemplateVoxelMap.cuhpp
   VoxelMap.cu
   VoxelMap.h
   VoxelMap.hpp

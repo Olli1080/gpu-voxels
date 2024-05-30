@@ -13,11 +13,13 @@
  //----------------------------------------------------------------------
  //#define LOCAL_DEBUG
 #undef LOCAL_DEBUG
+#include "VoxelMapOperations.hpp"
 
+#include <cstdio>
+
+#include <thrust/device_vector.h>
 #include "gpu_voxels/helpers/BitVector.h"
 #include <gpu_voxels/voxel/BitVoxel.h>
-#include "VoxelMapOperations.hpp"
-#include <cstdio>
 
 namespace gpu_voxels {
 	namespace voxelmap {

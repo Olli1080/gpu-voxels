@@ -13,15 +13,7 @@
  //----------------------------------------------------------------------/*
 
 #define CUB_STDERR
-#if __CUDACC_VER_MAJOR__ < 9
-#include <cub/cub.cuh>
-#else // Cuda 9 or higher
-//#define THRUST_CUB_NS_PREFIX namespace thrust {   namespace cuda_cub {
-//#define THRUST_CUB_NS_POSTFIX }   }
 #include <cub/device/device_radix_sort.cuh>
-//#undef CUB_NS_PREFIX
-//#undef CUB_NS_POSTFIX
-#endif
 
 #include <thrust/sort.h>
 #include <thrust/unique.h>

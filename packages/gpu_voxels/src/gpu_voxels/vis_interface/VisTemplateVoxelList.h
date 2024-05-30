@@ -24,6 +24,7 @@
 #ifndef VISTEMPLATEVOXELLIST_H
 #define VISTEMPLATEVOXELLIST_H
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/vis_interface/VisProvider.h>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
 #include <gpu_voxels/voxellist/TemplateVoxelList.h>
@@ -45,8 +46,8 @@ namespace gpu_voxels {
 	protected:
 		voxellist::TemplateVoxelList<Voxel, VoxelIDType>* m_voxellist;
 		cudaIpcMemHandle_t* m_shm_memHandle;
-		thrust::device_vector<Cube>* m_dev_buffer_1;
-		thrust::device_vector<Cube>* m_dev_buffer_2;
+		ThrustDeviceVector<Cube>* m_dev_buffer_1;
+		ThrustDeviceVector<Cube>* m_dev_buffer_2;
 		bool* m_shm_bufferSwapped;
 		uint32_t* m_shm_num_cubes;
 		bool m_internal_buffer_1;

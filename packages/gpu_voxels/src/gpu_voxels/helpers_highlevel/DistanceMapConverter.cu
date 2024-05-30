@@ -22,12 +22,17 @@
 //----------------------------------------------------------------------
 
 #include <gpu_voxels/helpers_highlevel/DistanceMapConverter.h>
+
+
+
+#include <thrust/device_vector.h>
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/transform.h>
 #include <thrust/execution_policy.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxelmap/DistanceVoxelMap.h>
+#include <gpu_voxels/voxellist/TemplateVoxelList.cuh>
 
 #if defined(__INTELLISENSE___) || defined(__RESHARPER__) 
 // in here put whatever is your favorite flavor of intellisense workarounds
@@ -174,7 +179,7 @@ namespace gpu_voxels
             // Step 4: Transform distances and IDs into a Voxellist
             thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(matching_distances_dists.begin(), matching_distances_ids.begin())),
                 thrust::make_zip_iterator(thrust::make_tuple(matching_distances_dists.end(), matching_distances_ids.end())),
-                result.getBeginTripleZipIterator(),
+                result.cuda_interface().getBeginTripleZipIterator(),
                 transform_to_bitvoxel(dist_map.getDimensions()));
 
             //  uint32_t num_blocks, threads_per_block;

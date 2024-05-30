@@ -30,13 +30,7 @@
 #include <gpu_voxels/helpers/cuda_matrices.hpp>
 #include <thrust/host_vector.h>
 
-// __ballot has been replaced by __ballot_sync in Cuda9
-#if(__CUDACC_VER_MAJOR__ >= 9)
-//#define FULL_MASK 0xffffffff
 #define BALLOT(PREDICATE) __ballot_sync(__activemask(), PREDICATE)
-#else
-#define BALLOT(PREDICATE) __ballot(PREDICATE)
-#endif
 
 namespace gpu_voxels
 {

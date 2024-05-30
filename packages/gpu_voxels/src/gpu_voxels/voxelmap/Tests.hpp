@@ -25,7 +25,7 @@
 
 
 #include <gpu_voxels/voxelmap/Tests.h>
-#include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.cuhpp>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapTests.hpp>
 
 #include <thrust/device_vector.h>

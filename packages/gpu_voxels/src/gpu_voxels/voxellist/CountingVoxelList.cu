@@ -21,6 +21,9 @@
 */
 //----------------------------------------------------------------------
 #include "CountingVoxelList.h"
+
+#include "TemplateVoxelList.cuh"
+
 #include <gpu_voxels/logging/logging_voxellist.h>
 
 #include <thrust/device_vector.h>
@@ -86,11 +89,11 @@ namespace gpu_voxels {
 
 			std::scoped_lock lock(this->m_mutex, map->m_mutex);
 
-			thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
+			thrust::device_vector<bool> collision_stencil(this->cuda_priv_impl->m_dev_id_list.size()); // Temporary data structure
 
 			//after transform the collision_stencil will have a true in every element that should be considered for collision checking
 			const is_collision_candidate filter(static_cast<int>(coll_threshold));
-			thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(), collision_stencil.begin(), filter);
+			thrust::transform(this->cuda_priv_impl->m_dev_list.begin(), this->cuda_priv_impl->m_dev_list.end(), collision_stencil.begin(), filter);
 
 			collisions = this->collideVoxellists(map, offset, collision_stencil);
 			return collisions;
@@ -107,11 +110,11 @@ namespace gpu_voxels {
 			const is_underpopulated filter(threshold);
 
 			// remove voxels below threshold
-			const keyCoordVoxelZipIterator new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
-			                                                           this->getEndTripleZipIterator(),
+			const auto new_end = thrust::remove_if(this->cuda_interface().getBeginTripleZipIterator(),
+			                                                           this->cuda_interface().getEndTripleZipIterator(),
 			                                                           filter);
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = thrust::distance(cuda_priv_impl->m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
 			this->resize(new_length);
 
 			//this->screendump(true); // DEBUG

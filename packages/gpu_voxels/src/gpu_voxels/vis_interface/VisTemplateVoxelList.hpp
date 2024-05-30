@@ -20,9 +20,11 @@
 *
 */
 //----------------------------------------------------------------------
+#pragma once
 
 #include "VisTemplateVoxelList.h"
 
+#include <thrust/device_vector.h>
 
 namespace gpu_voxels {
 

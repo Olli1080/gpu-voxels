@@ -23,12 +23,7 @@
 #ifndef GPU_VOXELS_OCTREE_POINTCLOUD_H_INCLUDED
 #define GPU_VOXELS_OCTREE_POINTCLOUD_H_INCLUDED
 
-#include <limits.h>
-//#include <thrust/scan.h>
-#include <thrust/device_vector.h>
-//#include <thrust/host_vector.h>
-//#include <thrust/sort.h>
-
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/DataTypes.h>
 #include <gpu_voxels/octree/Sensor.h>
@@ -44,11 +39,11 @@ namespace gpu_voxels {
 
 		// Transforms the point cloud output of a sensor into an sorted set of voxel without duplicates
 		OctreeVoxelID transformKinectPointCloud(gpu_voxels::Vector3f* point_cloud, voxel_count num_points,
-			thrust::device_vector<Voxel>& voxel, Sensor& sensor,
+			ThrustDeviceVector<Voxel>& voxel, Sensor& sensor,
 			gpu_voxels::Vector3f voxel_dimension);
 
 		voxel_count transformKinectPointCloud_simple(gpu_voxels::Vector3f* d_point_cloud, voxel_count num_points,
-			thrust::device_vector<Voxel>& d_voxel, Sensor* d_sensor,
+			ThrustDeviceVector<Voxel>& d_voxel, Sensor* d_sensor,
 			uint32_t resolution);
 
 		Vector3ui getMapDimensions(std::vector<Vector3f>& point_cloud, Vector3f& offset, float scaling = 1000.0f);
@@ -72,7 +67,7 @@ namespace gpu_voxels {
 		//                          const DepthData noSampleValue, const DepthData shadowValue,
 		//                          const DepthData max_sensor_distance = MAX_RANGE);
 
-		void removeInvalidPoints(thrust::device_vector<gpu_voxels::Vector3f>& d_depth_image);
+		void removeInvalidPoints(ThrustDeviceVector<gpu_voxels::Vector3f>& d_depth_image);
 
 	} // end of ns
 } // end of ns

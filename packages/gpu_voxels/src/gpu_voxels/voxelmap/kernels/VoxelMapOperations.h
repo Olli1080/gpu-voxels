@@ -24,13 +24,12 @@
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_H_INCLUDED
 
 #include <cuda_runtime.h>
+
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 #include <gpu_voxels/voxel/DistanceVoxel.h>
-#include <thrust/device_vector.h>
-
-#include <thrust/transform.h>
 
 #include "VoxelMapOperationsPBA.h"
 
@@ -74,7 +73,7 @@ namespace gpu_voxels
 
 		template<class Voxel>
 		__device__ __host__     __forceinline__
-		Voxel getVoxel(const thrust::device_vector<Voxel>& voxelmap, const Vector3ui& dimensions,
+		Voxel getVoxel(const ThrustDeviceVector<Voxel>& voxelmap, const Vector3ui& dimensions,
 			const uint32_t x, const uint32_t y, const uint32_t z)
 		{
 			return voxelmap[getVoxelIndexUnsigned(dimensions, x, y, z)];
@@ -574,27 +573,27 @@ namespace gpu_voxels
 		/*
 		 * creates a mask of 1s and 0s based on the occupation of voxels in the vector
 		 */
-		thrust::device_vector<uint32_t> getOccupationVoxels(const thrust::device_vector<BitVectorVoxel>& dev_data);
+		ThrustDeviceVector<uint32_t> getOccupationVoxels(const ThrustDeviceVector<BitVectorVoxel>& dev_data);
 
 		/*
 		 * assumes a mask of 1s and 0s adding them up
 		 */
-		uint32_t getOccupied(const thrust::device_vector<uint32_t>& vec);
+		uint32_t getOccupied(const ThrustDeviceVector<uint32_t>& vec);
 
 		/*
 		 * same as getOccupied but with resulting compaction indices in input array as output
 		 */
-		uint32_t getOccupied_2(thrust::device_vector<uint32_t>& in_out);
+		uint32_t getOccupied_2(ThrustDeviceVector<uint32_t>& in_out);
 
 		/*
 		 * Removes 1s from a voxel filter if it is surrounded by other voxels
 		 */
-		thrust::device_vector<uint32_t> culled_filter(const thrust::device_vector<uint32_t>& filter, const Vector3ui& dim);
+		ThrustDeviceVector<uint32_t> culled_filter(const ThrustDeviceVector<uint32_t>& filter, const Vector3ui& dim);
 
 		/*
 		 * returns all occupied Voxels coordinates which are not surrounded by other voxels
 		 */
-		std::vector<Vector3ui> extract_visual_voxels(const thrust::device_vector<BitVectorVoxel>& in, const Vector3ui& dim);
+		std::vector<Vector3ui> extract_visual_voxels(const ThrustDeviceVector<BitVectorVoxel>& in, const Vector3ui& dim);
 	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

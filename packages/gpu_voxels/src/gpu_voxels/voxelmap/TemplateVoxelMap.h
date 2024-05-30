@@ -27,6 +27,7 @@
 
 #include <cuda_runtime.h>
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_handling.hpp>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
@@ -34,9 +35,6 @@
 #include <gpu_voxels/voxelmap/AbstractVoxelMap.h>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
 #include <gpu_voxels/voxel/DefaultCollider.h>
-
-#include <thrust/device_ptr.h>
-#include <thrust/device_vector.h>
 
 /**
  * @namespace gpu_voxels::voxelmap
@@ -66,30 +64,15 @@ namespace gpu_voxels {
 			/* ======== getter functions ======== */
 
 			//! get pointer to data array on device
-			Voxel* getDeviceDataPtr()
-			{
-				return m_dev_data.data().get();
-			}
+			Voxel* getDeviceDataPtr();
 
-			const Voxel* getConstDeviceDataPtr() const
-			{
-				return m_dev_data.data().get();
-			}
+			const Voxel* getConstDeviceDataPtr() const;
 
-			const thrust::device_vector<Voxel>& getDeviceData() const
-			{
-				return m_dev_data;
-			}
+			const ThrustDeviceVector<Voxel>& getDeviceData() const;
 
-			void* getVoidDeviceDataPtr() override
-			{
-				return thrust::raw_pointer_cast(m_dev_data.data());
-			}
+			void* getVoidDeviceDataPtr() override;
 
-			const void* getConstVoidDeviceDataPtr() const override
-			{
-				return thrust::raw_pointer_cast(m_dev_data.data());
-			}
+			const void* getConstVoidDeviceDataPtr() const override;
 
 			//! get the number of voxels held in the voxelmap
 			uint32_t getVoxelMapSize() const
@@ -108,7 +91,7 @@ namespace gpu_voxels {
 			 * This might be necessary for combination with other operations to ensure
 			 * that the map did not change since it was cleared.
 			 */
-			void clearVoxelMapRemoteLock(BitVoxelMeaning voxel_meaning);
+			//void clearVoxelMapRemoteLock(BitVoxelMeaning voxel_meaning);
 
 			//! print data array to screen for debugging (low performance)
 			virtual void printVoxelMapData();
@@ -147,12 +130,12 @@ namespace gpu_voxels {
 
 			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override;
 
-			void insertPointCloud(const thrust::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
+			void insertPointCloud(const ThrustDeviceVector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
 
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			/**
 			 * @brief insertMetaPointCloud Inserts a MetaPointCloud into the map.
@@ -192,12 +175,12 @@ namespace gpu_voxels {
 			 * @param d_coordinates the coordinates to be dilated and inserted, in device memory
 			 * @param voxel_meaning the voxel_meaning that will be used for inserted voxels
 			 */
-			virtual void insertDilatedCoordinateList(const thrust::device_vector<Vector3ui> d_coordinates, BitVoxelMeaning insert_voxel_meaning);
+			virtual void insertDilatedCoordinateList(const ThrustDeviceVector<Vector3ui> d_coordinates, BitVoxelMeaning insert_voxel_meaning);
 
-			virtual void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
+			virtual void insertClosedCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
 			virtual void insertClosedCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
 
-			virtual void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
+			virtual void insertClosedCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
 			virtual void insertClosedCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
 
 			/**
@@ -270,30 +253,14 @@ namespace gpu_voxels {
 			float m_elapsed_time;
 
 			/* ======== Variables with content on device ======== */
-
-			/*! VoxelMap data on device.
-			 *  storage format is: index = z * dim.x * dim.y + y * dim.x + x  */
-			thrust::device_vector<Voxel> m_dev_data;
-
-			/*! This is used by insertion kernels to indicate,
-			 * if points were outside map dimensions
-			 * and could not be inserted */
-			bool* m_dev_points_outside_map;
-
-			/* some variables are mirrored on device to reduce
-			 * copy overhead when access from kernels is necessary  */
-
-			 //! results of collision check on device
-			thrust::device_vector<bool> m_dev_collision_check_results;
-
-			//! result array for collision check with counter on device
-			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
+			struct CUDA_impl;
+			std::unique_ptr<CUDA_impl> cuda_impl;
 
 			void erode(Voxel* d_dest_data, const Voxel* d_src_data, float erode_threshold, float occupied_threshold) const;
 
-			void insertDilatedCoordinateList(Voxel* d_dest_data, const thrust::device_vector<Vector3ui>& d_src_coordinates, BitVoxelMeaning voxel_meaning);
+			void insertDilatedCoordinateList(Voxel* d_dest_data, const ThrustDeviceVector<Vector3ui>& d_src_coordinates, BitVoxelMeaning voxel_meaning);
 
-			void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, Voxel* d_buffer);
+			void insertClosedCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, Voxel* d_buffer);
 		};
 
 	} // end of namespace voxelmap

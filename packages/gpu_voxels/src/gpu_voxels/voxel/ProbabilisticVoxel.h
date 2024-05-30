@@ -26,8 +26,6 @@
 #include <gpu_voxels/voxel/AbstractVoxel.h>
 #include <gpu_voxels/helpers/common_defines.h>
 
-#include <thrust/detail/minmax.h>
-
 namespace gpu_voxels {
 
 	/**

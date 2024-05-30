@@ -105,7 +105,7 @@ namespace gpu_voxels {
 
 		virtual void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) = 0;
 
-		virtual void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) = 0;
+		virtual void insertCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) = 0;
 
 		/**
 		 * @brief insertMetaPointCloud Inserts a MetaPointCloud into the map.

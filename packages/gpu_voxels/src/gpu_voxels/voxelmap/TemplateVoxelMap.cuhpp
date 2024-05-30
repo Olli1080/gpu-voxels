@@ -38,11 +38,13 @@
 #include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/helpers/MathHelpers.h>
 
+#include <thrust/device_vector.h>
+#include <thrust/device_malloc.h>
+#include <thrust/device_free.h>
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/fill.h>
 #include <thrust/gather.h>
-#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -64,6 +66,39 @@ namespace gpu_voxels
 //const uint32_t cMAX_POINTS_PER_ROBOT_SEGMENT = 118000;
 
 		template<class Voxel>
+		struct TemplateVoxelMap<Voxel>::CUDA_impl
+		{
+			CUDA_impl(uint32_t map_size)
+				: m_dev_data(map_size)
+			{
+				m_dev_points_outside_map = thrust::device_malloc<bool>(1);
+			}
+
+			~CUDA_impl()
+			{
+				thrust::device_free(m_dev_points_outside_map);
+			}
+
+			/*! VoxelMap data on device.
+			 *  storage format is: index = z * dim.x * dim.y + y * dim.x + x  */
+			ThrustDeviceVector<Voxel> m_dev_data;
+
+			/*! This is used by insertion kernels to indicate,
+			 * if points were outside map dimensions
+			 * and could not be inserted */
+			thrust::device_ptr<bool> m_dev_points_outside_map = nullptr;
+
+			/* some variables are mirrored on device to reduce
+			 * copy overhead when access from kernels is necessary  */
+
+			 //! results of collision check on device
+			ThrustDeviceVector<bool> m_dev_collision_check_results;
+
+			//! result array for collision check with counter on device
+			ThrustDeviceVector<uint16_t> m_dev_collision_check_results_counter;
+		};
+
+		template<class Voxel>
 		TemplateVoxelMap<Voxel>::TemplateVoxelMap(const Vector3ui& dim,
 			const float voxel_side_length, const MapType map_type) :
 			m_dim(dim),
@@ -71,8 +106,7 @@ namespace gpu_voxels
 			m_voxel_side_length(voxel_side_length),
 			m_collision_check_results(cMAX_NR_OF_BLOCKS, false),
 			m_collision_check_results_counter(cMAX_NR_OF_BLOCKS, 0),
-			m_dev_data(getVoxelMapSize()),
-			m_dev_points_outside_map(nullptr)
+			cuda_impl(std::make_unique<CUDA_impl>(getVoxelMapSize()))
 		{
 			this->m_map_type = map_type;
 			if (dim.x() * dim.y() * dim.z() * sizeof(Voxel) > (pow(2, 32) - 1))
@@ -94,22 +128,21 @@ namespace gpu_voxels
 			//HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_data, getMemoryUsage()));
 			LOGGING_DEBUG_C(VoxelmapLog, VoxelMap, "Voxelmap base address is " << (void*)m_dev_data.data().get() << endl);
 
-			HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_points_outside_map, sizeof(bool)));
 
-
-			computeLinearLoad(m_dev_data.size(), m_blocks, m_threads);
+			computeLinearLoad(cuda_impl->m_dev_data.size(), m_blocks, m_threads);
 #ifdef ALTERNATIVE_CHECK
 			computeLinearLoad((uint32_t)ceil((float)m_dev_data.size() / (float)LOOP_SIZE), &m_alternative_blocks, &m_alternative_threads);
 #endif
 
-			m_dev_collision_check_results = m_collision_check_results;
-			m_dev_collision_check_results_counter = m_collision_check_results_counter;
-			
+			cuda_impl->m_dev_collision_check_results = m_collision_check_results;
+			cuda_impl->m_dev_collision_check_results_counter = m_collision_check_results_counter;
+
+			//TODO:: virtual call resolved at compile time
 			clearMap();
 
 #ifndef ALTERNATIVE_CHECK
 			// determine size of array for results of collision check
-			m_result_array_size = std::min(static_cast<uint32_t>(m_dev_data.size()), cMAX_NR_OF_BLOCKS);
+			m_result_array_size = std::min(static_cast<uint32_t>(cuda_impl->m_dev_data.size()), cMAX_NR_OF_BLOCKS);
 			
 #else
 
@@ -126,24 +159,54 @@ namespace gpu_voxels
 #endif
 
 		}
+
+		//TODO:: this is neccesary for visualization but dev_data must not be owned!!
 		template<class Voxel>
 		TemplateVoxelMap<Voxel>::TemplateVoxelMap(Voxel* dev_data, const Vector3ui dim, const float voxel_side_length, const MapType map_type) :
 			m_dim(dim), m_limits(dim.x() * voxel_side_length, dim.y() * voxel_side_length,dim.z() * voxel_side_length),
-			m_voxel_side_length(voxel_side_length), m_dev_data(getVoxelMapSize()) //TODO:: here is a bug!!
+			m_voxel_side_length(voxel_side_length), //TODO:: here is a bug!!
+			cuda_impl(std::make_unique<CUDA_impl>(getVoxelMapSize()))
 		{
 			this->m_map_type = map_type;
 
-			computeLinearLoad(m_dev_data.size(), m_blocks, m_threads);
+			computeLinearLoad(cuda_impl->m_dev_data.size(), m_blocks, m_threads);
 		}
 
 		template<class Voxel>
 		TemplateVoxelMap<Voxel>::~TemplateVoxelMap()
 		{
-			if (m_dev_points_outside_map)
-				HANDLE_CUDA_ERROR(cudaFree(m_dev_points_outside_map));
-
 			HANDLE_CUDA_ERROR(cudaEventDestroy(m_start));
 			HANDLE_CUDA_ERROR(cudaEventDestroy(m_stop));
+		}
+
+		template<class Voxel>
+		Voxel* TemplateVoxelMap<Voxel>::getDeviceDataPtr()
+		{
+			return cuda_impl->m_dev_data.data().get();
+		}
+
+		template<class Voxel>
+		const Voxel* TemplateVoxelMap<Voxel>::getConstDeviceDataPtr() const
+		{
+			return cuda_impl->m_dev_data.data().get();
+		}
+
+		template<class Voxel>
+		const ThrustDeviceVector<Voxel>& TemplateVoxelMap<Voxel>::getDeviceData() const
+		{
+			return cuda_impl->m_dev_data;
+		}
+
+		template<class Voxel>
+		void* TemplateVoxelMap<Voxel>::getVoidDeviceDataPtr()
+		{
+			return thrust::raw_pointer_cast(cuda_impl->m_dev_data.data());
+		}
+
+		template<class Voxel>
+		const void* TemplateVoxelMap<Voxel>::getConstVoidDeviceDataPtr() const
+		{
+			return thrust::raw_pointer_cast(cuda_impl->m_dev_data.data());
 		}
 
 		/* ======== VoxelMap operations  ======== */
@@ -160,13 +223,13 @@ namespace gpu_voxels
 			std::lock_guard guard(this->m_mutex);
 			// Clear occupancies
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			thrust::fill(thrust::device, m_dev_data.begin(), m_dev_data.end(), gpu_voxels::BitVectorVoxel());
+			thrust::fill(thrust::device, cuda_impl->m_dev_data.begin(), cuda_impl->m_dev_data.end(), gpu_voxels::BitVectorVoxel());
 
 			// Clear result array
 			for (uint32_t i = 0; i < cMAX_NR_OF_BLOCKS; i++)
 				m_collision_check_results[i] = false;
 
-			m_dev_collision_check_results = m_collision_check_results;
+			cuda_impl->m_dev_collision_check_results = m_collision_check_results;
 		}
 
 		/*!
@@ -180,13 +243,13 @@ namespace gpu_voxels
 			std::lock_guard guard(this->m_mutex);
 			// Clear occupancies
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			thrust::fill(m_dev_data.begin(), m_dev_data.end(), UNKNOWN_PROBABILITY);
+			thrust::fill(cuda_impl->m_dev_data.begin(), cuda_impl->m_dev_data.end(), UNKNOWN_PROBABILITY);
 
 			// Clear result array
 			for (uint32_t i = 0; i < cMAX_NR_OF_BLOCKS; i++)
 				m_collision_check_results[i] = false;
 
-			m_dev_collision_check_results = m_collision_check_results;
+			cuda_impl->m_dev_collision_check_results = m_collision_check_results;
 		}
 
 		/*!
@@ -206,7 +269,7 @@ namespace gpu_voxels
 			DistanceVoxel pba_uninitialised_voxel;
 			pba_uninitialised_voxel.setPBAUninitialised();
 
-			thrust::fill(m_dev_data.begin(), m_dev_data.end(), pba_uninitialised_voxel);
+			thrust::fill(cuda_impl->m_dev_data.begin(), cuda_impl->m_dev_data.end(), pba_uninitialised_voxel);
 
 			//  //TODO: adapt for distanceVoxel? eliminate?
 			//  // Clear result array
@@ -307,8 +370,8 @@ namespace gpu_voxels
 			typedef thrust::counting_iterator<int> count_it;
 
 			const sumVector3ui sumVector = thrust::transform_reduce(
-				thrust::make_zip_iterator(thrust::make_tuple(m_dev_data.begin(), count_it(0))),
-				thrust::make_zip_iterator(thrust::make_tuple(m_dev_data.end(), count_it(m_dev_data.size()))),
+				thrust::make_zip_iterator(thrust::make_tuple(cuda_impl->m_dev_data.begin(), count_it(0))),
+				thrust::make_zip_iterator(thrust::make_tuple(cuda_impl->m_dev_data.end(), count_it(cuda_impl->m_dev_data.size()))),
 				filter, sumVector3ui(Vector3ui::Zero(), 0), sumVector3ui());
 			
 			//divide by voxel count
@@ -322,7 +385,7 @@ namespace gpu_voxels
 		void TemplateVoxelMap<Voxel>::printVoxelMapData()
 		{
 			std::lock_guard guard(this->m_mutex);
-			HANDLE_CUDA_ERROR(cuPrintDeviceArray(m_dev_data.data().get(), m_dev_data.size(), "VoxelMap dump: "));
+			HANDLE_CUDA_ERROR(cuPrintDeviceArray(cuda_impl->m_dev_data.data().get(), cuda_impl->m_dev_data.size(), "VoxelMap dump: "));
 		}
 
 		template<class Voxel>
@@ -330,7 +393,7 @@ namespace gpu_voxels
 		{
 			// writes the Voxels at indicated indices to dev_output_begin
 			thrust::gather(dev_indices_begin, dev_indices_end,
-				thrust::device_pointer_cast(m_dev_data.data()),
+				thrust::device_pointer_cast(cuda_impl->m_dev_data.data()),
 				dev_output_begin);
 		}
 
@@ -388,12 +451,12 @@ namespace gpu_voxels
 			//  HANDLE_CUDA_ERROR(cudaEventRecord(m_start, 0));
 			//  printf("TemplateVoxelMap<Voxel>::collisionCheck\n");
 
-			kernelCollideVoxelMaps<<<m_blocks, m_threads>>>(m_dev_data.data().get(), m_dev_data.size(), other->getDeviceDataPtr(),
-				collider, m_dev_collision_check_results);
+			kernelCollideVoxelMaps<<<m_blocks, m_threads>>>(cuda_impl->m_dev_data.data().get(), cuda_impl->m_dev_data.size(), other->getDeviceDataPtr(),
+				collider, cuda_impl->m_dev_collision_check_results);
 			CHECK_CUDA_ERROR();
 
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			m_collision_check_results = m_dev_collision_check_results;
+			m_collision_check_results = cuda_impl->m_dev_collision_check_results;
 
 			for (uint32_t i = 0; i < m_blocks; i++)
 			{
@@ -539,18 +602,18 @@ namespace gpu_voxels
 			if (offset != Vector3i::Zero())
 			{
 				// We take the base adress of this voxelmap and add the offset that we want to shift the other map.
-				dev_data_with_offset = getVoxelPtrSignedOffset(m_dev_data.data().get(), m_dim, offset);
+				dev_data_with_offset = getVoxelPtrSignedOffset(cuda_impl->m_dev_data.data().get(), m_dim, offset);
 			}
 			else 
 			{
-				dev_data_with_offset = m_dev_data.data().get();
+				dev_data_with_offset = cuda_impl->m_dev_data.data().get();
 			}
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			kernelCollideVoxelMapsDebug<<<m_blocks, m_threads>>>(dev_data_with_offset, m_dev_data.size(), other->getConstDeviceDataPtr(),
-				collider, m_dev_collision_check_results_counter.data().get());
+			kernelCollideVoxelMapsDebug<<<m_blocks, m_threads>>>(dev_data_with_offset, cuda_impl->m_dev_data.size(), other->getConstDeviceDataPtr(),
+				collider, cuda_impl->m_dev_collision_check_results_counter.data().get());
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			m_collision_check_results_counter = m_dev_collision_check_results_counter;
+			m_collision_check_results_counter = cuda_impl->m_dev_collision_check_results_counter;
 
 			uint32_t number_of_collisions = 0;
 			for (uint32_t i = 0; i < m_blocks; i++)
@@ -624,17 +687,17 @@ namespace gpu_voxels
 		void TemplateVoxelMap<Voxel>::insertPointCloud(const thrust::device_vector<Vector3f>& d_points, const BitVoxelMeaning voxel_meaning)
 		{
 			// reset warning indicator:
-			HANDLE_CUDA_ERROR(cudaMemset((void*)m_dev_points_outside_map, 0, sizeof(bool)));
+			HANDLE_CUDA_ERROR(cudaMemset((void*)cuda_impl->m_dev_points_outside_map.get(), 0, sizeof(bool)));
 			bool points_outside_map;
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_points.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			kernelInsertGlobalPointCloud<<<num_blocks, threads_per_block>>>(m_dev_data.data().get(), m_dim, m_voxel_side_length,
-				d_points.data().get(), d_points.size(), voxel_meaning, m_dev_points_outside_map);
+			kernelInsertGlobalPointCloud<<<num_blocks, threads_per_block>>>(cuda_impl->m_dev_data.data().get(), m_dim, m_voxel_side_length,
+				d_points.data().get(), d_points.size(), voxel_meaning, cuda_impl->m_dev_points_outside_map.get());
 			CHECK_CUDA_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, m_dev_points_outside_map, sizeof(bool), cudaMemcpyDeviceToHost));
+			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, cuda_impl->m_dev_points_outside_map.get(), sizeof(bool), cudaMemcpyDeviceToHost));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			if (points_outside_map)
 				LOGGING_WARNING_C(VoxelmapLog, VoxelMap, "You tried to insert points that lie outside the map dimensions!" << endl);
@@ -653,17 +716,17 @@ namespace gpu_voxels
 		void TemplateVoxelMap<Voxel>::insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning)
 		{
 			// reset warning indicator:
-			HANDLE_CUDA_ERROR(cudaMemset((void*)m_dev_points_outside_map, 0, sizeof(bool)));
+			*cuda_impl->m_dev_points_outside_map = false;
 			bool points_outside_map;
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_coordinates.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			kernelInsertCoordinateTuples<<<num_blocks, threads_per_block>>>(m_dev_data.data().get(), m_dim, m_voxel_side_length,
-				d_coordinates.data().get(), d_coordinates.size(), voxel_meaning, m_dev_points_outside_map);
+			kernelInsertCoordinateTuples<<<num_blocks, threads_per_block>>>(cuda_impl->m_dev_data.data().get(), m_dim, m_voxel_side_length,
+				d_coordinates.data().get(), d_coordinates.size(), voxel_meaning, cuda_impl->m_dev_points_outside_map.get());
 			CHECK_CUDA_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, m_dev_points_outside_map, sizeof(bool), cudaMemcpyDeviceToHost));
+			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, cuda_impl->m_dev_points_outside_map.get(), sizeof(bool), cudaMemcpyDeviceToHost));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			if (points_outside_map)
 				LOGGING_WARNING_C(VoxelmapLog, VoxelMap, "You tried to insert points that lie outside the map dimensions!" << endl);
@@ -673,16 +736,16 @@ namespace gpu_voxels
 		void TemplateVoxelMap<Voxel>::insertDilatedCoordinateList(Voxel* d_dest_data, const thrust::device_vector<Vector3ui>& d_src_coordinates, const BitVoxelMeaning voxel_meaning)
 		{
 			// reset warning indicator:
-			HANDLE_CUDA_ERROR(cudaMemset((void*)m_dev_points_outside_map, 0, sizeof(bool)));
+			*cuda_impl->m_dev_points_outside_map = false;
 			bool points_outside_map;
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_src_coordinates.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			kernelInsertDilatedCoordinateTuples<<<num_blocks, threads_per_block>>>(d_dest_data, m_dim, d_src_coordinates.data().get(), d_src_coordinates.size(), voxel_meaning, m_dev_points_outside_map);
+			kernelInsertDilatedCoordinateTuples<<<num_blocks, threads_per_block>>>(d_dest_data, m_dim, d_src_coordinates.data().get(), d_src_coordinates.size(), voxel_meaning, cuda_impl->m_dev_points_outside_map.get());
 			CHECK_CUDA_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, m_dev_points_outside_map, sizeof(bool), cudaMemcpyDeviceToHost));
+			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, cuda_impl->m_dev_points_outside_map.get(), sizeof(bool), cudaMemcpyDeviceToHost));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			if (points_outside_map)
 			{
@@ -700,14 +763,14 @@ namespace gpu_voxels
 		template<class Voxel>
 		void TemplateVoxelMap<Voxel>::insertDilatedCoordinateList(const thrust::device_vector<Vector3ui> d_coordinates, const BitVoxelMeaning voxel_meaning)
 		{
-			insertDilatedCoordinateList(this->m_dev_data.data().get(), d_coordinates, voxel_meaning);
+			insertDilatedCoordinateList(this->cuda_impl->m_dev_data.data().get(), d_coordinates, voxel_meaning);
 		}
 
 		template<class Voxel>
 		void TemplateVoxelMap<Voxel>::insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning, float erode_threshold, float occupied_threshold, Voxel* d_buffer)
 		{
 			insertDilatedCoordinateList(d_buffer, d_coordinates, voxel_meaning);
-			erode(this->m_dev_data.data().get(), d_buffer, erode_threshold, occupied_threshold);
+			erode(this->cuda_impl->m_dev_data.data().get(), d_buffer, erode_threshold, occupied_threshold);
 		}
 
 		template<class Voxel>
@@ -720,7 +783,7 @@ namespace gpu_voxels
 		template<class Voxel>
 		void TemplateVoxelMap<Voxel>::insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer)
 		{
-			this->insertClosedCoordinateList(d_coordinates, voxel_meaning, erode_threshold, occupied_threshold, buffer.m_dev_data.data().get());
+			this->insertClosedCoordinateList(d_coordinates, voxel_meaning, erode_threshold, occupied_threshold, buffer.cuda_impl->m_dev_data.data().get());
 		}
 
 		template<class Voxel>
@@ -760,7 +823,7 @@ namespace gpu_voxels
 		void TemplateVoxelMap<Voxel>::erodeInto(TemplateVoxelMap<Voxel>& dest, float erode_threshold, float occupied_threshold) const
 		{
 			assert(this->m_dim == dest.m_dim);
-			erode(dest.m_dev_data.data().get(), this->m_dev_data.data().get(), erode_threshold, occupied_threshold);
+			erode(dest.cuda_impl->m_dev_data.data().get(), this->cuda_impl->m_dev_data.data().get(), erode_threshold, occupied_threshold);
 		}
 
 		template<class Voxel>
@@ -776,16 +839,16 @@ namespace gpu_voxels
 			std::lock_guard guard(this->m_mutex);
 
 			// reset warning indicator:
-			HANDLE_CUDA_ERROR(cudaMemset((void*)m_dev_points_outside_map, 0, sizeof(bool)));
+			*cuda_impl->m_dev_points_outside_map = false;
 			bool points_outside_map;
 
 			computeLinearLoad(meta_point_cloud.getAccumulatedPointcloudSize(), m_blocks, m_threads);
 			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(
-				m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meaning, m_dim, m_voxel_side_length,
-				m_dev_points_outside_map);
+				cuda_impl->m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meaning, m_dim, m_voxel_side_length,
+				cuda_impl->m_dev_points_outside_map.get());
 			CHECK_CUDA_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, m_dev_points_outside_map, sizeof(bool), cudaMemcpyDeviceToHost));
+			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, cuda_impl->m_dev_points_outside_map.get(), sizeof(bool), cudaMemcpyDeviceToHost));
 			if (points_outside_map)
 				LOGGING_WARNING_C(VoxelmapLog, VoxelMap, "You tried to insert points that lie outside the map dimensions!" << endl);
 		}
@@ -798,7 +861,7 @@ namespace gpu_voxels
 			assert(meta_point_cloud.getNumberOfPointclouds() == voxel_meanings.size());
 
 			// reset warning indicator:
-			HANDLE_CUDA_ERROR(cudaMemset((void*)m_dev_points_outside_map, 0, sizeof(bool)));
+			*cuda_impl->m_dev_points_outside_map = false;
 			bool points_outside_map;
 
 			computeLinearLoad(meta_point_cloud.getAccumulatedPointcloudSize(), m_blocks, m_threads);
@@ -809,12 +872,12 @@ namespace gpu_voxels
 			HANDLE_CUDA_ERROR(cudaMemcpy(voxel_meanings_d, voxel_meanings.data(), size, cudaMemcpyHostToDevice));
 
 			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(
-				m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meanings_d, m_dim, m_voxel_side_length,
-				m_dev_points_outside_map);
+				cuda_impl->m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meanings_d, m_dim, m_voxel_side_length,
+				cuda_impl->m_dev_points_outside_map.get());
 			CHECK_CUDA_ERROR();
 
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, m_dev_points_outside_map, sizeof(bool), cudaMemcpyDeviceToHost));
+			HANDLE_CUDA_ERROR(cudaMemcpy(&points_outside_map, cuda_impl->m_dev_points_outside_map.get(), sizeof(bool), cudaMemcpyDeviceToHost));
 			if (points_outside_map)
 				LOGGING_WARNING_C(VoxelmapLog, VoxelMap, "You tried to insert points that lie outside the map dimensions!" << endl);
 
@@ -1029,7 +1092,7 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other.m_mutex);
 
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			thrust::copy(other.m_dev_data.begin(), other.m_dev_data.end(), this->m_dev_data.begin());
+			thrust::copy(other.cuda_impl->m_dev_data.begin(), other.cuda_impl->m_dev_data.end(), this->cuda_impl->m_dev_data.begin());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 		}
 

@@ -29,8 +29,8 @@
 #include <cstdint> // for fixed size datatypes
 #include <vector>
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
-#include <thrust/device_vector.h>
 
 namespace gpu_voxels
 {
@@ -130,8 +130,8 @@ namespace gpu_voxels
 		 */
 		void scale(const Vector3f& scaling, PointCloud& scaled_cloud) const;
 
-		thrust::device_vector<Vector3f>& getPointsDevice();
-		const thrust::device_vector<Vector3f>& getPointsDevice() const;
+		ThrustDeviceVector<Vector3f>& getPointsDevice();
+		const ThrustDeviceVector<Vector3f>& getPointsDevice() const;
 		uint32_t getPointCloudSize() const;
 		thrust::host_vector<Vector3f> getPoints() const;
 
@@ -143,7 +143,7 @@ namespace gpu_voxels
 		//! Only allocates memory
 		void resize(uint32_t new_number_of_points);
 
-		thrust::device_vector<Vector3f> m_points_dev;
+		std::unique_ptr<ThrustDeviceVector<Vector3f>> m_points_dev;
 	};
 
 }//end namespace gpu_voxels

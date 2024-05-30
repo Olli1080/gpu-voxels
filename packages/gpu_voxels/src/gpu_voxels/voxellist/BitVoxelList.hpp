@@ -29,8 +29,12 @@
 #include <gpu_voxels/voxellist/TemplateVoxelList.hpp>
 #include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 #include <gpu_voxels/logging/logging_voxellist.h>
+
 #include <thrust/system_error.h>
 #include <thrust/sequence.h>
+#include <thrust/device_vector.h>
+#include <thrust/device_malloc.h>
+#include <thrust/device_free.h>
 
 #include <gpu_voxels/helpers/MathHelpers.h>
 
@@ -38,18 +42,33 @@ namespace gpu_voxels
 {
 	namespace voxellist
 	{
+		template<std::size_t length, class VoxelIDType>
+		struct BitVoxelList<length, VoxelIDType>::CUDA_impl
+		{
+			CUDA_impl()
+				: m_dev_colliding_bits_result_list(cMAX_NR_OF_BLOCKS),
+				// Allocate a BitVoxel<length> on the device to it use as bitmask for later coll-checks.
+				m_dev_bitmask(thrust::device_malloc<BitVoxel<length>>(1))
+			{}
+
+			~CUDA_impl()
+			{
+				thrust::device_free(m_dev_bitmask);
+			}
+
+			thrust::device_vector<BitVoxel<length>> m_dev_colliding_bits_result_list;
+			thrust::device_ptr<BitVoxel<length>> m_dev_bitmask;
+		};
+
 		using namespace gpu_voxels::voxelmap;
 
 		template<std::size_t length, class VoxelIDType>
 		BitVoxelList<length, VoxelIDType>::BitVoxelList(const Vector3ui ref_map_dim, const float voxel_side_length, const MapType map_type)
-			: TemplateVoxelList<BitVoxel<length>, VoxelIDType>(ref_map_dim, voxel_side_length, map_type)
+			: TemplateVoxelList<BitVoxel<length>, VoxelIDType>(ref_map_dim, voxel_side_length, map_type),
+			cuda_impl(std::make_unique<CUDA_impl>())
 		{
 			// We already resize the result vector for Bitvector Checks
-			m_dev_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
 			m_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
-
-			// Allocate a BitVoxel<length> on the device to it use as bitmask for later coll-checks.
-			cudaMalloc(&m_dev_bitmask, sizeof(BitVoxel<length>));
 		}
 
 
@@ -83,7 +102,7 @@ namespace gpu_voxels
 		{
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
-			thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
+			thrust::device_vector<bool> collision_stencil(this->cuda_priv_impl->m_dev_id_list.size()); // Temporary data structure
 			const size_t collisions = this->collideVoxellists(static_cast<const TemplateVoxelList<BitVoxel<length>, VoxelIDType>*>(other), offset, collision_stencil);
 
 			return collisions;
@@ -102,15 +121,15 @@ namespace gpu_voxels
 			findMatchingVoxels(other, 0, offset, &matching_voxels_list1, &matching_voxels_list2);
 
 			//========== Now iterate over both shortened lists and inspect the Bitvectors =============
-			thrust::device_vector<BitVoxel<length>> dev_merged_voxel_list(matching_voxels_list1.m_dev_id_list.size());
-			thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
-				matching_voxels_list2.m_dev_list.begin(),
+			thrust::device_vector<BitVoxel<length>> dev_merged_voxel_list(matching_voxels_list1.cuda_priv_impl->m_dev_id_list.size());
+			thrust::transform(matching_voxels_list1.cuda_priv_impl->m_dev_list.begin(), matching_voxels_list1.cuda_priv_impl->m_dev_list.end(),
+				matching_voxels_list2.cuda_priv_impl->m_dev_list.begin(),
 				dev_merged_voxel_list.begin(), BitVoxel<length>::reduce_op());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
 			types_in_collision = thrust::reduce(dev_merged_voxel_list.begin(), dev_merged_voxel_list.end(),
 				BitVoxel<length>(), BitVoxel<length>::reduce_op());
-			return matching_voxels_list1.m_dev_id_list.size();
+			return matching_voxels_list1.cuda_priv_impl->m_dev_id_list.size();
 		}
 
 		template<std::size_t length, class VoxelIDType>
@@ -126,23 +145,23 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
-			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_id_list.data());
+			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(cuda_impl->m_dev_colliding_bits_result_list.data());
 
 			uint32_t num_blocks, threads_per_block;
-			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
+			computeLinearLoad(this->cuda_priv_impl->m_dev_list.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
-			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->cuda_priv_impl->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
-				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
+				offset, this->cuda_priv_impl->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
 			// Copy back the results and reduce the block results:
-			this->m_colliding_bits_result_list = this->m_dev_colliding_bits_result_list;
-			this->m_collision_check_results_counter = this->m_dev_collision_check_results_counter;
+			this->m_colliding_bits_result_list = this->cuda_impl->m_dev_colliding_bits_result_list;
+			this->m_collision_check_results_counter = this->cuda_priv_impl->m_dev_collision_check_results_counter;
 
 			size_t number_of_collisions = 0;
 			types_in_collision.bitVector().clear();
@@ -170,23 +189,23 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
-			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(m_dev_colliding_bits_result_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_id_list.data());
+			BitVoxel<length>* m_dev_colliding_bits_result_list_ptr = thrust::raw_pointer_cast(cuda_impl->m_dev_colliding_bits_result_list.data());
 
 			uint32_t num_blocks, threads_per_block;
-			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
+			computeLinearLoad(this->cuda_priv_impl->m_dev_list.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
-			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->cuda_priv_impl->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
-				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
+				offset, this->cuda_priv_impl->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
 			// Copy back the results and reduce the block results:
-			this->m_colliding_bits_result_list = this->m_dev_colliding_bits_result_list;
-			this->m_collision_check_results_counter = this->m_dev_collision_check_results_counter;
+			this->m_colliding_bits_result_list = this->cuda_impl->m_dev_colliding_bits_result_list;
+			this->m_collision_check_results_counter = this->cuda_priv_impl->m_dev_collision_check_results_counter;
 
 			size_t number_of_collisions = 0;
 			types_in_collision.bitVector().clear();
@@ -213,24 +232,24 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, map->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->m_dev_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->m_dev_id_list.data());
+			BitVoxel<length>* dev_voxel_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(this->cuda_priv_impl->m_dev_id_list.data());
 
-			cudaMemcpy(m_dev_bitmask, &types_to_check, sizeof(BitVoxel<length>), cudaMemcpyHostToDevice);
+			cudaMemcpy(cuda_impl->m_dev_bitmask.get(), &types_to_check, sizeof(BitVoxel<length>), cudaMemcpyHostToDevice);
 
 			uint32_t num_blocks, threads_per_block;
-			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
+			computeLinearLoad(this->cuda_priv_impl->m_dev_list.size(), num_blocks, threads_per_block);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			size_t dynamic_shared_mem_size = sizeof(uint16_t) * cMAX_THREADS_PER_BLOCK;
 
-			kernelCollideWithVoxelMapBitMask<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			kernelCollideWithVoxelMapBitMask<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->cuda_priv_impl->m_dev_list.size()),
 				map->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
-				offset, m_dev_bitmask, this->m_dev_collision_check_results_counter.data().get());
+				offset, cuda_impl->m_dev_bitmask.get(), this->cuda_priv_impl->m_dev_collision_check_results_counter.data().get());
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
 			// Copy back the results and reduce the block results:
-			this->m_collision_check_results_counter = this->m_dev_collision_check_results_counter;
+			this->m_collision_check_results_counter = this->cuda_priv_impl->m_dev_collision_check_results_counter;
 
 			size_t number_of_collisions = 0;
 			for (uint32_t i = 0; i < num_blocks; i++)
@@ -255,19 +274,19 @@ namespace gpu_voxels
 			findMatchingVoxels(other, margin, offset, &matching_voxels_list1, &matching_voxels_list2);
 
 			//========== Now iterate over both shortened lists and inspect the Bitvectors =============
-			thrust::device_vector<bool> dev_colliding_bits_list(matching_voxels_list1.m_dev_id_list.size());
+			thrust::device_vector<bool> dev_colliding_bits_list(matching_voxels_list1.cuda_priv_impl->m_dev_id_list.size());
 
 			// only use the slower collision comperator, if a bitmarking was set!
 			if (margin == 0)
 			{
-				thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
-					matching_voxels_list2.m_dev_list.begin(),
+				thrust::transform(matching_voxels_list1.cuda_priv_impl->m_dev_list.begin(), matching_voxels_list1.cuda_priv_impl->m_dev_list.end(),
+					matching_voxels_list2.cuda_priv_impl->m_dev_list.begin(),
 					dev_colliding_bits_list.begin(), BitvectorCollision<length>());
 			}
 			else {
 				// TODO: Think about offset and add as a param
-				thrust::transform(matching_voxels_list1.m_dev_list.begin(), matching_voxels_list1.m_dev_list.end(),
-					matching_voxels_list2.m_dev_list.begin(),
+				thrust::transform(matching_voxels_list1.cuda_priv_impl->m_dev_list.begin(), matching_voxels_list1.cuda_priv_impl->m_dev_list.end(),
+					matching_voxels_list2.cuda_priv_impl->m_dev_list.begin(),
 					dev_colliding_bits_list.begin(), BitvectorCollisionWithBitshift<length>(margin, 0));
 			}
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -300,7 +319,7 @@ namespace gpu_voxels
 
 					size_t summed_colls = 0;
 					thrust::host_vector<BitVoxel<length>> h_colliding_voxels;
-					h_colliding_voxels = matching_voxels_list1.m_dev_list;
+					h_colliding_voxels = matching_voxels_list1.cuda_priv_impl->m_dev_list;
 
 					assert(collisions_per_meaning.size() == BIT_VECTOR_LENGTH);
 
@@ -334,7 +353,7 @@ namespace gpu_voxels
 
 					size_t summed_colls = 0;
 					thrust::host_vector<BitVoxel<length>> h_colliding_voxels;
-					h_colliding_voxels = matching_voxels_list1.m_dev_list;
+					h_colliding_voxels = matching_voxels_list1.cuda_priv_impl->m_dev_list;
 
 					assert(collisions_per_meaning.size() == BIT_VECTOR_LENGTH);
 
@@ -395,7 +414,7 @@ namespace gpu_voxels
 			// For performance reasons choose the list in an order,
 			// so that we search the longer list for the elements
 			// of the shorter list in the first processing step.
-			if (list1->m_dev_id_list.size() < list2->m_dev_id_list.size())
+			if (list1->cuda_priv_impl->m_dev_id_list.size() < list2->cuda_priv_impl->m_dev_id_list.size())
 			{
 				biggerList = list2;
 				smallerList = list1;
@@ -410,10 +429,10 @@ namespace gpu_voxels
 			//========== First search: Search for IDs from smaller list in bigger list. =================================================
 			try
 			{
-				output = thrust::device_vector<bool>(smallerList->m_dev_id_list.size());
+				output = thrust::device_vector<bool>(smallerList->cuda_priv_impl->m_dev_id_list.size());
 				thrust::binary_search(thrust::device,
-					biggerList->m_dev_id_list.begin(), biggerList->m_dev_id_list.end(),
-					smallerList->m_dev_id_list.begin(), smallerList->m_dev_id_list.end(),
+					biggerList->cuda_priv_impl->m_dev_id_list.begin(), biggerList->cuda_priv_impl->m_dev_id_list.end(),
+					smallerList->cuda_priv_impl->m_dev_id_list.begin(), smallerList->cuda_priv_impl->m_dev_id_list.end(),
 					output.begin());
 			}
 			catch (thrust::system_error& e)
@@ -426,37 +445,37 @@ namespace gpu_voxels
 			try
 			{
 				num_hits1 = thrust::count(output.begin(), output.end(), true);
-				matching_voxels_list2->m_dev_id_list.resize(num_hits1);
-				matching_voxels_list2->m_dev_list.resize(num_hits1);
+				matching_voxels_list2->cuda_priv_impl->m_dev_id_list.resize(num_hits1);
+				matching_voxels_list2->cuda_priv_impl->m_dev_list.resize(num_hits1);
 
 				if (omit_coords)
 				{
 					// we use the "output" list as stencil
-					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(smallerList->m_dev_id_list.begin(), smallerList->m_dev_list.begin())),
-						thrust::make_zip_iterator(thrust::make_tuple(smallerList->m_dev_id_list.end(), smallerList->m_dev_list.end())),
+					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(smallerList->cuda_priv_impl->m_dev_id_list.begin(), smallerList->cuda_priv_impl->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(smallerList->cuda_priv_impl->m_dev_id_list.end(), smallerList->cuda_priv_impl->m_dev_list.end())),
 						output.begin(),
-						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list2->m_dev_id_list.begin(), matching_voxels_list2->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list2->cuda_priv_impl->m_dev_id_list.begin(), matching_voxels_list2->cuda_priv_impl->m_dev_list.begin())),
 						thrust::identity<bool>());
 				}
 				else
 				{
 					// resize m_dev_coord and include coords in copy_if zip iterators
-					matching_voxels_list2->m_dev_coord_list.resize(num_hits1);
+					matching_voxels_list2->cuda_priv_impl->m_dev_coord_list.resize(num_hits1);
 
 					// we use the "output" list as stencil to copy the IDs (and the voxeldata) from the biggerList to matching_voxels_list1
 					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(
-						smallerList->m_dev_id_list.begin(),
-						smallerList->m_dev_list.begin(),
-						smallerList->m_dev_coord_list.begin())),
+						smallerList->cuda_priv_impl->m_dev_id_list.begin(),
+						smallerList->cuda_priv_impl->m_dev_list.begin(),
+						smallerList->cuda_priv_impl->m_dev_coord_list.begin())),
 						thrust::make_zip_iterator(thrust::make_tuple(
-							smallerList->m_dev_id_list.end(),
-							smallerList->m_dev_list.end(),
-							smallerList->m_dev_coord_list.end())),
+							smallerList->cuda_priv_impl->m_dev_id_list.end(),
+							smallerList->cuda_priv_impl->m_dev_list.end(),
+							smallerList->cuda_priv_impl->m_dev_coord_list.end())),
 						output.begin(),
 						thrust::make_zip_iterator(thrust::make_tuple(
-							matching_voxels_list2->m_dev_id_list.begin(),
-							matching_voxels_list2->m_dev_list.begin(),
-							matching_voxels_list2->m_dev_coord_list.begin())),
+							matching_voxels_list2->cuda_priv_impl->m_dev_id_list.begin(),
+							matching_voxels_list2->cuda_priv_impl->m_dev_list.begin(),
+							matching_voxels_list2->cuda_priv_impl->m_dev_coord_list.begin())),
 						thrust::identity<bool>());
 				}
 			}
@@ -469,45 +488,45 @@ namespace gpu_voxels
 			//========== Second search: Search for matched IDs in biggerList. =================================================
 			try
 			{
-				output = thrust::device_vector<bool>(biggerList->m_dev_id_list.size()); // the result as vector of bools
+				output = thrust::device_vector<bool>(biggerList->cuda_priv_impl->m_dev_id_list.size()); // the result as vector of bools
 				thrust::binary_search(thrust::device,
-					matching_voxels_list2->m_dev_id_list.begin(), matching_voxels_list2->m_dev_id_list.end(),
-					biggerList->m_dev_id_list.begin(), biggerList->m_dev_id_list.end(),
+					matching_voxels_list2->cuda_priv_impl->m_dev_id_list.begin(), matching_voxels_list2->cuda_priv_impl->m_dev_id_list.end(),
+					biggerList->cuda_priv_impl->m_dev_id_list.begin(), biggerList->cuda_priv_impl->m_dev_id_list.end(),
 					output.begin());
 
 				//========== Resize matching_voxels_list1 to the number of matching entries found in previous step.
 				num_hits2 = thrust::count(output.begin(), output.end(), true);
-				matching_voxels_list1->m_dev_id_list.resize(num_hits2);
-				matching_voxels_list1->m_dev_list.resize(num_hits2);
+				matching_voxels_list1->cuda_priv_impl->m_dev_id_list.resize(num_hits2);
+				matching_voxels_list1->cuda_priv_impl->m_dev_list.resize(num_hits2);
 
 				if (omit_coords)
 				{
 					// we use the "output" list as stencil to copy the IDs (and the voxeldata) from the biggerList to matching_voxels_list1
-					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(biggerList->m_dev_id_list.begin(), biggerList->m_dev_list.begin())),
-						thrust::make_zip_iterator(thrust::make_tuple(biggerList->m_dev_id_list.end(), biggerList->m_dev_list.end())),
+					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(biggerList->cuda_priv_impl->m_dev_id_list.begin(), biggerList->cuda_priv_impl->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(biggerList->cuda_priv_impl->m_dev_id_list.end(), biggerList->cuda_priv_impl->m_dev_list.end())),
 						output.begin(),
-						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list1->m_dev_id_list.begin(), matching_voxels_list1->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list1->cuda_priv_impl->m_dev_id_list.begin(), matching_voxels_list1->cuda_priv_impl->m_dev_list.begin())),
 						thrust::identity<bool>());
 				}
 				else
 				{
 					// resize m_dev_coord and include coords in copy_if zip iterators
-					matching_voxels_list1->m_dev_coord_list.resize(num_hits2);
+					matching_voxels_list1->cuda_priv_impl->m_dev_coord_list.resize(num_hits2);
 
 					// we use the "output" list as stencil to copy the IDs (and the voxeldata) from the biggerList to matching_voxels_list1
 					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(
-						biggerList->m_dev_id_list.begin(),
-						biggerList->m_dev_list.begin(),
-						biggerList->m_dev_coord_list.begin())),
+						biggerList->cuda_priv_impl->m_dev_id_list.begin(),
+						biggerList->cuda_priv_impl->m_dev_list.begin(),
+						biggerList->cuda_priv_impl->m_dev_coord_list.begin())),
 						thrust::make_zip_iterator(thrust::make_tuple(
-							biggerList->m_dev_id_list.end(),
-							biggerList->m_dev_list.end(),
-							biggerList->m_dev_coord_list.end())),
+							biggerList->cuda_priv_impl->m_dev_id_list.end(),
+							biggerList->cuda_priv_impl->m_dev_list.end(),
+							biggerList->cuda_priv_impl->m_dev_coord_list.end())),
 						output.begin(),
 						thrust::make_zip_iterator(thrust::make_tuple(
-							matching_voxels_list1->m_dev_id_list.begin(),
-							matching_voxels_list1->m_dev_list.begin(),
-							matching_voxels_list1->m_dev_coord_list.begin())),
+							matching_voxels_list1->cuda_priv_impl->m_dev_id_list.begin(),
+							matching_voxels_list1->cuda_priv_impl->m_dev_list.begin(),
+							matching_voxels_list1->cuda_priv_impl->m_dev_coord_list.begin())),
 						thrust::identity<bool>());
 				}
 
@@ -523,12 +542,12 @@ namespace gpu_voxels
 			// and matching_voxels_list2 contains voxeldata from input list2
 			if (wasSwapped)
 			{
-				matching_voxels_list1->m_dev_id_list.swap(matching_voxels_list2->m_dev_id_list);
-				matching_voxels_list1->m_dev_list.swap(matching_voxels_list2->m_dev_list);
+				matching_voxels_list1->cuda_priv_impl->m_dev_id_list.swap(matching_voxels_list2->cuda_priv_impl->m_dev_id_list);
+				matching_voxels_list1->cuda_priv_impl->m_dev_list.swap(matching_voxels_list2->cuda_priv_impl->m_dev_list);
 
 				if (!omit_coords)
 				{
-					matching_voxels_list1->m_dev_coord_list.swap(matching_voxels_list2->m_dev_coord_list);
+					matching_voxels_list1->cuda_priv_impl->m_dev_coord_list.swap(matching_voxels_list2->cuda_priv_impl->m_dev_coord_list);
 				}
 			}
 
@@ -562,10 +581,10 @@ namespace gpu_voxels
 			//========== Search for IDs from CVL in BVL =================================================
 			try
 			{
-				output = thrust::device_vector<bool>(list1->m_dev_id_list.size());
+				output = thrust::device_vector<bool>(list1->cuda_priv_impl->m_dev_id_list.size());
 				thrust::binary_search(thrust::device,
-					list2->m_dev_id_list.begin(), list2->m_dev_id_list.end(),
-					list1->m_dev_id_list.begin(), list1->m_dev_id_list.end(),
+					list2->cuda_interface().getDeviceIdVectorBeginning(), list2->cuda_interface().getDeviceIdVectorEnd(),
+					list1->cuda_priv_impl->m_dev_id_list.begin(), list1->cuda_priv_impl->m_dev_id_list.end(),
 					output.begin());
 			}
 			catch (thrust::system_error& e)
@@ -578,31 +597,31 @@ namespace gpu_voxels
 			try
 			{
 				num_hits1 = thrust::count(output.begin(), output.end(), true);
-				matching_voxels_list->m_dev_id_list.resize(num_hits1);
-				matching_voxels_list->m_dev_list.resize(num_hits1);
+				matching_voxels_list->cuda_priv_impl->m_dev_id_list.resize(num_hits1);
+				matching_voxels_list->cuda_priv_impl->m_dev_list.resize(num_hits1);
 
 				if (omit_coords)
 				{
 					// we use the "output" list as stencil
-					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(list1->m_dev_id_list.begin(), list1->m_dev_list.begin())),
-						thrust::make_zip_iterator(thrust::make_tuple(list1->m_dev_id_list.end(), list1->m_dev_list.end())),
+					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(list1->cuda_priv_impl->m_dev_id_list.begin(), list1->cuda_priv_impl->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(list1->cuda_priv_impl->m_dev_id_list.end(), list1->cuda_priv_impl->m_dev_list.end())),
 						output.begin(),
-						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list->m_dev_id_list.begin(), matching_voxels_list->m_dev_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(matching_voxels_list->cuda_priv_impl->m_dev_id_list.begin(), matching_voxels_list->cuda_priv_impl->m_dev_list.begin())),
 						thrust::identity<bool>());
 				}
 				else
 				{
 					// resize m_dev_coords and include coords in copy_if zip iterators
-					matching_voxels_list->m_dev_coord_list.resize(num_hits1);
+					matching_voxels_list->cuda_priv_impl->m_dev_coord_list.resize(num_hits1);
 
 					// we use the "output" list as stencil
-					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(list1->m_dev_id_list.begin(), list1->m_dev_list.begin(), list1->m_dev_coord_list.begin())),
-						thrust::make_zip_iterator(thrust::make_tuple(list1->m_dev_id_list.end(), list1->m_dev_list.end(), list1->m_dev_coord_list.end())),
+					thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(list1->cuda_priv_impl->m_dev_id_list.begin(), list1->cuda_priv_impl->m_dev_list.begin(), list1->cuda_priv_impl->m_dev_coord_list.begin())),
+						thrust::make_zip_iterator(thrust::make_tuple(list1->cuda_priv_impl->m_dev_id_list.end(), list1->cuda_priv_impl->m_dev_list.end(), list1->cuda_priv_impl->m_dev_coord_list.end())),
 						output.begin(),
 						thrust::make_zip_iterator(thrust::make_tuple(
-							matching_voxels_list->m_dev_id_list.begin(),
-							matching_voxels_list->m_dev_list.begin(),
-							matching_voxels_list->m_dev_coord_list.begin())),
+							matching_voxels_list->cuda_priv_impl->m_dev_id_list.begin(),
+							matching_voxels_list->cuda_priv_impl->m_dev_list.begin(),
+							matching_voxels_list->cuda_priv_impl->m_dev_coord_list.begin())),
 						thrust::identity<bool>());
 				}
 			}
@@ -628,8 +647,8 @@ namespace gpu_voxels
 
 			try
 			{
-				thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(),
-					this->m_dev_list.begin(),
+				thrust::transform(this->cuda_priv_impl->m_dev_list.begin(), this->cuda_priv_impl->m_dev_list.end(),
+					this->cuda_priv_impl->m_dev_list.begin(),
 					ShiftBitvector<length>(shift_size));
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			}
@@ -688,17 +707,17 @@ namespace gpu_voxels
 		template<std::size_t length, class VoxelIDType>
 		void BitVoxelList<length, VoxelIDType>::copyCoordsToHostBvmBounded(std::vector<Vector3ui>& host_vec, BitVoxelMeaning min_step, BitVoxelMeaning max_step)
 		{
-			thrust::device_vector<size_t> list_indices(this->m_dev_list.size());
+			thrust::device_vector<size_t> list_indices(this->cuda_priv_impl->m_dev_list.size());
 
 			// Generate list index sequence from 1..n
 			thrust::sequence(list_indices.begin(), list_indices.end());
 
 			// Remove all indices whose voxels are not in swept volume steps
-			size_t new_size = thrust::remove_if(list_indices.begin(), list_indices.end(), is_not_in_swept_volume_steps(this->m_dev_list.data().get(), min_step, max_step)) - list_indices.begin();
+			size_t new_size = thrust::remove_if(list_indices.begin(), list_indices.end(), is_not_in_swept_volume_steps(this->cuda_priv_impl->m_dev_list.data().get(), min_step, max_step)) - list_indices.begin();
 
 			// Transform index list to coordinate list
 			thrust::device_vector<Vector3ui> coordinates(new_size);
-			thrust::transform(list_indices.begin(), list_indices.begin() + new_size, coordinates.begin(), listindex_to_coordinate(this->m_dev_coord_list.data().get()));
+			thrust::transform(list_indices.begin(), list_indices.begin() + new_size, coordinates.begin(), listindex_to_coordinate(this->cuda_priv_impl->m_dev_coord_list.data().get()));
 
 			// Copy to host
 			host_vec.resize(new_size);

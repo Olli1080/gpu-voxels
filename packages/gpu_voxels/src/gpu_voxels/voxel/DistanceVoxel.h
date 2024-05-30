@@ -30,11 +30,6 @@
 #include <ostream>
 #include <sstream>
 
-#include <thrust/device_ptr.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
-
 //forward declaration
 namespace gpu_voxels {
 	namespace voxelmap {

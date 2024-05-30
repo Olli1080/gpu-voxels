@@ -50,7 +50,7 @@ namespace gpu_voxels {
 
 			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override = 0;
 
-			virtual void insertPointCloud(const thrust::device_vector<Vector3f>& points_d, BitVoxelMeaning voxel_meaning) = 0;
+			virtual void insertPointCloud(const ThrustDeviceVector<Vector3f>& points_d, BitVoxelMeaning voxel_meaning) = 0;
 
 			//! get the number of bytes that is required for the voxelmap
 			size_t getMemoryUsage() const override = 0;

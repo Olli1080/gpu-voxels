@@ -18,6 +18,7 @@
 
 #include <thrust/device_malloc.h>
 #include <thrust/device_free.h>
+#include <thrust/device_vector.h>
 
 #include <gpu_voxels/helpers/PointCloud.h>
 
@@ -29,6 +30,14 @@
 
 namespace gpu_voxels
 {
+    struct MetaPointCloud::CUDA_impl
+    {
+        thrust::device_vector<Vector3f> m_dev_ptr_to_accumulated_cloud;
+        thrust::device_ptr<MetaPointCloudStruct> m_dev_ptr_to_point_clouds_struct;
+        thrust::device_vector<uint32_t> m_dev_ptr_to_cloud_sizes;
+        thrust::device_vector<Vector3f*> m_dev_ptr_to_clouds_base_addresses;
+    };
+
     void MetaPointCloud::init(const thrust::host_vector<uint32_t>& _point_cloud_sizes)
     {
         const auto num_clouds = static_cast<uint16_t>(_point_cloud_sizes.size());
@@ -55,20 +64,20 @@ namespace gpu_voxels
         }
 
         // allocate structure on device
-        m_dev_ptr_to_point_clouds_struct = thrust::device_malloc<MetaPointCloudStruct>(1);
+        cuda_impl_->m_dev_ptr_to_point_clouds_struct = thrust::device_malloc<MetaPointCloudStruct>(1);
 
         // allocate space for array of point clouds sizes on device and save pointers in host local copy:
-        m_dev_ptr_to_cloud_sizes = m_point_clouds_local->cloud_sizes;
+        cuda_impl_->m_dev_ptr_to_cloud_sizes = m_point_clouds_local->cloud_sizes;
 
         // allocate space for array of point clouds base addresses on device and save pointers in host local copy:
-        m_dev_ptr_to_clouds_base_addresses.resize(num_clouds);
+        cuda_impl_->m_dev_ptr_to_clouds_base_addresses.resize(num_clouds);
 
         // allocate the accumulated point cloud space
-        m_dev_ptr_to_accumulated_cloud.resize(accumulated_pointcloud_size);
+        cuda_impl_->m_dev_ptr_to_accumulated_cloud.resize(accumulated_pointcloud_size);
 
         // copy the base addresses to the device
         m_dev_ptrs_to_addrs.resize(num_clouds);
-        auto ptr_iterator = m_dev_ptr_to_accumulated_cloud.data();
+        auto ptr_iterator = cuda_impl_->m_dev_ptr_to_accumulated_cloud.data();
         for (uint16_t i = 0; i < num_clouds; i++)
         {
             m_dev_ptrs_to_addrs[i] = ptr_iterator;
@@ -76,7 +85,7 @@ namespace gpu_voxels
             ptr_iterator += _point_cloud_sizes[i];
         }
         HANDLE_CUDA_ERROR(
-            cudaMemcpy(m_dev_ptr_to_clouds_base_addresses.data().get(), m_dev_ptrs_to_addrs.data(), num_clouds * sizeof(Vector3f*),
+            cudaMemcpy(cuda_impl_->m_dev_ptr_to_clouds_base_addresses.data().get(), m_dev_ptrs_to_addrs.data(), num_clouds * sizeof(Vector3f*),
                 cudaMemcpyHostToDevice));
 
         //printf("Addr of m_dev_ptr_to_clouds_base_addresses: %p\n", m_dev_ptr_to_clouds_base_addresses);
@@ -85,10 +94,10 @@ namespace gpu_voxels
         m_dev_point_clouds_local = std::make_shared<MetaPointCloudStruct>();
         m_dev_point_clouds_local->num_clouds = num_clouds;
         m_dev_point_clouds_local->accumulated_cloud_size = accumulated_pointcloud_size;
-        m_dev_point_clouds_local->cloud_sizes = m_dev_ptr_to_cloud_sizes.data().get();
-        m_dev_point_clouds_local->clouds_base_addresses = m_dev_ptr_to_clouds_base_addresses.data().get();
+        m_dev_point_clouds_local->cloud_sizes = cuda_impl_->m_dev_ptr_to_cloud_sizes.data().get();
+        m_dev_point_clouds_local->clouds_base_addresses = cuda_impl_->m_dev_ptr_to_clouds_base_addresses.data().get();
         HANDLE_CUDA_ERROR(
-            cudaMemcpy(m_dev_ptr_to_point_clouds_struct.get(), m_dev_point_clouds_local.get(), sizeof(MetaPointCloudStruct),
+            cudaMemcpy(cuda_impl_->m_dev_ptr_to_point_clouds_struct.get(), m_dev_point_clouds_local.get(), sizeof(MetaPointCloudStruct),
                 cudaMemcpyHostToDevice));
 
         //  LOGGING_DEBUG_C(
@@ -154,16 +163,19 @@ namespace gpu_voxels
 
 
     MetaPointCloud::MetaPointCloud()
+	    : cuda_impl_(std::make_unique<CUDA_impl>())
     {
         init({});
     }
 
     MetaPointCloud::MetaPointCloud(const std::vector<uint32_t>& _point_cloud_sizes)
+        : cuda_impl_(std::make_unique<CUDA_impl>())
     {
         init(_point_cloud_sizes);
     }
 
     MetaPointCloud::MetaPointCloud(const MetaPointCloud& other)
+        : cuda_impl_(std::make_unique<CUDA_impl>())
     {
         init(other.getPointcloudSizes());
         m_point_cloud_names = other.getCloudNames();
@@ -172,7 +184,7 @@ namespace gpu_voxels
             updatePointCloud(i, other.getPointCloud(i), other.getPointCloudSize(i), false);
         
         // copy all clouds on the device
-        m_dev_ptr_to_accumulated_cloud = other.m_dev_ptr_to_accumulated_cloud;
+        cuda_impl_->m_dev_ptr_to_accumulated_cloud = other.cuda_impl_->m_dev_ptr_to_accumulated_cloud;
     }
 
     // copy assignment
@@ -188,7 +200,7 @@ namespace gpu_voxels
                 updatePointCloud(i, other.getPointCloud(i), other.getPointCloudSize(i), false);
 
             // copy all clouds on the device
-            m_dev_ptr_to_accumulated_cloud = other.m_dev_ptr_to_accumulated_cloud;
+            cuda_impl_->m_dev_ptr_to_accumulated_cloud = other.cuda_impl_->m_dev_ptr_to_accumulated_cloud;
         }
         return *this;
     }
@@ -215,7 +227,7 @@ namespace gpu_voxels
         }
 
         // do the actual comparison:
-        const bool ret = thrust::equal(m_dev_ptr_to_accumulated_cloud.begin(), m_dev_ptr_to_accumulated_cloud.end(), other.m_dev_ptr_to_accumulated_cloud.begin());
+        const bool ret = thrust::equal(cuda_impl_->m_dev_ptr_to_accumulated_cloud.begin(), cuda_impl_->m_dev_ptr_to_accumulated_cloud.end(), other.cuda_impl_->m_dev_ptr_to_accumulated_cloud.begin());
         CHECK_CUDA_ERROR();
 
         HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -331,11 +343,11 @@ namespace gpu_voxels
 
     void MetaPointCloud::destruct()
     {
-        thrust::device_free(m_dev_ptr_to_point_clouds_struct);
-        m_dev_ptr_to_accumulated_cloud.clear();
+        thrust::device_free(cuda_impl_->m_dev_ptr_to_point_clouds_struct);
+        cuda_impl_->m_dev_ptr_to_accumulated_cloud.clear();
 
-        m_dev_ptr_to_cloud_sizes.clear();
-        m_dev_ptr_to_clouds_base_addresses.clear();
+        cuda_impl_->m_dev_ptr_to_cloud_sizes.clear();
+        cuda_impl_->m_dev_ptr_to_clouds_base_addresses.clear();
         m_accumulated_cloud.clear();
         m_dev_point_clouds_local.reset();
         m_dev_ptrs_to_addrs.clear();
@@ -535,7 +547,7 @@ namespace gpu_voxels
 
     thrust::device_ptr<MetaPointCloudStruct> MetaPointCloud::getDevicePointer() const
     {
-        return m_dev_ptr_to_point_clouds_struct;
+        return cuda_impl_->m_dev_ptr_to_point_clouds_struct;
     }
 
     const std::map<uint16_t, std::string>& MetaPointCloud::getCloudNames() const
@@ -545,7 +557,7 @@ namespace gpu_voxels
 
     thrust::device_ptr<const MetaPointCloudStruct> MetaPointCloud::getDeviceConstPointer() const
     {
-        return m_dev_ptr_to_point_clouds_struct;
+        return cuda_impl_->m_dev_ptr_to_point_clouds_struct;
     }
 
     void MetaPointCloud::debugPointCloud() const
@@ -578,7 +590,7 @@ namespace gpu_voxels
 
         printf("================== END hostDebugMetaPointCloud DBG ================== \n");
 
-        kernelDebugMetaPointCloud<<<1, 1>>>(m_dev_ptr_to_point_clouds_struct.get());
+        kernelDebugMetaPointCloud<<<1, 1>>>(cuda_impl_->m_dev_ptr_to_point_clouds_struct.get());
         CHECK_CUDA_ERROR();
     }
 

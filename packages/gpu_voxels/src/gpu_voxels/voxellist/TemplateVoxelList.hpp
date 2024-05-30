@@ -25,6 +25,7 @@
 #define GPU_VOXELS_VOXELLIST_TEMPLATEVOXELLIST_HPP
 
 #include "TemplateVoxelList.h"
+#include "TemplateVoxelList.cuh"
 
 #include "BitVoxelList.h"
 #include "CountingVoxelList.h"
@@ -34,6 +35,8 @@
 #include <gpu_voxels/voxellist/kernels/VoxelListOperations.hpp>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
 #include <gpu_voxels/voxelmap/BitVoxelMap.hpp>
+
+#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/unique.h>
 #include <thrust/pair.h>
@@ -103,13 +106,14 @@ namespace gpu_voxels
 			: m_voxel_side_length(voxel_side_length),
 			m_ref_map_dim(ref_map_dim),
 			m_collision_check_results(cMAX_NR_OF_BLOCKS, false),
-			m_collision_check_results_counter(cMAX_NR_OF_BLOCKS, 0)
+			m_collision_check_results_counter(cMAX_NR_OF_BLOCKS, 0),
+			cuda_priv_impl(std::make_unique<CUDA_private>())
 		{
 			this->m_map_type = map_type;
 
 			// copy initialized arrays to device
-			m_dev_collision_check_results = m_collision_check_results;
-			m_dev_collision_check_results_counter = m_collision_check_results_counter;
+			cuda_priv_impl->m_dev_collision_check_results = m_collision_check_results;
+			cuda_priv_impl->m_dev_collision_check_results_counter = m_collision_check_results_counter;
 		}
 
 		/*!
@@ -144,8 +148,8 @@ namespace gpu_voxels
 
 
 					// the ZipIterator represents the data that is sorted by the keys in m_dev_id_list
-				thrust::sort_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
-					thrust::make_zip_iterator(thrust::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())),
+				thrust::sort_by_key(cuda_priv_impl->m_dev_id_list.begin(), cuda_priv_impl->m_dev_id_list.end(),
+					thrust::make_zip_iterator(thrust::make_tuple(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_list.begin())),
 					thrust::less<VoxelIDType>());
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			}
@@ -160,9 +164,9 @@ namespace gpu_voxels
 			{
 				// Reverse iterate over sorted entries and merge successive voxel-bitvectors into the predecessor
 				// of voxels with the same key. We dont touch the coordinates as they are the same either.
-				thrust::inclusive_scan(thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
-					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.begin(), m_dev_list.begin()))),
-					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
+				thrust::inclusive_scan(thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(cuda_priv_impl->m_dev_id_list.end(), cuda_priv_impl->m_dev_list.end()))),
+					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(cuda_priv_impl->m_dev_id_list.begin(), cuda_priv_impl->m_dev_list.begin()))),
+					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(cuda_priv_impl->m_dev_id_list.end(), cuda_priv_impl->m_dev_list.end()))),
 					Merge<Voxel, VoxelIDType>());
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			}
@@ -175,10 +179,10 @@ namespace gpu_voxels
 			// This will remove successors and keep the first entry with the merged bitvectors.
 			try
 			{
-				 thrust::pair<keyIterator, zipValuesIterator> new_end = thrust::unique_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
-					thrust::make_zip_iterator(thrust::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())));
+				 thrust::pair<typename CUDA_public::keyIterator, typename CUDA_public::zipValuesIterator> new_end = thrust::unique_by_key(cuda_priv_impl->m_dev_id_list.begin(), cuda_priv_impl->m_dev_id_list.end(),
+					thrust::make_zip_iterator(thrust::make_tuple(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_list.begin())));
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-				const size_t new_length = thrust::distance(m_dev_id_list.begin(), new_end.first);
+				const size_t new_length = thrust::distance(cuda_priv_impl->m_dev_id_list.begin(), new_end.first);
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 				this->resize(new_length);
 			}
@@ -247,8 +251,8 @@ namespace gpu_voxels
 					}
 
 					thrust::binary_search(thrust::device,
-						other->m_dev_id_list.begin(), other->m_dev_id_list.end(),
-						m_dev_id_list.begin(), m_dev_id_list.end(),
+						other->cuda_priv_impl->m_dev_id_list.begin(), other->cuda_priv_impl->m_dev_id_list.end(),
+						cuda_priv_impl->m_dev_id_list.begin(), cuda_priv_impl->m_dev_id_list.end(),
 						collision_stencil.begin());
 					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 				}
@@ -275,10 +279,28 @@ namespace gpu_voxels
 			}
 		}
 
+		template <class Voxel, class VoxelIDType>
+		Vector3ui* TemplateVoxelList<Voxel, VoxelIDType>::getDeviceCoordPtr()
+		{
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+		}
+
+		template<class Voxel, class VoxelIDType>
+		const Vector3ui* TemplateVoxelList<Voxel, VoxelIDType>::getConstDeviceCoordPtr() const
+		{
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+		}
+
+		template<class Voxel, class VoxelIDType>
+		void* TemplateVoxelList<Voxel, VoxelIDType>::getVoidDeviceDataPtr()
+		{
+			return (void*)thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+		}
+
 		template<class Voxel, class VoxelIDType>
 		void TemplateVoxelList<Voxel, VoxelIDType>::copyCoordsToHost(thrust::host_vector<Vector3ui>& host_vec)
 		{
-			host_vec = m_dev_coord_list;
+			host_vec = cuda_priv_impl->m_dev_coord_list;
 		}
 
 		template<class Voxel, class VoxelIDType>
@@ -305,16 +327,16 @@ namespace gpu_voxels
 			std::lock_guard guard(this->m_mutex);
 
 			// find the overlapping voxels
-			keyCoordVoxelZipIterator new_end;
+			typename CUDA_public::keyCoordVoxelZipIterator new_end;
 
 			is_out_of_bounds<Voxel, VoxelIDType> filter(m_ref_map_dim);
 
 			// remove voxels below threshold
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
-				this->getEndTripleZipIterator(),
+			new_end = thrust::remove_if(this->cuda_interface().getBeginTripleZipIterator(),
+				this->cuda_interface().getEndTripleZipIterator(),
 				filter);
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = thrust::distance(cuda_priv_impl->m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
 			this->resize(new_length);
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
@@ -342,15 +364,15 @@ namespace gpu_voxels
 
 			std::lock_guard guard(this->m_mutex);
 
-			auto offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
+			auto offset_new_entries = static_cast<uint32_t>(cuda_priv_impl->m_dev_list.size());
 
 			// resize capacity
 			this->resize(offset_new_entries + d_points.size());
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
 
 			// copy points to the gpu
 			uint32_t num_blocks, threads_per_block;
@@ -382,15 +404,15 @@ namespace gpu_voxels
 
 			std::lock_guard guard(this->m_mutex);
 
-			uint32_t offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
+			uint32_t offset_new_entries = static_cast<uint32_t>(cuda_priv_impl->m_dev_list.size());
 
 			// resize capacity
 			this->resize(offset_new_entries + d_coordinates.size());
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
 
 			// copy points to the gpu
 			uint32_t num_blocks, threads_per_block;
@@ -417,14 +439,14 @@ namespace gpu_voxels
 			if (total_points <= 0)
 				return;
 
-			uint32_t offset_new_entries = m_dev_list.size();
+			uint32_t offset_new_entries = cuda_priv_impl->m_dev_list.size();
 			// resize capacity
 			this->resize(offset_new_entries + total_points);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
 
 			computeLinearLoad(total_points, m_blocks, m_threads);
 			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
@@ -452,14 +474,14 @@ namespace gpu_voxels
 			std::lock_guard guard(this->m_mutex);
 			const uint32_t total_points = meta_point_cloud.getAccumulatedPointcloudSize();
 
-			uint32_t offset_new_entries = m_dev_list.size();
+			uint32_t offset_new_entries = cuda_priv_impl->m_dev_list.size();
 			// resize capacity
 			this->resize(offset_new_entries + total_points);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
 
 			BitVoxelMeaning* dev_voxel_meanings;
 			const size_t size = voxel_meanings.size() * sizeof(BitVoxelMeaning);
@@ -496,27 +518,27 @@ namespace gpu_voxels
 		void TemplateVoxelList<Voxel, VoxelIDType>::resize(size_t new_size)
 		{
 			std::lock_guard guard(this->m_mutex);
-			m_dev_list.resize(new_size);
-			m_dev_coord_list.resize(new_size);
-			m_dev_id_list.resize(new_size);
+			cuda_priv_impl->m_dev_list.resize(new_size);
+			cuda_priv_impl->m_dev_coord_list.resize(new_size);
+			cuda_priv_impl->m_dev_id_list.resize(new_size);
 		}
 
 		template<class Voxel, class VoxelIDType>
 		void TemplateVoxelList<Voxel, VoxelIDType>::shrinkToFit()
 		{
 			std::lock_guard guard(this->m_mutex);
-			m_dev_list.shrink_to_fit();
-			m_dev_coord_list.shrink_to_fit();
-			m_dev_id_list.shrink_to_fit();
+			cuda_priv_impl->m_dev_list.shrink_to_fit();
+			cuda_priv_impl->m_dev_coord_list.shrink_to_fit();
+			cuda_priv_impl->m_dev_id_list.shrink_to_fit();
 		}
 
 		template<class Voxel, class VoxelIDType>
 		size_t TemplateVoxelList<Voxel, VoxelIDType>::getMemoryUsage() const
 		{
 			std::lock_guard guard(this->m_mutex);
-			const size_t ret = m_dev_list.size() * sizeof(Voxel) +
-				m_dev_coord_list.size() * sizeof(Vector3ui) +
-				m_dev_id_list.size() * sizeof(VoxelIDType);
+			const size_t ret = cuda_priv_impl->m_dev_list.size() * sizeof(Voxel) +
+				cuda_priv_impl->m_dev_coord_list.size() * sizeof(Vector3ui) +
+				cuda_priv_impl->m_dev_id_list.size() * sizeof(VoxelIDType);
 			return ret;
 		}
 
@@ -524,9 +546,9 @@ namespace gpu_voxels
 		void TemplateVoxelList<Voxel, VoxelIDType>::clearMap()
 		{
 			std::lock_guard guard(this->m_mutex);
-			m_dev_list.clear();
-			m_dev_coord_list.clear();
-			m_dev_id_list.clear();
+			cuda_priv_impl->m_dev_list.clear();
+			cuda_priv_impl->m_dev_coord_list.clear();
+			cuda_priv_impl->m_dev_id_list.clear();
 		}
 
 		struct filterByBoundaries
@@ -566,7 +588,7 @@ namespace gpu_voxels
 		Vector3f TemplateVoxelList<Voxel, VoxelIDType>::getCenterOfMass(Vector3ui lower_bound, Vector3ui upper_bound) const
 		{
 			const filterByBoundaries filter(upper_bound, lower_bound);
-			const int voxelCount = thrust::count_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), filter);
+			const int voxelCount = thrust::count_if(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_coord_list.end(), filter);
 
 			if (voxelCount <= 0)
 			{
@@ -579,7 +601,7 @@ namespace gpu_voxels
 
 			//filter by axis alligned bounding box
 			thrust::device_vector<Vector3ui> inBoundaries(voxelCount);
-			thrust::copy_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), inBoundaries.begin(), filter);
+			thrust::copy_if(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_coord_list.end(), inBoundaries.begin(), filter);
 
 			//calculate sum of all voxelpositions
 			Vector3ui tmp = Vector3ui::Zero();
@@ -605,9 +627,9 @@ namespace gpu_voxels
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Write to file " << path << " failed!" << endl);
 				return false;
 			}
-			thrust::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
-			thrust::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
-			thrust::host_vector<Voxel> host_list = m_dev_list;
+			thrust::host_vector<VoxelIDType> host_id_list = cuda_priv_impl->m_dev_id_list;
+			thrust::host_vector<Vector3ui> host_coord_list = cuda_priv_impl->m_dev_coord_list;
+			thrust::host_vector<Voxel> host_list = cuda_priv_impl->m_dev_list;
 
 			uint32_t num_voxels = host_list.size();
 			int32_t map_type = m_map_type;
@@ -676,9 +698,9 @@ namespace gpu_voxels
 			LOGGING_INFO_C(VoxellistLog, TemplateVoxelList, "Read " << num_voxels << " Voxels from file." << endl;);
 
 
-			m_dev_id_list = host_id_list;
-			m_dev_coord_list = host_coord_list;
-			m_dev_list = host_list;
+			cuda_priv_impl->m_dev_id_list = host_id_list;
+			cuda_priv_impl->m_dev_coord_list = host_coord_list;
+			cuda_priv_impl->m_dev_list = host_list;
 			return true;
 		}
 
@@ -772,20 +794,20 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// find the overlapping voxels:
-			thrust::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
+			thrust::device_vector<bool> overlap_stencil(cuda_priv_impl->m_dev_id_list.size()); // A stencil of the voxels in collision
 			collideVoxellists(other, voxel_offset, overlap_stencil);
 
-			keyCoordVoxelZipIterator new_end;
+			typename CUDA_public::keyCoordVoxelZipIterator new_end;
 
 
 			// remove the overlapping voxels:
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
-				this->getEndTripleZipIterator(),
+			new_end = thrust::remove_if(this->cuda_interface().getBeginTripleZipIterator(),
+				this->cuda_interface().getEndTripleZipIterator(),
 				overlap_stencil.begin(),
 				thrust::identity<bool>());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = thrust::distance(cuda_priv_impl->m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			this->resize(new_length);
 
@@ -806,20 +828,20 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// find the overlapping voxels:
-			thrust::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
+			thrust::device_vector<bool> overlap_stencil(cuda_priv_impl->m_dev_id_list.size()); // A stencil of the voxels in collision
 			collideVoxellists(other, voxel_offset, overlap_stencil);
 
-			keyCoordVoxelZipIterator new_end;
+			typename CUDA_public::keyCoordVoxelZipIterator new_end;
 
 
 			// remove the overlapping voxels:
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
-				this->getEndTripleZipIterator(),
+			new_end = thrust::remove_if(this->cuda_interface().getBeginTripleZipIterator(),
+				this->cuda_interface().getEndTripleZipIterator(),
 				overlap_stencil.begin(),
 				thrust::identity<bool>());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = thrust::distance(cuda_priv_impl->m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			this->resize(new_length);
 
@@ -838,25 +860,67 @@ namespace gpu_voxels
 		Vector3ui TemplateVoxelList<Voxel, VoxelIDType>::getDimensions() const
 		{
 			//LOGGING_DEBUG_C(VoxellistLog, TemplateVoxelList, "This returns the number of voxels in the voxellist, not the xyz limits of the reference GpuVoxelsMap! The x value contains the number of voxels in the list." << endl);
-			return Vector3ui(m_dev_list.size(), 1, 1);
+			return Vector3ui(cuda_priv_impl->m_dev_list.size(), 1, 1);
 		}
 
 		template<class Voxel, class VoxelIDType>
 		Vector3f TemplateVoxelList<Voxel, VoxelIDType>::getMetricDimensions() const
 		{
 			return Vector3f(m_ref_map_dim.x(), m_ref_map_dim.y(), m_ref_map_dim.z()) * getVoxelSideLength();
+		}		
+
+		template<class Voxel, class VoxelIDType>
+		typename TemplateVoxelList<Voxel, VoxelIDType>::CUDA_public& TemplateVoxelList<Voxel, VoxelIDType>::cuda_interface()
+		{
+			if (!cuda_pub_impl)
+				cuda_pub_impl = std::make_unique<CUDA_public>(*this);
+
+			return *cuda_pub_impl;
 		}
 
 		template<class Voxel, class VoxelIDType>
-		TemplateVoxelList<Voxel, VoxelIDType>::keyCoordVoxelZipIterator TemplateVoxelList<Voxel, VoxelIDType>::getBeginTripleZipIterator()
+		const typename TemplateVoxelList<Voxel, VoxelIDType>::CUDA_public& TemplateVoxelList<Voxel, VoxelIDType>::cuda_interface() const
 		{
-			return thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.begin(), m_dev_coord_list.begin(), m_dev_list.begin()));
+			if (!cuda_pub_impl)
+				cuda_pub_impl = std::make_unique<CUDA_public>(*const_cast<TemplateVoxelList*>(this));
+
+			return *cuda_pub_impl;
 		}
 
 		template<class Voxel, class VoxelIDType>
-		TemplateVoxelList<Voxel, VoxelIDType>::keyCoordVoxelZipIterator TemplateVoxelList<Voxel, VoxelIDType>::getEndTripleZipIterator()
+		Voxel* TemplateVoxelList<Voxel, VoxelIDType>::getDeviceDataPtr()
 		{
-			return thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_coord_list.end(), m_dev_list.end()));
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+		}
+
+		template <class Voxel, class VoxelIDType>
+		const Voxel* TemplateVoxelList<Voxel, VoxelIDType>::getConstDeviceDataPtr() const
+		{
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+		}
+
+		template<class Voxel, class VoxelIDType>
+		VoxelIDType* TemplateVoxelList<Voxel, VoxelIDType>::getDeviceIdPtr()
+		{
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
+		}
+
+		template<class Voxel, class VoxelIDType>
+		const VoxelIDType* TemplateVoxelList<Voxel, VoxelIDType>::getConstDeviceIdPtr() const
+		{
+			return thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
+		}
+
+		template<class Voxel, class VoxelIDType>
+		ThrustDeviceVector<Vector3ui>& TemplateVoxelList<Voxel, VoxelIDType>::getDeviceCoords()
+		{
+			return cuda_priv_impl->m_dev_coord_list;
+		}
+
+		template<class Voxel, class VoxelIDType>
+		const ThrustDeviceVector<Vector3ui>& TemplateVoxelList<Voxel, VoxelIDType>::getDeviceCoords() const
+		{
+			return cuda_priv_impl->m_dev_coord_list;
 		}
 
 
@@ -869,14 +933,14 @@ namespace gpu_voxels
 			{
 				if (*output_vector == nullptr)
 				{
-					*output_vector = new thrust::device_vector<Cube>(m_dev_list.size());
+					*output_vector = new thrust::device_vector<Cube>(cuda_priv_impl->m_dev_list.size());
 				}
 				else
 				{
-					(*output_vector)->resize(m_dev_list.size());
+					(*output_vector)->resize(cuda_priv_impl->m_dev_list.size());
 				}
 				// Transform Iterator that takes coordinates and bitvector and writes cubes to output_vector
-				thrust::transform(m_dev_coord_list.begin(), m_dev_coord_list.end(), m_dev_list.begin(), (*output_vector)->begin(),
+				thrust::transform(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_coord_list.end(), cuda_priv_impl->m_dev_list.begin(), (*output_vector)->begin(),
 					VoxelToCube());
 				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			}
@@ -905,8 +969,8 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_list.data());
+			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(cuda_priv_impl->m_dev_id_list.data());
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(getDimensions().x(), num_blocks, threads_per_block);
@@ -915,10 +979,10 @@ namespace gpu_voxels
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, getDimensions().x(),
 				other->getConstDeviceDataPtr(), m_ref_map_dim, collider, offset,
-				m_dev_collision_check_results_counter.data().get());
+				cuda_priv_impl->m_dev_collision_check_results_counter.data().get());
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			m_collision_check_results_counter = m_dev_collision_check_results_counter;
+			m_collision_check_results_counter = cuda_priv_impl->m_dev_collision_check_results_counter;
 			
 			uint32_t number_of_collisions = 0;
 			for (uint32_t i = 0; i < num_blocks; i++)
@@ -935,9 +999,9 @@ namespace gpu_voxels
 
 			std::lock_guard guard(this->m_mutex);
 
-			thrust::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
-			thrust::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
-			thrust::host_vector<Voxel> host_list = m_dev_list;
+			thrust::host_vector<VoxelIDType> host_id_list = cuda_priv_impl->m_dev_id_list;
+			thrust::host_vector<Vector3ui> host_coord_list = cuda_priv_impl->m_dev_coord_list;
+			thrust::host_vector<Voxel> host_list = cuda_priv_impl->m_dev_list;
 
 			if (with_voxel_content)
 			{
@@ -970,9 +1034,9 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other.m_mutex);
 
 			bool equal = true;
-			equal &= thrust::equal(m_dev_list.begin(), m_dev_list.end(), other.m_dev_list.begin());
-			equal &= thrust::equal(m_dev_id_list.begin(), m_dev_id_list.end(), other.m_dev_id_list.begin());
-			equal &= thrust::equal(m_dev_coord_list.begin(), m_dev_coord_list.end(), other.m_dev_coord_list.begin());
+			equal &= thrust::equal(cuda_priv_impl->m_dev_list.begin(), cuda_priv_impl->m_dev_list.end(), other.cuda_priv_impl->m_dev_list.begin());
+			equal &= thrust::equal(cuda_priv_impl->m_dev_id_list.begin(), cuda_priv_impl->m_dev_id_list.end(), other.cuda_priv_impl->m_dev_id_list.begin());
+			equal &= thrust::equal(cuda_priv_impl->m_dev_coord_list.begin(), cuda_priv_impl->m_dev_coord_list.end(), other.cuda_priv_impl->m_dev_coord_list.begin());
 
 			return equal;
 		}
@@ -989,13 +1053,13 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other.m_mutex);
 
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			this->m_dev_id_list.resize(other.m_dev_id_list.size());
-			this->m_dev_coord_list.resize(other.m_dev_coord_list.size());
-			this->m_dev_list.resize(other.m_dev_list.size());
+			this->cuda_priv_impl->m_dev_id_list.resize(other.cuda_priv_impl->m_dev_id_list.size());
+			this->cuda_priv_impl->m_dev_coord_list.resize(other.cuda_priv_impl->m_dev_coord_list.size());
+			this->cuda_priv_impl->m_dev_list.resize(other.cuda_priv_impl->m_dev_list.size());
 
-			thrust::copy(other.m_dev_id_list.begin(), other.m_dev_id_list.end(), this->m_dev_id_list.begin());
-			thrust::copy(other.m_dev_coord_list.begin(), other.m_dev_coord_list.end(), this->m_dev_coord_list.begin());
-			thrust::copy(other.m_dev_list.begin(), other.m_dev_list.end(), this->m_dev_list.begin());
+			thrust::copy(other.cuda_priv_impl->m_dev_id_list.begin(), other.cuda_priv_impl->m_dev_id_list.end(), this->cuda_priv_impl->m_dev_id_list.begin());
+			thrust::copy(other.cuda_priv_impl->m_dev_coord_list.begin(), other.cuda_priv_impl->m_dev_coord_list.end(), this->cuda_priv_impl->m_dev_coord_list.begin());
+			thrust::copy(other.cuda_priv_impl->m_dev_list.begin(), other.cuda_priv_impl->m_dev_list.end(), this->cuda_priv_impl->m_dev_list.begin());
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 		}
 

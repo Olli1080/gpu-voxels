@@ -23,10 +23,7 @@
 #ifndef GPU_VOXELS_OCTREE_NTREE_H_INCLUDED
 #define GPU_VOXELS_OCTREE_NTREE_H_INCLUDED
 
-#include <limits.h>
-
 // thrust
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 // internal includes
@@ -38,6 +35,7 @@
 #include <gpu_voxels/octree/EnvNodesProbabilistic.h>
 #include <gpu_voxels/octree/DefaultCollider.h>
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/BitVector.h>
 #include <gpu_voxels/voxelmap/VoxelMap.h>
@@ -96,7 +94,7 @@ namespace gpu_voxels {
 			//  gpu_voxels::Vector3ui origin;
 			//  uint32_t sideLengthInVoxel;
 			//  float voxelSideLength;
-			thrust::device_vector<void*> m_allocation_list;
+			std::unique_ptr<ThrustDeviceVector<void*>> m_allocation_list;
 			uint32_t numBlocks, numThreadsPerBlock;
 			voxel_count allocInnerNodes, allocLeafNodes;
 			uint8_t* m_status_mapping;
@@ -133,12 +131,12 @@ namespace gpu_voxels {
 			 * @param h_points Set of occupied points. Coordinates in voxels of the NTree.
 			 * @param free_bounding_box True to set the bounding-box of the given set of points as free space.
 			 */
-			void build(const thrust::device_vector<Vector3ui>& d_points, const bool free_bounding_box = false);
+			void build(const ThrustDeviceVector<Vector3ui>& d_points, const bool free_bounding_box = false);
 
 			void print();
 			void print2();
-			void find(thrust::device_vector<Vector3ui> voxel, void** resultNode,
-				thrust::device_vector<enum NodeType> resultNodeType);
+			void find(ThrustDeviceVector<Vector3ui> voxel, void** resultNode,
+				ThrustDeviceVector<enum NodeType> resultNodeType);
 
 			/**
 			 * @brief Searches for the given Voxel \c h_voxel in the NTree and returns the found Nodes \c resultNode
@@ -246,16 +244,16 @@ namespace gpu_voxels {
 			/*
 			 * Inserts the given voxel in the tree and updates their occupancy. The given voxel have to be sorted by their id.
 			 */
-			void insertVoxel(thrust::device_vector<Voxel>& d_free_space_voxel,
-				thrust::device_vector<Voxel>& d_object_voxel, gpu_voxels::Vector3ui sensor_origin,
+			void insertVoxel(ThrustDeviceVector<Voxel>& d_free_space_voxel,
+				ThrustDeviceVector<Voxel>& d_object_voxel, gpu_voxels::Vector3ui sensor_origin,
 				const uint32_t free_space_resolution, const uint32_t object_resolution);
 
 			/*
 			 * Inserts the given voxel in the tree and updates their occupancy. The given voxel have to be sorted by their id.
 			 */
-			void insertVoxel(thrust::device_vector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up);
+			void insertVoxel(ThrustDeviceVector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up);
 
-			void propagate_bottom_up(thrust::device_vector<Voxel>& d_voxel_vector, uint32_t level = 0);
+			void propagate_bottom_up(ThrustDeviceVector<Voxel>& d_voxel_vector, uint32_t level = 0);
 
 			void propagate_bottom_up(OctreeVoxelID* d_voxel_id, voxel_count num_voxel, uint32_t level = 0);
 
@@ -272,7 +270,7 @@ namespace gpu_voxels {
 
 			size_t extractCubes(std::vector<Vector3f>& points, uint8_t* d_status_selection = nullptr, uint32_t min_level = 0);
 
-			size_t extractCubes(thrust::device_vector<Cube>*& d_cubes, uint8_t* d_status_selection = nullptr,
+			size_t extractCubes(ThrustDeviceVector<Cube>*& d_cubes, uint8_t* d_status_selection = nullptr,
 				uint32_t min_level = 0);
 
 			/**
@@ -506,14 +504,14 @@ namespace gpu_voxels {
 			 * Method needed for inserting new sensor data. Computes the free space by ray casting and inserts it into the tree.
 			 
 			void computeFreeSpaceViaRayCast_VoxelList(
-				thrust::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
+				ThrustDeviceVector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
 				thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels);
 				*/
 
 			/*
 			 * Method needed for inserting new sensor data. Computes the free space by ray casting and inserts it into the tree.
 			 */
-			void computeFreeSpaceViaRayCast(thrust::device_vector<Voxel>& d_occupied_voxel,
+			void computeFreeSpaceViaRayCast(ThrustDeviceVector<Voxel>& d_occupied_voxel,
 				gpu_voxels::Vector3ui sensor_origin,
 				thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels,
 				uint32_t min_level = 0);
@@ -536,15 +534,15 @@ namespace gpu_voxels {
 				thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels, voxel_count num_free_voxel,
 				uint32_t min_level);
 
-			void free_bounding_box(const thrust::device_vector<Vector3ui>& d_points);
+			void free_bounding_box(const ThrustDeviceVector<Vector3ui>& d_points);
 
-			void toVoxelCoordinates(thrust::host_vector<Vector3f>& h_points, thrust::device_vector<Vector3ui>& d_voxels);
+			void toVoxelCoordinates(thrust::host_vector<Vector3f>& h_points, ThrustDeviceVector<Vector3ui>& d_voxels);
 
-			void internal_rebuild(thrust::device_vector<NodeData>& d_node_data, const uint32_t num_cubes);
+			void internal_rebuild(ThrustDeviceVector<NodeData>& d_node_data, const uint32_t num_cubes);
 		};
 
 #ifndef NTREE_PRECOMPILE
-#include "NTree.hpp"
+#include "NTree.cuhpp"
 #endif
 
 	} // end of ns

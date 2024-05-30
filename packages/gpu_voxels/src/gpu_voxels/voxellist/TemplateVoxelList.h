@@ -24,17 +24,13 @@
 #ifndef GPU_VOXELS_VOXELLIST_TEMPLATEVOXELLIST_H
 #define GPU_VOXELS_VOXELLIST_TEMPLATEVOXELLIST_H
 
-#include <gpu_voxels/voxellist/AbstractVoxelList.h>
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/common_defines.h>
+
+#include <gpu_voxels/voxellist/AbstractVoxelList.h>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
-
 #include <gpu_voxels/voxel/DefaultCollider.h>
-
-#include <thrust/device_vector.h>
-#include <thrust/device_ptr.h>
-
 #include "gpu_voxels/voxelmap/TemplateVoxelMap.h"
-
 
 /**
  * @namespace gpu_voxels::voxelmap
@@ -43,89 +39,35 @@
 namespace gpu_voxels {
 	namespace voxellist {
 
+		//struct TemplateVoxelList_CUDA;
+
 		template<class Voxel, class VoxelIDType>
 		class TemplateVoxelList : public AbstractVoxelList
 		{
-			typedef typename thrust::device_vector<VoxelIDType>::iterator  keyIterator;
-
-			typedef typename thrust::device_vector<Vector3ui>::iterator  coordIterator;
-			typedef typename thrust::device_vector<Voxel>::iterator  voxelIterator;
-
-			typedef thrust::tuple<coordIterator, voxelIterator> valuesIteratorTuple;
-			typedef thrust::zip_iterator<valuesIteratorTuple> zipValuesIterator;
-
-			typedef thrust::tuple<keyIterator, voxelIterator> keyVoxelIteratorTuple;
-			typedef thrust::zip_iterator<keyVoxelIteratorTuple> keyVoxelZipIterator;
-
 		public:
-			typedef thrust::tuple<keyIterator, coordIterator, voxelIterator> keyCoordVoxelIteratorTriple;
-			typedef thrust::zip_iterator<keyCoordVoxelIteratorTriple> keyCoordVoxelZipIterator;
 
 			TemplateVoxelList(Vector3ui ref_map_dim, float voxel_side_length, MapType map_type);
 
 			//! Destructor
 			~TemplateVoxelList() override = default;
 
+			class CUDA_public;
 			/* ======== getter functions ======== */
-
-			//! get thrust triple to the beggining of all data vectors
-			virtual  keyCoordVoxelZipIterator getBeginTripleZipIterator();
-
-			//! get thrust triple to the end of all data vectors
-			virtual keyCoordVoxelZipIterator getEndTripleZipIterator();
-
-			//! get access to data vectors on device
-			typename thrust::device_vector<Voxel>::iterator getDeviceDataVectorBeginning()
-			{
-				return m_dev_list.begin();
-			}
-			typename thrust::device_vector<VoxelIDType>::iterator getDeviceIdVectorBeginning()
-			{
-				return m_dev_id_list.begin();
-			}
-			typename thrust::device_vector<Vector3ui>::iterator getDeviceCoordVectorBeginning()
-			{
-				return m_dev_coord_list.begin();
-			}
+			CUDA_public& cuda_interface();
+			const CUDA_public& cuda_interface() const;
 
 			//! get pointer to data array on device
-			Voxel* getDeviceDataPtr()
-			{
-				return thrust::raw_pointer_cast(m_dev_list.data());
-			}
-			const Voxel* getConstDeviceDataPtr() const
-			{
-				return thrust::raw_pointer_cast(m_dev_list.data());
-			}
-			VoxelIDType* getDeviceIdPtr()
-			{
-				return thrust::raw_pointer_cast(m_dev_id_list.data());
-			}
-			const VoxelIDType* getConstDeviceIdPtr() const
-			{
-				return thrust::raw_pointer_cast(m_dev_id_list.data());
-			}
-			thrust::device_vector<Vector3ui>& getDeviceCoords()
-			{
-				return m_dev_coord_list;
-			}
-			const thrust::device_vector<Vector3ui>& getDeviceCoords() const
-			{
-				return m_dev_coord_list;
-			}
-			Vector3ui* getDeviceCoordPtr()
-			{
-				return thrust::raw_pointer_cast(m_dev_coord_list.data());
-			}
-			const Vector3ui* getConstDeviceCoordPtr() const
-			{
-				return thrust::raw_pointer_cast(m_dev_coord_list.data());
-			}
+			Voxel* getDeviceDataPtr();
+			const Voxel* getConstDeviceDataPtr() const;
+			VoxelIDType* getDeviceIdPtr();
+			const VoxelIDType* getConstDeviceIdPtr() const;
+			ThrustDeviceVector<Vector3ui>& getDeviceCoords();
+			const ThrustDeviceVector<Vector3ui>& getDeviceCoords() const;
+			Vector3ui* getDeviceCoordPtr();
 
-			void* getVoidDeviceDataPtr() override
-			{
-				return (void*)thrust::raw_pointer_cast(m_dev_list.data());
-			}
+			const Vector3ui* getConstDeviceCoordPtr() const;
+
+			void* getVoidDeviceDataPtr() override;
 
 			//! get the side length of the voxels.
 			float getVoxelSideLength() const override
@@ -140,12 +82,12 @@ namespace gpu_voxels {
 
 			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override;
 
-			void insertPointCloud(const thrust::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
+			void insertPointCloud(const ThrustDeviceVector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
 
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			/**
 			 * @brief insertMetaPointCloud Inserts a MetaPointCloud into the map.
@@ -206,7 +148,7 @@ namespace gpu_voxels {
 			 * @brief extractCubes Extracts a cube list for visualization
 			 * @param [out] output_vector Resulting cube list
 			 */
-			virtual void extractCubes(thrust::device_vector<Cube>** output_vector) const;
+			virtual void extractCubes(ThrustDeviceVector<Cube>** output_vector) const;
 
 			/**
 			 * @brief collideVoxellists Internal binary search between voxellists
@@ -216,17 +158,17 @@ namespace gpu_voxels {
 			 * @return Number of collisions
 			 */
 			 // virtual size_t collideVoxellists(const TemplateVoxelList<Voxel, VoxelIDType> *other, const Vector3i &offset,
-			 //                                  thrust::device_vector<bool>& collision_stencil) const;
+			 //                                  ThrustDeviceVector<bool>& collision_stencil) const;
 			
 			size_t collideVoxellists(const TemplateVoxelList<ProbabilisticVoxel, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				ThrustDeviceVector<bool>& collision_stencil) const;
 
 			template<size_t length>
 			size_t collideVoxellists(const TemplateVoxelList<BitVoxel<length>, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				ThrustDeviceVector<bool>& collision_stencil) const;
 			
 			size_t collideVoxellists(const TemplateVoxelList<CountingVoxel, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				ThrustDeviceVector<bool>& collision_stencil) const;
 
 			/**
 			 * @brief collisionCheckWithCollider
@@ -290,13 +232,6 @@ namespace gpu_voxels {
 				}
 			};
 
-			/* ======== Variables with content on device ======== */
-			/* Follow the Thrust paradigm: Struct of Vectors */
-			/* need to be public in order to be accessed by TemplateVoxelLists with other template arguments*/
-			thrust::device_vector<VoxelIDType> m_dev_id_list;  // contains the voxel addresses / morton codes (This can not be a Voxel*, as Thrust can not sort pointers)
-			thrust::device_vector<Vector3ui> m_dev_coord_list; // contains the voxel metric coordinates
-			thrust::device_vector<Voxel> m_dev_list;           // contains the actual data: bitvector or probability
-
 		protected:
 
 			virtual void remove_out_of_bounds();
@@ -314,12 +249,11 @@ namespace gpu_voxels {
 			//! result array for collision check with counter
 			thrust::host_vector<uint16_t> m_collision_check_results_counter;
 
+			struct CUDA_private;
+			mutable std::unique_ptr<CUDA_public> cuda_pub_impl;
+			std::unique_ptr<CUDA_private> cuda_priv_impl;
 
-			//! results of collision check on device
-			thrust::device_vector<bool> m_dev_collision_check_results;
-
-			//! result array for collision check with counter on device
-			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
+			template <typename OtherV, typename OtherVoxelIDType> friend class TemplateVoxelList;
 		};
 
 		extern template bool TemplateVoxelList<CountingVoxel, MapVoxelID>::merge(const GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset, const BitVoxelMeaning* new_meaning);

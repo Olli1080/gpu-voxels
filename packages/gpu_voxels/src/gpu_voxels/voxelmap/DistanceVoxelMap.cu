@@ -28,7 +28,7 @@
 #define DISTANCEVOXELMAP_HPP
 
 #include <gpu_voxels/voxelmap/DistanceVoxelMap.h>
-#include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.cuhpp>
 #include <gpu_voxels/voxelmap/ProbVoxelMap.h>
 
 #include <thrust/device_ptr.h>
@@ -156,7 +156,7 @@ namespace gpu_voxels {
 			//  HANDLE_CUDA_ERROR(cudaMalloc(&temp_buffer, this->getMemoryUsage()));
 			//  HANDLE_CUDA_ERROR(cudaMemset(temp_buffer, 0, this->getMemoryUsage())); //use fill(uninitialised) instead
 
-			thrust::device_vector<DistanceVoxel>* buffers[2] = { &this->m_dev_data, &temp_buffer };
+			thrust::device_vector<DistanceVoxel>* buffers[2] = { &this->cuda_impl->m_dev_data, &temp_buffer };
 
 			//  thrust::device_ptr<DistanceVoxel> original_begin_3d(this->m_dev_data);
 			//  thrust::device_ptr<DistanceVoxel> original_end_3d(original_begin_3d + this->getVoxelMapSize());
@@ -185,7 +185,7 @@ namespace gpu_voxels {
 			if (output_buffer_idx != 1) { //odd number of loop iterations -> need to copy buffer to dev_data
 				if (debug) LOGGING_INFO(VoxelmapLog, "jumpFlood: memcpy temp_buffer" << endl);
 
-				this->m_dev_data.swap(temp_buffer);
+				this->cuda_impl->m_dev_data.swap(temp_buffer);
 			}
 
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -224,7 +224,7 @@ namespace gpu_voxels {
 
 			size_t dynamic_shared_mem_size = sizeof(Vector3ui) * cMAX_THREADS_PER_BLOCK;
 			kernelExactDistances3D<<<blocks, this->m_threads, dynamic_shared_mem_size>>>(
-					this->m_dev_data.data().get(), this->m_dim,
+					this->cuda_impl->m_dev_data.data().get(), this->m_dim,
 					this->m_voxel_side_length, d_points.data().get(), points.size()
 					);
 			CHECK_CUDA_ERROR();
@@ -320,7 +320,7 @@ namespace gpu_voxels {
 			//optimize: use uint3 or ushort3 for initial and distance_map; check for usage of distance in phase1-3. add distance to voxelmap either after phase3 or: in phase3, write directly to DVM, including distance
 
 			//optimize by re-using original_begin and _end for initial_map
-			thrust::device_vector<DistanceVoxel> initial_map(this->m_dev_data.begin(), this->m_dev_data.end());
+			thrust::device_vector<DistanceVoxel> initial_map(this->cuda_impl->m_dev_data.begin(), this->cuda_impl->m_dev_data.end());
 
 #ifdef IC_PERFORMANCE_MONITOR
 			if (sync_always) HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -354,7 +354,7 @@ namespace gpu_voxels {
 			//flood forward and backward within bands
 			//there are m1 vertical bands
 			//TODO optimize: could work in-place
-			kernelPBAphase1FloodZ<<<m1_grid_size, m1_block_size>>>(this->m_dev_data.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //distance_map is output
+			kernelPBAphase1FloodZ<<<m1_grid_size, m1_block_size>>>(this->cuda_impl->m_dev_data.begin(), this->cuda_impl->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //distance_map is output
 			CHECK_CUDA_ERROR();
 			// -> blöcke enthalten gelbe vertikale balken, solange min 1 obstacle enthalten
 
@@ -367,7 +367,7 @@ namespace gpu_voxels {
 			//optimize: propagate and update could be in same kernel
 			if (m1 > 1) 
 			{
-				kernelPBAphase1PropagateInterband<<<m1_grid_size, m1_block_size>>>(this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.z() / m1); //buffer b to a
+				kernelPBAphase1PropagateInterband<<<m1_grid_size, m1_block_size>>>(this->cuda_impl->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.z() / m1); //buffer b to a
 				CHECK_CUDA_ERROR();
 				// -> initial_map enthält obstacle infos und interband head/tail infos
 			}
@@ -382,7 +382,7 @@ namespace gpu_voxels {
 
 			if (m1 > 1) 
 			{
-				kernelPBAphase1Update<<<m1_grid_size, m1_block_size>>>(initial_map.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //buffer to b; a is Links (top,bottom), b is Color (voxel)
+				kernelPBAphase1Update<<<m1_grid_size, m1_block_size>>>(initial_map.begin(), this->cuda_impl->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //buffer to b; a is Links (top,bottom), b is Color (voxel)
 				CHECK_CUDA_ERROR();
 			}
 			// end of phase 1: distance_map contains the S_ij obstacle information
@@ -405,7 +405,7 @@ namespace gpu_voxels {
 				LOGGING_ERROR_C(VoxelmapLog, DistanceVoxelMap, "ERROR: PBA requires dimensions.x and .y >= arg_m2_blocksize (" << arg_m2_blocksize << ")" << endl);
 			}
 
-			kernelPBAphase2ProximateBackpointers<<<m2_grid_size, m2_block_size>>>(this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
+			kernelPBAphase2ProximateBackpointers<<<m2_grid_size, m2_block_size>>>(this->cuda_impl->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
 			CHECK_CUDA_ERROR();
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -415,7 +415,7 @@ namespace gpu_voxels {
 
 			// distance_map will be shadowed by an array of int16 for CreateForward and MergeBands
 		    //  thrust::device_ptr<pba_fw_ptr_t> forward_ptrs_begin((pba_fw_ptr_t*)(distance_map_begin.get()));
-			thrust::device_ptr<pba_fw_ptr_t> forward_ptrs_begin(reinterpret_cast<pba_fw_ptr_t*>(this->m_dev_data.data().get()));
+			thrust::device_ptr<pba_fw_ptr_t> forward_ptrs_begin(reinterpret_cast<pba_fw_ptr_t*>(this->cuda_impl->m_dev_data.data().get()));
 
 			if (m2 > 1) 
 			{
@@ -487,7 +487,7 @@ namespace gpu_voxels {
 				LOGGING_ERROR_C(VoxelmapLog, DistanceVoxelMap, "ERROR: PBA requires dimensions.x and .y >= arg_m2_blocksize (" << arg_m2_blocksize << ")" << endl);
 			}
 			//distance map is write-only during phase3
-			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->m_dev_data.begin(), this->m_dim);
+			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->cuda_impl->m_dev_data.begin(), this->m_dim);
 			CHECK_CUDA_ERROR();
 			//  (initial_map.begin(), distance_map_begin, this->m_dim);
 		// phase 3 done: distance_map contains final result
@@ -503,7 +503,7 @@ namespace gpu_voxels {
 			//TODO: ensure m_dim x/y divisible by PBA_TILE_DIM
 			dim3 transpose_block(PBA_TILE_DIM, PBA_TILE_DIM);
 			dim3 transpose_grid(this->m_dim.x() / transpose_block.x, this->m_dim.y() / transpose_block.y, this->m_dim.z()); //maximum blockDim.y/z is 64K
-			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->m_dev_data.begin()); //optimize: remove thrust wrapper?
+			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->cuda_impl->m_dev_data.begin()); //optimize: remove thrust wrapper?
 			CHECK_CUDA_ERROR();
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -516,7 +516,7 @@ namespace gpu_voxels {
 			// compute proximate points locally in each band
 
 			kernelPBAphase2ProximateBackpointers<<<m2_grid_size, m2_block_size>>>
-				(this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
+				(this->cuda_impl->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
 			CHECK_CUDA_ERROR();
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -558,7 +558,7 @@ namespace gpu_voxels {
 			// end of phase 2: initial_ contains P_i information; y coordinates were replaced by back-pointers; y coordinate is implicitly equal to voxel position.y
 			// phase 3: read from input_, write to distance_map
 			//optimise: scale PBA_M3_BLOCKX to m3; PBA_M3_BLOCKX*m3 should not be too small
-			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->m_dev_data.begin(), this->m_dim);
+			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->cuda_impl->m_dev_data.begin(), this->m_dim);
 			CHECK_CUDA_ERROR();
 			// phase 3 done: distance_map contains final result
 
@@ -569,7 +569,7 @@ namespace gpu_voxels {
 			if (detailtimer) PERF_MON_PRINT_AND_RESET_INFO("detailtimer", "parallelBanding3D second phase3 done");
 #endif
 
-			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->m_dev_data.begin());
+			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->cuda_impl->m_dev_data.begin());
 			CHECK_CUDA_ERROR();
 
 			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -598,7 +598,7 @@ namespace gpu_voxels {
 		{
 			DistanceVoxel dv_uninit;
 			dv_uninit.setPBAUninitialised();
-			thrust::fill(out.m_dev_data.begin(), out.m_dev_data.end(), dv_uninit);
+			thrust::fill(out.cuda_impl->m_dev_data.begin(), out.cuda_impl->m_dev_data.end(), dv_uninit);
 		}
 
 		void DistanceVoxelMap::init_floodfill(free_space_t* dev_distances, manhattan_dist_t* dev_manhattan_distances, uint robot_radius) {
@@ -623,8 +623,8 @@ namespace gpu_voxels {
 
 			// thrust transform pbaDistanceVoxmap->getDeviceDataPtr() to byte[] (round down to 0..255, cap at 255; could even parameterize on robot size and create boolean
 			const thrust::counting_iterator<int> count_start(0);
-			thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(this->m_dev_data.begin(), count_start)),
-				thrust::make_zip_iterator(thrust::make_tuple(this->m_dev_data.end(), count_start + this->getVoxelMapSize())),
+			thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(this->cuda_impl->m_dev_data.begin(), count_start)),
+				thrust::make_zip_iterator(thrust::make_tuple(this->cuda_impl->m_dev_data.end(), count_start + this->getVoxelMapSize())),
 				dev_free_space_begin,
 				DistanceVoxel::extract_byte_distance(m_dim.cast<int32_t>(), robot_radius));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
@@ -637,7 +637,7 @@ namespace gpu_voxels {
 
 		DistanceVoxel::pba_dist_t DistanceVoxelMap::getSquaredObstacleDistance(uint x, uint y, uint z) const
 		{
-			return getVoxel(m_dev_data, m_dim, x, y, z).squaredObstacleDistance(Vector3i(x, y, z));
+			return getVoxel(cuda_impl->m_dev_data, m_dim, x, y, z).squaredObstacleDistance(Vector3i(x, y, z));
 		}
 
 		DistanceVoxel::pba_dist_t DistanceVoxelMap::getObstacleDistance(const Vector3ui& pos) const
@@ -761,10 +761,10 @@ namespace gpu_voxels {
 			//TODO: remove debug code
 
 			//debug
-			thrust::device_vector<DistanceVoxel> dev_map(this->m_dev_data.begin(), this->m_dev_data.end());
+			thrust::device_vector<DistanceVoxel> dev_map(this->cuda_impl->m_dev_data.begin(), this->cuda_impl->m_dev_data.end());
 			thrust::host_vector<DistanceVoxel> host_map = dev_map; //optimize: copy only the data that will be compared
 
-			thrust::device_vector<DistanceVoxel> dev_other_map(other->m_dev_data.begin(), other->m_dev_data.end());
+			thrust::device_vector<DistanceVoxel> dev_other_map(other->cuda_impl->m_dev_data.begin(), other->cuda_impl->m_dev_data.end());
 			thrust::host_vector<DistanceVoxel> host_other_map = dev_other_map; //optimize: copy only the data that will be compared
 
 			//  LOGGING_INFO(VoxelmapLog, "map size: " << host_map.size() << ", host_other_map size: " << host_other_map.size() << endl);
@@ -929,21 +929,21 @@ namespace gpu_voxels {
 
 					// count number of voxels that are not uninitialised
 				size_t initialised_voxels;
-				initialised_voxels = thrust::count_if(m_dev_data.begin(), m_dev_data.end(), DistanceVoxel::is_initialised());
-				LOGGING_INFO(VoxelmapLog, "map has " << initialised_voxels << " initialised voxels out of " << m_dev_data.size() << " voxels." << endl);
+				initialised_voxels = thrust::count_if(cuda_impl->m_dev_data.begin(), cuda_impl->m_dev_data.end(), DistanceVoxel::is_initialised());
+				LOGGING_INFO(VoxelmapLog, "map has " << initialised_voxels << " initialised voxels out of " << cuda_impl->m_dev_data.size() << " voxels." << endl);
 
 				// count number of voxels that are not uninitialised
-				initialised_voxels = thrust::count_if(other->m_dev_data.begin(), other->m_dev_data.end(), DistanceVoxel::is_initialised());
-				LOGGING_INFO(VoxelmapLog, "other_map has " << initialised_voxels << " initialised voxels out of " << other->m_dev_data.size() << " voxels." << endl);
+				initialised_voxels = thrust::count_if(other->cuda_impl->m_dev_data.begin(), other->cuda_impl->m_dev_data.end(), DistanceVoxel::is_initialised());
+				LOGGING_INFO(VoxelmapLog, "other_map has " << initialised_voxels << " initialised voxels out of " << other->cuda_impl->m_dev_data.size() << " voxels." << endl);
 			}
 
 			thrust::counting_iterator<int> count_start(0);
 
 			DistanceVoxel::accumulated_diff result =
 				thrust::inner_product
-				(thrust::make_zip_iterator(thrust::make_tuple(&*m_dev_data.begin(), count_start)),
-					thrust::make_zip_iterator(thrust::make_tuple(&*m_dev_data.end(), count_start + this->m_dev_data.size())),
-					thrust::make_zip_iterator(thrust::make_tuple(&*other->m_dev_data.begin(), count_start + 0)),
+				(thrust::make_zip_iterator(thrust::make_tuple(&*cuda_impl->m_dev_data.begin(), count_start)),
+					thrust::make_zip_iterator(thrust::make_tuple(&*cuda_impl->m_dev_data.end(), count_start + this->cuda_impl->m_dev_data.size())),
+					thrust::make_zip_iterator(thrust::make_tuple(&*other->cuda_impl->m_dev_data.begin(), count_start + 0)),
 					init,
 					typename DistanceVoxel::accumulate_op(),
 					DistanceVoxel::diff_op(m_dim));

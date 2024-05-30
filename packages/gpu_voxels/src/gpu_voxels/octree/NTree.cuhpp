@@ -53,22 +53,7 @@
 #include <thrust/fill.h>
 #include <thrust/extrema.h>
 
-#if CUDA_VERSION < 9000
-#define CUB_NS_PREFIX namespace thrust { namespace system { namespace cuda { namespace detail {
-#define CUB_NS_POSTFIX                  }                  }                }                  }
-#define cub cub_
-#include <thrust/system/cuda/detail/cub/device/device_radix_sort.cuh>
-#undef cub
-#undef CUB_NS_PREFIX
-#undef CUB_NS_POSTFIX
-namespace cub = thrust::system::cuda::detail::cub_;
-#else // Cuda 9 or higher
-#define THRUST_CUB_NS_PREFIX namespace thrust {   namespace cuda_cub {
-#define THRUST_CUB_NS_POSTFIX }  }
 #include <cub/device/device_radix_sort.cuh>
-#undef CUB_NS_PREFIX
-#undef CUB_NS_POSTFIX
-#endif
 
 // Internal dependencies
 #include <gpu_voxels/octree/load_balancer/LoadBalancer.cuh>
@@ -80,7 +65,7 @@ namespace cub = thrust::system::cuda::detail::cub_;
 #include <gpu_voxels/octree/PointCloud.h>
 #include <gpu_voxels/octree/Morton.h>
 #include <gpu_voxels/octree/Octree.h>
-#include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.cuhpp>
 
 #include <icl_core_performance_monitor/PerformanceMonitor.h>
 
@@ -308,6 +293,7 @@ namespace gpu_voxels {
 		NTree<branching_factor, level_count, InnerNode, LeafNode>::NTree(uint32_t numBlocks,
 			uint32_t numThreadsPerBlock,
 			uint32_t resolution)
+			: m_allocation_list(std::make_unique<ThrustDeviceVector<void*>>())
 		{
 			this->numBlocks = numBlocks;
 			this->numThreadsPerBlock = numThreadsPerBlock;
@@ -328,7 +314,7 @@ namespace gpu_voxels {
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			HANDLE_CUDA_ERROR(cudaMemcpy(m_root, r, sizeof(InnerNode), cudaMemcpyHostToDevice));
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			m_allocation_list.push_back(m_root);
+			m_allocation_list->push_back(m_root);
 			delete r;
 
 			// create default status to BitVoxelMeaning mapping
@@ -371,9 +357,9 @@ namespace gpu_voxels {
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		NTree<branching_factor, level_count, InnerNode, LeafNode>::~NTree()
 		{
-			for (uint32_t i = 0; i < m_allocation_list.size(); ++i)
-				HANDLE_CUDA_ERROR(cudaFree(m_allocation_list[i]));
-			m_allocation_list.clear();
+			for (uint32_t i = 0; i < m_allocation_list->size(); ++i)
+				HANDLE_CUDA_ERROR(cudaFree((*m_allocation_list)[i]));
+			m_allocation_list->clear();
 
 			HANDLE_CUDA_ERROR(cudaFree(m_status_mapping));
 			HANDLE_CUDA_ERROR(cudaFree(m_extract_status_selection));
@@ -585,7 +571,7 @@ namespace gpu_voxels {
 				HANDLE_CUDA_ERROR(
 					cudaMalloc(&nodes,
 						branching_factor * numNodes * ((level == 0) ? sizeof(LeafNode) : sizeof(InnerNode))));
-				m_allocation_list.push_back(nodes);
+				m_allocation_list->push_back(nodes);
 
 #ifdef DEBUG_MODE
 				LOGGING_DEBUG(OctreeDebugLog, "numNodes: " << numNodes << endl);
@@ -2119,7 +2105,7 @@ namespace gpu_voxels {
 			const uint32_t alignment = (off == 0) ? 0 : 128 - off;
 			size_t nSize = leafLevel_size + alignment + size_t(nInnerNodes) * sizeof(InnerNode);
 			HANDLE_CUDA_ERROR(cudaMalloc(&d_newNodes, nSize));
-			m_allocation_list.push_back(d_newNodes);
+			m_allocation_list->push_back(d_newNodes);
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "cudaMalloc() for " << nSize * cBYTE2MBYTE << " MB" << endl);
 			LOGGING_DEBUG(OctreeInsertLog, "cudaMalloc(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
@@ -3374,16 +3360,16 @@ namespace gpu_voxels {
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::clear()
 		{
-			for (uint32_t i = 0; i < m_allocation_list.size(); ++i)
-				HANDLE_CUDA_ERROR(cudaFree((m_allocation_list)[i]));
-			m_allocation_list.clear();
+			for (uint32_t i = 0; i < m_allocation_list->size(); ++i)
+				HANDLE_CUDA_ERROR(cudaFree((*m_allocation_list)[i]));
+			m_allocation_list->clear();
 
 			auto* r = new InnerNode();
 			initRoot(*r);
 			r->setStatus(r->getStatus() | ns_STATIC_MAP | ns_DYNAMIC_MAP);
 			HANDLE_CUDA_ERROR(cudaMalloc(&m_root, sizeof(InnerNode)));
 			HANDLE_CUDA_ERROR(cudaMemcpy(m_root, r, sizeof(InnerNode), cudaMemcpyHostToDevice));
-			m_allocation_list.push_back(m_root);
+			m_allocation_list->push_back(m_root);
 			delete r;
 
 			allocInnerNodes = 1;

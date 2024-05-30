@@ -138,6 +138,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PcdFileReader.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointCloud.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\PointcloudFileHandler.h" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\ThrustForward.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\XyzFileReader.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers_highlevel\DistanceMapConverter.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_cuda.h" />
@@ -170,7 +171,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Morton.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Nodes.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTreeData.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\Octree.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\PointCloud.h" />
@@ -200,6 +201,7 @@
     </CudaCompile>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.cuh" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\VoxelList.h" />
@@ -230,13 +232,14 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\LoadBalancer.cuh" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\load_balancer\Propagate.cuh" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\AbstractVoxel.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu">
       <FileType>Document</FileType>
     </CudaCompile>

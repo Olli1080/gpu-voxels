@@ -24,14 +24,11 @@
 #ifndef GPU_VOXELS_OCTREE_SENSOR_H_INCLUDED
 #define GPU_VOXELS_OCTREE_SENSOR_H_INCLUDED
 
+#include <gpu_voxels/helpers/ThrustForward.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/SensorModel.h>
 #include <gpu_voxels/octree/DataTypes.h>
-#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/Voxel.h>
-#include <float.h>
-#include <thrust/device_vector.h>
-#include "Nodes.h"
 
 #include <gpu_voxels/logging/logging_octree.h>
 
@@ -95,8 +92,8 @@ namespace gpu_voxels {
 		//
 		//  }
 		//
-		//  thrust::device_vector<Voxel> free_space_voxel;
-		//  thrust::device_vector<Voxel> object_voxel;
+		//  ThrustDeviceVector<Voxel> free_space_voxel;
+		//  ThrustDeviceVector<Voxel> object_voxel;
 		//};
 
 		struct Sensor
@@ -110,7 +107,7 @@ namespace gpu_voxels {
 
 			__host__ __device__
 				Sensor(gpu_voxels::Matrix4f _pose, uint32_t _data_width, uint32_t _data_height) :
-				pose(_pose), data_width(_data_width), data_height(_data_height)
+				pose(std::move(_pose)), data_width(_data_width), data_height(_data_height)
 			{
 			}
 
@@ -198,24 +195,24 @@ namespace gpu_voxels {
 
 			__host__
 				void processSensorData(const DepthData* h_sensor_data,
-					thrust::device_vector<Voxel>*& d_free_space_voxel,
-					thrust::device_vector<Voxel>*& d_object_voxel);
+					ThrustDeviceVector<Voxel>*& d_free_space_voxel,
+					ThrustDeviceVector<Voxel>*& d_object_voxel);
 
 			__host__
 				void processSensorData(const Vector3f* h_points,
-					thrust::device_vector<Voxel>*& d_free_space_voxel,
-					thrust::device_vector<Voxel>*& d_object_voxel);
+					ThrustDeviceVector<Voxel>*& d_free_space_voxel,
+					ThrustDeviceVector<Voxel>*& d_object_voxel);
 
 		private:
 			__host__
 				void _processDepthImage(const DepthData* h_sensor_data,
-					thrust::device_vector<Vector3f>& d_free_space_points,
-					thrust::device_vector<Vector3f>& d_object_points);
+					ThrustDeviceVector<Vector3f>& d_free_space_points,
+					ThrustDeviceVector<Vector3f>& d_object_points);
 			__host__
-				void _processSensorData(thrust::device_vector<Vector3f>& d_free_space_points,
-					thrust::device_vector<Vector3f>& d_object_points,
-					thrust::device_vector<Voxel>& d_free_space_voxel,
-					thrust::device_vector<Voxel>& d_object_voxel);
+				void _processSensorData(ThrustDeviceVector<Vector3f>& d_free_space_points,
+					ThrustDeviceVector<Vector3f>& d_object_points,
+					ThrustDeviceVector<Voxel>& d_free_space_voxel,
+					ThrustDeviceVector<Voxel>& d_object_voxel);
 
 		public:
 			//gpu_voxels::Vector3f position;

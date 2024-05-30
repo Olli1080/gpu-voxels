@@ -23,6 +23,8 @@
 #ifndef  GPU_VOXELS_OCTREE_GVL_NTREE_H_INCLUDED
 #define  GPU_VOXELS_OCTREE_GVL_NTREE_H_INCLUDED
 
+#include <gpu_voxels/helpers/ThrustForward.h>
+
 #include <gpu_voxels/GpuVoxelsMap.h>
 #include <gpu_voxels/octree/NTree.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
@@ -53,7 +55,7 @@ namespace gpu_voxels {
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const ThrustDeviceVector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			void insertMetaPointCloud(const MetaPointCloud& meta_point_cloud, BitVoxelMeaning voxelType) override;
 
@@ -133,12 +135,13 @@ namespace gpu_voxels {
 				const Vector3i& offset = Vector3i::Zero());
 
 		protected:
-			virtual void insertVoxelData(const thrust::device_vector<Vector3ui>& d_voxels);
+			virtual void insertVoxelData(const ThrustDeviceVector<Vector3ui>& d_voxels);
 
 		private:
 			Sensor m_sensor;
-			thrust::device_vector<Voxel>* m_d_free_space_voxel2;
-			thrust::device_vector<Voxel>* m_d_object_voxel2;
+
+			ThrustDeviceVector<Voxel>* m_d_free_space_voxel2;
+			ThrustDeviceVector<Voxel>* m_d_object_voxel2;
 
 		};
 

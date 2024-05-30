@@ -23,8 +23,6 @@
 #ifndef GPU_VOXELS_OCTREE_VOXEL_H_INCLUDED
 #define GPU_VOXELS_OCTREE_VOXEL_H_INCLUDED
 
-#include <thrust/functional.h>
-
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>

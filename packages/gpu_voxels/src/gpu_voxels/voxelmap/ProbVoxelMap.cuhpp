@@ -24,6 +24,8 @@
 #define GPU_VOXELS_VOXELMAP_PROB_VOXELMAP_HPP_INCLUDED
 
 #include "ProbVoxelMap.h"
+
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.cuhpp>
 #include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/helpers/MathHelpers.h>
 
@@ -44,14 +46,14 @@ namespace gpu_voxels
             if (enable_raycasting)
             {
                 kernelInsertSensorData<<<m_blocks, m_threads>>>(
-                    m_dev_data.data().get(), m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
+                    cuda_impl->m_dev_data.data().get(), cuda_impl->m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
                     global_points.getPointsDevice().data().get(), global_points.getPointCloudSize(), cut_real_robot, robot_map, robot_voxel_meaning, RayCaster());
                 CHECK_CUDA_ERROR();
             }
             else
             {
                 kernelInsertSensorData<<<m_blocks, m_threads>>>(
-                    m_dev_data.data().get(), m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
+                    cuda_impl->m_dev_data.data().get(), cuda_impl->m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
                     global_points.getPointsDevice().data().get(), global_points.getPointCloudSize(), cut_real_robot, robot_map, robot_voxel_meaning, DummyRayCaster());
                 CHECK_CUDA_ERROR();
             }

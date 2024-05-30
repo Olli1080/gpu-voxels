@@ -30,9 +30,8 @@
 #include <span>
 #include <vector>
 
-#include <thrust/device_vector.h>
-
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
+#include <gpu_voxels/helpers/ThrustForward.h>
 
 namespace gpu_voxels
 {
@@ -101,7 +100,7 @@ namespace gpu_voxels
          */
         void updatePointCloud(uint16_t cloud, const PointCloud& pointcloud);
 
-        void updatePointCloud(uint16_t cloud, const thrust::device_vector<Vector3f>& pointcloud);
+        void updatePointCloud(uint16_t cloud, const ThrustDeviceVector<Vector3f>& pointcloud);
 
         /*!
          * \brief updatePointCloud This updates a specific cloud on the host.
@@ -213,7 +212,7 @@ namespace gpu_voxels
     private:
 
         void addCloud(const Vector3f* points, uint32_t pointcloud_size, bool sync = false, const std::string& name = "");
-        void addCloud(const thrust::device_vector<Vector3f>& point_cloud, const std::string& name = "");
+        void addCloud(const ThrustDeviceVector<Vector3f>& point_cloud, const std::string& name = "");
 
         /*!
          * \brief Init does the allocation of Device and Host memory
@@ -234,11 +233,12 @@ namespace gpu_voxels
         std::shared_ptr<MetaPointCloudStructLocal> m_point_clouds_local;
         std::shared_ptr<MetaPointCloudStruct> m_dev_point_clouds_local;
 
-        thrust::device_vector<Vector3f> m_dev_ptr_to_accumulated_cloud;
-        thrust::device_ptr<MetaPointCloudStruct> m_dev_ptr_to_point_clouds_struct;
+        struct CUDA_impl;
+        std::unique_ptr<CUDA_impl> cuda_impl_;
+
         std::vector<thrust::device_ptr<Vector3f>> m_dev_ptrs_to_addrs;
-        thrust::device_vector<uint32_t> m_dev_ptr_to_cloud_sizes;
-        thrust::device_vector<Vector3f*> m_dev_ptr_to_clouds_base_addresses;
+
+        
     };
 }
 #endif

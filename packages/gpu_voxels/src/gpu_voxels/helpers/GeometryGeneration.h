@@ -34,9 +34,9 @@ namespace gpu_voxels
      */
     struct OrientedBoxParams
     {
-        gpu_voxels::Vector3f dim; //< half the side length
-        gpu_voxels::Vector3f center; //< center of the cube
-        gpu_voxels::Vector3f rot; //< rotation of the cube (Roll, Pitch, Yaw)
+        Vector3f dim; //< half the side length
+        Vector3f center; //< center of the cube
+        Vector3f rot; //< rotation of the cube (Roll, Pitch, Yaw)
     };
 
     namespace geometry_generation
@@ -48,7 +48,7 @@ namespace gpu_voxels
          * \param spacing defines sampling distance for points along the edges
          * \param ret MetaPointCloud whose first cloud is written into
          */
-        void createOrientedBoxEdges(const OrientedBoxParams& params, float spacing, gpu_voxels::PointCloud& ret);
+        void createOrientedBoxEdges(const OrientedBoxParams& params, float spacing, PointCloud& ret);
 
         /*!
          * \brief createOrientedBox creates a dense solid cloud of a box
@@ -56,7 +56,7 @@ namespace gpu_voxels
          * \param spacing defines sampling distance for points in the volume
          * \param ret MetaPointCloud whose first cloud is written into
          */
-        void createOrientedBox(const OrientedBoxParams& params, float spacing, gpu_voxels::PointCloud& ret);
+        void createOrientedBox(const OrientedBoxParams& params, float spacing, PointCloud& ret);
 
         /*!
          * \brief createBoxOfPoints creates points within given bounds with a given spacing

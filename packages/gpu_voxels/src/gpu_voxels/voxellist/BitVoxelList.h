@@ -195,9 +195,10 @@ namespace gpu_voxels {
 
 		private:
 
-			thrust::device_vector<BitVoxel<length>> m_dev_colliding_bits_result_list;
+			struct CUDA_impl;
+			std::unique_ptr<CUDA_impl> cuda_impl;
+
 			thrust::host_vector<BitVoxel<length>> m_colliding_bits_result_list;
-			BitVoxel<length>* m_dev_bitmask;
 
 		};
 

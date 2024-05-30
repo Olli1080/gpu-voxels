@@ -12,12 +12,18 @@
  */
 //----------------------------------------------------------------------/*
 #include "Octree.h"
-#include "NTree.hpp"
+#include "NTree.cuhpp"
+
 #include <gpu_voxels/octree/GvlNTree.hpp>
-#include <gpu_voxels/voxelmap/VoxelMap.hpp>
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
+#include <gpu_voxels/voxellist/BitVoxelList.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
+namespace voxellist
+{
+    template class BitVoxelList<BIT_VECTOR_LENGTH, OctreeVoxelID>;
+}
 namespace NTree {
 
 // ########## Explicit Instantiation ##########

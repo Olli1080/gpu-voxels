@@ -23,9 +23,12 @@
 #ifndef GPU_VOXELS_OCTREE_GVL_NTREE_HPP_INCLUDED
 #define GPU_VOXELS_OCTREE_GVL_NTREE_HPP_INCLUDED
 
-#include <gpu_voxels/helpers/PointCloud.h>
-
 #include <gpu_voxels/octree/GvlNTree.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+
+#include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/octree/Octree.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
 

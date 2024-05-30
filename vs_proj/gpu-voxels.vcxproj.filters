@@ -251,7 +251,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.h">
       <Filter>Headerdateien\octree</Filter>
     </ClInclude>
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.hpp">
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTree.cuhpp">
       <Filter>Headerdateien\octree</Filter>
     </ClInclude>
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\octree\NTreeData.h">
@@ -311,7 +311,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\ProbVoxelMap.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.h" />
-    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.hpp" />
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\VoxelMap.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\AbstractVoxel.h" />
@@ -378,6 +378,12 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\ThrustForward.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.cuh">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\helpers\MetaPointCloud.cu">
@@ -436,5 +442,8 @@
     </CudaCompile>
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cu">
+      <Filter>Quelldateien</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
