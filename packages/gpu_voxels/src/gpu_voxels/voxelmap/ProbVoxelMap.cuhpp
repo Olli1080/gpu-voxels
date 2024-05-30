@@ -24,6 +24,8 @@
 #define GPU_VOXELS_VOXELMAP_PROB_VOXELMAP_HPP_INCLUDED
 
 #include "ProbVoxelMap.h"
+
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
 #include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/helpers/MathHelpers.h>
 

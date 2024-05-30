@@ -237,6 +237,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cu" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu">
       <FileType>Document</FileType>
     </CudaCompile>

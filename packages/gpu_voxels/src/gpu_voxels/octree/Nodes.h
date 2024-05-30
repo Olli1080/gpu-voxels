@@ -23,19 +23,6 @@
 #ifndef GPU_VOXELS_OCTREE_NODES_H_INCLUDED
 #define GPU_VOXELS_OCTREE_NODES_H_INCLUDED
 
-#include <cuda.h>
-#include <assert.h>
-
-// thrust
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/reduce.h>
-#include <thrust/sort.h>
-#include <thrust/scan.h>
-
-// icl_environment_gpu
-//#include <gpu_voxels/voxelmap/Voxel.h>
-
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
@@ -111,7 +98,7 @@ namespace gpu_voxels {
 		__host__   __device__   __forceinline__ enum gpu_voxels::BitVoxelMeaning statusToBitVoxelMeaning(uint8_t* mapping_lookup,
 			NodeStatus status)
 		{
-			return gpu_voxels::BitVoxelMeaning(mapping_lookup[status & (ns_FREE | ns_UNKNOWN | ns_OCCUPIED | ns_COLLISION)]);
+			return static_cast<gpu_voxels::BitVoxelMeaning>(mapping_lookup[status & (ns_FREE | ns_UNKNOWN | ns_OCCUPIED | ns_COLLISION)]);
 		}
 
 		/*

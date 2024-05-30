@@ -23,11 +23,7 @@
 #ifndef GPU_VOXELS_OCTREE_POINTCLOUD_H_INCLUDED
 #define GPU_VOXELS_OCTREE_POINTCLOUD_H_INCLUDED
 
-#include <limits.h>
-//#include <thrust/scan.h>
 #include <thrust/device_vector.h>
-//#include <thrust/host_vector.h>
-//#include <thrust/sort.h>
 
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/DataTypes.h>

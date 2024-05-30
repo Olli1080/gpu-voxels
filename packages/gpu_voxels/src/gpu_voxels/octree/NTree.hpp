@@ -53,22 +53,7 @@
 #include <thrust/fill.h>
 #include <thrust/extrema.h>
 
-#if CUDA_VERSION < 9000
-#define CUB_NS_PREFIX namespace thrust { namespace system { namespace cuda { namespace detail {
-#define CUB_NS_POSTFIX                  }                  }                }                  }
-#define cub cub_
-#include <thrust/system/cuda/detail/cub/device/device_radix_sort.cuh>
-#undef cub
-#undef CUB_NS_PREFIX
-#undef CUB_NS_POSTFIX
-namespace cub = thrust::system::cuda::detail::cub_;
-#else // Cuda 9 or higher
-#define THRUST_CUB_NS_PREFIX namespace thrust {   namespace cuda_cub {
-#define THRUST_CUB_NS_POSTFIX }  }
 #include <cub/device/device_radix_sort.cuh>
-#undef CUB_NS_PREFIX
-#undef CUB_NS_POSTFIX
-#endif
 
 // Internal dependencies
 #include <gpu_voxels/octree/load_balancer/LoadBalancer.cuh>

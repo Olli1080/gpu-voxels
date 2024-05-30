@@ -250,8 +250,8 @@ namespace gpu_voxels
 		template size_t TemplateVoxelList<ProbabilisticVoxel, MapVoxelID>::collideVoxellists(const TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>* other, const Vector3i& offset, thrust::device_vector<bool>& collision_stencil) const;
 
 		template bool TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::equals(const TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>&) const;
-		template bool TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::subtract(const TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>*, const Vector3f&);
-		template void TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::screendump(bool) const;
+		//template bool TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::subtract(const TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>*, const Vector3f&);
+		//template void TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::screendump(bool) const;
 		//template bool TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>::subtract(const TemplateVoxelList<ProbabilisticVoxel, MapVoxelID>*, const Vector3f&);
 
 		//template size_t TemplateVoxelList<DistanceVoxel, MapVoxelID>::collideVoxellists(const TemplateVoxelList<BitVoxel<BIT_VECTOR_LENGTH>, MapVoxelID>* other, const Vector3i& offset, thrust::device_vector<bool>& collision_stencil) const;

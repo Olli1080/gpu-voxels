@@ -30,8 +30,6 @@
 #include <gpu_voxels/voxel/DistanceVoxel.h>
 #include <thrust/device_vector.h>
 
-#include <thrust/transform.h>
-
 #include "VoxelMapOperationsPBA.h"
 
 namespace gpu_voxels

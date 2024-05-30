@@ -23,8 +23,6 @@
 #ifndef GPU_VOXELS_OCTREE_VOXEL_H_INCLUDED
 #define GPU_VOXELS_OCTREE_VOXEL_H_INCLUDED
 
-#include <thrust/functional.h>
-
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/vis_interface/VisualizerInterface.h>
@@ -43,7 +41,7 @@ namespace gpu_voxels {
 			// TODO choose better memory layout; may use one byte of voxel_id for occ. probab.
 
 			OctreeVoxelID voxelId;
-			gpu_voxels::Vector3ui coordinates;
+			Vector3ui coordinates;
 
 			__host__ __device__
 				friend bool operator<(Voxel a, Voxel b)
@@ -68,7 +66,7 @@ namespace gpu_voxels {
 			}
 
 			__host__ __device__
-				Voxel(OctreeVoxelID voxelID, gpu_voxels::Vector3ui coordinates, Probability occupancy)
+				Voxel(OctreeVoxelID voxelID, Vector3ui coordinates, Probability occupancy)
 			{
 				this->voxelId = voxelID;
 				this->coordinates = coordinates;
@@ -91,7 +89,7 @@ namespace gpu_voxels {
 
 		};
 
-		struct count_per_size : public thrust::unary_function<Cube, voxel_count>
+		struct count_per_size
 		{
 			OctreeVoxelID m_cube_side_length;
 

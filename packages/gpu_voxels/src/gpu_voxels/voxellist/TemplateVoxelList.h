@@ -320,6 +320,8 @@ namespace gpu_voxels {
 
 			//! result array for collision check with counter on device
 			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
+
+			template <typename OtherV, typename OtherVoxelIDType> friend class TemplateVoxelList;
 		};
 
 		extern template bool TemplateVoxelList<CountingVoxel, MapVoxelID>::merge(const GpuVoxelsMapSharedPtr other, const Vector3i& voxel_offset, const BitVoxelMeaning* new_meaning);

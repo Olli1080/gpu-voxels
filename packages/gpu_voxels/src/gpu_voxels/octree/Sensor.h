@@ -27,11 +27,8 @@
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/SensorModel.h>
 #include <gpu_voxels/octree/DataTypes.h>
-#include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/octree/Voxel.h>
-#include <float.h>
 #include <thrust/device_vector.h>
-#include "Nodes.h"
 
 #include <gpu_voxels/logging/logging_octree.h>
 

@@ -31,14 +31,9 @@
  *  Independent Component Library containing core functionality.
  */
 
-#include "icl_core/BaseTypes.h"
-//#include "icl_core/BitfieldHelper.h"
 #include "icl_core/KeyValueDirectory.h"
-//#include "icl_core/KeyValueDirectory.hpp"
 #include "icl_core/Noncopyable.hpp"
 #include "icl_core/fs.h"
-//#include "icl_core/StringHelper.h"
-#include "icl_core/TemplateHelper.h"
 #include "icl_core/TimeStamp.h"
 
 #endif

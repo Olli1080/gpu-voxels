@@ -23,8 +23,6 @@
 #ifndef GPU_VOXELS_OCTREE_NTREE_H_INCLUDED
 #define GPU_VOXELS_OCTREE_NTREE_H_INCLUDED
 
-#include <limits.h>
-
 // thrust
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
