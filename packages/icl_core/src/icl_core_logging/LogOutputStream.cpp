@@ -91,7 +91,7 @@ namespace icl_core {
                 if (m_worker_thread->running())
                 {
                     std::cerr << "WARNING: Destroyed LogOutputStream while thread is still alive. "
-                        << "Please call Shutdown() before destruction." << std::endl;
+                        << "Please call Shutdown() before destruction." << '\n';
                 }
 
                 delete m_worker_thread;
@@ -122,7 +122,7 @@ namespace icl_core {
             if (log_level < getLogLevel())
                 return;
 
-            const LogMessage new_entry(icl_core::TimeStamp::now(), log_level, log_stream_description,
+            const LogMessage new_entry(std::chrono::system_clock::now(), log_level, log_stream_description,
                                        filename, line, classname, objectname, function, text);
 
             if (m_use_worker_thread)
@@ -214,39 +214,20 @@ namespace icl_core {
                 }
                 case LogFormatEntry::eT_TIMESTAMP:
                 {
-                    char time_buffer[100] = {};
-
-#ifdef _SYSTEM_LXRT_
-                    // Don't use strfLocaltime() in a hard realtime LXRT task, because
-                    // it might use a POSIX mutex!
-                    if (icl_core::os::isThisLxrtTask() && icl_core::os::isThisHRT())
-                    {
-                        icl_core::os::snprintf(time_buffer, 99, "%d %02d:%02d:%02d(HRT)",
-                            int(log_message.timestamp.days()),
-                            int(log_message.timestamp.hours()),
-                            int(log_message.timestamp.minutes()),
-                            int(log_message.timestamp.seconds()));
-                    }
-                    else
-#endif
-                    {
-                        log_message.timestamp.strfLocaltime(time_buffer, 100, m_time_format);
-                    }
-
-                    msg << time_buffer;
+                    msg << std::vformat(m_time_format, std::make_format_args(log_message.timestamp));
                     break;
                 }
                 case LogFormatEntry::eT_TIMESTAMP_MS:
                 {
-                    auto msec = log_message.timestamp.tsMSec();
+                    auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(log_message.timestamp.time_since_epoch());
                     size_t msec_len = 1;
-                    if (msec >= std::chrono::milliseconds(10))
-                    {
-                        msec_len = 2;
-                    }
                     if (msec >= std::chrono::milliseconds(100))
                     {
                         msec_len = 3;
+                    }
+                    else if (msec >= std::chrono::milliseconds(10))
+                    {
+                        msec_len = 2;
                     }
                     for (size_t i = it.width; i > msec_len; --i)
                     {
@@ -263,12 +244,12 @@ namespace icl_core {
 
         void LogOutputStream::pushImpl(const std::string&)
         {
-            std::cerr << "LOG OUTPUT STREAM ERROR: pushImpl() is not implemented!!!" << std::endl;
+            std::cerr << "LOG OUTPUT STREAM ERROR: pushImpl() is not implemented!!!" << '\n';
         }
 
         void LogOutputStream::printConfiguration() const
         {
-            std::cerr << "    " << name() << " : " << logLevelDescription(m_log_level) << std::endl;
+            std::cerr << "    " << name() << " : " << logLevelDescription(m_log_level) << '\n';
         }
 
         void LogOutputStream::parseLogFormat(const char* format)
@@ -502,7 +483,7 @@ namespace icl_core {
             return m_done;
         }
 
-        LogOutputStream::LogMessage::LogMessage(const icl_core::TimeStamp& timestamp,
+        LogOutputStream::LogMessage::LogMessage(const std::chrono::system_clock::time_point& timestamp,
             icl_core::logging::LogLevel log_level,
             const char* log_stream, const char* filename,
             size_t line, const char* class_name,

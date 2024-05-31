@@ -31,9 +31,6 @@
 #include "icl_core_performance_monitor/PerformanceMonitorMacros.h"
 #include "icl_core_performance_monitor/ImportExport.h"
 
-
-#include <icl_core/TimeStamp.h>
-
 namespace icl_core {
 	namespace perf_mon {
 
@@ -240,7 +237,7 @@ namespace icl_core {
 
 			std::map<std::string, std::vector<double> > m_data;
 			std::map<std::string, std::vector<double> > m_data_nontime;
-			std::map<std::string, TimeStamp> m_timer;
+			std::map<std::string, std::chrono::system_clock::time_point> m_timer;
 			std::vector<std::vector<double> > m_buffer;
 			std::map<std::string, bool> m_enabled_prefix;
 			std::map<std::string, double > m_static_data;

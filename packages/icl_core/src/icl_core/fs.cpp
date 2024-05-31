@@ -19,53 +19,47 @@
  *
  */
 //----------------------------------------------------------------------
-#include <string>
 #include "icl_core/fs.h"
 
 #ifdef _IC_BUILDER_ZLIB_
+#include <string>
 #include <iostream>
 #endif
 
 namespace icl_core {
-    namespace os {
 
 #ifdef _IC_BUILDER_ZLIB_
-        bool zipFile(const char* filename, const char* additional_extension)
+        bool zipFile(const std::filesystem::path& filename, const std::string& additional_extension)
         {
             bool ret = true;
-            const std::string gzip_file_name = std::string(filename) + additional_extension + ".gz";
-            const gzFile unzipped_file = gzopen(filename, "rb");
-            const gzFile zipped_file = gzopen(gzip_file_name.c_str(), "wb");
+            std::filesystem::path gzip_filename = filename;
+            gzip_filename.replace_filename(filename.filename().string() + additional_extension + ".gz");
+
+            const auto unzipped_file = openZipFile(filename, "rb");
+            const auto zipped_file = openZipFile(gzip_filename, "wb");
 
             if (unzipped_file != nullptr && zipped_file != nullptr)
             {
 	            char big_buffer[0x1000];
-	            int bytes_read = gzread(unzipped_file, big_buffer, 0x1000);
+	            int bytes_read = gzread(unzipped_file.get(), big_buffer, 0x1000);
                 while (bytes_read > 0)
                 {
-                    if (gzwrite(zipped_file, big_buffer, bytes_read) != bytes_read)
+                    if (gzwrite(zipped_file.get(), big_buffer, bytes_read) != bytes_read)
                     {
-                        std::cerr << "ZipFile(" << filename << "->" << gzip_file_name << ") Error on writing." << std::endl;
+                        std::cerr << "ZipFile(" << filename << "->" << gzip_filename.string() << ") Error on writing.\n";
                         ret = false;
                         break;
                     }
 
-                    bytes_read = gzread(unzipped_file, big_buffer, 0x1000);
+                    bytes_read = gzread(unzipped_file.get(), big_buffer, 0x1000);
                 }
             }
-
-            if (unzipped_file != nullptr)
-                gzclose(unzipped_file);
-
-            if (zipped_file != nullptr)
-                gzclose(zipped_file);
-
             return ret;
         }
 
-        ZipFilePtr openZipFile(const char* path, const char* mode)
+        ZipFilePtr openZipFile(const std::filesystem::path& path, const char* mode)
         {
-            return ZipFilePtr(gzopen(path, mode), {});
+            return ZipFilePtr(gzopen(path.string().c_str(), mode), {});
         }
 
         void ZipFileDeleter::operator()(gzFile file)
@@ -75,5 +69,4 @@ namespace icl_core {
         }
 
 #endif
-    }
 }

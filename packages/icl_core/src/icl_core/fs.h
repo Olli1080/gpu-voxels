@@ -22,28 +22,24 @@
 #ifndef ICL_CORE_OS_FS_H_INCLUDED
 #define ICL_CORE_OS_FS_H_INCLUDED
 
+#ifdef _IC_BUILDER_ZLIB_
 #include <memory>
+#include <filesystem>
 
 #include "icl_core/ImportExport.h"
 
-#ifdef _IC_BUILDER_DEPRECATED_STYLE_
-# include "icl_core/Deprecate.h"
-#endif
-
-#ifdef _IC_BUILDER_ZLIB_
 #include <zlib.h>
 #endif
 
 namespace icl_core {
 	//! Namespace for operating system specific implementations.
-	namespace os {
 
 #ifdef _IC_BUILDER_ZLIB_
 		/*!
 		 * Zip the specified file using the gzip algorithm.
 		 * Append the \a additional_extension to the original filename.
 		 */
-		bool ICL_CORE_IMPORT_EXPORT zipFile(const char* filename, const char* additional_extension = "");
+		bool ICL_CORE_IMPORT_EXPORT zipFile(const std::filesystem::path& filename, const std::string& additional_extension = "");
 
 		struct ZipFileDeleter
 		{
@@ -52,11 +48,9 @@ namespace icl_core {
 
 		typedef std::unique_ptr<std::remove_pointer_t<gzFile>, ZipFileDeleter> ZipFilePtr;
 
-		ZipFilePtr openZipFile(const char* path, const char* mode);
+		ZipFilePtr openZipFile(const std::filesystem::path& path, const char* mode);
 
 #endif
-
-	}
 }
 
 #endif

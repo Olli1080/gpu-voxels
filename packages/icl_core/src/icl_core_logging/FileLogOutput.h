@@ -24,10 +24,10 @@
 #ifndef ICL_CORE_LOGGING_FILE_LOG_OUTPUT_H_INCLUDED
 #define ICL_CORE_LOGGING_FILE_LOG_OUTPUT_H_INCLUDED
 
+#include <chrono>
 #include <fstream>
 
 #include "icl_core/fs.h"
-#include "icl_core/TimeStamp.h"
 #include "icl_core_logging/ImportExport.h"
 #include "icl_core_logging/LogOutputStream.h"
 
@@ -74,7 +74,7 @@ namespace icl_core {
             std::ofstream m_log_file;
 
             bool m_rotate;
-            std::chrono::days m_last_rotation;
+            std::chrono::file_clock::time_point m_last_rotation;
 
             bool m_delete_old_files;
             std::chrono::days m_delete_older_than_days;
@@ -83,7 +83,7 @@ namespace icl_core {
 
 #if defined(_IC_BUILDER_ZLIB_)
             bool m_online_zip;
-            os::ZipFilePtr m_zipped_log_file;
+            ZipFilePtr m_zipped_log_file;
 #endif
         };
 

@@ -13,9 +13,10 @@
 namespace icl_core {
     namespace logging {
 
-        ThreadStream& operator << (ThreadStream& stream, const icl_core::TimeStamp& time_stamp)
+        ThreadStream& operator << (ThreadStream& stream, const std::chrono::system_clock::time_point& time_stamp)
         {
-            stream << time_stamp.formatIso8601();
+            auto zoned_time = std::chrono::zoned_time{ std::chrono::current_zone(), time_stamp };
+            stream << std::format("{:%F %X}", zoned_time);
             return stream;
         }
 

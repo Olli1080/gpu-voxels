@@ -42,9 +42,6 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core\RemoveMemberPointer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="..\packages\icl_core\src\icl_core\TimeStamp.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\AttributeTree.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -189,9 +186,6 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\packages\icl_core\src\icl_core\fs.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="..\packages\icl_core\src\icl_core\TimeStamp.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\packages\icl_core\src\icl_core_config\AttributeTree.cpp">

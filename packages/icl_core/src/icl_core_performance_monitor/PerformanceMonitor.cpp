@@ -74,8 +74,7 @@ namespace icl_core {
             if (!getInstance()->m_enabled)
                 return;
 
-            const TimeStamp t = TimeStamp::now();
-            getInstance()->m_timer[timer_name] = t;
+            getInstance()->m_timer[timer_name] = std::chrono::system_clock::now();
         }
 
         double PerformanceMonitor::measurement(const std::string& timer_name, const std::string& description,
@@ -85,7 +84,7 @@ namespace icl_core {
             PerformanceMonitor* monitor = getInstance();
             if (monitor->isEnabled(prefix))
             {
-                const TimeStamp end = TimeStamp::now();
+                const auto end = std::chrono::system_clock::now();
                 const auto d(end - monitor->m_timer[timer_name]);
                 const auto double_ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(d);
                 monitor->addEvent(prefix, description, double_ms.count());
@@ -117,10 +116,10 @@ namespace icl_core {
                 return 0;
 
             PerformanceMonitor* monitor = getInstance();
-            const TimeStamp start = monitor->m_timer[timer_name];
-            if (start != TimeStamp())
+            const auto start = monitor->m_timer[timer_name];
+            if (start != std::chrono::system_clock::time_point{})
             {
-                const TimeStamp end = TimeStamp::now();
+                const auto end = std::chrono::system_clock::now();
                 const auto d(end - start);
                 const auto double_ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(d);
                 monitor->addEvent(prefix, description, double_ms.count());

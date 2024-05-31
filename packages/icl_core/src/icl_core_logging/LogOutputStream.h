@@ -32,7 +32,6 @@
 #include <condition_variable>
 
 #include <icl_core/Noncopyable.hpp>
-#include <icl_core/TimeStamp.h>
 
 //TODO:: meh? =)
 #ifdef _SYSTEM_LXRT_
@@ -179,14 +178,14 @@ namespace icl_core {
             //! Defines an entry for the message queue.
             struct LogMessage
             {
-                LogMessage(const icl_core::TimeStamp& timestamp = icl_core::TimeStamp(),
+                LogMessage(const std::chrono::system_clock::time_point& timestamp = std::chrono::system_clock::now(),
                     icl_core::logging::LogLevel log_level = eLL_MUTE,
                     const char* log_stream = "", const char* filename = "",
                     size_t line = 0,
                     const char* class_name = "", const char* object_name = "", const char* function_name = "",
                     const char* message_text = "");
 
-                icl_core::TimeStamp timestamp;
+                std::chrono::system_clock::time_point timestamp;
                 icl_core::logging::LogLevel log_level;
                 char log_stream[cMAX_IDENTIFIER_LENGTH + 1];
                 char filename[cMAX_DESCRIPTION_LENGTH + 1];

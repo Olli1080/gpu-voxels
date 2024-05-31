@@ -25,8 +25,8 @@
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <chrono>
 
-#include <icl_core/TimeStamp.h>
 #include "icl_core_logging/Constants.h"
 #include "icl_core_logging/ImportExport.h"
 #include "icl_core_logging/LoggingManager.h"
@@ -119,7 +119,7 @@ namespace icl_core {
 	namespace logging {
 
 		ICL_CORE_LOGGING_IMPORT_EXPORT
-			ThreadStream& operator << (ThreadStream& stream, const icl_core::TimeStamp& time_stamp);
+			ThreadStream& operator << (ThreadStream& stream, const std::chrono::system_clock::time_point& time_stamp);
 
 		//ICL_CORE_LOGGING_IMPORT_EXPORT
 		//ThreadStream& operator << (ThreadStream& stream, const icl_core::TimeSpan& time_span);

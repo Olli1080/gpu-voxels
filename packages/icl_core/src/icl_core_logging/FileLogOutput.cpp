@@ -36,14 +36,14 @@ namespace icl_core {
             icl_core::logging::LogLevel log_level)
             : LogOutputStream(name, config_prefix, log_level),
             m_rotate(false),
-            m_last_rotation(0),
+            m_last_rotation({}),
             m_delete_old_files(false),
             m_delete_older_than_days(0)
         {
             icl_core::config::get<bool>(config_prefix + "/Rotate", m_rotate);
 
             if (m_rotate)
-                m_last_rotation = icl_core::TimeStamp::now().tsNDays();
+                m_last_rotation = std::chrono::file_clock::now();
 
             uint32_t temp;
             if (icl_core::config::get<uint32_t>(config_prefix + "/DeleteOlderThan", temp))
@@ -74,7 +74,7 @@ namespace icl_core {
                     }
                     else
                     {
-                        m_last_rotation = icl_core::TimeStamp(std::chrono::clock_cast<std::chrono::system_clock>(std::filesystem::last_write_time(log_file_path))).tsNDays();
+                        m_last_rotation = std::filesystem::last_write_time(log_file_path);
                         rotateLogFile();
                     }
                 }
@@ -92,7 +92,7 @@ namespace icl_core {
             : LogOutputStream(name, log_level),
             m_filename(std::move(filename)),
             m_rotate(false),
-            m_last_rotation(0),
+            m_last_rotation({}),
             m_delete_old_files(false),
             m_delete_older_than_days(0),
             m_flush(flush)
@@ -184,7 +184,7 @@ namespace icl_core {
 #if defined(_IC_BUILDER_ZLIB_)
             if (m_online_zip)
             {
-                m_zipped_log_file = os::openZipFile(m_filename.c_str(), "a+b");
+                m_zipped_log_file = openZipFile(m_filename.c_str(), "a+b");
                 if (m_zipped_log_file == nullptr)
                 {
                     std::cerr << "Could not open log file " << m_filename << std::endl;
@@ -214,27 +214,30 @@ namespace icl_core {
 
         void FileLogOutput::rotateLogFile()
         {
+            using namespace std::chrono;
             if (m_rotate)
             {
-	            const auto current_day = icl_core::TimeStamp::now().tsNDays();
-                if (m_last_rotation != current_day)
+                const auto current_time = system_clock::now();
+                const auto current_day = duration_cast<days>(current_time.time_since_epoch());
+                const auto rotation_clock = clock_cast<system_clock>(m_last_rotation);
+                const auto rotation_day = duration_cast<days>(rotation_clock.time_since_epoch());
+                if (rotation_day != current_day)
                 {
                     // First, close the log file if it's open.
                     closeLogFile();
 
                     // Move the file. ZIP it, if libz is available.
-                    char time_str[12];
-                    icl_core::TimeStamp(std::chrono::system_clock::time_point{m_last_rotation}).strfTime(time_str, 12, ".%Y-%m-%d");
+                    std::string time_str = std::format(".{:%F}", rotation_clock);
 #ifdef _IC_BUILDER_ZLIB_
                     if (!m_online_zip)
                     {
-                        icl_core::os::zipFile(m_filename.c_str(), time_str);
-                        _unlink(m_filename.c_str());
+                        zipFile(m_filename, time_str);
+                        std::filesystem::remove(m_filename);
                     }
                     else
 #endif
                     {
-                        rename(m_filename.c_str(), (m_filename + time_str).c_str());
+                        std::filesystem::rename(m_filename, m_filename + time_str);
                     }
 
                     // Delete old log files.
@@ -244,12 +247,12 @@ namespace icl_core {
 	                    const std::string log_file_name = std::filesystem::path(m_filename).filename().string();
                         if (std::filesystem::exists(log_file_path) && std::filesystem::is_directory(log_file_path))
                         {
-	                        const icl_core::TimeStamp delete_older_than(std::chrono::system_clock::time_point{current_day - m_delete_older_than_days});
+	                        const auto delete_older_than = system_clock::time_point{current_day - m_delete_older_than_days};
                             for (std::filesystem::directory_iterator it(log_file_path), end; it != end; ++it)
                             {
                                 // If the found file starts with the name of the log file the check its last write time.
                                 if (!is_directory(*it)
-                                    && icl_core::TimeStamp(std::chrono::clock_cast<std::chrono::system_clock>(std::filesystem::last_write_time(*it))) < delete_older_than
+                                    && clock_cast<system_clock>(std::filesystem::last_write_time(*it)) < delete_older_than
                                     && it->path().filename().string().find(log_file_name) == 0
                                     )
                                 {
@@ -260,7 +263,7 @@ namespace icl_core {
                     }
 
                     // Store the rotation time.
-                    m_last_rotation = current_day;
+                    m_last_rotation = clock_cast<file_clock>(current_time);
 
                     // Re-open the log file.
                     openLogFile();

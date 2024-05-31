@@ -97,7 +97,6 @@
     <ClInclude Include="..\packages\icl_core\src\icl_core\Noncopyable.hpp" />
     <ClInclude Include="..\packages\icl_core\src\icl_core\fs.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core\RemoveMemberPointer.h" />
-    <ClInclude Include="..\packages\icl_core\src\icl_core\TimeStamp.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\AttributeTree.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\Config.h" />
     <ClInclude Include="..\packages\icl_core\src\icl_core_config\ConfigEnum.h" />
@@ -148,7 +147,6 @@
   <ItemGroup>
     <ClCompile Include="..\packages\icl_core\src\icl_core\EnumHelper.cpp" />
     <ClCompile Include="..\packages\icl_core\src\icl_core\fs.cpp" />
-    <ClCompile Include="..\packages\icl_core\src\icl_core\TimeStamp.cpp" />
     <ClCompile Include="..\packages\icl_core\src\icl_core_config\AttributeTree.cpp" />
     <ClCompile Include="..\packages\icl_core\src\icl_core_config\Config.cpp" />
     <ClCompile Include="..\packages\icl_core\src\icl_core_config\ConfigIterator.cpp" />
