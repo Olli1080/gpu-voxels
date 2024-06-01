@@ -30,7 +30,7 @@ namespace icl_core {
                                          bool use_worker_thread)
             : m_name(std::move(name)),
             m_log_level(log_level),
-            m_time_format("%Y-%m-%d %H:%M:%S"),
+            m_time_format("%F %X"),
             m_use_worker_thread(use_worker_thread)
         {
             LoggingManager::instance().assertInitialized();
@@ -48,14 +48,10 @@ namespace icl_core {
                 size_t message_queue_size = cDEFAULT_FIXED_OUTPUT_STREAM_QUEUE_SIZE;
                 icl_core::config::get<size_t>(config_prefix + "/MessageQueueSize", message_queue_size);
 
-                m_worker_thread = new WorkerThread(this, message_queue_size);
+                m_worker_thread = std::make_unique<WorkerThread>(this, message_queue_size);
 #else
-                m_worker_thread = new WorkerThread(this);
+                m_worker_thread = std::make_unique<WorkerThread>(this);
 #endif
-            }
-            else
-            {
-                m_worker_thread = nullptr;
             }
         }
 
@@ -64,7 +60,7 @@ namespace icl_core {
                                          bool use_worker_thread)
             : m_name(std::move(name)),
             m_log_level(log_level),
-            m_time_format("%Y-%m-%d %H:%M:%S"),
+            m_time_format("%F %X"),
             m_use_worker_thread(use_worker_thread)
         {
             LoggingManager::instance().assertInitialized();
@@ -72,31 +68,25 @@ namespace icl_core {
             if (m_use_worker_thread)
             {
 #ifdef ICL_CORE_LOG_OUTPUT_STREAM_USE_FIXED_QUEUE
-                m_worker_thread = new WorkerThread(this, cDEFAULT_FIXED_OUTPUT_STREAM_QUEUE_SIZE,
+                m_worker_thread = std::make_unique<WorkerThread>(this, cDEFAULT_FIXED_OUTPUT_STREAM_QUEUE_SIZE,
                     m_default_worker_thread_priority);
 #else
-                m_worker_thread = new WorkerThread(this/*, m_default_worker_thread_priority*/);
+                m_worker_thread = std::make_unique<WorkerThread>(this/*, m_default_worker_thread_priority*/);
 #endif
-            }
-            else
-            {
-                m_worker_thread = nullptr;
             }
         }
 
         LogOutputStream::~LogOutputStream()
         {
-            if (m_use_worker_thread)
+            if (!m_use_worker_thread)
+                return;
+            
+            if (m_worker_thread->running())
             {
-                if (m_worker_thread->running())
-                {
-                    std::cerr << "WARNING: Destroyed LogOutputStream while thread is still alive. "
-                        << "Please call Shutdown() before destruction." << '\n';
-                }
-
-                delete m_worker_thread;
-                m_worker_thread = nullptr;
+                std::cerr << "WARNING: Destroyed LogOutputStream while thread is still alive. "
+                    << "Please call Shutdown() before destruction." << '\n';
             }
+            m_worker_thread.reset();
         }
 
         void LogOutputStream::changeLogFormat(const char* format)
@@ -214,7 +204,7 @@ namespace icl_core {
                 }
                 case LogFormatEntry::eT_TIMESTAMP:
                 {
-                    msg << std::vformat(m_time_format, std::make_format_args(log_message.timestamp));
+                    msg << std::vformat("{:" + std::string(m_time_format) + "}", std::make_format_args(log_message.timestamp));
                     break;
                 }
                 case LogFormatEntry::eT_TIMESTAMP_MS:

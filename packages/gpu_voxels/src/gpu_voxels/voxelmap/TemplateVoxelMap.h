@@ -108,7 +108,7 @@ namespace gpu_voxels {
 			 * This might be necessary for combination with other operations to ensure
 			 * that the map did not change since it was cleared.
 			 */
-			void clearVoxelMapRemoteLock(BitVoxelMeaning voxel_meaning);
+			//void clearVoxelMapRemoteLock(BitVoxelMeaning voxel_meaning);
 
 			//! print data array to screen for debugging (low performance)
 			virtual void printVoxelMapData();

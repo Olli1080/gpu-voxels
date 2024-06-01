@@ -306,7 +306,7 @@ namespace icl_core {
             const char* m_time_format;
 
             bool m_use_worker_thread;
-            WorkerThread* m_worker_thread;
+            std::unique_ptr<WorkerThread> m_worker_thread;
             std::mutex m_no_worker_thread_push_mutex;
 
             std::mutex m_format_mutex;

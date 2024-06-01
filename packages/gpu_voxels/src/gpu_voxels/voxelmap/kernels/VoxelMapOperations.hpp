@@ -596,6 +596,12 @@ namespace gpu_voxels {
 			}
 		}
 
+		template <class Voxel>
+		std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<Voxel>& in)
+		{
+			const auto& device_vector = in.getConstDeviceDataPtr();
+			return extract_visual_voxels(device_vector, in.getDimensions());
+		}
 	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

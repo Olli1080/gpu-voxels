@@ -14,9 +14,11 @@
  //#define LOCAL_DEBUG
 #undef LOCAL_DEBUG
 
-#include "gpu_voxels/helpers/BitVector.h"
-#include <gpu_voxels/voxel/BitVoxel.h>
 #include "VoxelMapOperations.hpp"
+
+#include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
+#include "gpu_voxels/helpers/BitVector.h"
+#include <gpu_voxels/voxel/BitVoxel.cuhpp>
 #include <cstdio>
 
 namespace gpu_voxels {
@@ -790,6 +792,10 @@ namespace gpu_voxels {
 			return final_res;
 		}
 
+		template<> std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<BitVoxel<BIT_VECTOR_LENGTH>>& in);
+		template<> std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<ProbabilisticVoxel>& in);
+		template<> std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<CountingVoxel>& in);
+		template<> std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<DistanceVoxel>& in);
 	} // end of namespace voxelmap
 } // end of namespace voxellist
 

@@ -592,6 +592,15 @@ namespace gpu_voxels
 		/*
 		 * returns all occupied Voxels coordinates which are not surrounded by other voxels
 		 */
+		template<class Voxel>
+		class TemplateVoxelMap;
+
+		template<class Voxel>
+		std::vector<Vector3ui> extract_visual_voxels(const TemplateVoxelMap<Voxel>& in);
+
+		/*
+		 * returns all occupied Voxels coordinates which are not surrounded by other voxels
+		 */
 		std::vector<Vector3ui> extract_visual_voxels(const thrust::device_vector<BitVectorVoxel>& in, const Vector3ui& dim);
 	} // end of namespace voxelmap
 } // end of namespace gpu_voxels

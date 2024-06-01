@@ -195,9 +195,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\BitVoxelList.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.h" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\CountingVoxelList.cu" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\kernels\VoxelListOperations.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxellist\TemplateVoxelList.h" />
@@ -238,9 +236,7 @@
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\BitVoxel.cuhpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.h" />
     <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxelmap\TemplateVoxelMap.cu" />
-    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\CountingVoxel.cu" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.h" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DefaultCollider.hpp" />
     <ClInclude Include="..\packages\gpu_voxels\src\gpu_voxels\voxel\DistanceVoxel.h" />
@@ -267,7 +263,7 @@
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_robot.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxellist.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\logging\logging_voxelmap.cpp" />
-    <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\VisNTree.cpp" />
+    <CudaCompile Include="..\packages\gpu_voxels\src\gpu_voxels\octree\VisNTree.cu" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\primitive_array\PrimitiveArray.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisPrimitiveArray.cpp" />
     <ClCompile Include="..\packages\gpu_voxels\src\gpu_voxels\vis_interface\VisProvider.cpp" />

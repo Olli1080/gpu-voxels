@@ -15,7 +15,7 @@ namespace gpu_voxels
 				std::scoped_lock lock(this->m_mutex, m->m_mutex);
 
 				const uint32_t num_new_voxels = m->getDimensions().x();
-				const uint32_t offset_new_entries = m_dev_list.size();
+				const uint32_t offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
 				// resize capacity
 				this->resize(offset_new_entries + num_new_voxels);
 
@@ -48,7 +48,7 @@ namespace gpu_voxels
 				std::scoped_lock lock(this->m_mutex, m->m_mutex);
 
 				const uint32_t num_new_voxels = m->getDimensions().x();
-				const uint32_t offset_new_entries = m_dev_list.size();
+				const uint32_t offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
 				// resize capacity
 				this->resize(offset_new_entries + num_new_voxels);
 
@@ -94,7 +94,7 @@ namespace gpu_voxels
 				auto* m = other->as<BitVoxelList<BIT_VECTOR_LENGTH, MapVoxelID>>();
 
 				const uint32_t num_new_voxels = m->getDimensions().x();
-				const uint32_t offset_new_entries = m_dev_list.size();
+				const uint32_t offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
 				// resize capacity
 				this->resize(offset_new_entries + num_new_voxels);
 
@@ -134,7 +134,7 @@ namespace gpu_voxels
 				auto* m = other->as<CountingVoxelList>();
 
 				const uint32_t num_new_voxels = m->getDimensions().x();
-				const uint32_t offset_new_entries = m_dev_list.size();
+				const uint32_t offset_new_entries = static_cast<uint32_t>(m_dev_list.size());
 				// resize capacity
 				this->resize(offset_new_entries + num_new_voxels);
 
@@ -172,8 +172,6 @@ namespace gpu_voxels
 			case MT_BITVECTOR_VOXELMAP:
 			{
 				auto m = other->as<voxelmap::BitVectorVoxelMap>();
-
-				std::scoped_lock lock(this->m_mutex, m->m_mutex);
 
 				const size_t offset_new_entries = m_dev_list.size();
 
