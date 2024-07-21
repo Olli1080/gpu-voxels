@@ -68,7 +68,7 @@
       <AdditionalIncludeDirectories>..\packages\icl_core\src;..\packages\gpu_voxels\src;$(CUDA_PATH)\include;..\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\openni2;$(SolutionDir)vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\urdfdom_headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -77,7 +77,7 @@
       <AdditionalDependencies>icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
-      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" -Xcompiler "/bigobj" %(AdditionalOptions)</AdditionalOptions>
       <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
       <Keep>false</Keep>
       <MaxRegCount>63</MaxRegCount>
@@ -98,6 +98,7 @@
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,7 +108,7 @@
       <AdditionalDependencies>icl_core.lib;$(CUDA_PATH)\lib\$(LibrariesArchitecture)\cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
-      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Xcompiler /Zc:__cplusplus --expt-relaxed-constexpr -Xcudafe "--diag_suppress=20012" -Xcudafe "--diag_suppress=1394" -std=c++20 -Xcompiler "/std:c++20" -Xcompiler "/bigobj" %(AdditionalOptions)</AdditionalOptions>
       <Keep>false</Keep>
       <CompileOut>$(CudaIntDirFullPath)\%(RelativeDir)\%(Filename)%(Extension).obj</CompileOut>
       <MaxRegCount>63</MaxRegCount>
