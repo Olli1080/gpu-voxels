@@ -5,7 +5,8 @@
             "features": ["openni2"]
         },
 	    "boost-interprocess",
-        "tinyxml",
+        "boost-test",
+        "tinyxml2",
         "cppunit",
         "cuda",
         "orocos-kdl",

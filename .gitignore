@@ -403,3 +403,4 @@ Intermediate/
 vcpkg_installed/
 !packages/**
 packages/gpu_voxels/models/franka model/**
+build/**
