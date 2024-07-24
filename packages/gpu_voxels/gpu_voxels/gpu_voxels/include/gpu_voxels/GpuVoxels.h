@@ -38,7 +38,7 @@
 #include <memory>
 #include <map>
 
-#include <gpu_voxels/GpuVoxelsMap.h>
+#include <gpu_voxels/core/GpuVoxelsMap.h>
 #include <gpu_voxels/voxelmap/VoxelMap.h>
 #include <gpu_voxels/octree/Octree.h>
 #include <gpu_voxels/voxellist/VoxelList.h>

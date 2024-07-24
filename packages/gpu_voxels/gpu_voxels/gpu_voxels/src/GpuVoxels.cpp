@@ -31,8 +31,8 @@
 #include <gpu_voxels/vis_interface/VisPrimitiveArray.h>
 #include <gpu_voxels/octree/VisNTree.h>
 
-#include <gpu_voxels/ManagedPrimitiveArray.h>
-#include <gpu_voxels/ManagedMap.h>
+#include <gpu_voxels/core/ManagedPrimitiveArray.h>
+#include <gpu_voxels/core/ManagedMap.h>
 
 namespace gpu_voxels {
 

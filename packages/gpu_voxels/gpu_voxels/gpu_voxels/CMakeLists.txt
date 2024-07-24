@@ -1,57 +1,55 @@
-ADD_SUBDIRECTORY(robot)
-ADD_SUBDIRECTORY(voxel)
-ADD_SUBDIRECTORY(voxelmap)
-ADD_SUBDIRECTORY(voxellist)
-ADD_SUBDIRECTORY(vis_interface)
-ADD_SUBDIRECTORY(octree)
-ADD_SUBDIRECTORY(helpers_highlevel)
+project(gpu_voxels
+  LANGUAGES CXX
+)
+add_library(${PROJECT_NAME})
 
-#------------- gpu_voxels library ---------------------------------
-# This library resembles the high level interface to link against.
-#------------------------------------------------------------------
-ICMAKER_SET("gpu_voxels" IDE_FOLDER ${GPU_VOXELS_IDE_FOLDER})
+set(INCLUDE_DIR include/gpu_voxels)
 
-ICMAKER_ADD_HEADERS(
-  GpuVoxels.h
-  )
+#generate_export_header(${PROJECT_NAME} 
+#  EXPORT_MACRO_NAME
+#    ICL_CORE_IMPORT_EXPORT
+#  EXPORT_FILE_NAME
+#    "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}/ImportExport.h"
+#)
 
-ICMAKER_ADD_SOURCES(
-  GpuVoxels.cpp
-  )
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 
-ICMAKER_ADD_CUDA_FILES(
-  )
-
-# removing unknown pragma warnings due to OpenNI spam
-ICMAKER_LOCAL_CPPDEFINES(-DGVL_EXPORT_SYMBOLS -Wno-unknown-pragmas)
-ICMAKER_GLOBAL_CPPDEFINES(-D_IC_BUILDER_GPU_VOXELS_)
-ICMAKER_INCLUDE_DIRECTORIES(${GPU_VOXELS_INCLUDE_DIRS})
-
-
-ICMAKER_INTERNAL_DEPENDENCIES(EXPORT
-  icl_core
-  icl_core_config
-  icl_core_logging
-  gpu_voxels_core
-  gpu_voxels_dh_robot
-  gpu_voxels_voxelmap
-  gpu_voxels_voxellist
-  gpu_voxels_octree
-  gpu_voxels_primitive_array
-  gpu_voxels_vis_interface
-  )
-
-ICMAKER_EXTERNAL_DEPENDENCIES(EXPORT
-  CUDA
-  )
-
-
-ICMAKER_DEPENDENCIES( OPTIONAL
-  gpu_voxels_urdf_robot
+target_sources(${PROJECT_NAME}
+  PRIVATE    
+    src/GpuVoxels.cpp
+  PUBLIC FILE_SET HEADERS 
+  BASE_DIRS ${INCLUDE_DIR}
+  FILES
+    ${INCLUDE_DIR}/GpuVoxels.h
 )
 
-ICMAKER_BUILD_LIBRARY()
-ICMAKER_INSTALL_HEADERS(gpu_voxels)
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+    icl_core
+    icl_core_config
+    icl_core_logging
+    gpu_voxels_core
+    gpu_voxels_dh_robot
+    gpu_voxels_voxelmap
+    gpu_voxels_voxellist
+    gpu_voxels_octree
+    gpu_voxels_primitive_array
+    gpu_voxels_vis_interface
+    gpu_voxels_helpers
+    gpu_voxels_logging
+    gpu_voxels_primitive_array
+)
 
-ADD_SUBDIRECTORY(test)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_)
 
+install(
+  TARGETS 
+    ${PROJECT_NAME}
+  LIBRARY
+    DESTINATION lib
+  FILE_SET HEADERS
+    DESTINATION ${INCLUDE_DIR}
+)
+
+#add_subdirectory(test)

@@ -23,7 +23,7 @@
 #ifndef GPU_VOXELS_HELPERS_MANAGEDMAP_H_INCLUDED
 #define GPU_VOXELS_HELPERS_MANAGEDMAP_H_INCLUDED
 
-#include <gpu_voxels/GpuVoxelsMap.h>
+#include <gpu_voxels/core/GpuVoxelsMap.h>
 #include <gpu_voxels/vis_interface/VisProvider.h>
 
 namespace gpu_voxels
