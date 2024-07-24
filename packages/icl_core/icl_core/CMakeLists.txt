@@ -38,6 +38,7 @@ if(USE_ZLIB)
   find_package(ZLIB REQUIRED)
   target_include_directories(${PROJECT_NAME} PUBLIC ${ZLIB_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC USE_ZLIB)
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

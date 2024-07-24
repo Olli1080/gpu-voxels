@@ -9,8 +9,6 @@
         "tinyxml2",
         "cppunit",
         "cuda",
-        "orocos-kdl",
-        "urdfdom",
         "glew",
         "glm",
         "freeglut",
