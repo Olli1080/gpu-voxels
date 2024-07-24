@@ -5,3 +5,4 @@
 # OSX noise
 .DS_Store
 profile
+**/ImportExport.h
