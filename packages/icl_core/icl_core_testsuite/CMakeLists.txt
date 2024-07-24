@@ -9,21 +9,21 @@ generate_export_header(${PROJECT_NAME}
   EXPORT_MACRO_NAME
     ICL_CORE_TESTSUITE_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_SOURCE_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
     src/test_suite.cpp
     src/TestListener.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR}
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/test_suite.h
     ${ICL_INCLUDE_DIR}/TestListener.h
-    ${ICL_INCLUDE_DIR}/ImportExport.h
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 find_package(CppUnit REQUIRED)

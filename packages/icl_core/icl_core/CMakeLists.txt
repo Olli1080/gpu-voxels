@@ -9,17 +9,17 @@ generate_export_header(${PROJECT_NAME}
   EXPORT_MACRO_NAME
     ICL_CORE_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_SOURCE_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
     src/EnumHelper.cpp
     src/fs.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR}
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/Deprecate.h
     ${ICL_INCLUDE_DIR}/EnumHelper.h
@@ -29,7 +29,7 @@ target_sources(${PROJECT_NAME}
     ${ICL_INCLUDE_DIR}/KeyValueDirectory.hpp
     ${ICL_INCLUDE_DIR}/Noncopyable.hpp
     ${ICL_INCLUDE_DIR}/RemoveMemberPointer.h
-    ${ICL_INCLUDE_DIR}/ImportExport.h
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 option(USE_ZLIB "Build with zlib support" ON)

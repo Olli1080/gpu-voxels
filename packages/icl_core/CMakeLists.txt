@@ -26,7 +26,7 @@ generate_export_header(icl_core_logging
   EXPORT_MACRO_NAME
     ICL_CORE_LOGGING_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_SOURCE_DIR}/icl_core_logging/include/icl_core_logging/ImportExport.h"
+    "${CMAKE_BINARY_DIR}/include/icl_core_logging/ImportExport.h"
 )
 
 add_subdirectory(icl_core_config)

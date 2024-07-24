@@ -9,10 +9,10 @@ generate_export_header(${PROJECT_NAME}
   EXPORT_MACRO_NAME
     ICL_CORE_CONFIG_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_SOURCE_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
 target_include_directories(${PROJECT_NAME} PUBLIC ../icl_core_logging/include)
 
 target_sources(${PROJECT_NAME}
@@ -27,7 +27,7 @@ target_sources(${PROJECT_NAME}
     src/GetoptPositionalParameter.cpp
     src/GetoptParser.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR}
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/AttributeTree.h
     ${ICL_INCLUDE_DIR}/Config.h
@@ -51,7 +51,7 @@ target_sources(${PROJECT_NAME}
     ${ICL_INCLUDE_DIR}/MemberValue.h
     ${ICL_INCLUDE_DIR}/MemberValueIface.h
     ${ICL_INCLUDE_DIR}/Util.h
-    ${ICL_INCLUDE_DIR}/ImportExport.h
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 find_package(tinyxml2 CONFIG REQUIRED)

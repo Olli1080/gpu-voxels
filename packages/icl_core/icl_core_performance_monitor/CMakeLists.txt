@@ -9,22 +9,22 @@ generate_export_header(${PROJECT_NAME}
   EXPORT_MACRO_NAME
     ICL_CORE_PERFORMANCE_MONITOR_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_SOURCE_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
     src/PerformanceMonitor.cpp
     src/logging_performance_monitor.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR}
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/PerformanceMonitor.h
     ${ICL_INCLUDE_DIR}/PerformanceMonitorMacros.h
     ${ICL_INCLUDE_DIR}/logging_performance_monitor.h
-    ${ICL_INCLUDE_DIR}/ImportExport.h
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 target_link_libraries(${PROJECT_NAME} 

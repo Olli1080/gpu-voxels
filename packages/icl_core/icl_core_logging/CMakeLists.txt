@@ -4,7 +4,7 @@ project(icl_core_logging
 
 set(ICL_INCLUDE_DIR include/${PROJECT_NAME})
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
@@ -18,7 +18,7 @@ target_sources(${PROJECT_NAME}
     src/StdLogOutput.cpp
     src/ThreadStream.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR}
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/icl_core_logging.h
     ${ICL_INCLUDE_DIR}/Constants.h
@@ -39,7 +39,7 @@ target_sources(${PROJECT_NAME}
     ${ICL_INCLUDE_DIR}/StdErrorLogOutput.h
     ${ICL_INCLUDE_DIR}/StdLogOutput.h
     ${ICL_INCLUDE_DIR}/ThreadStream.h
-    ${ICL_INCLUDE_DIR}/ImportExport.h
+    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 #target_include_directories(icl_core_config PUBLIC ${ZLIB_INCLUDE_DIRS})

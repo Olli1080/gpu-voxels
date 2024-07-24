@@ -11,8 +11,8 @@ set(INCLUDE_DIR include/gpu_voxels/helpers)
 #  EXPORT_FILE_NAME
 #    "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}/ImportExport.h"
 #)
-
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+find_package(CUDAToolkit REQUIRED)
+target_include_directories(${PROJECT_NAME} PUBLIC include ${CUDAToolkit_INCLUDE_DIRS})
 
 target_sources(${PROJECT_NAME}
   PRIVATE
