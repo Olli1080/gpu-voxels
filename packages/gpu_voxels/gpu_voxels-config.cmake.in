@@ -6,6 +6,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(CUDAToolkit)
 find_dependency(Stb)
 find_dependency(PCL)
+find_dependency(icl_core)
 
 check_required_components(
   gpu_voxels_core gpu_voxels 
@@ -19,5 +20,4 @@ check_required_components(
   gpu_voxels_voxel
   gpu_voxels_voxellist
   gpu_voxels_voxelmap
-  icl_core icl_core_config icl_core_logging icl_core_performance_monitor
 )
