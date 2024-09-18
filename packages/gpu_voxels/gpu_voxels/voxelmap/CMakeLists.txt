@@ -19,7 +19,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
-    src/AbstractVoxelMap.cpp
+    src/AbstractVoxelMap.cu
     src/DistanceVoxelMap.cu
     src/ProbVoxelMap.cu
     src/TemplateVoxelMap.cu
@@ -45,8 +45,6 @@ target_sources(${PROJECT_NAME}
     #${INCLUDE_DIR}/DistanceVoxelMap.hpp
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/AbstractVoxelMap.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE

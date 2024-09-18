@@ -19,7 +19,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
-    src/GpuVoxelsMap.cpp
+    src/GpuVoxelsMap.cu
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${INCLUDE_DIR}
   FILES
@@ -29,8 +29,6 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/ManagedPrimitiveArray.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/GpuVoxelsMap.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE

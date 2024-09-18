@@ -21,12 +21,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_sources(${PROJECT_NAME}
   PRIVATE
     #src/cuda_datatypes.cpp
-    src/HeightMapLoader.cpp
+    src/HeightMapLoader.cu
     src/PointcloudFileHandler.cpp
     src/BinvoxFileReader.cpp
     src/XyzFileReader.cpp
     src/MathHelpers.cpp
-    src/GeometryGeneration.cpp
+    src/GeometryGeneration.cu
 
     #src/cuda_handling.cu
     src/BitVector.cu
@@ -65,9 +65,6 @@ target_sources(${PROJECT_NAME}
     #${INCLUDE_DIR}/kernels/MetaPointCloudOperations.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/GeometryGeneration.cpp PROPERTIES LANGUAGE CUDA)
-set_source_files_properties(src/HeightMapLoader.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE

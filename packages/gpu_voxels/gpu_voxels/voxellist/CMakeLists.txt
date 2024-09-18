@@ -18,7 +18,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
-    src/AbstractVoxelList.cpp
+    src/AbstractVoxelList.cu
     src/BitVoxelList.cu
     src/CountingVoxelList.cu
     src/TemplateVoxelList.cu
@@ -38,8 +38,6 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/kernels/VoxelListOperations.hpp
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/AbstractVoxelList.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE

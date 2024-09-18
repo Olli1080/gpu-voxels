@@ -20,9 +20,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_sources(${PROJECT_NAME}
   PRIVATE    
     src/VisProvider.cpp
-    src/VisVoxelMap.cpp
-    src/VisVoxelList.cpp
-    src/VisTemplateVoxelList.cpp
+    src/VisVoxelMap.cu
+    src/VisVoxelList.cu
+    src/VisTemplateVoxelList.cu
     src/VisPrimitiveArray.cpp
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${INCLUDE_DIR}
@@ -36,10 +36,6 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/VisPrimitiveArray.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/VisVoxelMap.cpp PROPERTIES LANGUAGE CUDA)
-set_source_files_properties(src/VisVoxelList.cpp PROPERTIES LANGUAGE CUDA)
-set_source_files_properties(src/VisTemplateVoxelList.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE

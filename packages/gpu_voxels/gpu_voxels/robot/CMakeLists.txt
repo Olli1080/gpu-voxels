@@ -20,7 +20,7 @@ target_include_directories(gpu_voxels_dh_robot PUBLIC
 target_sources(gpu_voxels_dh_robot
   PRIVATE    
     src/KinematicLink.cpp
-    src/KinematicChain.cpp
+    src/KinematicChain.cu
     include/gpu_voxels/robot/robot_interface.h
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${INCLUDE_DIR}
@@ -29,8 +29,6 @@ target_sources(gpu_voxels_dh_robot
     ${INCLUDE_DIR}/KinematicChain.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
-
-set_source_files_properties(src/KinematicChain.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(gpu_voxels_dh_robot
   PRIVATE

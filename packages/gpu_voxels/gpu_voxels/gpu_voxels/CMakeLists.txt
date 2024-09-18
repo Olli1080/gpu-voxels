@@ -19,14 +19,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
-    src/GpuVoxels.cpp
+    src/GpuVoxels.cu
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${INCLUDE_DIR}
   FILES
     ${INCLUDE_DIR}/GpuVoxels.h
 )
-
-set_source_files_properties(src/GpuVoxels.cpp PROPERTIES LANGUAGE CUDA)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
