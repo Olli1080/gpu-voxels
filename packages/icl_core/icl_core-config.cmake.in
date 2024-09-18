@@ -1,7 +1,5 @@
 @PACKAGE_INIT@
 
-include("${CMAKE_CURRENT_LIST_DIR}/icl_core-targets.cmake")
-
 include(CMakeFindDependencyMacro)
 find_dependency(Boost)
 find_dependency(tinyxml2)
@@ -10,5 +8,7 @@ find_dependency(CppUnit)
 if (@USE_ZLIB@)
   find_dependency(ZLIB)
 endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/icl_core-targets.cmake")
 
 check_required_components(icl_core icl_core_config icl_core_logging icl_core_performance_monitor icl_core_testsuite)
