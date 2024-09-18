@@ -14,7 +14,6 @@ generate_export_header(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../icl_core_logging/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
@@ -63,7 +62,7 @@ find_package(Boost COMPONENTS Algorithm)
 
 target_link_libraries(${PROJECT_NAME}
  PUBLIC 
-  icl_core
+  icl_core icl_core_logging
  PRIVATE
   tinyxml2::tinyxml2
   Boost::boost
