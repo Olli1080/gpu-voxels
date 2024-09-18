@@ -28,7 +28,7 @@ target_sources(${PROJECT_NAME}
     src/MathHelpers.cpp
     src/GeometryGeneration.cu
 
-    #src/cuda_handling.cu
+    src/cuda_handling.cpp
     src/BitVector.cu
     src/PointCloud.cu
     src/MetaPointCloud.cu
