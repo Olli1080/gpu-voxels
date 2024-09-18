@@ -27,6 +27,8 @@ target_sources(gpu_voxels_dh_robot
 #    ${INCLUDE_DIR}/ImportExport.h
 )
 
+set_source_files_properties(src/KinematicChain.cpp PROPERTIES LANGUAGE CUDA)
+
 target_link_libraries(gpu_voxels_dh_robot
   PRIVATE
     icl_core

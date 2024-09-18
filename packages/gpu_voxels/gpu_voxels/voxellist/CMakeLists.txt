@@ -36,6 +36,8 @@ target_sources(${PROJECT_NAME}
 #    ${INCLUDE_DIR}/ImportExport.h
 )
 
+set_source_files_properties(src/AbstractVoxelList.cpp PROPERTIES LANGUAGE CUDA)
+
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     icl_core

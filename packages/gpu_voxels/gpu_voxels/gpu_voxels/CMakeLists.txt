@@ -23,6 +23,8 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/GpuVoxels.h
 )
 
+set_source_files_properties(src/GpuVoxels.cpp PROPERTIES LANGUAGE CUDA)
+
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     icl_core

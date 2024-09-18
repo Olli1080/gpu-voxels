@@ -21,9 +21,9 @@
  */
 //----------------------------------------------------------------------
 
-#include <iostream>
-#include <boost/filesystem/path.hpp>
 #include "HeightMapLoader.h"
+
+#include <iostream>
 #include <gpu_voxels/helpers/common_defines.h>
 #include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 #define STB_IMAGE_IMPLEMENTATION

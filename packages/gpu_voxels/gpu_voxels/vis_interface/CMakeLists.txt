@@ -34,6 +34,10 @@ target_sources(${PROJECT_NAME}
 #    ${INCLUDE_DIR}/ImportExport.h
 )
 
+set_source_files_properties(src/VisVoxelMap.cpp PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(src/VisVoxelList.cpp PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(src/VisTemplateVoxelList.cpp PROPERTIES LANGUAGE CUDA)
+
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     icl_core
