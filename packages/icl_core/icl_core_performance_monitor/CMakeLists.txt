@@ -46,11 +46,16 @@ target_link_libraries(perf_monitor_example ${PROJECT_NAME})
 
 install(
   TARGETS 
-    ${PROJECT_NAME} perf_monitor_example
+    ${PROJECT_NAME}
   EXPORT
     icl_core-targets
   LIBRARY
     DESTINATION lib
   FILE_SET HEADERS
     DESTINATION ${ICL_INCLUDE_DIR}
+)
+
+install(
+  TARGETS 
+    perf_monitor_example
 )
