@@ -29,9 +29,10 @@ target_sources(gpu_voxels_dh_robot
     ${INCLUDE_DIR}/KinematicChain.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
+set_property(TARGET gpu_voxels_dh_robot PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 target_link_libraries(gpu_voxels_dh_robot
-  PRIVATE
+  PUBLIC
     icl_core
     icl_core_config
     icl_core_logging

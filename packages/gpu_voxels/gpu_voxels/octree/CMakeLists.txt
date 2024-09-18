@@ -79,7 +79,6 @@ target_sources(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
     gpu_voxels_voxel
-  PRIVATE
     gpu_voxels_dh_robot
     gpu_voxels_core
     gpu_voxels_voxelmap # REMOVE THIS LATER
@@ -92,6 +91,7 @@ target_link_libraries(${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_OCTREE_)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 install(
   TARGETS 
