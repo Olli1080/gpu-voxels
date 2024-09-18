@@ -4,13 +4,6 @@ project(icl_core_logging
 
 set(ICL_INCLUDE_DIR include/${PROJECT_NAME})
 
-generate_export_header(${PROJECT_NAME} 
-  EXPORT_MACRO_NAME
-    ICL_CORE_LOGGING_IMPORT_EXPORT
-  EXPORT_FILE_NAME
-    "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
-)
-
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
