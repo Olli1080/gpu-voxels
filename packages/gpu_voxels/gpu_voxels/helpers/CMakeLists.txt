@@ -12,7 +12,11 @@ set(INCLUDE_DIR include/gpu_voxels/helpers)
 #    "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}/ImportExport.h"
 #)
 find_package(CUDAToolkit REQUIRED)
-target_include_directories(${PROJECT_NAME} PUBLIC include ${CUDAToolkit_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 target_sources(${PROJECT_NAME}
   PRIVATE
@@ -112,6 +116,8 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_HELPERS
 install(
   TARGETS 
     ${PROJECT_NAME}
+  EXPORT
+    gpu_voxels-targets
   LIBRARY
     DESTINATION lib
   FILE_SET HEADERS

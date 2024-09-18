@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 include(GenerateExportHeader)
-#include(GNUInstallDirs)
+include(GNUInstallDirs)
 
 project(GPU_VOXEL_TL
     LANGUAGES CXX CUDA)

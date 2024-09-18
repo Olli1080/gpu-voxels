@@ -9,11 +9,15 @@ generate_export_header(${PROJECT_NAME}
   EXPORT_MACRO_NAME
     ICL_CORE_CONFIG_IMPORT_EXPORT
   EXPORT_FILE_NAME
-    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include "${CMAKE_BINARY_DIR}/include")
-target_include_directories(${PROJECT_NAME} PUBLIC ../icl_core_logging/include)
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../icl_core_logging/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 target_sources(${PROJECT_NAME}
   PRIVATE    
@@ -27,7 +31,7 @@ target_sources(${PROJECT_NAME}
     src/GetoptPositionalParameter.cpp
     src/GetoptParser.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
   FILES
     ${ICL_INCLUDE_DIR}/AttributeTree.h
     ${ICL_INCLUDE_DIR}/Config.h
@@ -51,7 +55,7 @@ target_sources(${PROJECT_NAME}
     ${ICL_INCLUDE_DIR}/MemberValue.h
     ${ICL_INCLUDE_DIR}/MemberValueIface.h
     ${ICL_INCLUDE_DIR}/Util.h
-    "${CMAKE_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}/ImportExport.h"
 )
 
 find_package(tinyxml2 CONFIG REQUIRED)
@@ -70,6 +74,8 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 install(
   TARGETS 
     ${PROJECT_NAME}
+  EXPORT
+    icl_core-targets
   LIBRARY
     DESTINATION lib
   FILE_SET HEADERS

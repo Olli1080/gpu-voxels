@@ -33,3 +33,21 @@ add_subdirectory(icl_core_config)
 add_subdirectory(icl_core_logging)
 add_subdirectory(icl_core_testsuite)
 add_subdirectory(icl_core_performance_monitor)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/icl_core-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/icl_core-config.cmake"
+  INSTALL_DESTINATION share/icl_core
+)
+
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/icl_core-config.cmake"
+        DESTINATION share/icl_core)
+
+install(
+  EXPORT icl_core-targets
+  FILE icl_core-targets.cmake
+  DESTINATION share/icl_core
+  #NAMESPACE enact::
+)

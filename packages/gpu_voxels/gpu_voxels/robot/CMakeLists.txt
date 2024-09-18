@@ -12,7 +12,10 @@ set(INCLUDE_DIR include/gpu_voxels/robot/dh_robot)
 #    "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}/ImportExport.h"
 #)
 
-target_include_directories(gpu_voxels_dh_robot PUBLIC include)
+target_include_directories(gpu_voxels_dh_robot PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 target_sources(gpu_voxels_dh_robot
   PRIVATE    
@@ -44,6 +47,8 @@ target_compile_definitions(gpu_voxels_dh_robot PUBLIC _IC_BUILDER_GPU_VOXELS_DH_
 install(
   TARGETS 
     gpu_voxels_dh_robot
+  EXPORT
+    gpu_voxels-targets
   LIBRARY
     DESTINATION lib
   FILE_SET HEADERS
