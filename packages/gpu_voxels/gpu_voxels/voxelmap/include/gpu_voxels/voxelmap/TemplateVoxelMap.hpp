@@ -221,6 +221,21 @@ namespace gpu_voxels
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 		}
 
+		template<>
+		inline void TemplateVoxelMap<CountingVoxel>::clearMap()
+		{
+			std::lock_guard guard(this->m_mutex);
+			// Clear occupancies
+			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			thrust::fill(m_dev_data.begin(), m_dev_data.end(), gpu_voxels::CountingVoxel());
+
+			// Clear result array
+			for (uint32_t i = 0; i < cMAX_NR_OF_BLOCKS; i++)
+				m_collision_check_results[i] = false;
+
+			m_dev_collision_check_results = m_collision_check_results;
+		}
+
 		struct sumVector3ui
 		{
 			__host__ __device__
