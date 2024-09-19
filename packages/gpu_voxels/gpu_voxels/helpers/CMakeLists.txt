@@ -51,6 +51,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/XyzFileReader.h
     ${INCLUDE_DIR}/PointCloud.h
     ${INCLUDE_DIR}/MetaPointCloud.h
+    ${INCLUDE_DIR}/BitVector.cuhpp
     ${INCLUDE_DIR}/BitVector.h
     ${INCLUDE_DIR}/MathHelpers.h
     ${INCLUDE_DIR}/GeometryGeneration.h
