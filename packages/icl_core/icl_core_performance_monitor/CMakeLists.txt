@@ -23,7 +23,7 @@ target_sources(${PROJECT_NAME}
     src/PerformanceMonitor.cpp
     src/logging_performance_monitor.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/PerformanceMonitor.h
     ${ICL_INCLUDE_DIR}/PerformanceMonitorMacros.h

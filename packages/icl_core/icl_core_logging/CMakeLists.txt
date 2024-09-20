@@ -22,7 +22,7 @@ target_sources(${PROJECT_NAME}
     src/StdLogOutput.cpp
     src/ThreadStream.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/icl_core_logging.h
     ${ICL_INCLUDE_DIR}/Constants.h

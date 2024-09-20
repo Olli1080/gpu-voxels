@@ -30,7 +30,7 @@ target_sources(${PROJECT_NAME}
     src/GetoptPositionalParameter.cpp
     src/GetoptParser.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/AttributeTree.h
     ${ICL_INCLUDE_DIR}/Config.h

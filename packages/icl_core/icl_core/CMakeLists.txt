@@ -23,7 +23,7 @@ target_sources(${PROJECT_NAME}
     src/EnumHelper.cpp
     src/fs.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/Deprecate.h
     ${ICL_INCLUDE_DIR}/EnumHelper.h

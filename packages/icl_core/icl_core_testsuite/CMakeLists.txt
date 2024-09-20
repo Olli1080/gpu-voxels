@@ -23,7 +23,7 @@ target_sources(${PROJECT_NAME}
     src/test_suite.cpp
     src/TestListener.cpp
   PUBLIC FILE_SET HEADERS 
-  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/include"
+  BASE_DIRS ${ICL_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/${ICL_INCLUDE_DIR}"
   FILES
     ${ICL_INCLUDE_DIR}/test_suite.h
     ${ICL_INCLUDE_DIR}/TestListener.h
