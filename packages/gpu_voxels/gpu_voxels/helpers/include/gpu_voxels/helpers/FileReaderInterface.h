@@ -23,7 +23,7 @@
 #ifndef GPU_VOXELS_HELPERS_FILE_READER_INTERFACE_H_INCLUDED
 #define GPU_VOXELS_HELPERS_FILE_READER_INTERFACE_H_INCLUDED
 
-#include <string>
+#include <filesystem>
 
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 
@@ -43,7 +43,7 @@ namespace gpu_voxels {
 			 * \param points points are written into this vector
 			 * \return true if succeeded, false otherwise
 			 */
-			virtual bool readPointCloud(const std::string& path, std::vector<Vector3f>& points) = 0;
+			virtual bool readPointCloud(const std::filesystem::path& path, std::vector<Vector3f>& points) = 0;
 		};
 	}  // end of ns
 }  // end of ns

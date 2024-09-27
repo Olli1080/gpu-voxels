@@ -24,7 +24,6 @@
 #ifndef GPU_VOXELS_HELPERS_BINVOX_HANDLING_H_INCLUDED
 #define GPU_VOXELS_HELPERS_BINVOX_HANDLING_H_INCLUDED
 
-#include <string>
 #include <vector>
 
 #include <gpu_voxels/helpers/FileReaderInterface.h>
@@ -47,7 +46,7 @@ namespace gpu_voxels
 			 * \param points points are written into this vector
 			 * \return true if succeeded, false otherwise
 			 */
-			bool readPointCloud(const std::string& filename, std::vector<Vector3f>& points) override;
+			bool readPointCloud(const std::filesystem::path& filename, std::vector<Vector3f>& points) override;
 		};
 
 	}  // end of namespace

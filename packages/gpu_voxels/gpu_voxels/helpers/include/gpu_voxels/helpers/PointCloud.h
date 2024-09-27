@@ -27,6 +27,7 @@
 #define GPU_VOXELS_HELPERS_POINTCLOUD_H_INCLUDED
 
 #include <cstdint> // for fixed size datatypes
+#include <filesystem>
 #include <vector>
 
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
@@ -60,7 +61,7 @@ namespace gpu_voxels
 		 * \param use_model_path If true, file is searched relative to GPU_VOXELS_MODEL_PATH. If false, an absolute path can be given.
 		 * Defaults to true.
 		 */
-		explicit PointCloud(const std::string& path_to_file, bool use_model_path = true);
+		explicit PointCloud(const std::string& path_to_file, const std::filesystem::path& model_path);
 
 
 		// Deep Copy Operators

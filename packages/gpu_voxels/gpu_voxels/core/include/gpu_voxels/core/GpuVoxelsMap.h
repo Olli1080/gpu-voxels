@@ -77,15 +77,15 @@ namespace gpu_voxels {
 		 *
 		 */
 		template<class T>
-		bool is()
+		constexpr bool is()
 		{
-			return dynamic_cast<T*>(this);
+			return explicitly_convertible_to<GpuVoxelsMap*, T*>;
 		}
 
 		template<class T>
-		bool is() const
+		constexpr bool is() const
 		{
-			return dynamic_cast<const T*>(this);
+			return explicitly_convertible_to<GpuVoxelsMap*, T*>;
 		}
 
 		/*!
@@ -180,7 +180,7 @@ namespace gpu_voxels {
 			* \param offset_XYZ if given, the map will be transformed by this XYZ offset. If shifting is active, this happens after the shifting.
 			* \return true if succeeded, false otherwise
 			*/
-		bool insertPointCloudFromFile(const std::string& path, bool use_model_path, BitVoxelMeaning voxel_meaning,
+		bool insertPointCloudFromFile(const std::string& path, std::filesystem::path const& model_path, BitVoxelMeaning voxel_meaning,
 		                              bool shift_to_zero = false, const Vector3f& offset_XYZ = Vector3f::Zero(),
 		                              float scaling = 1.f);
 

@@ -99,7 +99,7 @@ namespace gpu_voxels
     }
 
 
-    void MetaPointCloud::addClouds(const std::vector<std::string>& _point_cloud_files, bool use_model_path)
+    void MetaPointCloud::addClouds(const std::vector<std::string>& _point_cloud_files, const std::filesystem::path& model_path)
     {
         auto point_clouds = std::vector<std::vector<Vector3f>>();
         point_clouds.reserve(_point_cloud_files.size());
@@ -107,7 +107,7 @@ namespace gpu_voxels
         for (const auto& _point_cloud_file : _point_cloud_files)
         {
             std::vector<Vector3f> tempCloud;
-            if (!file_handling::PointcloudFileHandler::Instance()->loadPointCloud(_point_cloud_file, use_model_path, tempCloud))
+            if (!file_handling::PointcloudFileHandler::Instance()->loadPointCloud(_point_cloud_file, model_path, tempCloud))
             {
                 LOGGING_ERROR_C(Gpu_voxels_helpers, MetaPointCloud,
                     "Could not read file " << _point_cloud_file << icl_core::logging::endl);
@@ -130,16 +130,16 @@ namespace gpu_voxels
         syncToDevice();
     }
 
-    MetaPointCloud::MetaPointCloud(const std::vector<std::string>& _point_cloud_files, bool use_model_path)
+    MetaPointCloud::MetaPointCloud(const std::vector<std::string>& _point_cloud_files, const std::filesystem::path& model_path)
     {
-        addClouds(_point_cloud_files, use_model_path);
+        addClouds(_point_cloud_files, model_path);
     }
 
     MetaPointCloud::MetaPointCloud(const std::vector<std::string>& _point_cloud_files,
-        const std::vector<std::string>& _point_cloud_names, bool use_model_path)
+        const std::vector<std::string>& _point_cloud_names, const std::filesystem::path& model_path)
 
     {
-        addClouds(_point_cloud_files, use_model_path);
+        addClouds(_point_cloud_files, model_path);
 
         if (_point_cloud_files.size() == _point_cloud_names.size())
         {

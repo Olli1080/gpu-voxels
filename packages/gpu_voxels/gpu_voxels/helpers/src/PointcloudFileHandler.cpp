@@ -43,8 +43,6 @@ namespace gpu_voxels
 #endif
         }
 
-        PointcloudFileHandler::~PointcloudFileHandler() = default;
-
 		/*!
 		 * \brief loadPointCloud loads a PCD file and returns the points in a vector.
 		 * \param path Filename
@@ -53,11 +51,11 @@ namespace gpu_voxels
 		 * \param offset_XYZ Additional transformation offset
 		 * \return true if succeeded, false otherwise
 		 */
-		bool PointcloudFileHandler::loadPointCloud(const std::string& _path, const bool use_model_path, std::vector<Vector3f>& points, const bool shift_to_zero,
+		bool PointcloudFileHandler::loadPointCloud(const std::string& _path, std::filesystem::path const& model_path, std::vector<Vector3f>& points, const bool shift_to_zero,
 			const Vector3f& offset_XYZ, const float scaling) const
 		{
 			// if param is true, prepend the environment variable GPU_VOXELS_MODEL_PATH
-			std::string path = (getGpuVoxelsPath(use_model_path) / std::filesystem::path(_path)).string();
+			std::filesystem::path path = model_path / _path;
 
 			LOGGING_DEBUG_C(
 				Gpu_voxels_helpers,
@@ -65,13 +63,13 @@ namespace gpu_voxels
 				"Loading Pointcloud file " << path << " ..." << endl);
 
 			// is the file a simple xyz file?
-			if (path.ends_with("xyz"))
+			if (path.extension() == ".xyz")
 			{
 				if (!xyz_reader->readPointCloud(path, points))
 					return false;
 
 			} // is the file a simple pcl pcd file?
-			else if (path.ends_with("pcd"))
+			else if (path.extension() == ".pcd")
 			{
 #ifdef _BUILD_GVL_WITH_PCL_SUPPORT_
 				if (!pcd_reader->readPointCloud(path, points))
@@ -85,7 +83,7 @@ namespace gpu_voxels
 #endif
 
 			} // is the file a binvox file?
-			else if (path.ends_with("binvox"))
+			else if (path.extension() == ".binvox")
 			{
 				if (!binvox_reader->readPointCloud(path, points))
 					return false;
@@ -95,7 +93,7 @@ namespace gpu_voxels
 				LOGGING_ERROR_C(
 					Gpu_voxels_helpers,
 					GpuVoxelsMap,
-					path << " has no known file format." << endl);
+					path.string() << " has no known file format." << endl);
 				return false;
 			}
 

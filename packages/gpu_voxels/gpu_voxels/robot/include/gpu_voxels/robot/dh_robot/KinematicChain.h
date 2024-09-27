@@ -55,7 +55,7 @@ namespace gpu_voxels
 			KinematicChain(const std::vector<std::string>& linknames,
 				const std::vector<robot::DHParameters<convention>>& dh_params,
 				const std::vector<std::string>& paths_to_pointclouds,
-				bool use_model_path,
+				const std::filesystem::path& model_path,
 				const Matrix4f& base_transformation = Matrix4f::Identity());
 
 			/*!

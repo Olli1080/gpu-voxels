@@ -31,7 +31,7 @@ namespace gpu_voxels {
 namespace file_handling {
 
 
-void HeightMapLoader(std::string bottom_map, std::string ceiling_map, bool use_model_path,
+void HeightMapLoader(std::string bottom_map, std::string ceiling_map, const std::filesystem::path& model_path,
                                  size_t bottom_start_height, size_t ceiling_end_height,
                                  float meter_per_pixel, float meter_per_greyshade,
                                  gpu_voxels::Vector3f metric_offset, PointCloud &cloud);

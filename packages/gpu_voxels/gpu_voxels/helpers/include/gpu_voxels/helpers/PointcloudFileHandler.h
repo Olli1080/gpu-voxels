@@ -63,10 +63,8 @@ namespace gpu_voxels
              * \param offset_XYZ Additional transformation offset
              * \return true if succeeded, false otherwise
              */
-            bool loadPointCloud(const std::string& _path, bool use_model_path, std::vector<Vector3f>& points, bool shift_to_zero = false,
+            bool loadPointCloud(const std::string& _path, std::filesystem::path const& model_path, std::vector<Vector3f>& points, bool shift_to_zero = false,
                 const Vector3f& offset_XYZ = Vector3f::Zero(), float scaling = 1.f) const;
-
-            ~PointcloudFileHandler();
 
         private:
             /*!

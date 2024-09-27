@@ -100,7 +100,7 @@ namespace gpu_voxels
 			//  }
 		}
 
-		struct unary_zero : public thrust::unary_function<uint32_t, bool>
+		struct unary_zero
 		{
 			__host__ __device__
 				bool operator()(const uint32_t& x)
@@ -110,7 +110,7 @@ namespace gpu_voxels
 		};
 
 		template<typename T>
-		struct isZero : public thrust::unary_function<T, T>
+		struct isZero
 		{
 			__host__ __device__ T operator()(const T& x) const
 			{

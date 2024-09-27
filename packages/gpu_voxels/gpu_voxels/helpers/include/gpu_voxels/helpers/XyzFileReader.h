@@ -47,7 +47,7 @@ namespace gpu_voxels
 			 * \param points points are written into this vector
 			 * \return true if succeeded, false otherwise
 			 */
-			bool readPointCloud(const std::string& filename, std::vector<Vector3f>& points) override;
+			bool readPointCloud(const std::filesystem::path& filename, std::vector<Vector3f>& points) override;
 		};
 	}  // end of namespace
 }  // end of namespace

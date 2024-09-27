@@ -278,29 +278,6 @@ namespace gpu_voxels
 }
  */
 
- /*! Read environment variable GPU_VOXELS_MODEL_PATH
-  *  \param prepend_env_path Set to false to disable and return empty path.
-  *  \returns the path
-  */
-	static inline std::filesystem::path getGpuVoxelsPath(bool prepend_env_path)
-	{
-		if (prepend_env_path)
-		{
-			char const* tmp = std::getenv("GPU_VOXELS_MODEL_PATH");
-			if (tmp == nullptr)
-			{
-				LOGGING_ERROR(
-					Gpu_voxels_helpers,
-					"The environment variable 'GPU_VOXELS_MODEL_PATH' could not be read. Did you set it?" << endl);
-				return {};
-			}
-			return tmp;
-		}
-		else {
-			return {};
-		}
-	}
-
 
 	constexpr unsigned int cMBYTE2BYTE = 1024 * 1024;
 	constexpr float cBYTE2MBYTE = 1.f / cMBYTE2BYTE;

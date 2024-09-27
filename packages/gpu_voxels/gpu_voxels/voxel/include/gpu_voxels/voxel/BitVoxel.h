@@ -23,8 +23,8 @@
 #ifndef GPU_VOXELS_VOXEL_BIT_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_BIT_VOXEL_H_INCLUDED
 
-#include <gpu_voxels/voxel/AbstractVoxel.h>
 #include <gpu_voxels/helpers/BitVector.h>
+#include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
 
@@ -32,7 +32,7 @@ namespace gpu_voxels {
 	 * @brief Voxel which represents a bit vector.
 	 */
 	template<std::size_t length>
-	class BitVoxel : public AbstractVoxel
+	class BitVoxel
 	{
 	public:
 
@@ -54,7 +54,7 @@ namespace gpu_voxels {
 		__host__ __device__
 		static BitVoxel reduce(const BitVoxel voxel, const BitVoxel other_voxel);
 
-		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
+		struct reduce_op
 		{
 			__host__ __device__
 			BitVoxel operator()(const BitVoxel& a, const BitVoxel& b) const;

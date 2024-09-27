@@ -16,7 +16,6 @@
 #define SHARED_MEM_CUH
 
 #include <gpu_voxels/helpers/common_defines.h>
-#include <gpu_voxels/voxel/AbstractVoxel.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 
@@ -36,7 +35,7 @@ public:
 };
 
 // specialization for AbstractVoxel
-template <>
+/*template <>
 struct SharedVoxel <gpu_voxels::AbstractVoxel>
 {
 public:
@@ -45,7 +44,7 @@ public:
 		extern __shared__ gpu_voxels::AbstractVoxel abstract_mem[];
 		return abstract_mem;
 	}
-};
+};*/
 
 
 // specialization for BitVoxel

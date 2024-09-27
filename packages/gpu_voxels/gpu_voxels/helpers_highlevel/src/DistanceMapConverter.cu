@@ -99,8 +99,7 @@ namespace gpu_voxels
          * More than 255 Units free: All SV-IDs set + Undefined Bit set.
          *
          */
-        struct transform_to_bitvoxel : public thrust::unary_function< thrust::tuple<free_space_t, MapVoxelID >,
-            thrust::tuple<MapVoxelID, Vector3ui, BitVectorVoxel> >
+        struct transform_to_bitvoxel : thrust::tuple<MapVoxelID, Vector3ui, BitVectorVoxel>
         {
             typedef thrust::tuple<MapVoxelID, Vector3ui, BitVectorVoxel> keyCoordVoxelTriple;
             typedef thrust::tuple<free_space_t, MapVoxelID > dist_tuple_t;

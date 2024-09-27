@@ -29,9 +29,9 @@
 namespace gpu_voxels {
     namespace file_handling {
 
-        bool XyzFileReader::readPointCloud(const std::string& filename, std::vector<Vector3f>& points)
+        bool XyzFileReader::readPointCloud(const std::filesystem::path& filename, std::vector<Vector3f>& points)
         {
-            std::ifstream file(filename.c_str());
+            std::ifstream file(filename);
 
             if (!file)
             {

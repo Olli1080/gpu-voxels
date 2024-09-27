@@ -397,7 +397,7 @@ namespace gpu_voxels {
     }
 
     bool GpuVoxels::insertPointCloudFromFile(const std::string& map_name, const std::string& path,
-        const bool use_model_path, const BitVoxelMeaning voxel_meaning,
+        const std::filesystem::path& model_path, const BitVoxelMeaning voxel_meaning,
         const bool shift_to_zero, const Vector3f& offset_XYZ, const float scaling)
     {
         const auto map_it = m_managed_maps.find(map_name);
@@ -407,7 +407,7 @@ namespace gpu_voxels {
             return false;
         }
 
-        return map_it->second.map_shared_ptr->insertPointCloudFromFile(path, use_model_path, voxel_meaning,
+        return map_it->second.map_shared_ptr->insertPointCloudFromFile(path, model_path, voxel_meaning,
             shift_to_zero, offset_XYZ, scaling);
     }
 

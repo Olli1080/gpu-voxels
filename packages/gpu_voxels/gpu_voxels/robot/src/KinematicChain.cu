@@ -37,11 +37,11 @@ namespace gpu_voxels
 		KinematicChain<convention>::KinematicChain(const std::vector<std::string>& linknames,
 			const std::vector<robot::DHParameters<convention>>& dh_params,
 			const std::vector<std::string>& paths_to_pointclouds,
-			bool use_model_path,
+			const std::filesystem::path& model_path,
 			const Matrix4f& base_transformation)
 		{
 			// The untransformed point clouds
-			m_links_meta_cloud = std::make_unique<MetaPointCloud>(paths_to_pointclouds, paths_to_pointclouds, use_model_path);
+			m_links_meta_cloud = std::make_unique<MetaPointCloud>(paths_to_pointclouds, paths_to_pointclouds, model_path);
 			init(linknames, dh_params, base_transformation);
 		}
 
@@ -173,14 +173,14 @@ namespace gpu_voxels
 		{
 			jointnames.clear();
 			jointnames.reserve(m_links.size());
-			for (auto name : m_links | std::views::keys)
+			for (const auto& name : m_links | std::views::keys)
 				jointnames.emplace_back(name);
 		}
 
 		template<DHConvention convention>
 		void KinematicChain<convention>::getConfiguration(JointValueMap& joint_values)
 		{
-			for (auto [name, link] : m_links)
+			for (const auto& [name, link] : m_links)
 				joint_values[name] = link->getJointValue();
 		}
 

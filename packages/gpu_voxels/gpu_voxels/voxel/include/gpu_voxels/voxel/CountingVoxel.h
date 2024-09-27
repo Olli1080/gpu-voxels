@@ -23,14 +23,16 @@
 #ifndef GPU_VOXELS_VOXEL_COUNTING_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_COUNTING_VOXEL_H_INCLUDED
 
-#include <gpu_voxels/voxel/AbstractVoxel.h>
+#include <cuda_runtime.h>
+#include <cstdint>
+#include <istream>
 
 namespace gpu_voxels {
 
 	/**
 	 * @brief Counting voxel type for filtering noise data with density threshold
 	 */
-	class CountingVoxel : public AbstractVoxel
+	class CountingVoxel
 	{
 	public:
 		/**
@@ -57,7 +59,7 @@ namespace gpu_voxels {
 		__host__ __device__
 		static CountingVoxel reduce(const CountingVoxel voxel, const CountingVoxel other_voxel);
 
-		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
+		struct reduce_op
 		{
 			__host__ __device__
 			CountingVoxel operator()(const CountingVoxel& a, const CountingVoxel& b) const

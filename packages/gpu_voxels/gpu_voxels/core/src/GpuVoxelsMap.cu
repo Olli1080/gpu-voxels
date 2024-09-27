@@ -26,13 +26,13 @@
 
 namespace gpu_voxels
 {
-    bool GpuVoxelsMap::insertPointCloudFromFile(const std::string& path, const bool use_model_path, const BitVoxelMeaning voxel_meaning,
+    bool GpuVoxelsMap::insertPointCloudFromFile(const std::string& path, std::filesystem::path const& model_path, const BitVoxelMeaning voxel_meaning,
                                                 const bool shift_to_zero, const Vector3f& offset_XYZ, const float scaling)
     {
         //load the points into the vector
         std::vector<Vector3f> points;
 
-        if (file_handling::PointcloudFileHandler::Instance()->loadPointCloud(path, use_model_path, points, shift_to_zero, offset_XYZ, scaling))
+        if (file_handling::PointcloudFileHandler::Instance()->loadPointCloud(path, model_path, points, shift_to_zero, offset_XYZ, scaling))
         {
             insertPointCloud(points, voxel_meaning);
             return true;

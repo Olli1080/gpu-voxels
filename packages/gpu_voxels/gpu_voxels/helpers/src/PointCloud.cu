@@ -46,10 +46,10 @@ namespace gpu_voxels
         m_points_dev = other.getPointsDevice();
     }
 
-    PointCloud::PointCloud(const std::string& path_to_file, bool use_model_path)
+    PointCloud::PointCloud(const std::string& path_to_file, const std::filesystem::path& model_path)
     {
         std::vector<Vector3f> host_point_cloud;
-        if (!file_handling::PointcloudFileHandler::Instance()->loadPointCloud(path_to_file, use_model_path, host_point_cloud))
+        if (!file_handling::PointcloudFileHandler::Instance()->loadPointCloud(path_to_file, model_path, host_point_cloud))
         {
             LOGGING_ERROR_C(Gpu_voxels_helpers, PointCloud,
                 "Could not read file " << path_to_file << icl_core::logging::endl);

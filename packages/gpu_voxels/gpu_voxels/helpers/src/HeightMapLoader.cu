@@ -33,16 +33,13 @@
 namespace gpu_voxels {
 namespace file_handling {
 
-void HeightMapLoader(std::string bottom_map, std::string ceiling_map, bool use_model_path,
+void HeightMapLoader(std::string bottom_map, std::string ceiling_map, const std::filesystem::path& model_path,
                                  size_t bottom_start_height, size_t ceiling_end_height,
                                  float meter_per_pixel, float meter_per_greyshade,
                                  gpu_voxels::Vector3f metric_offset, PointCloud &cloud)
 {
-  std::string bottom_map_path;
-  std::string ceiling_map_path;
-
-  bottom_map_path = (getGpuVoxelsPath(use_model_path) / std::filesystem::path(bottom_map)).string();
-  ceiling_map_path = (getGpuVoxelsPath(use_model_path) / std::filesystem::path(ceiling_map)).string();
+  std::filesystem::path bottom_map_path = model_path / bottom_map;
+  std::filesystem::path ceiling_map_path = model_path / ceiling_map;
 
   unsigned char *simulatedEnvBottom;
   unsigned char *simulatedEnvCeiling;
@@ -51,12 +48,12 @@ void HeightMapLoader(std::string bottom_map, std::string ceiling_map, bool use_m
 
   if(!bottom_map.empty())
   {
-    simulatedEnvBottom = stbi_load(bottom_map_path.c_str(), &MapDimX, &MapDimY, &comp, STBI_default);
+    simulatedEnvBottom = stbi_load(bottom_map_path.string().c_str(), &MapDimX, &MapDimY, &comp, STBI_default);
     if(!simulatedEnvBottom)
     {
-      LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Could not read bottom map from " << bottom_map_path << endl);
+      LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Could not read bottom map from " << bottom_map_path.string() << endl);
     }else{
-      LOGGING_INFO_C(Gpu_voxels_helpers, HeightMapLoader, "Read bottom map from " << bottom_map_path << " with size: " << MapDimX << "x" << MapDimY << " and " << comp << " components." << endl);
+      LOGGING_INFO_C(Gpu_voxels_helpers, HeightMapLoader, "Read bottom map from " << bottom_map_path.string() << " with size: " << MapDimX << "x" << MapDimY << " and " << comp << " components." << endl);
       if(comp != 1)
       {
         LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Bottom map not given in Greyscale and without Alpha. Not using the map!" << endl);
@@ -71,12 +68,12 @@ void HeightMapLoader(std::string bottom_map, std::string ceiling_map, bool use_m
   if(!ceiling_map.empty())
   {
     int cMapDimX, cMapDimY;
-    simulatedEnvCeiling = stbi_load(ceiling_map_path.c_str(), &cMapDimX, &cMapDimY, &comp, STBI_default);
+    simulatedEnvCeiling = stbi_load(ceiling_map_path.string().c_str(), &cMapDimX, &cMapDimY, &comp, STBI_default);
     if(!simulatedEnvCeiling)
     {
-      LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Could not read ceiling map from " << ceiling_map_path << endl);
+      LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Could not read ceiling map from " << ceiling_map_path.string() << endl);
     }else{
-      LOGGING_INFO_C(Gpu_voxels_helpers, HeightMapLoader, "Read ceiling map from " << ceiling_map_path << " with size: " << cMapDimX << "x" << cMapDimY << " and " << comp << " components." << endl);
+      LOGGING_INFO_C(Gpu_voxels_helpers, HeightMapLoader, "Read ceiling map from " << ceiling_map_path.string() << " with size: " << cMapDimX << "x" << cMapDimY << " and " << comp << " components." << endl);
       if(cMapDimX != MapDimX || cMapDimY != MapDimY)
       {
         LOGGING_ERROR_C(Gpu_voxels_helpers, HeightMapLoader, "Ceiling map dimension differs from floor map! Not loading!" << endl);

@@ -33,11 +33,11 @@ namespace gpu_voxels
     namespace file_handling
 	{
 
-        bool PcdFileReader::readPointCloud(const std::string& filename, std::vector<Vector3f>& points)
+        bool PcdFileReader::readPointCloud(const std::filesystem::path& filename, std::vector<Vector3f>& points)
         {
 	        const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-            if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *cloud) == -1) //* load the file
+            if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename.string(), *cloud) == -1) //* load the file
             {
                 LOGGING_ERROR(Gpu_voxels_helpers, "Could not open file " << filename.c_str() << " !" << endl);
                 return false;

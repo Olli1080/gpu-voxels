@@ -289,7 +289,7 @@ namespace gpu_voxels {
 		 * \param offset_XYZ if given, the map will be transformed by this XYZ offset. If shifting is active, this happens after the shifting.
 		 * \return true if succeeded, false otherwise
 		 */
-		bool insertPointCloudFromFile(const std::string& map_name, const std::string& path, bool use_model_path,
+		bool insertPointCloudFromFile(const std::string& map_name, const std::string& path, const std::filesystem::path& model_path,
 			BitVoxelMeaning voxel_meaning, bool shift_to_zero = false,
 			const Vector3f& offset_XYZ = Vector3f::Zero(), float scaling = 1.f);
 

@@ -26,6 +26,7 @@
 #ifndef GPU_VOXELS_HELPERS_METAPOINTCLOUD_H_INCLUDED
 #define GPU_VOXELS_HELPERS_METAPOINTCLOUD_H_INCLUDED
 
+#include <filesystem>
 #include <optional>
 #include <span>
 #include <vector>
@@ -42,9 +43,9 @@ namespace gpu_voxels
     public:
 
         MetaPointCloud();
-        explicit MetaPointCloud(const std::vector<std::string>& _point_cloud_files, bool use_model_path);
+        explicit MetaPointCloud(const std::vector<std::string>& _point_cloud_files, const std::filesystem::path& model_path);
         explicit MetaPointCloud(const std::vector<std::string>& _point_cloud_files,
-            const std::vector<std::string>& _point_cloud_names, bool use_model_path);
+            const std::vector<std::string>& _point_cloud_names, const std::filesystem::path& model_path);
         explicit MetaPointCloud(const std::vector<uint32_t>& _point_cloud_sizes);
         explicit MetaPointCloud(const std::vector< std::vector<Vector3f> >& point_clouds);
 
@@ -62,7 +63,7 @@ namespace gpu_voxels
         void addCloud(const std::vector<Vector3f>& cloud, bool sync = false, const std::string& name = "");
         
         void addCloud(const PointCloud& cloud, const std::string& name = "");
-        void addClouds(const std::vector<std::string>& _point_cloud_files, bool use_model_path);
+        void addClouds(const std::vector<std::string>& _point_cloud_files, const std::filesystem::path& model_path);
         [[nodiscard]] std::string getCloudName(uint16_t i) const;
         [[nodiscard]] const std::map<uint16_t, std::string>& getCloudNames() const;
         [[nodiscard]] std::optional<uint16_t> getCloudNumber(const std::string& name) const;

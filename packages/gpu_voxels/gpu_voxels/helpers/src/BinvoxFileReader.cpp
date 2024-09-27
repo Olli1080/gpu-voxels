@@ -32,7 +32,6 @@
 #include "BinvoxFileReader.h"
 
 #include <fstream>
-#include <vector>
 
 #include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 
@@ -43,7 +42,7 @@ namespace gpu_voxels
         using namespace std;
         typedef unsigned char byte;
 
-        bool BinvoxFileReader::readPointCloud(const std::string& filename, std::vector<Vector3f>& points)
+        bool BinvoxFileReader::readPointCloud(const std::filesystem::path& filename, std::vector<Vector3f>& points)
         {
             // 0 = empty voxel
             // 1 = filled voxel

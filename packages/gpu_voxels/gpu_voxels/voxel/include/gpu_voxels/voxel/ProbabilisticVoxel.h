@@ -23,7 +23,6 @@
 #ifndef GPU_VOXELS_VOXEL_PROBABILISTIC_VOXEL_H_INCLUDED
 #define GPU_VOXELS_VOXEL_PROBABILISTIC_VOXEL_H_INCLUDED
 
-#include <gpu_voxels/voxel/AbstractVoxel.h>
 #include <gpu_voxels/helpers/common_defines.h>
 
 namespace gpu_voxels {
@@ -31,7 +30,7 @@ namespace gpu_voxels {
 	/**
 	 * @brief Probabilistic voxel type with probability in log-odd representation
 	 */
-	class ProbabilisticVoxel : public AbstractVoxel
+	class ProbabilisticVoxel
 	{
 	public:
 
@@ -98,7 +97,7 @@ namespace gpu_voxels {
 		__host__ __device__
 		static ProbabilisticVoxel reduce(ProbabilisticVoxel voxel, ProbabilisticVoxel other_voxel);
 
-		struct reduce_op //: public thrust::binary_function<BitVoxelMeaningFlags, BitVoxelMeaningFlags, BitVoxelMeaningFlags>
+		struct reduce_op
 		{
 			__host__ __device__
 				ProbabilisticVoxel operator()(const ProbabilisticVoxel& a, const ProbabilisticVoxel& b) const
