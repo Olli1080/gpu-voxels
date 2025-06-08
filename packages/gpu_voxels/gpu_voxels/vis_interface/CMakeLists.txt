@@ -52,7 +52,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_VIS_INTERFACE_)
+#target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_VIS_INTERFACE_)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES all)
 

@@ -50,11 +50,11 @@ target_link_libraries(${PROJECT_NAME}
     gpu_voxels_voxel
     gpu_voxels_voxelmap
     gpu_voxels_octree
-    gpu_voxels_vis_interface
+    #gpu_voxels_vis_interface
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_VOXELLIST_)
+#target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_VOXELLIST_)
 target_compile_options(${PROJECT_NAME} INTERFACE
     # If using CUDA w/ NVCC...
     $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CUDA_COMPILER_ID:NVIDIA>>:-Wno-deprecated-gpu-targets>

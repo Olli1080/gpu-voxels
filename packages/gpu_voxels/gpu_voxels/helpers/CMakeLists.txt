@@ -111,7 +111,7 @@ if(ON) #TODO:: replace with pcl question
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_HELPERS_)
+#target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_HELPERS_)
 
 install(
   TARGETS 

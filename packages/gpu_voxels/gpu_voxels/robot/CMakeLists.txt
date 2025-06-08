@@ -46,7 +46,7 @@ target_link_libraries(gpu_voxels_dh_robot
 )
 
 target_compile_features(gpu_voxels_dh_robot PUBLIC cxx_std_20)
-target_compile_definitions(gpu_voxels_dh_robot PUBLIC _IC_BUILDER_GPU_VOXELS_DH_ROBOT_)
+#target_compile_definitions(gpu_voxels_dh_robot PUBLIC _IC_BUILDER_GPU_VOXELS_DH_ROBOT_)
 
 install(
   TARGETS 
