@@ -26,7 +26,7 @@ target_sources(${PROJECT_NAME}
     src/PointCloudWrapper.cu
     src/RobotNodes.cu
     src/Sensor.cu
-    src/VisNTree.cu
+    #src/VisNTree.cu
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${INCLUDE_DIR}
   FILES
@@ -70,8 +70,8 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/RobotNodes.h
     ${INCLUDE_DIR}/Sensor.h
     ${INCLUDE_DIR}/SensorModel.h
-    ${INCLUDE_DIR}/VisNTree.h
-    ${INCLUDE_DIR}/VisNTree.hpp
+    #${INCLUDE_DIR}/VisNTree.h
+    #${INCLUDE_DIR}/VisNTree.hpp
     ${INCLUDE_DIR}/Voxel.h
 #    ${INCLUDE_DIR}/ImportExport.h
 )
@@ -85,12 +85,16 @@ target_link_libraries(${PROJECT_NAME}
     gpu_voxels_voxellist # REMOVE THIS LATER
     gpu_voxels_helpers
     gpu_voxels_logging
-    gpu_voxels_vis_interface
+    #gpu_voxels_vis_interface
     icl_core_performance_monitor
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_definitions(${PROJECT_NAME} PUBLIC _IC_BUILDER_GPU_VOXELS_OCTREE_)
+target_compile_options(${PROJECT_NAME} INTERFACE
+    # If using CUDA w/ NVCC...
+    $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CUDA_COMPILER_ID:NVIDIA>>:-Wno-deprecated-gpu-targets>
+  )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES all)
 

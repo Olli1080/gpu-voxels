@@ -24,7 +24,15 @@
 #define GPU_VOXELS_HELPERS_MANAGEDPRIMITIVEARRAY_H_INCLUDED
 
 #include <gpu_voxels/primitive_array/PrimitiveArray.h>
-#include <gpu_voxels/vis_interface/VisProvider.h>
+
+#ifdef GPUVOXEL_VISUALIZE
+	#include <gpu_voxels/vis_interface/VisProvider.h>
+#else
+namespace gpu_voxels {
+	struct VisProvider {};
+	using VisProviderSharedPtr = std::shared_ptr<VisProvider>;
+}
+#endif
 
 #include <utility>
 

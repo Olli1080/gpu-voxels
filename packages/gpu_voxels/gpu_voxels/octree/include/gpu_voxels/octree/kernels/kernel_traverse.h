@@ -30,7 +30,6 @@
 #include <gpu_voxels/octree/kernels/kernel_common.h>
 
 // gpu_voxels
-#include <gpu_voxels/vis_interface/VisualizerInterface.h>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
 
 namespace gpu_voxels

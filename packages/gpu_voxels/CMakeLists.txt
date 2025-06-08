@@ -7,7 +7,7 @@ add_subdirectory(gpu_voxels/voxelmap)
 add_subdirectory(gpu_voxels/voxellist)
 add_subdirectory(gpu_voxels/octree)
 add_subdirectory(gpu_voxels/robot)
-add_subdirectory(gpu_voxels/vis_interface)
+#add_subdirectory(gpu_voxels/vis_interface)
 add_subdirectory(gpu_voxels/helpers_highlevel)
 add_subdirectory(gpu_voxels/gpu_voxels)
 

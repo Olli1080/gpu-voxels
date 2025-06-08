@@ -84,41 +84,6 @@ namespace gpu_voxels {
 	static const std::string shm_variable_name_target_point = "target_point";
 	static const std::string shm_variable_name_set_draw_types = "toggle_draw_types";
 
-
-	struct Cube
-	{
-		// Default constructor is needed
-		__device__ __host__ Cube()
-		{
-			m_side_length = 0;
-			m_position = Vector3ui(0);
-			m_type_vector.setBit(eBVM_UNDEFINED);
-		}
-
-		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVoxelMeaning type)
-		{
-			m_side_length = side_length;
-			m_position = position;
-			m_type_vector.setBit(type);
-		}
-
-		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVector<visualization::MAX_DRAW_TYPES> type_vector)
-		{
-			m_side_length = side_length;
-			m_position = position;
-			m_type_vector = type_vector;
-		}
-
-		// the length of the edges
-		uint32_t m_side_length;
-		// the position of the lower left front corner of the cube
-		Vector3ui m_position;
-
-		// type bitvector
-		BitVector<visualization::MAX_DRAW_TYPES> m_type_vector;
-
-	};
-
 	struct DrawTypes
 	{
 	public:

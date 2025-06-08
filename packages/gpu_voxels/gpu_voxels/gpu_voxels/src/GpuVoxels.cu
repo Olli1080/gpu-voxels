@@ -26,10 +26,13 @@
 
 #include <gpu_voxels/logging/logging_gpu_voxels.h>
 #include <gpu_voxels/helpers/GeometryGeneration.h>
+
+#ifdef GPUVOXEL_VISUALIZE
 #include <gpu_voxels/vis_interface/VisVoxelMap.h>
 #include <gpu_voxels/vis_interface/VisTemplateVoxelList.h>
 #include <gpu_voxels/vis_interface/VisPrimitiveArray.h>
 #include <gpu_voxels/octree/VisNTree.h>
+#endif
 
 #include <gpu_voxels/core/ManagedPrimitiveArray.h>
 #include <gpu_voxels/core/ManagedMap.h>
@@ -95,9 +98,17 @@ namespace gpu_voxels {
         }
 
         auto orig_prim_array = std::make_unique<primitive_array::PrimitiveArray>(m_dim, m_voxel_side_length, prim_type);
+#ifdef GPUVOXEL_VISUALIZE
         auto vis_prim_array = std::make_unique<VisPrimitiveArray>(orig_prim_array.get(), array_name);
+#endif
         const auto primitive_array_shared_ptr = primitive_array::PrimitiveArraySharedPtr(orig_prim_array.release());
+
+
+#ifdef GPUVOXEL_VISUALIZE
         const auto vis_primitives_shared_ptr = VisProviderSharedPtr(vis_prim_array.release());
+#else
+        const auto vis_primitives_shared_ptr = std::make_shared<VisProvider>();
+#endif
         
         m_managed_primitive_arrays.emplace(array_name,
             ManagedPrimitiveArray(primitive_array_shared_ptr, vis_primitives_shared_ptr));
@@ -183,30 +194,48 @@ namespace gpu_voxels {
         case MT_PROBAB_VOXELMAP:
         {
             auto orig_map = std::make_unique<voxelmap::ProbVoxelMap>(m_dim, m_voxel_side_length, MT_PROBAB_VOXELMAP);
+
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_map = std::make_unique<VisVoxelMap>(orig_map.get(), map_name);
+#endif
 
             map_shared_ptr = GpuVoxelsMapSharedPtr(orig_map.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_map.release());
+#endif
             break;
         }
 
         case MT_BITVECTOR_VOXELLIST:
         {
             auto orig_list = std::make_unique<voxellist::BitVectorVoxelList>(m_dim, m_voxel_side_length, MT_BITVECTOR_VOXELLIST);
+
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_list = std::make_unique<VisTemplateVoxelList<BitVectorVoxel, uint32_t>>(orig_list.get(), map_name);
+#endif
 
             map_shared_ptr = GpuVoxelsMapSharedPtr(orig_list.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_list.release());
+#endif
             break;
         }
 
         case MT_BITVECTOR_OCTREE:
         {
             auto ntree = std::make_unique<NTree::GvlNTreeDet>(m_voxel_side_length, MT_BITVECTOR_OCTREE);
+
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_map = std::make_unique<NTree::VisNTreeDet>(ntree.get(), map_name);
+#endif
 
             map_shared_ptr = GpuVoxelsMapSharedPtr(ntree.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_map.release());
+#endif
             break;
         }
 
@@ -219,19 +248,31 @@ namespace gpu_voxels {
         case MT_BITVECTOR_VOXELMAP:
         {
             auto orig_map = std::make_unique<voxelmap::BitVectorVoxelMap>(m_dim, m_voxel_side_length, MT_BITVECTOR_VOXELMAP);
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_map = std::make_unique<VisVoxelMap>(orig_map.get(), map_name);
+#endif
 
             map_shared_ptr = GpuVoxelsMapSharedPtr(orig_map.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_map.release());
+#endif
             break;
         }
 
         case MT_COUNTING_VOXELLIST:
         {
             auto orig_list = std::make_unique<voxellist::CountingVoxelList>(m_dim, m_voxel_side_length, MT_COUNTING_VOXELLIST);
+
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_list = std::make_unique<VisTemplateVoxelList<CountingVoxel, uint32_t>>(orig_list.get(), map_name);
+#endif
+
             map_shared_ptr = GpuVoxelsMapSharedPtr(orig_list.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_list.release());
+#endif
             break;
         }
 
@@ -244,10 +285,13 @@ namespace gpu_voxels {
         case MT_PROBAB_OCTREE:
         {
             auto ntree = std::make_unique<NTree::GvlNTreeProb>(m_voxel_side_length, MT_PROBAB_OCTREE);
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_map = std::make_unique<NTree::VisNTreeProb>(ntree.get(), map_name);
-
+#endif
             map_shared_ptr = GpuVoxelsMapSharedPtr(ntree.release());
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_map.release());
+#endif
             break;
         }
 
@@ -260,10 +304,14 @@ namespace gpu_voxels {
         case MT_DISTANCE_VOXELMAP:
         {
             auto orig_map = std::make_unique<voxelmap::DistanceVoxelMap>(m_dim, m_voxel_side_length, MT_DISTANCE_VOXELMAP);
+#ifdef GPUVOXEL_VISUALIZE
             auto vis_map = std::make_unique<VisVoxelMap>(orig_map.get(), map_name);
-
+#endif
             map_shared_ptr = GpuVoxelsMapSharedPtr(orig_map.release());
+
+#ifdef GPUVOXEL_VISUALIZE
             vis_map_shared_ptr = VisProviderSharedPtr(vis_map.release());
+#endif
             break;
         }
 
@@ -555,7 +603,11 @@ namespace gpu_voxels {
             LOGGING_ERROR_C(Gpu_voxels, GpuVoxels, "Map with name '" << map_name << "' not found." << endl);
             return false;
         }
+#ifdef GPUVOXEL_VISUALIZE
         return it->second.vis_provider_shared_ptr.get()->visualize(force_repaint);
+#else
+        return false;
+#endif
     }
 
     bool GpuVoxels::visualizePrimitivesArray(const std::string& prim_array_name, const bool force_repaint)
@@ -566,7 +618,11 @@ namespace gpu_voxels {
             LOGGING_ERROR_C(Gpu_voxels, GpuVoxels, "Primitives Array with name '" << prim_array_name << "' not found." << endl);
             return false;
         }
+#ifdef GPUVOXEL_VISUALIZE
         return it->second.vis_provider_shared_ptr.get()->visualize(force_repaint);
+#else
+        return false;
+#endif
     }
 
     VisProvider* GpuVoxels::getVisualization(const std::string& map_name)

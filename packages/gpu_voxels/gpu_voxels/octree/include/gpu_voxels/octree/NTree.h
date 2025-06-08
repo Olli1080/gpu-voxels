@@ -41,7 +41,6 @@
 #include <gpu_voxels/voxelmap/VoxelMap.h>
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
 #include <gpu_voxels/voxellist/TemplateVoxelList.h>
-#include <gpu_voxels/vis_interface/VisualizerInterface.h>
 
 /**
  * @namespace gpu_voxels::NTree

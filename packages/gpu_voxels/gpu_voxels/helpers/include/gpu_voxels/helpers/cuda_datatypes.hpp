@@ -30,6 +30,9 @@
 #include <gpu_voxels/helpers/cuda_matrices.hpp>
 #include <thrust/host_vector.h>
 
+#include "BitVector.h"
+#include "common_defines.h"
+
 #define BALLOT(PREDICATE) __ballot_sync(__activemask(), PREDICATE)
 
 namespace gpu_voxels
@@ -60,6 +63,40 @@ namespace gpu_voxels
 			MetaPointCloudStructLocal()
 			: num_clouds(0), accumulated_cloud_size(0)
 		{}
+	};
+
+	struct Cube
+	{
+		// Default constructor is needed
+		__device__ __host__ Cube()
+		{
+			m_side_length = 0;
+			m_position = Vector3ui(0);
+			m_type_vector.setBit(eBVM_UNDEFINED);
+		}
+
+		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVoxelMeaning type)
+		{
+			m_side_length = side_length;
+			m_position = position;
+			m_type_vector.setBit(type);
+		}
+
+		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVector<visualization::MAX_DRAW_TYPES> type_vector)
+		{
+			m_side_length = side_length;
+			m_position = position;
+			m_type_vector = type_vector;
+		}
+
+		// the length of the edges
+		uint32_t m_side_length;
+		// the position of the lower left front corner of the cube
+		Vector3ui m_position;
+
+		// type bitvector
+		BitVector<visualization::MAX_DRAW_TYPES> m_type_vector;
+
 	};
 } // end of namespace
 #endif

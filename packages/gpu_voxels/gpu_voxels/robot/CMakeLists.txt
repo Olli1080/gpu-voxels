@@ -31,6 +31,10 @@ target_sources(gpu_voxels_dh_robot
 )
 set_property(TARGET gpu_voxels_dh_robot PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET gpu_voxels_dh_robot PROPERTY CUDA_ARCHITECTURES all)
+target_compile_options(gpu_voxels_dh_robot INTERFACE
+    # If using CUDA w/ NVCC...
+    $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CUDA_COMPILER_ID:NVIDIA>>:-Wno-deprecated-gpu-targets>
+  )
 
 target_link_libraries(gpu_voxels_dh_robot
   PUBLIC

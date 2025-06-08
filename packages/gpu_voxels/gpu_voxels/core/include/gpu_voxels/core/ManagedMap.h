@@ -24,7 +24,13 @@
 #define GPU_VOXELS_HELPERS_MANAGEDMAP_H_INCLUDED
 
 #include <gpu_voxels/core/GpuVoxelsMap.h>
-#include <gpu_voxels/vis_interface/VisProvider.h>
+
+#ifdef GPUVOXEL_VISUALIZE
+	#include <gpu_voxels/vis_interface/VisProvider.h>
+#else
+	struct VisProvider {};
+	using VisProviderSharedPtr = std::shared_ptr<VisProvider>;
+#endif
 
 namespace gpu_voxels
 {

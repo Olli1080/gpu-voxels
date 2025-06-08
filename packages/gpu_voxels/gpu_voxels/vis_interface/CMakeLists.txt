@@ -20,8 +20,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_sources(${PROJECT_NAME}
   PRIVATE    
     src/VisProvider.cpp
-    src/VisVoxelMap.cu
-    src/VisVoxelList.cu
+    src/VisVoxelMap.cpp
+    src/VisVoxelList.cpp
     src/VisTemplateVoxelList.cu
     src/VisPrimitiveArray.cpp
   PUBLIC FILE_SET HEADERS 
