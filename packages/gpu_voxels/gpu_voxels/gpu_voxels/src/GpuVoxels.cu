@@ -375,7 +375,7 @@ namespace gpu_voxels {
     
 
 #ifdef _BUILD_GVL_WITH_URDF_SUPPORT_
-    bool GpuVoxels::addRobot(const std::string& robot_name, const std::string& path_to_urdf_file, const bool use_model_path)
+    bool GpuVoxels::addRobot(const std::string& robot_name, const std::string& path_to_urdf_file, const std::filesystem::path& model_path)
     {
         // check if robot with same name already exists
         ManagedRobotsIterator it = m_managed_robots.find(robot_name);
@@ -386,7 +386,7 @@ namespace gpu_voxels {
         }
 
         m_managed_robots.emplace(
-                robot_name, RobotInterfaceSharedPtr(new robot::UrdfRobot(m_voxel_side_length, path_to_urdf_file, use_model_path)));
+                robot_name, RobotInterfaceSharedPtr(new robot::UrdfRobot(m_voxel_side_length, path_to_urdf_file, model_path)));
 
         return true;
     }

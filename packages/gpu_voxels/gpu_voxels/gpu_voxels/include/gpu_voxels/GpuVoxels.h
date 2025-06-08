@@ -182,7 +182,7 @@ namespace gpu_voxels {
 		template<robot::DHConvention convention>
 		bool addRobot(const std::string& robot_name, const std::vector<std::string>& link_names,
 			const std::vector<robot::DHParameters<convention>>& dh_params,
-			const std::vector<std::string>& paths_to_pointclouds, bool use_model_path)
+			const std::vector<std::string>& paths_to_pointclouds, const std::filesystem::path& model_path)
 		{
 			// check if robot with same name already exists
 			const auto it = m_managed_robots.find(robot_name);
@@ -192,8 +192,8 @@ namespace gpu_voxels {
 				return false;
 			}
 
-			m_managed_robots.emplace(robot_name, RobotInterfaceSharedPtr(
-				new robot::KinematicChain<convention>(link_names, dh_params, paths_to_pointclouds, use_model_path)));
+			m_managed_robots.emplace(robot_name, std::make_shared<robot::KinematicChain<convention>>(
+				link_names, dh_params, paths_to_pointclouds, model_path));
 
 			return true;
 		}
@@ -222,8 +222,8 @@ namespace gpu_voxels {
 				return false;
 			}
 
-			m_managed_robots.emplace(robot_name, std::static_pointer_cast<robot::RobotInterface>(
-				std::make_shared<robot::KinematicChain<convention>>(link_names, dh_params, pointclouds)));
+			m_managed_robots.emplace(robot_name,
+				std::make_shared<robot::KinematicChain<convention>>(link_names, dh_params, pointclouds));
 
 			return true;
 		}
@@ -237,7 +237,7 @@ namespace gpu_voxels {
 		 * \param use_model_path Search URDF file in path specified in GPU_VOXELS_MODEL_PATH environment variable
 		 * \return true, if robot was added, false otherwise
 		 */
-		bool addRobot(const std::string& robot_name, const std::string& path_to_urdf_file, const bool use_model_path);
+		bool addRobot(const std::string& robot_name, const std::string& path_to_urdf_file, const std::filesystem::path& model_path);
 #endif
 
 		/*!
