@@ -29,6 +29,7 @@
 #include <thread>
 #include <deque>
 #include <mutex>
+#include <chrono>
 #include <condition_variable>
 
 #include <icl_core/Noncopyable.hpp>

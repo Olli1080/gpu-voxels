@@ -5,7 +5,10 @@ include(GNUInstallDirs)
 project(GPU_VOXEL_TL
     LANGUAGES CXX CUDA)
 
-option(NVCC_THREADS "Amount of threads for nvcc compilation" 1)
+set(NVCC_THREADS "1" CACHE STRING "Amount of threads for nvcc compilation")
+add_compile_options(
+  $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/MP>
+)
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=221 --threads=${NVCC_THREADS}")
 if (WIN32)
