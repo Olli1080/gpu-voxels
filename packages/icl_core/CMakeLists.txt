@@ -10,44 +10,44 @@
 # packages usually define a project per package.
 #
 #
-IF(NOT DEFINED ICMAKER_DIRECTORY)
-  find_package(icmaker REQUIRED)
-  INCLUDE(UseFullIcMaker REQUIRED)
-  project(icl_core)
-  catkin_package(
-    INCLUDE_DIRS src
-    LIBRARIES icl_core icl_core_config icl_core_logging icl_core_thread
-  )
-ENDIF()
-
 
 # To be used by other modules
-SET(ICL_CORE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_BINARY_DIR}/src" CACHE INTERNAL "")
-SET(ICL_CORE_IDL_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE INTERNAL "")
-SET(ICL_CORE_IDE_FOLDER "icl_core")
+#set(ICL_CORE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_BINARY_DIR}/src" CACHE INTERNAL "")
+#set(ICL_CORE_IDL_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE INTERNAL "")
+#set(ICL_CORE_IDE_FOLDER "icl_core")
 
-ICMAKER_REGISTER_PACKAGE(icl_core)
+#ICMAKER_REGISTER_PACKAGE(icl_core)
 
-ADD_SUBDIRECTORY (src/icl_core)
-ADD_SUBDIRECTORY (src/icl_core_config)
-ADD_SUBDIRECTORY (src/icl_core_logging)
-ADD_SUBDIRECTORY (src/icl_core_plugin)
-ADD_SUBDIRECTORY (src/icl_core_thread)
-ADD_SUBDIRECTORY (src/icl_core_testsuite)
-ADD_SUBDIRECTORY (src/icl_core_dispatch)
-ADD_SUBDIRECTORY (src/icl_core_crypt)
-ADD_SUBDIRECTORY (src/icl_core_performance_monitor)
+add_subdirectory(icl_core)
 
-ADD_SUBDIRECTORY (src/uls)
+#need to generate this header here because of circular dependencies
+add_library(icl_core_logging)
+generate_export_header(icl_core_logging 
+  EXPORT_MACRO_NAME
+    ICL_CORE_LOGGING_IMPORT_EXPORT
+  EXPORT_FILE_NAME
+    "${CMAKE_CURRENT_BINARY_DIR}/icl_core_logging/include/icl_core_logging/ImportExport.h"
+)
 
-ICMAKER_CONFIGURE_PACKAGE()
+add_subdirectory(icl_core_config)
+add_subdirectory(icl_core_logging)
+add_subdirectory(icl_core_testsuite)
+add_subdirectory(icl_core_performance_monitor)
 
-IF (BUILD_TESTS)
-  ADD_SUBDIRECTORY (src/test/test_icl_core)
-  ADD_SUBDIRECTORY (src/test/test_icl_core_config)
-  ADD_SUBDIRECTORY (src/test/test_icl_core_logging)
-  ADD_SUBDIRECTORY (src/ts/icl_core)
-  ADD_SUBDIRECTORY (src/ts/icl_core_config)
-  ADD_SUBDIRECTORY (src/ts/icl_core_thread)
-  ADD_SUBDIRECTORY (src/ts/icl_core_crypt)
-ENDIF (BUILD_TESTS)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/icl_core-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/icl_core-config.cmake"
+  INSTALL_DESTINATION share/icl_core
+)
+
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/icl_core-config.cmake"
+        DESTINATION share/icl_core)
+
+install(
+  EXPORT icl_core-targets
+  FILE icl_core-targets.cmake
+  DESTINATION share/icl_core
+  #NAMESPACE enact::
+)

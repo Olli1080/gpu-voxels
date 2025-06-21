@@ -1,16 +1,23 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+cmake_minimum_required(VERSION 3.23)
+include(GenerateExportHeader)
+include(GNUInstallDirs)
 
-SET(ICMAKER_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/icmaker)
+project(GPU_VOXEL_TL
+    LANGUAGES CXX CUDA)
 
-IF(EXISTS ${ICMAKER_DIRECTORY}/IcMaker.cmake)
-  INCLUDE(${ICMAKER_DIRECTORY}/IcMaker.cmake)
-ELSE()
-  INCLUDE(${ICMAKER_DIRECTORY}/CMakeLists.txt)
-ENDIF()
+set(NVCC_THREADS "1" CACHE STRING "Amount of threads for nvcc compilation")
+add_compile_options(
+  $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/MP>
+)
 
-ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/packages)
-ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/doc)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=221 --threads=${NVCC_THREADS}")
+if (WIN32)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler \"/bigobj\"")
+endif()
 
-IF (EXISTS "${CMAKE_SOURCE_DIR}/script" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/script")
-  ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/script)
-ENDIF ()
+set(BUILD_TESTS ON)
+if(BUILD_TESTS)
+    enable_testing()
+endif()
+
+add_subdirectory(packages)

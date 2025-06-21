@@ -1,0 +1,23 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(CUDAToolkit)
+find_dependency(Stb)
+find_dependency(PCL)
+find_dependency(icl_core)
+
+include("${CMAKE_CURRENT_LIST_DIR}/gpu_voxels-targets.cmake")
+
+check_required_components(
+  gpu_voxels_core gpu_voxels 
+  gpu_voxels_helpers 
+  gpu_voxels_distance_map_converter 
+  gpu_voxels_logging
+  gpu_voxels_octree
+  gpu_voxels_primitive_array
+  gpu_voxels_dh_robot
+  #gpu_voxels_vis_interface
+  gpu_voxels_voxel
+  gpu_voxels_voxellist
+  gpu_voxels_voxelmap
+)

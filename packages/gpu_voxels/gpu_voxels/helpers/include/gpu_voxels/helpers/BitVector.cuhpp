@@ -1,0 +1,373 @@
+// this is for emacs file handling -*- mode: c++; indent-tabs-mode: nil -*-
+
+// -- BEGIN LICENSE BLOCK ----------------------------------------------
+// This file is part of the GPU Voxels Software Library.
+//
+// This program is free software licensed under the CDDL
+// (COMMON DEVELOPMENT AND DISTRIBUTION LICENSE Version 1.0).
+// You can find a copy of this license in LICENSE.txt in the top
+// directory of the source code.
+//
+// © Copyright 2014 FZI Forschungszentrum Informatik, Karlsruhe, Germany
+//
+// -- END LICENSE BLOCK ------------------------------------------------
+
+//----------------------------------------------------------------------
+/*!\file
+ *
+ * \author  Florian Drews
+ * \date    2014-07-08
+ *
+ */
+//----------------------------------------------------------------------/*
+#ifndef GPU_VOXELS_BIT_VECTOR_HPP_INCLUDED
+#define GPU_VOXELS_BIT_VECTOR_HPP_INCLUDED
+
+#include <gpu_voxels/helpers/BitVector.h>
+
+#include <gpu_voxels/helpers/common_defines.h>
+#include <gpu_voxels/helpers/cuda_handling.h>
+
+namespace gpu_voxels
+{
+	template<size_t num_bits>
+    __host__ __device__
+	typename BitVector<num_bits>::item_type* BitVector<num_bits>::getByte(uint32_t index)
+    {
+        return &m_bytes[index >> 3];
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits>::BitVector()
+    {
+        if (num_bits % 32 != 0)
+        {
+            printf("Critical Error: BitVector size must be a multitude of 32 Bits!");
+        }
+        assert(num_bits % 32 == 0);
+        clear();
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::clear()
+    {
+        memset(m_bytes, 0, sizeof(m_bytes));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator|(const BitVector& o) const
+    {
+        BitVector<num_bits> res;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = m_bytes[i] | o.m_bytes[i];
+
+        return res;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+	bool BitVector<num_bits>::operator==(const BitVector& o) const
+    {
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            if (m_bytes[i] != o.m_bytes[i]) return false;
+
+        return true;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::operator|=(const BitVector& o)
+    {
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            m_bytes[i] |= o.m_bytes[i];
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator~() const
+    {
+        BitVector res;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = ~m_bytes[i];
+        return res;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitVector<num_bits>::operator&(const BitVector& o) const
+    {
+        BitVector res;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            res.m_bytes[i] = m_bytes[i] & o.m_bytes[i];
+        return res;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::isZero() const
+    {
+        bool result = true;
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 0; i < m_size; ++i)
+            result &= m_bytes[i] == 0;
+        return result;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::noneButEmpty() const
+    {
+        // Get the first byte which includes eBVM_FREE (Bit 0)
+        // Create a bitmask to exclude eBVM_FREE
+        // Check emptiness of masked first Byte:
+        bool result = !(m_bytes[0] & static_cast<item_type>(254));
+
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 1; i < m_size; ++i)
+            result &= m_bytes[i] == 0;
+        return result;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::anyNotEmpty() const
+    {
+        // Get the first byte which includes eBVM_FREE (Bit 0)
+        // Create a bitmask to exclude eBVM_FREE
+        // Check occupation of masked first Byte:
+        if (m_bytes[0] & static_cast<item_type>(254))
+            return true;
+
+
+#if defined(__CUDA_ARCH__)
+# pragma unroll
+#endif
+        for (uint32_t i = 1; i < m_size; ++i)
+        {
+            if (m_bytes[i] != 0)
+                return true;
+        }
+        return false;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] bool BitVector<num_bits>::getBit(const uint32_t index) const
+    {
+        return getByte(index) & (1 << (index & 7));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::clearBit(const uint32_t index)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte = *selected_byte & static_cast<item_type>(~(1 << (index & 7)));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::setBit(const uint32_t index)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte |= static_cast<item_type>(1 << (index & 7));
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    [[nodiscard]] typename BitVector<num_bits>::item_type BitVector<num_bits>::getByte(const uint32_t index, const uint8_t dummy) const
+    {
+        return m_bytes[index >> 3];
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::setByte(const uint32_t index, const item_type data)
+    {
+        item_type* selected_byte = getByte(index);
+        *selected_byte = data;
+    }
+
+    template<size_t num_bits>
+    __host__ __device__
+    void BitVector<num_bits>::dump()
+    {
+        constexpr size_t byte_size = sizeof(item_type);
+        printf("[");
+        for (uint32_t i = 0; i < num_bits; i += byte_size * 8)
+            printf(" %hu", *getByte(i));
+
+        printf(" ]\n");
+    }
+
+    // This CUDA Code was taken from Florians BitVoxelFlags that got replaced by BitVectors
+    template<size_t num_bits>
+    __device__
+    void BitVector<num_bits>::reduce(BitVector& flags, const int thread_id, const int num_threads,
+        BitVector* shared_mem)
+    {
+        shared_mem[thread_id] = flags;
+        __syncthreads();
+        REDUCE(shared_mem, thread_id, num_threads, | )
+            if (thread_id == 0)
+                flags = shared_mem[0];
+        __syncthreads();
+    }
+
+    template<size_t num_bits>
+    __device__
+    void BitVector<num_bits>::reduceAtomic(BitVector& flags, BitVector& global_flags)
+    {
+# pragma unroll
+        // interpret the 4 bytes as interger:
+        for (uint32_t i = 0; i < m_size / 4; i += 4)
+        {
+            // This is possible, as Vectors have to be a multiple of 32 Bits
+            int* tmp = (int*)(flags.m_bytes[0] + i);
+            atomicOr((int*)(&global_flags.m_bytes[0] + i), *tmp);
+        }
+    }
+
+    template<std::size_t num_bits>
+    __host__ __device__
+    void performLeftShift(BitVector<num_bits>& bit_vector, const uint8_t shift_size)
+    {
+        // This function uses a 64 Bit buffer to shift Bytes of the input bit_vector
+        // by a maximum of 56 Bits to the right (Buffer Size - Byte = 56).
+
+        uint64_t buffer = 0;
+
+        // 1) Fill the buffer with the first 8 byte of the input vector:
+        for (uint32_t byte_idx = 0; byte_idx < 8; ++byte_idx)
+        {
+            // getByte gives the byte wich contains the requested bit
+            buffer += static_cast<uint64_t>(bit_vector.getByte(byte_idx * 8, 1)) << (byte_idx * 8);
+        }
+
+        //printf("Buffer at start is %lu\n", buffer);
+
+        // 2) Iterate over all Input Bytes.
+        //    Copy the lowest byte of the shifted version of the buffer
+        //    Write that byte into the lowest output byte
+        //    Shift buffer about one byte (shifts in Zeros at highest byte)
+        //    Fill highest byte of buffer with the (buffersize+1)th byte of input
+        for (uint32_t byte_idx = 0; byte_idx < num_bits / 8; ++byte_idx)
+        {
+            uint8_t new_byte;
+            new_byte = static_cast<uint8_t>(buffer >> shift_size);
+            // only watch SV meanings and reset other meanings
+            if (byte_idx == 0)
+            {
+                new_byte = new_byte & 0b11110000;
+            }
+            bit_vector.setByte(byte_idx * 8, new_byte);
+            buffer = buffer >> 8; // This shifts in Zeros
+
+            // Prevent out of bounds accesses on input vector:
+            if ((byte_idx + 8) < (num_bits / 8))
+            {
+                buffer += static_cast<uint64_t>(bit_vector.getByte((byte_idx + 8) * 8, 1)) << 56;
+            }
+        }
+    }
+
+
+
+    /**
+     * @brief bitMarginCollisionCheck
+     * @param v1 Bitvector 1
+     * @param v2 Bitvector 2
+     * @param collisions Aggregates the colliding bits. This will NOT get reset!
+     * @param margin Fuzzyness of the check. How many bits get checked aside the actual colliding bit.
+     * @param sv_offset Bit-Offset added to v1 before colliding
+     * @return
+     */
+    template<std::size_t num_bits>
+    __host__ __device__
+    bool bitMarginCollisionCheck(const BitVector<num_bits>& v1, const BitVector<num_bits>& v2,
+        BitVector<num_bits>* collisions, const uint8_t margin, const uint32_t sv_offset)
+    {
+        uint64_t buffer = 0;
+        const size_t buffer_half = 4 * 8; // middle of uint64_t
+        if (margin > buffer_half)
+        {
+            //TODO:: std::cout is undefined in device code
+            //std::cout << "ERROR: Window size for SV collision check must be smaller than " << buffer_half << std::endl;
+        }
+
+        // Fill buffer with first 4 bytes of v2 into the upper half of the buffer.
+        uint8_t input_byte = 0;
+        for (uint32_t byte_nr = 0; byte_nr < 4; ++byte_nr)
+        {
+            input_byte = (v2.getByte(byte_nr * 8));
+            if (byte_nr == 0)
+            {
+                input_byte = input_byte & 0b11110000; // Mask out the non SV Bits of first byte.
+            }
+            buffer += static_cast<uint64_t>(input_byte) << (buffer_half + static_cast<uint64_t>(byte_nr) * 8);
+        }
+
+
+        uint8_t byte_offset = sv_offset % 8;
+        uint8_t bit_offset = sv_offset / 8;
+
+        // We start at bit 4 and not 0 because we're only interested in SV IDs
+        for (uint32_t i = eBVM_SWEPT_VOLUME_START + byte_offset; i < eBVM_SWEPT_VOLUME_END; i += 8)
+        {
+
+            uint8_t byte = 0;
+            uint64_t byte_1 = static_cast<uint64_t>(v1.getByte(i)) << (buffer_half - margin + bit_offset);
+
+            // Check range for collision
+            for (size_t bitshift_size = 0; bitshift_size <= 2 * margin; ++bitshift_size)
+            {
+                byte |= (byte_1 & buffer) >> (buffer_half - margin + bitshift_size);
+                //      if ((byte_1 & buffer) != 0)
+                //      {
+                //        printf("Byte_1 step %u is %lu, buffer is %lu, Overlapping: %u\n", i/8, byte_1, buffer, byte);
+                //      }
+                byte_1 = byte_1 << 1;
+            }
+
+            collisions->setByte(i, byte);
+
+            // Move buffer along bitvector
+            buffer = buffer >> 8;
+            if (i < num_bits - buffer_half)
+            {
+                buffer += static_cast<uint64_t>(v2.getByte(i + buffer_half)) << 56;
+            }
+        }
+        return !collisions->isZero();
+    }
+
+    template<std::size_t num_bits>
+    __host__ __device__
+    BitVector<num_bits> BitvectorOr<num_bits>::operator()(const BitVector<num_bits>& lhs, const BitVector<num_bits>& rhs) const
+    {
+        return lhs | rhs;
+    }
+} // end of ns
+#endif
