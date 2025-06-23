@@ -1,5 +1,3 @@
-![GPU Voxels Logo](http://gpu-voxels.org/gpu-voxels-logo.png  "GPU Voxels")
-
 **GPU-Voxels** is a CUDA based library which allows high resolution volumetric collision detection
 between animated 3D models and live pointclouds from 3D sensors of all kinds.
 It is mainly developed for robotics planning and monitoring tasks.
