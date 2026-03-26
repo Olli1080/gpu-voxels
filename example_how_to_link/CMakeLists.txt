@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 2.8)
 project (gvl_linkage_test)
 
 # First we have to find our dependencies:
-FIND_PACKAGE(CUDA REQUIRED)
+FIND_PACKAGE(CUDAToolkit REQUIRED)
 FIND_PACKAGE(icl_core REQUIRED )
 FIND_PACKAGE(gpu_voxels REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS system REQUIRED)

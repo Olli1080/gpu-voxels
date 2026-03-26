@@ -8,7 +8,6 @@
         "boost-test",
         "tinyxml2",
         "cppunit",
-        "cuda",
         "glew",
         "glm",
         "freeglut",
