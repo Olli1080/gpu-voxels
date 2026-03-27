@@ -327,7 +327,7 @@ namespace gpu_voxels {
             m_managed_maps.emplace(map_name, ManagedMap(map_shared_ptr, vis_map_shared_ptr));
 
             // sanity checking, that nothing went wrong:
-            CHECK_CUDA_ERROR();
+            GVL_CHECK_ERROR();
             return map_shared_ptr;
         }
         else

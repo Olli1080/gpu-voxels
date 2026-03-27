@@ -43,32 +43,32 @@ namespace gpu_voxels {
 		
 		//////////////////////////////////// CUDA kernel functions /////////////////////////////////////////
 
-		__global__ void fill_vbo_without_precounting(ProbabilisticVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(ProbabilisticVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, Probability occupancy_threshold, float4* vbo,
 			uint32_t* vbo_offsets, uint32_t* vbo_limits,
 			uint32_t* write_index, uint8_t* draw_voxel_type, uint8_t* prefixes);
 
-		__global__ void fill_vbo_without_precounting(const BitVectorVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(const BitVectorVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, uint8_t occupancy_threshold, float4* vbo,
 			const uint32_t* vbo_offsets, const uint32_t* vbo_limits,
 			uint32_t* write_index, const uint8_t* draw_voxel_type, const uint8_t* prefixes);
 
-		__global__ void fill_vbo_without_precounting(DistanceVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(DistanceVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, visualizer_distance_drawmodes drawmode, float4* vbo,
 			uint32_t* vbo_offsets, uint32_t* vbo_limits,
 			uint32_t* write_index, uint8_t* draw_voxel_type, uint8_t* prefixes);
 
 		
-		__global__ void fill_vbo_with_cubelist(Cube* cubes, uint32_t size, float4* vbo, uint32_t* vbo_offsets,
+		GVL_GLOBAL void fill_vbo_with_cubelist(Cube* cubes, uint32_t size, float4* vbo, uint32_t* vbo_offsets,
 			uint32_t* write_index, uint8_t* draw_voxel_type, uint8_t* prefixes);
 		
-		__global__ void calculate_cubes_per_type_list(const Cube* cubes, uint32_t size, uint32_t* cubes_per_type,
+		GVL_GLOBAL void calculate_cubes_per_type_list(const Cube* cubes, uint32_t size, uint32_t* cubes_per_type,
 			const uint8_t* draw_voxel_type, const uint8_t* prefixes);
 		
-		__global__ void find_cubes_by_coordinates(const Cube* cubes, size_t num_cubes, Vector3ui coords, Cube* found_cube, bool* found_flag);
+		GVL_GLOBAL void find_cubes_by_coordinates(const Cube* cubes, size_t num_cubes, Vector3ui coords, Cube* found_cube, bool* found_flag);
 
 		/*
 		 *

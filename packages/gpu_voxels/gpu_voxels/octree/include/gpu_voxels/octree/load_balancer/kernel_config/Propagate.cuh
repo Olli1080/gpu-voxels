@@ -74,7 +74,7 @@ namespace gpu_voxels
 					std::size_t my_num_collisions;
 					uint32_t make_progress_count;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						VariablesConfig() :
 						my_num_collisions(0),
 						make_progress_count(num_threads)
@@ -91,7 +91,7 @@ namespace gpu_voxels
 					const uint32_t work_lane_mask;
 					const uint32_t num_warps;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						ConstConfig(const dim3 p_grid_dim,
 							const dim3 p_block_dim,
 							const dim3 p_block_ids,
@@ -119,7 +119,7 @@ namespace gpu_voxels
 				typedef ConstConfig Constants;
 				typedef typename Base::AbstractKernelParameters KernelParams;
 
-				__device__
+				GVL_DEVICE
 					static void doLoadBalancedWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
@@ -131,7 +131,7 @@ namespace gpu_voxels
 							assert(shared_mem->work_item_cache[i].level >= shared_mem->work_item_cache[i + 1].level);
 					}
 #endif
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					bool insert_bottom_up_work_item = false;
 					bool insert_top_down_work_item = false;
@@ -267,7 +267,7 @@ namespace gpu_voxels
 					// ### add new item to work queue ###
 					// compute offsets needed to keep the level ordering of the stack and so assure the max. memory usage of it
 					{
-						//__syncthreads();
+						//GVL_SYNCTHREADS();
 						{
 							uint32_t all_insert_votes[2];
 							all_insert_votes[0] = BALLOT(insert_bottom_up_work_item);
@@ -281,7 +281,7 @@ namespace gpu_voxels
 								shared_mem->warp_prefix_sum[index] = __popc(all_insert_votes[constants.warp_lane]);
 							}
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 
 						// sequential warp prefix sum
 						if (constants.thread_id <= 1)
@@ -299,7 +299,7 @@ namespace gpu_voxels
 								my_insert_count += tmp;
 							}
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 
 						// insert existing work items of bottom-up step
 						if (variables.is_active & insert_bottom_up_work_item)
@@ -364,17 +364,17 @@ namespace gpu_voxels
 								shared_mem->work_item_cache[constants.work_index].level - 1,
 								update_subtree || node->hasFlags(nf_UPDATE_SUBTREE));
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 
 #ifndef NDEBUG
 						// ##### Had to remove the following code to compile without errors ####
-						// The error message isn't useful at all, since it complains about device functions like ____syncthreads.
+						// The error message isn't useful at all, since it complains about device functions like __GVL_SYNCTHREADS.
 						// It's probably a compiler bug, due to too much used registers,
 						// since only the following line also leads to the same problem: const bool foo = true;
 						// #####################################################################
 						// TODO Deal with compiler problem to enable the assertions
-				  //      uint32_t bottom_up_count = __syncthreads_count(insert_bottom_up_work_item);
-				  //      uint32_t top_down_count = __syncthreads_count(insert_top_down_work_item);
+				  //      uint32_t bottom_up_count = GVL_SYNCTHREADS_count(insert_bottom_up_work_item);
+				  //      uint32_t top_down_count = GVL_SYNCTHREADS_count(insert_top_down_work_item);
 				  //      assert(bottom_up_count == shared_mem->warp_prefix_sum[constants.num_warps]);
 				  //      assert(top_down_count == shared_mem->warp_prefix_sum[2 * constants.num_warps + 1]);
 #endif
@@ -392,21 +392,21 @@ namespace gpu_voxels
 							shared_mem->num_stack_work_items += shared_mem->warp_prefix_sum[constants.num_warps]
 								+ shared_mem->warp_prefix_sum[2 * constants.num_warps + 1];
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 					}
 					// ### --> work items of bottom-up step are removed from the queue ###
 
-					variables.make_progress_count = __syncthreads_count(make_progress);
+					variables.make_progress_count = GVL_SYNCTHREADS_count(make_progress);
 				}
 
-				__device__
+				GVL_DEVICE
 					static void doReductionWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
 					// Nothing to do
 				}
 
-				__device__
+				GVL_DEVICE
 					static bool abortLoop(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{

@@ -26,9 +26,9 @@ struct SharedVoxel
 public:
 	//! @brief Return a pointer to the runtime-sized shared memory array.
 	//! @returns Pointer to runtime-sized shared memory array
-	__device__ T* getPointer()
+	GVL_DEVICE T* getPointer()
 	{
-		extern __device__ void Error_UnsupportedType(); // Ensure that we won't compile any un-specialized types
+		extern GVL_DEVICE void Error_UnsupportedType(); // Ensure that we won't compile any un-specialized types
 		Error_UnsupportedType();
 		return (T*)nullptr;
 	}
@@ -39,9 +39,9 @@ public:
 struct SharedVoxel <gpu_voxels::AbstractVoxel>
 {
 public:
-	__device__ gpu_voxels::AbstractVoxel* getPointer()
+	GVL_DEVICE gpu_voxels::AbstractVoxel* getPointer()
 	{
-		extern __shared__ gpu_voxels::AbstractVoxel abstract_mem[];
+		extern GVL_SHARED gpu_voxels::AbstractVoxel abstract_mem[];
 		return abstract_mem;
 	}
 };*/
@@ -52,9 +52,9 @@ template <>
 struct SharedVoxel <gpu_voxels::BitVoxel<gpu_voxels::BIT_VECTOR_LENGTH> >
 {
 public:
-	__device__ gpu_voxels::BitVoxel<gpu_voxels::BIT_VECTOR_LENGTH>* getPointer()
+	GVL_DEVICE gpu_voxels::BitVoxel<gpu_voxels::BIT_VECTOR_LENGTH>* getPointer()
 	{
-		extern __shared__ gpu_voxels::BitVoxel<gpu_voxels::BIT_VECTOR_LENGTH> bit_mem[];
+		extern GVL_SHARED gpu_voxels::BitVoxel<gpu_voxels::BIT_VECTOR_LENGTH> bit_mem[];
 		return bit_mem;
 	}
 };
@@ -64,9 +64,9 @@ template <>
 struct SharedVoxel <gpu_voxels::ProbabilisticVoxel>
 {
 public:
-	__device__ gpu_voxels::ProbabilisticVoxel* getPointer()
+	GVL_DEVICE gpu_voxels::ProbabilisticVoxel* getPointer()
 	{
-		extern __shared__ gpu_voxels::ProbabilisticVoxel probabilistic_mem[];
+		extern GVL_SHARED gpu_voxels::ProbabilisticVoxel probabilistic_mem[];
 		return probabilistic_mem;
 	}
 };

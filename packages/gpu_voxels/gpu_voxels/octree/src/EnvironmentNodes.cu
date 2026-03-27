@@ -20,13 +20,13 @@ namespace gpu_voxels {
 		namespace Environment {
 
 #ifndef DISABLE_SEPARATE_COMPILTION
-			__device__ __host__
+			GVL_HOST_DEVICE
 				bool LeafNode::isInConflict(Robot::LeafNode rob_LeafNode)
 			{
 				return isOccupied() & rob_LeafNode.isOccupied();
 			}
 
-			__device__ __host__
+			GVL_HOST_DEVICE
 				bool InnerNode::isInConflict(Robot::InnerNode rob_InnerNode)
 			{
 				return isOccupied() & rob_InnerNode.isOccupied();

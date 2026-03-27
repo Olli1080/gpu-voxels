@@ -36,39 +36,39 @@ namespace gpu_voxels {
 	class DefaultCollider
 	{
 	public:
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DefaultCollider();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DefaultCollider(const float coll_threshold);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DefaultCollider(const Probability threshold1, const Probability threshold2);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1, const ProbabilisticVoxel& v2) const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const;
 
 		template<class OtherVoxel>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const DistanceVoxel& v1, const OtherVoxel& v2) const;
 
 		template<class OtherVoxel>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const OtherVoxel& v1, const DistanceVoxel& v2) const;
 
 	protected:

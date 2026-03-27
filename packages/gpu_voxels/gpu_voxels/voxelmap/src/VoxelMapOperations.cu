@@ -14,6 +14,7 @@
  //#define LOCAL_DEBUG
 #undef LOCAL_DEBUG
 
+#include <gpu_voxels/helpers/SyclBridge.h>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.hpp>
 
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
@@ -26,7 +27,7 @@ namespace gpu_voxels {
 
 		//DistanceVoxel specialization
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(DistanceVoxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3f* points, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map)
@@ -62,7 +63,7 @@ namespace gpu_voxels {
 
 		// DistanceVoxel specialization
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertCoordinateTuples(DistanceVoxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map)
@@ -89,7 +90,7 @@ namespace gpu_voxels {
 
 		//DistanceVoxel specialization
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(DistanceVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning voxel_meaning, Vector3ui dimensions, float voxel_side_length,
 			bool* points_outside_map)
@@ -133,7 +134,7 @@ namespace gpu_voxels {
 		//BitVectorVoxel specialization
 		// This kernel may not be called with more threads than point per subcloud, as otherwise we will miss selfcollisions!
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloudSelfCollCheck(BitVectorVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			const BitVoxelMeaning* voxel_meanings, Vector3ui dimensions, unsigned int sub_cloud,
 			float voxel_side_length, const BitVector<BIT_VECTOR_LENGTH>* coll_masks,
@@ -192,7 +193,7 @@ namespace gpu_voxels {
 
 		//DistanceVoxel specialization
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(DistanceVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning* voxel_meanings, Vector3ui map_dim,
 			float voxel_side_length,
@@ -254,7 +255,7 @@ namespace gpu_voxels {
 		 *  calcNearestObstaclesJFA(VoxelMap, dim3, uint step_num (log(maxdim)..1))
 		 *       set map[x,y,z]= min(pos+{-1,0,1}*{x,y,z})
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelJumpFlood3D(const DistanceVoxel* __restrict__ const voxels_input, DistanceVoxel* __restrict__ const voxels_output, const Vector3ui dims, const int32_t step_width)
 		{
 			const uint32_t numVoxels = dims.x() * dims.y() * dims.z();
@@ -322,11 +323,11 @@ namespace gpu_voxels {
 		 * optimization2: use shared memory to prefetch chunks of the obstacle list in parallel
 		 * optimization3: resolve bank conflicts by using threadIdx as offset?
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelExactDistances3D(DistanceVoxel* voxels, Vector3ui dims, float voxel_side_length,
 			Vector3f* obstacles, std::size_t num_obstacles)
 		{
-			extern __shared__ int dynamic_shared_mem[];
+			extern GVL_SHARED int dynamic_shared_mem[];
 			auto* obstacle_cache = (Vector3i*)dynamic_shared_mem; //size: cMAX_THREADS_PER_BLOCK * sizeof(DistanceVoxel)
 
 			const uint32_t num_voxels = dims.x() * dims.y() * dims.z();
@@ -357,7 +358,7 @@ namespace gpu_voxels {
 					const Vector3i obstacle = mapToVoxelsSigned(voxel_side_length, obstacles[obstacle_prefetch_idx]);
 					obstacle_cache[threadIdx.x] = obstacle;
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// update closest obstacle
 
@@ -412,7 +413,7 @@ namespace gpu_voxels {
 				else {
 					printf("(%i,%i,%i) is not in the range of the voxel map; SHOULD BE IMPOSSIBLE \n", pos.x(), pos.y(), pos.z());
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 
 			if (min_distance < pos_voxel->squaredObstacleDistance(pos)) //need to update pos_voxel
@@ -422,7 +423,7 @@ namespace gpu_voxels {
 		//
 		//void kernelCalculateBoundingBox(Voxel* voxelmap, const uint32_t voxelmap_size, )
 
-		//__global__
+		//GVL_GLOBAL
 		//void kernelInsertKinematicLinkBitvector(Voxel* voxelmap, const uint32_t voxelmap_size,
 		//                                        const Vector3ui dimensions, const float voxel_side_length,
 		//                                        uint32_t link_nr, uint32_t* point_cloud_sizes,
@@ -446,7 +447,7 @@ namespace gpu_voxels {
 		//  }
 		//}
 
-		//__global__
+		//GVL_GLOBAL
 		//void kernelInsertRobotKinematicLinkOverwritingSensorData(Voxel* voxelmap, const uint32_t voxelmap_size,
 		//                                                         const Vector3ui dimensions,
 		//                                                         const float voxel_side_length,
@@ -478,7 +479,7 @@ namespace gpu_voxels {
 		// *  Always set self_ to false before calling this function because
 		// *  it only indicates if there was a collision and not if there was none!
 		// */
-		//__global__
+		//GVL_GLOBAL
 		//void kernelInsertRobotKinematicLinkWithSelfCollisionCheck(Voxel* voxelmap, const uint32_t voxelmap_size,
 		//                                                          const Vector3ui dimensions,
 		//                                                          const float voxel_side_length,
@@ -513,13 +514,13 @@ namespace gpu_voxels {
 
 
 
-		//__global__
+		//GVL_GLOBAL
 		//void kernelCollideVoxelMapsBoundingBox(Voxel* voxelmap, const uint32_t voxelmap_size, const uint8_t threshold,
 		//                                       Voxel* other_map, const uint8_t other_threshold, bool* results,
 		//                                       uint32_t offset_x, uint32_t offset_y, uint32_t offset_z,
 		//                                       uint32_t size_x, Vector3ui* dimensions)
 		//{
-		////  extern __shared__ bool cache[];//[cMAX_THREADS_PER_BLOCK];			//define Cache size in kernel call
+		////  extern GVL_SHARED bool cache[];//[cMAX_THREADS_PER_BLOCK];			//define Cache size in kernel call
 		////  uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 		//
 		//  //calculate i:
@@ -557,7 +558,7 @@ namespace gpu_voxels {
 		//  results[blockIdx.x * blockDim.x + threadIdx.x] = temp; //
 		//
 		////  cache[cache_index] = temp;
-		////  __syncthreads();
+		////  GVL_SYNCTHREADS();
 		////
 		////  uint32_t j = blockDim.x / 2;
 		////
@@ -567,7 +568,7 @@ namespace gpu_voxels {
 		////    {
 		////      cache[cache_index] = cache[cache_index] || cache[cache_index + j];
 		////    }
-		////    __syncthreads();
+		////    GVL_SYNCTHREADS();
 		////    j /= 2;
 		////  }
 		////
@@ -582,7 +583,7 @@ namespace gpu_voxels {
 
 
 
-		//__global__
+		//GVL_GLOBAL
 		//void kernelShrinkCopyVoxelMapBitvector(Voxel* destination_map, const uint32_t destination_map_size,
 		//                                       Vector3ui* dest_map_dim, Voxel* source_map,
 		//                                       const uint32_t source_map_size, Vector3ui* source_map_dim,
@@ -622,7 +623,7 @@ namespace gpu_voxels {
 
 
 		////for different sized voxelmaps
-		//__global__
+		//GVL_GLOBAL
 		//void kernelShrinkCopyVoxelMap(Voxel* destination_map, const uint32_t destination_map_size,
 		//                              Vector3ui* dest_map_dim, Voxel* source_map, const uint32_t source_map_size,
 		//                              Vector3ui* source_map_dim, uint8_t factor)
@@ -665,30 +666,30 @@ namespace gpu_voxels {
 		//  }
 		//}
 
-		thrust::device_vector<uint32_t> getOccupationVoxels(const thrust::device_vector<BitVoxel<BIT_VECTOR_LENGTH>>& dev_data)
+		parallel::device_vector<uint32_t> getOccupationVoxels(const parallel::device_vector<BitVoxel<BIT_VECTOR_LENGTH>>& dev_data)
 		{
-			thrust::device_vector<uint32_t> isVoxelOccupied(dev_data.size());
-			thrust::transform(dev_data.begin(), dev_data.end(),
+			parallel::device_vector<uint32_t> isVoxelOccupied(dev_data.size());
+			parallel::transform(dev_data.begin(), dev_data.end(),
 				isVoxelOccupied.begin(), OccupiedVoxels());
 
 			return isVoxelOccupied;
 		}
 
-		uint32_t getOccupied(const thrust::device_vector<uint32_t>& vec)
+		uint32_t getOccupied(const parallel::device_vector<uint32_t>& vec)
 		{
-			return thrust::reduce(vec.begin(), vec.end(), 0);
+			return parallel::reduce(vec.begin(), vec.end(), 0);
 		}
 
-		__host__ __device__ uint32_t OccupiedVoxels::operator()(const BitVoxel<BIT_VECTOR_LENGTH>& val)
+		GVL_HOST_DEVICE uint32_t OccupiedVoxels::operator()(const BitVoxel<BIT_VECTOR_LENGTH>& val)
 		{
 			//TODO:: return 0 and 1 from isoccupied_numerical
 			return (val.isOccupied(0)) ? 1 : 0;
 		}
 
-		uint32_t getOccupied_2(thrust::device_vector<uint32_t>& in_out)
+		uint32_t getOccupied_2(parallel::device_vector<uint32_t>& in_out)
 		{
-			thrust::device_vector<uint32_t> temp(in_out.size());
-			thrust::inclusive_scan(in_out.begin(), in_out.end(), temp.begin());
+			parallel::device_vector<uint32_t> temp(in_out.size());
+			parallel::inclusive_scan(in_out.begin(), in_out.end(), temp.begin());
 
 			return temp.back();
 		}
@@ -698,7 +699,7 @@ namespace gpu_voxels {
 			: m_data(data), m_dim(std::move(dims))
 		{}
 
-		__host__ __device__ uint32_t CullHiddenVoxels::operator()(const uint32_t& idx)
+		GVL_HOST_DEVICE uint32_t CullHiddenVoxels::operator()(const uint32_t& idx)
 		{
 			if (m_data[idx] == 0)
 				return 0;
@@ -731,63 +732,63 @@ namespace gpu_voxels {
 			return 1 - res;
 	}
 
-		thrust::device_vector<uint32_t> culled_filter(const thrust::device_vector<uint32_t>& filter, const Vector3ui& dim)
+		parallel::device_vector<uint32_t> culled_filter(const parallel::device_vector<uint32_t>& filter, const Vector3ui& dim)
 		{
-			thrust::device_vector<uint32_t> iterim1(filter.size());
+			parallel::device_vector<uint32_t> iterim1(filter.size());
 
-			thrust::transform(
-				thrust::counting_iterator<uint32_t>(0),
-				thrust::counting_iterator<uint32_t>(filter.size()),
+			parallel::transform(
+				parallel::counting_iterator<uint32_t>(0),
+				parallel::counting_iterator<uint32_t>(filter.size()),
 				iterim1.begin(),
 				CullHiddenVoxels(filter.data().get(), dim));
 
 			return iterim1;
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			GatherCompacted::GatherCompacted(Vector3ui* data, Vector3ui dim)
 			: m_dim(std::move(dim)), m_data(data)
 		{}
 
-		__host__ __device__
-			void GatherCompacted::operator()(const thrust::tuple<uint32_t, uint32_t, uint32_t>& input)
+		GVL_HOST_DEVICE
+			void GatherCompacted::operator()(const parallel::tuple<uint32_t, uint32_t, uint32_t>& input)
 		{
-			if (thrust::get<0>(input) == 0)
+			if (parallel::get<0>(input) == 0)
 				return;
 
-			m_data[thrust::get<1>(input) - 1] = indexToXYZ(thrust::get<2>(input), m_dim);
+			m_data[parallel::get<1>(input) - 1] = indexToXYZ(parallel::get<2>(input), m_dim);
 		}
 
-		std::vector<Vector3ui> extract_visual_voxels(const thrust::device_vector<BitVectorVoxel>& in, const Vector3ui& dim)
+		std::vector<Vector3ui> extract_visual_voxels(const parallel::device_vector<BitVectorVoxel>& in, const Vector3ui& dim)
 		{
 			const size_t& in_size = in.size();
 
-			thrust::device_vector<uint32_t> occupation(in_size);
-			thrust::device_vector<uint32_t> culled(in_size);
+			parallel::device_vector<uint32_t> occupation(in_size);
+			parallel::device_vector<uint32_t> culled(in_size);
 
-			thrust::transform(
+			parallel::transform(
 				in.begin(), in.end(),
 				occupation.begin(), OccupiedVoxels());
 
-			thrust::transform(
-				thrust::counting_iterator<uint32_t>(0),
-				thrust::counting_iterator<uint32_t>(in_size),
+			parallel::transform(
+				parallel::counting_iterator<uint32_t>(0),
+				parallel::counting_iterator<uint32_t>(in_size),
 				culled.begin(),
 				CullHiddenVoxels(occupation.data().get(), dim));
 
-			thrust::inclusive_scan(culled.begin(), culled.end(), occupation.begin());
+			parallel::inclusive_scan(culled.begin(), culled.end(), occupation.begin());
 			const size_t new_size = occupation.back();
 
-			thrust::device_vector<Vector3ui> result(new_size);
+			parallel::device_vector<Vector3ui> result(new_size);
 
-			thrust::for_each(
-				thrust::make_zip_iterator(culled.begin(), occupation.begin(), thrust::counting_iterator<uint32_t>(0)),
-				thrust::make_zip_iterator(culled.end(), occupation.end(), thrust::counting_iterator<uint32_t>(in_size)),
+			parallel::for_each(
+				parallel::make_zip_iterator(culled.begin(), occupation.begin(), parallel::counting_iterator<uint32_t>(0)),
+				parallel::make_zip_iterator(culled.end(), occupation.end(), parallel::counting_iterator<uint32_t>(in_size)),
 				GatherCompacted(result.data().get(), dim)
 			);
 
 			std::vector<Vector3ui> final_res(new_size);
-			thrust::copy(result.begin(), result.end(), final_res.begin());
+			parallel::copy(result.begin(), result.end(), final_res.begin());
 
 			return final_res;
 		}

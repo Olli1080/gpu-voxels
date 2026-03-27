@@ -79,15 +79,15 @@ namespace gpu_voxels {
 
 			[[nodiscard]] const std::string& map_name() const;
 
-			void set_num_voxels_per_type(const thrust::device_vector<uint32_t>& num_voxels_per_type);
+			void set_num_voxels_per_type(const parallel::device_vector<uint32_t>& num_voxels_per_type);
 
 			[[nodiscard]] size_t voxel_types() const;
 
 			cudaGraphicsResource** cuda_ressource();
 
 
-			thrust::device_vector<uint32_t> m_d_vbo_segment_voxel_capacities;
-			thrust::device_vector<uint32_t> m_d_vbo_offsets;
+			parallel::device_vector<uint32_t> m_d_vbo_segment_voxel_capacities;
+			parallel::device_vector<uint32_t> m_d_vbo_offsets;
 
 		public:
 
@@ -98,7 +98,7 @@ namespace gpu_voxels {
 			bool m_draw_context;
 
 			// contains the colors for each type
-			thrust::host_vector<colorPair> m_colors;
+			parallel::host_vector<colorPair> m_colors;
 			// the OpenGL buffer for this data structure
 			GLuint m_vbo;
 			// indicates if the vbo may be drawn right now
@@ -121,22 +121,22 @@ namespace gpu_voxels {
 			// total number of occupied voxels in the current view <=> sum(num_voxels_per_type)
 			uint32_t m_total_num_voxels;
 			//number of occupied voxels of each type
-			thrust::host_vector<uint32_t> m_num_voxels_per_type;
+			parallel::host_vector<uint32_t> m_num_voxels_per_type;
 
 			//the vbo segment sizes
-			thrust::host_vector<uint32_t> m_vbo_segment_voxel_capacities;
+			parallel::host_vector<uint32_t> m_vbo_segment_voxel_capacities;
 
-			thrust::host_vector<uint32_t> m_vbo_offsets;
+			parallel::host_vector<uint32_t> m_vbo_offsets;
 
 			// mapping from type to segment
-			thrust::host_vector<uint8_t> m_types_segment_mapping;
+			parallel::host_vector<uint8_t> m_types_segment_mapping;
 			bool m_has_draw_type_flipped;
 
 			//cuda kernel launch variable
 			dim3 m_threads_per_block;
 			dim3 m_num_blocks;
 
-			//thrust::device_vector<uint32_t> m_d_num_voxels_per_type;
+			//parallel::device_vector<uint32_t> m_d_num_voxels_per_type;
 		};
 	} // end of namespace visualization
 } // end of namespace gpu_voxels

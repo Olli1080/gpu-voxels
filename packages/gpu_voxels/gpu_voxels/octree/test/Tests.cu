@@ -48,7 +48,7 @@ namespace Test {
 //  voxel_id sideLengthInVoxel;
 //  unsigned seed;
 //
-//  __host__ __device__ unsigned int hash(unsigned int a)
+//  GVL_HOST_DEVICE unsigned int hash(unsigned int a)
 //  {
 //    a = (a + 0x7ed55d16) + (a << 12);
 //    a = (a ^ 0xc761c23c) ^ (a >> 19);
@@ -59,21 +59,21 @@ namespace Test {
 //    return a;
 //  }
 //
-//  __host__ __device__ __forceinline__ voxel_id operator()()
+//  GVL_HOST_DEVICE __forceinline__ voxel_id operator()()
 //  {
 //    unsigned seed = hash(blockIdx.x * blockDim.x + threadIdx.x);
-//    thrust::default_random_engine rng(seed + this->seed);
-//    thrust::random::uniform_real_distribution<float> distrib;
+//    parallel::default_random_engine rng(seed + this->seed);
+//    parallel::random::uniform_real_distribution<float> distrib;
 //    return (voxel_id) (distrib(rng) * (sideLengthInVoxel * sideLengthInVoxel * sideLengthInVoxel));
 //  }
 //};
 //
 //Random_generator rnd;
 
-thrust::host_vector<gpu_voxels::Vector3ui> randomPoints(voxel_count num_points, OctreeVoxelID maxValue)
+parallel::host_vector<gpu_voxels::Vector3ui> randomPoints(voxel_count num_points, OctreeVoxelID maxValue)
 {
   uint32_t max_coordinate = (uint32_t) ceil(pow(maxValue, 1.0 / 3));
-  thrust::host_vector<gpu_voxels::Vector3ui> points(num_points);
+  parallel::host_vector<gpu_voxels::Vector3ui> points(num_points);
   for (voxel_count i = 0; i < num_points; ++i)
   {
     points[i].x = (uint32_t) (drand48() * (max_coordinate - 1));
@@ -83,10 +83,10 @@ thrust::host_vector<gpu_voxels::Vector3ui> randomPoints(voxel_count num_points, 
   return points;
 }
 
-thrust::host_vector<Voxel> randomVoxel(OctreeVoxelID num_points, OctreeVoxelID maxValue, Probability occupancy)
+parallel::host_vector<Voxel> randomVoxel(OctreeVoxelID num_points, OctreeVoxelID maxValue, Probability occupancy)
 {
   gpu_voxels::Vector3ui coordinates;
-  thrust::host_vector<Voxel> voxel(num_points);
+  parallel::host_vector<Voxel> voxel(num_points);
   uint32_t max_coordinate = (uint32_t) pow(maxValue, 1.0 / 3);
   for (OctreeVoxelID i = 0; i < num_points; ++i)
   {
@@ -122,11 +122,11 @@ thrust::host_vector<Voxel> randomVoxel(OctreeVoxelID num_points, OctreeVoxelID m
   return voxel;
 }
 
-thrust::host_vector<gpu_voxels::Vector3ui> randomCube(
+parallel::host_vector<gpu_voxels::Vector3ui> randomCube(
     gpu_voxels::Vector3ui map_dimensions, uint32_t cube_side_length)
 {
   gpu_voxels::Vector3ui coordinates;
-  thrust::host_vector<gpu_voxels::Vector3ui> h_points(
+  parallel::host_vector<gpu_voxels::Vector3ui> h_points(
       cube_side_length * cube_side_length * cube_side_length);
 
   coordinates.x = (uint32_t) (drand48() * (map_dimensions.x - cube_side_length));
@@ -152,7 +152,7 @@ thrust::host_vector<gpu_voxels::Vector3ui> randomCube(
   return h_points;
 }
 
-void translate(thrust::host_vector<gpu_voxels::Vector3ui>& points,
+void translate(parallel::host_vector<gpu_voxels::Vector3ui>& points,
                gpu_voxels::Vector3f translation)
 {
   for (uint32_t i = 0; i < points.size(); ++i)
@@ -162,7 +162,7 @@ void translate(thrust::host_vector<gpu_voxels::Vector3ui>& points,
   }
 }
 
-void rotate(thrust::host_vector<gpu_voxels::Vector3ui>& points, float angle_degree,
+void rotate(parallel::host_vector<gpu_voxels::Vector3ui>& points, float angle_degree,
             gpu_voxels::Vector3f translation)
 {
   float angle_radian = angle_degree / 180.0f * M_PI;
@@ -180,18 +180,18 @@ void rotate(thrust::host_vector<gpu_voxels::Vector3ui>& points, float angle_degr
   }
 }
 
-thrust::host_vector<OctreeVoxelID> linearVoxel(OctreeVoxelID num_points)
+parallel::host_vector<OctreeVoxelID> linearVoxel(OctreeVoxelID num_points)
 {
-  thrust::host_vector<OctreeVoxelID> voxel(num_points);
+  parallel::host_vector<OctreeVoxelID> voxel(num_points);
   for (OctreeVoxelID i = 0; i < num_points; ++i)
     voxel[i] = i;
   return voxel;
 }
 
-thrust::host_vector<Voxel> linearVoxel(OctreeVoxelID num_points, OctreeVoxelID offset, Probability occupancy)
+parallel::host_vector<Voxel> linearVoxel(OctreeVoxelID num_points, OctreeVoxelID offset, Probability occupancy)
 {
   gpu_voxels::Vector3ui dummy;
-  thrust::host_vector<Voxel> voxel(num_points);
+  parallel::host_vector<Voxel> voxel(num_points);
   for (OctreeVoxelID i = 0; i < num_points; ++i)
     voxel[i] = Voxel(offset + i, dummy, occupancy); // TODO: fix coordinates
   return voxel;
@@ -207,8 +207,8 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 
   // std::cout << gpu_voxels::getDeviceMemoryInfo();
 
-//  thrust::host_vector<gpu_voxels::Vector3ui> h_points;
-//  // thrust::device_vector<voxel_id> voxel;
+//  parallel::host_vector<gpu_voxels::Vector3ui> h_points;
+//  // parallel::device_vector<voxel_id> voxel;
 //
 //  // Allocate memory for points.
 //  if (points.empty())
@@ -235,7 +235,7 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 //    std::vector<gpu_voxels::Vector3ui> pts;
 //    gpu_voxels::Vector3ui center;
 //    transformPointCloud(points, pts, map_dimensions, center);
-//    h_points = thrust::host_vector<gpu_voxels::Vector3ui>(pts.begin(), pts.end());
+//    h_points = parallel::host_vector<gpu_voxels::Vector3ui>(pts.begin(), pts.end());
 //    num_points = pts.size();
 //  }
 //  else
@@ -280,7 +280,7 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 //o->print();
 
   printf("checking occupied voxel...\n");
-  thrust::host_vector<FindResult<LeafNode> > resultNode(num_points);
+  parallel::host_vector<FindResult<LeafNode> > resultNode(num_points);
   o->find(build_result.h_points, resultNode);
 
 // check occupied voxel
@@ -304,7 +304,7 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
   uint32_t max_coordinate = (uint32_t) ceil(pow(NUM_VOXEL, 1.0 / 3));
   printf("max_coordinate: %u\n", max_coordinate);
   {
-    thrust::host_vector<gpu_voxels::Vector3ui> unknownVoxel(NUM_VOXEL);
+    parallel::host_vector<gpu_voxels::Vector3ui> unknownVoxel(NUM_VOXEL);
     for (OctreeVoxelID i = 0; i < unknownVoxel.size(); ++i)
     {
       unknownVoxel[i] = gpu_voxels::Vector3ui(
@@ -315,7 +315,7 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
       unknownVoxel[build_result.h_points[i].x + build_result.h_points[i].y * max_coordinate
           + build_result.h_points[i].z * (max_coordinate * max_coordinate)] = INVALID_POINT;
 
-    resultNode = thrust::host_vector<FindResult<LeafNode> >(unknownVoxel.size());
+    resultNode = parallel::host_vector<FindResult<LeafNode> >(unknownVoxel.size());
     o->find(unknownVoxel, resultNode);
 
 // check unknown voxel
@@ -378,17 +378,17 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 
 //// way more better results and therefore more intersections
 //  srand(12345);
-////  thrust::host_vector<OctreeVoxelID> h_r_voxel = randomVoxel(num_points, NUM_VOXEL);
-////  thrust::host_vector<OctreeVoxelID> h_e_voxel = randomVoxel(num_points, NUM_VOXEL);
-//  thrust::host_vector<OctreeVoxelID> h_r_voxel = linearVoxel(num_points);
-//  thrust::host_vector<OctreeVoxelID> h_e_voxel = linearVoxel(num_points);
+////  parallel::host_vector<OctreeVoxelID> h_r_voxel = randomVoxel(num_points, NUM_VOXEL);
+////  parallel::host_vector<OctreeVoxelID> h_e_voxel = randomVoxel(num_points, NUM_VOXEL);
+//  parallel::host_vector<OctreeVoxelID> h_r_voxel = linearVoxel(num_points);
+//  parallel::host_vector<OctreeVoxelID> h_e_voxel = linearVoxel(num_points);
 
 //// copy to device
-//  thrust::device_vector<OctreeVoxelID> r_voxel = h_r_voxel;
-//  thrust::device_vector<OctreeVoxelID> e_voxel = h_e_voxel;
+//  parallel::device_vector<OctreeVoxelID> r_voxel = h_r_voxel;
+//  parallel::device_vector<OctreeVoxelID> e_voxel = h_e_voxel;
 
-////  thrust::sort(h_r_voxel.begin(), h_r_voxel.end());
-////  thrust::sort(h_e_voxel.begin(), h_e_voxel.end());
+////  parallel::sort(h_r_voxel.begin(), h_r_voxel.end());
+////  parallel::sort(h_e_voxel.begin(), h_e_voxel.end());
 
 ////  for (uint32_t i = 0; i < num_points; ++i)
 ////    printf("[%i]: Robot %lu    Environment %lu\n", i, (OctreeVoxelID) r_voxel[i], (OctreeVoxelID) e_voxel[i]);
@@ -453,10 +453,10 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 ////return true;
 
 ////check numConflicts
-//  thrust::sort(h_r_voxel.begin(), h_r_voxel.end());
-//  thrust::sort(h_e_voxel.begin(), h_e_voxel.end());
-//  thrust::host_vector<OctreeVoxelID> result(num_points);
-//  thrust::host_vector<OctreeVoxelID>::iterator end = thrust::set_intersection(h_r_voxel.begin(), h_r_voxel.end(),
+//  parallel::sort(h_r_voxel.begin(), h_r_voxel.end());
+//  parallel::sort(h_e_voxel.begin(), h_e_voxel.end());
+//  parallel::host_vector<OctreeVoxelID> result(num_points);
+//  parallel::host_vector<OctreeVoxelID>::iterator end = parallel::set_intersection(h_r_voxel.begin(), h_r_voxel.end(),
 //                                                                         h_e_voxel.begin(), h_e_voxel.end(),
 //                                                                         result.begin());
 //  OctreeVoxelID numEl = end - result.begin();
@@ -491,12 +491,12 @@ bool insertTest(OctreeVoxelID num_points, OctreeVoxelID num_inserts, bool set_fr
 
 // Allocate memory for points.
   srand(TEST_RAND_SEED);
-  thrust::host_vector<gpu_voxels::Vector3ui> hVoxel = randomPoints(num_points, NUM_VOXEL); //linearVoxel(num_points);
-  CHECK_CUDA_ERROR();
+  parallel::host_vector<gpu_voxels::Vector3ui> hVoxel = randomPoints(num_points, NUM_VOXEL); //linearVoxel(num_points);
+  GVL_CHECK_ERROR();
 
   printf("create octree....\n");
   NTREE* o = new NTREE(NUM_BLOCKS, NUM_THREADS_PER_BLOCK);
-  CHECK_CUDA_ERROR();
+  GVL_CHECK_ERROR();
 
   timespec time1 = getCPUTime();
   o->build(hVoxel);
@@ -510,7 +510,7 @@ bool insertTest(OctreeVoxelID num_points, OctreeVoxelID num_inserts, bool set_fr
 //o->print();
 
 // insert voxel
-  thrust::host_vector<Voxel> h_insertVoxel = randomVoxel(num_inserts, NUM_VOXEL, MAX_PROBABILITY);
+  parallel::host_vector<Voxel> h_insertVoxel = randomVoxel(num_inserts, NUM_VOXEL, MAX_PROBABILITY);
 
 //  gpu_voxels::Vector3ui t_vec(0, 10, 0);
 //  h_insertVoxel[0] = Voxel(morton_code60(t_vec), t_vec, MAX_PROBABILITY);
@@ -530,8 +530,8 @@ bool insertTest(OctreeVoxelID num_points, OctreeVoxelID num_inserts, bool set_fr
 //  h_insertVoxel[7] = Voxel(morton_code60(t_vec), t_vec, MAX_PROBABILITY);
 
   time1 = getCPUTime();
-  thrust::sort(h_insertVoxel.begin(), h_insertVoxel.end()); // TODO: its slow, since its a comparation based sort and not a radix sort; Try to use radix sort instead; e.g. sort_key_value()
-  thrust::device_vector<Voxel> d_insertVoxel = h_insertVoxel;
+  parallel::sort(h_insertVoxel.begin(), h_insertVoxel.end()); // TODO: its slow, since its a comparation based sort and not a radix sort; Try to use radix sort instead; e.g. sort_key_value()
+  parallel::device_vector<Voxel> d_insertVoxel = h_insertVoxel;
   printf("sort and copy to gpu: %f ms\n", timeDiff(time1, getCPUTime()));
 
   //  // ##### check if test works #####
@@ -553,7 +553,7 @@ bool insertTest(OctreeVoxelID num_points, OctreeVoxelID num_inserts, bool set_fr
   for (uint32_t i = 0; i < num_inserts; ++i)
     hVoxel[hVoxel.size() - num_inserts + i] = h_insertVoxel[i].coordinates;
 
-  thrust::host_vector<FindResult<LeafNode> > resultNode(hVoxel.size());
+  parallel::host_vector<FindResult<LeafNode> > resultNode(hVoxel.size());
   o->find(hVoxel, resultNode);
 
   // check occupied voxel of build
@@ -607,14 +607,14 @@ bool insertTest(OctreeVoxelID num_points, OctreeVoxelID num_inserts, bool set_fr
 
   printf("checking unknown/free voxel...\n");
 // create vector of unknown voxel
-  thrust::host_vector<gpu_voxels::Vector3ui> unknownVoxel(NUM_VOXEL);
-  thrust::host_vector<gpu_voxels::Vector3ui> tmp = linearPoints(NUM_VOXEL, NUM_VOXEL);
+  parallel::host_vector<gpu_voxels::Vector3ui> unknownVoxel(NUM_VOXEL);
+  parallel::host_vector<gpu_voxels::Vector3ui> tmp = linearPoints(NUM_VOXEL, NUM_VOXEL);
   for (OctreeVoxelID i = 0; i < unknownVoxel.size(); ++i)
     unknownVoxel[morton_code60(tmp[i])] = tmp[i];
   for (OctreeVoxelID i = 0; i < hVoxel.size(); ++i)
     unknownVoxel[morton_code60(hVoxel[i])] = INVALID_POINT;
 
-  resultNode = thrust::host_vector<FindResult<LeafNode> >(unknownVoxel.size());
+  resultNode = parallel::host_vector<FindResult<LeafNode> >(unknownVoxel.size());
   o->find(unknownVoxel, resultNode);
 
 // check unknown voxel
@@ -650,7 +650,7 @@ bool mortonTest(uint32_t num_runs)
   srand(TEST_RAND_SEED);
   srand48(TEST_RAND_SEED);
   const OctreeVoxelID max_voxel_id = (OctreeVoxelID(1) << 60);
-  thrust::host_vector<gpu_voxels::Vector3ui> rand_points = randomPoints(num_runs, max_voxel_id);
+  parallel::host_vector<gpu_voxels::Vector3ui> rand_points = randomPoints(num_runs, max_voxel_id);
 
   for (uint32_t i = 0; i < num_runs; ++i)
   {
@@ -695,7 +695,7 @@ bool mortonTest(uint32_t num_runs)
 //    void* ptr = NULL;
 //    voxel_id size = 4 + (voxel_id) (drand48() * 128 * 1024 * 1024);
 //    printf("alloc size %lu\n", size);
-//    cudaMalloc(&ptr, size);
+//    GVL_MALLOC(&ptr, size);
 //    printf("ptr: %p\n", ptr);
 //    if (voxel_id(ptr) < 0xB00400000 || voxel_id(ptr) >= 0xC80400000)
 //    {
@@ -708,11 +708,11 @@ bool mortonTest(uint32_t num_runs)
 //  void* ptr = NULL;
 //  voxel_id size = 2 * 1024;
 //  size *= 1024 * 1024;
-//  cudaMalloc(&ptr, size);
+//  GVL_MALLOC(&ptr, size);
 //  printf("ptr: %p\n", ptr);
-////  cudaMalloc(&ptr, 1024 * 1024 * 1024);
+////  GVL_MALLOC(&ptr, 1024 * 1024 * 1024);
 ////  printf("ptr: %p\n", ptr);
-////  cudaMalloc(&ptr, 512 * 1024 * 1024);
+////  GVL_MALLOC(&ptr, 512 * 1024 * 1024);
 ////  printf("ptr: %p\n", ptr);
 //
 //  //void* ptr2 = (void*)0xb00400000;
@@ -746,10 +746,10 @@ bool mortonTest(uint32_t num_runs)
 //  voxel_id num_points = 10;
 //  rnd.sideLengthInVoxel = 100;
 //  // Allocate memory for points.
-//  thrust::device_vector<ulong> voxel(num_points);
+//  parallel::device_vector<ulong> voxel(num_points);
 //
 //  // Generate random points.
-//  thrust::generate(voxel.begin(), voxel.end(), rnd);
+//  parallel::generate(voxel.begin(), voxel.end(), rnd);
 //
 //  gpu_voxels::Vector3ui origin;
 //  origin.x = origin.y = origin.z = 0.0f;

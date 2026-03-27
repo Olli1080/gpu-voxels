@@ -60,7 +60,7 @@ namespace gpu_voxels {
 
 		void CubelistContext::updateVBOOffsets()
 		{
-			thrust::exclusive_scan(m_num_voxels_per_type.begin(), m_num_voxels_per_type.end(), m_vbo_offsets.begin());
+			parallel::exclusive_scan(m_num_voxels_per_type.begin(), m_num_voxels_per_type.end(), m_vbo_offsets.begin());
 			m_d_vbo_offsets = m_vbo_offsets;
 		}
 

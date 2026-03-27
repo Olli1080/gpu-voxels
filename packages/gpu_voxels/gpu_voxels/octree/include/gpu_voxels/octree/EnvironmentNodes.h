@@ -46,32 +46,32 @@ namespace gpu_voxels {
 			class BasicData
 			{
 			public:
-				__host__ __device__
+				GVL_HOST_DEVICE
 					BasicData()
 				{
 				}
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					BasicData(const NodeStatus status, const NodeFlags flags)
 				{
 					m_status = status;
 					m_flags = flags;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool hasFlags(const NodeFlags flags) const
 				{
 					return (m_flags & flags) == flags;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::ostream& operator<<(std::ostream& os, const BasicData& dt)
 				{
 					os << dt.m_status << " " << dt.m_flags;
 					return os;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::istream& operator>>(std::istream& in, BasicData& dt)
 				{
 					in >> dt.m_status;
@@ -91,7 +91,7 @@ namespace gpu_voxels {
 			public:
 				typedef Environment::BasicData BasicData;
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					NodeData()
 				{
 
@@ -103,7 +103,7 @@ namespace gpu_voxels {
 				 * @param level Level of this node in the tree.
 				 * @param basic_data
 				 */
-				__host__ __device__
+				GVL_HOST_DEVICE
 					NodeData(const OctreeVoxelID voxelID, const voxel_count level, const BasicData basic_data)
 				{
 					m_voxel_id = voxelID;
@@ -111,14 +111,14 @@ namespace gpu_voxels {
 					m_basic_data = basic_data;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::ostream& operator<<(std::ostream& os, const NodeData& dt)
 				{
 					os << dt.m_voxel_id << " " << dt.m_level << " " << dt.m_basic_data;
 					return os;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::istream& operator>>(std::istream& in, NodeData& dt)
 				{
 					in >> dt.m_voxel_id;
@@ -148,19 +148,19 @@ namespace gpu_voxels {
 					Type value;
 				} RayCastType; // wrap in struct to be able to overload functions
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					Node() :
 					m_status(0)
 				{
 				}
 
-				__device__  __host__  __forceinline__
+				GVL_HOST_DEVICE  __forceinline__
 					NodeStatus getStatus() const
 				{
 					return m_status;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setStatus(const NodeStatus status)
 				{
 					m_status = status;
@@ -171,35 +171,35 @@ namespace gpu_voxels {
 				 * @param status
 				 * @return Returns \c true if this node has the given status, false otherwise.
 				 */
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool hasStatus(const NodeStatus status) const
 				{
 					return (getStatus() & status) == status;
 				}
 
 				//TODO remove/move out of Node
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isUnknown() const
 				{
 					return hasStatus(ns_UNKNOWN);
 				}
 
 				//TODO remove/move out of Node
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isOccupied() const
 				{
 					return hasStatus(ns_OCCUPIED);
 				}
 
 				//TODO remove/move out of Node
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isFree() const
 				{
 					return hasStatus(ns_FREE);
 				}
 
 #ifndef DISABLE_SEPARATE_COMPILTION
-				__device__ __host__
+				GVL_HOST_DEVICE
 					bool isInConflict(Robot::LeafNode rob_LeafNode);
 #endif
 
@@ -209,7 +209,7 @@ namespace gpu_voxels {
 				 * @return \c True if there is a conflict.
 				 */
 				 //TODO remove/move out of Node
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isInConflict(Environment::Node node) const
 				{
 					return isOccupied() & node.isOccupied();
@@ -232,7 +232,7 @@ namespace gpu_voxels {
 				//Stack dump:
 				//0.      Running pass 'NVPTX DAG->DAG Pattern Instruction Selection' on function '@_ZN15icl_environment3gpu5NTree17kernel_clearNodesINS1_11Environment9InnerNodeEEEvmPT_j'
 				//Aborted (core dumped)
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					LeafNode()
 				{
 				}
@@ -243,7 +243,7 @@ namespace gpu_voxels {
 				 * @param level Level of this node in the tree.
 				 * @return
 				 */
-				__device__  __host__  __forceinline__
+				GVL_HOST_DEVICE  __forceinline__
 					NodeData extractData(const OctreeVoxelID voxel_id,
 						const voxel_count level) const
 				{
@@ -258,7 +258,7 @@ namespace gpu_voxels {
 			{
 			public:
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					InnerNode() : m_flags(0), m_child_low(0), m_child_middle(0), m_child_high(0)
 				{
 				}
@@ -267,7 +267,7 @@ namespace gpu_voxels {
 				 * @brief getChildPtr
 				 * @return Pointer to an array of child nodes.
 				 */
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void* getChildPtr() const
 				{
 					return (void*)((uint64_t(m_child_high) << ((sizeof(m_child_low) + sizeof(m_child_middle)) << 3))
@@ -280,7 +280,7 @@ namespace gpu_voxels {
 				 * @brief Sets the pointer to an array of child nodes.
 				 * @param child
 				 */
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setChildPtr(void* const child)
 				{
 					//    assert(uint64_t(child) < (uint64_t(1) << uint64_t(8 * (sizeof(m_child_high) + sizeof(m_child_low)))));
@@ -296,7 +296,7 @@ namespace gpu_voxels {
 				}
 
 #ifndef DISABLE_SEPARATE_COMPILTION
-				__device__ __host__
+				GVL_HOST_DEVICE
 					bool isInConflict(Robot::InnerNode rob_InnerNode);
 
 #endif
@@ -307,20 +307,20 @@ namespace gpu_voxels {
 				 * @param level Level of this node in the tree.
 				 * @return
 				 */
-				__device__  __host__  __forceinline__
+				GVL_HOST_DEVICE  __forceinline__
 					NodeData extractData(const OctreeVoxelID voxel_id,
 						const voxel_count level) const
 				{
 					return NodeData(voxel_id, level, NodeData::BasicData(m_status, m_flags));
 				}
 
-				__device__  __host__  __forceinline__
+				GVL_HOST_DEVICE  __forceinline__
 					NodeFlags getFlags() const
 				{
 					return m_flags;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setFlags(const NodeFlags flags)
 				{
 					m_flags = flags;
@@ -331,13 +331,13 @@ namespace gpu_voxels {
 				 * @param flags
 				 * @return Returns \c true if this node has the given flags, false otherwise.
 				 */
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool hasFlags(const NodeFlags flags) const
 				{
 					return (getFlags() & flags) == flags;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void clearNeedsUpdate()
 				{
 					setFlags(getFlags() & ~(nf_NEEDS_UPDATE | nf_UPDATE_SUBTREE));

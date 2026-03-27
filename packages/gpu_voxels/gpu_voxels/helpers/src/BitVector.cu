@@ -26,8 +26,8 @@ namespace gpu_voxels
 {
     template class BitVector<BIT_VECTOR_LENGTH>;
 
-    template __host__ __device__ void performLeftShift<BIT_VECTOR_LENGTH>(BitVector<BIT_VECTOR_LENGTH>& bit_vector, const uint8_t shift_size);
-    template __host__ __device__ bool bitMarginCollisionCheck<BIT_VECTOR_LENGTH>(const BitVector<BIT_VECTOR_LENGTH>& v1, const BitVector<BIT_VECTOR_LENGTH>& v2,
+    template GVL_HOST_DEVICE void performLeftShift<BIT_VECTOR_LENGTH>(BitVector<BIT_VECTOR_LENGTH>& bit_vector, const uint8_t shift_size);
+    template GVL_HOST_DEVICE bool bitMarginCollisionCheck<BIT_VECTOR_LENGTH>(const BitVector<BIT_VECTOR_LENGTH>& v1, const BitVector<BIT_VECTOR_LENGTH>& v2,
             BitVector<BIT_VECTOR_LENGTH>* collisions, const uint8_t margin, const uint32_t sv_offset);
 
     template struct BitvectorOr<BIT_VECTOR_LENGTH>;

@@ -34,7 +34,7 @@ namespace gpu_voxels {
 	{
 	public:
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		static Probability floatToProbability(const float val)
 		{
 			float tmp = (std::max)((std::min)(1.0f, val), 0.0f);
@@ -42,7 +42,7 @@ namespace gpu_voxels {
 			return static_cast<Probability>(tmp);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 
 		static float probabilityToFloat(const Probability val)
 		{
@@ -53,13 +53,13 @@ namespace gpu_voxels {
 		/**
 		 * @brief ProbabilisticVoxel
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		ProbabilisticVoxel();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		ProbabilisticVoxel(Probability p);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		~ProbabilisticVoxel();
 
 		/**
@@ -67,39 +67,39 @@ namespace gpu_voxels {
 		 * @param occupancy A new occupancy measurement.
 		 * @return Returns the updated occupancy.
 		 */
-		__host__   __device__
+		GVL_HOST_DEVICE
 		Probability updateOccupancy(Probability occupancy);
 
 		/**
 		 * @brief occupancy Write reference.
 		 * @return
 		 */
-		__host__   __device__
+		GVL_HOST_DEVICE
 		Probability& occupancy();
 
 		/**
 		 * @brief occupancy Read-only reference.
 		 * @return
 		 */
-		__host__   __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] const Probability& occupancy() const;
 
 		/**
 		 * @brief getOccupancy Read-only access per copy
 		 * @return
 		 */
-		__host__   __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] Probability getOccupancy() const;
 
-		__host__   __device__
+		GVL_HOST_DEVICE
 		void insert(BitVoxelMeaning voxel_meaning);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		static ProbabilisticVoxel reduce(ProbabilisticVoxel voxel, ProbabilisticVoxel other_voxel);
 
 		struct reduce_op
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 				ProbabilisticVoxel operator()(const ProbabilisticVoxel& a, const ProbabilisticVoxel& b) const
 			{
 				ProbabilisticVoxel tmp = a;
@@ -108,7 +108,7 @@ namespace gpu_voxels {
 			}
 		};
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 

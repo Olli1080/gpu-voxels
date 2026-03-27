@@ -35,56 +35,56 @@ namespace gpu_voxels {
 	{
 	public:
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		SVCollider();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		SVCollider(const float coll_threshold, const size_t window_size = 0);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		SVCollider(const Probability threshold1, const Probability threshold2, const size_t window_size = 0);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1, const ProbabilisticVoxel& v2) const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool collide(const ProbabilisticVoxel& v1) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const;
 
 		//template<std::size_t length>
-		//__host__ __device__
+		//GVL_HOST_DEVICE
 		//bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
 
 		template<std::size_t length>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset = 0) const;
 
 		template<class OtherVoxel>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const DistanceVoxel& v1, const OtherVoxel& v2) const;
 
 		template<class OtherVoxel>
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool collide(const OtherVoxel& v1, const DistanceVoxel& v2) const;
 
 	protected:
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		static Probability floatToProbability(const float val);
 
 	protected:

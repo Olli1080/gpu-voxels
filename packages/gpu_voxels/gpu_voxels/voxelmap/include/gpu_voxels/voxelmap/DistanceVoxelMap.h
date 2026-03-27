@@ -23,11 +23,7 @@
 #ifndef DISTANCEVOXELMAP_H
 #define DISTANCEVOXELMAP_H
 
-#include <gpu_voxels/voxelmap/TemplateVoxelMap.h>
-#include <gpu_voxels/voxel/DistanceVoxel.h>
-#include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
-
-#include <gpu_voxels/voxel/DistanceVoxel.hpp>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 
 typedef gpu_voxels::DistanceVoxel::extract_byte_distance::free_space_t free_space_t;
 typedef gpu_voxels::DistanceVoxel::init_floodfill_distance::manhattan_dist_t manhattan_dist_t;
@@ -85,10 +81,10 @@ namespace gpu_voxels {
             DistanceVoxel::pba_dist_t getObstacleDistance(uint x, uint y, uint z) const;
 
             void getSquaredDistancesToHost(const std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
-            void getSquaredDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
+            void getSquaredDistances(parallel::device_ptr<uint> dev_indices_begin, parallel::device_ptr<uint> dev_indices_end, parallel::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
 
             void getDistancesToHost(std::vector<uint>& indices, std::vector<DistanceVoxel::pba_dist_t>& output);
-            void getDistances(thrust::device_ptr<uint> dev_indices_begin, thrust::device_ptr<uint> dev_indices_end, thrust::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
+            void getDistances(parallel::device_ptr<uint> dev_indices_begin, parallel::device_ptr<uint> dev_indices_end, parallel::device_ptr<DistanceVoxel::pba_dist_t> dev_output);
 
             void extract_distances(free_space_t* dev_distances, int robot_radius) const;
             void init_floodfill(free_space_t* dev_distances, manhattan_dist_t* dev_manhattan_distances, uint robot_radius);
@@ -98,7 +94,7 @@ namespace gpu_voxels {
 
         struct mergeOccupiedOperator
         {
-            typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
+            typedef parallel::tuple<ProbabilisticVoxel, uint> inputTuple;
 
             Vector3ui map_dim;
             Vector3ui offset;
@@ -109,10 +105,10 @@ namespace gpu_voxels {
                 map_dim = ref_map_dim;
             }
 
-            __host__ __device__
+            GVL_HOST_DEVICE
             DistanceVoxel operator()(const inputTuple& input) const
             {
-	            const uint index = thrust::get<1>(input);
+	            const uint index = parallel::get<1>(input);
 
                 // get int coords of voxel; use map_dim
                 const Vector3ui coords = mapToVoxels(index, map_dim);
@@ -124,7 +120,7 @@ namespace gpu_voxels {
 
         struct probVoxelOccupied
         {
-            typedef thrust::tuple<ProbabilisticVoxel, uint> inputTuple;
+            typedef parallel::tuple<ProbabilisticVoxel, uint> inputTuple;
             Probability occ_threshold;
 
             probVoxelOccupied(Probability occ_threshold_)
@@ -132,10 +128,10 @@ namespace gpu_voxels {
                 occ_threshold = occ_threshold_;
             }
 
-            __host__ __device__
+            GVL_HOST_DEVICE
             bool operator()(const inputTuple& input) const
             {
-                return thrust::get<0>(input).getOccupancy() > occ_threshold;
+                return parallel::get<0>(input).getOccupancy() > occ_threshold;
             }
         };
 

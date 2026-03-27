@@ -39,7 +39,7 @@ namespace gpu_voxels {
 		 * The Voxels are identified via Voxelmap-Coordinates
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertGlobalPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const float voxel_side_length,
 				const Vector3f* points, const std::size_t sizePoints,
@@ -49,7 +49,7 @@ namespace gpu_voxels {
 		 * Insert voxel coordinate tuples
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertCoordinateTuples(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const Vector3ui* coordinates, const std::size_t sizeVoxels,
 				const uint32_t offset_new_voxels, const BitVoxelMeaning voxel_meaning);
@@ -63,7 +63,7 @@ namespace gpu_voxels {
 		 * @param voxel_meaning Defines the set bits in the generated BitVoxels
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertMetaPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const float voxel_side_length,
 				const MetaPointCloudStruct* meta_point_cloud,
@@ -78,7 +78,7 @@ namespace gpu_voxels {
 		 * @param voxel_meanings Array of voxelmeanings. Each cloud in the Metapointcloud has its own point meaning
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertMetaPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui map_dim, const float voxel_side_length,
 				const MetaPointCloudStruct* meta_point_cloud,
@@ -96,7 +96,7 @@ namespace gpu_voxels {
 		 * @param [out] results array of number of collisions (one entry for each block)
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 
 			void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, Voxel* this_voxel_list, uint32_t this_list_size,
 				const OtherVoxel* other_map, Vector3ui other_map_dim, Collider collider,
@@ -115,20 +115,20 @@ namespace gpu_voxels {
 		 * @param [in] offset The other map can be offset for collision check
 		 * @param [out] results array of Bitvectors of collisions (one entry for each block)
 		 */
-		 /*__global__
+		 /*GVL_GLOBAL
 		 void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, BitVectorVoxel *this_voxel_list, uint32_t this_list_size,
 										const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
 										Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* results);
 		 */
 
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results);
 
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results);
@@ -146,19 +146,19 @@ namespace gpu_voxels {
 		 * @param [in] bitvoxel_mask The mask that specifies, which BVMs to check
 		 * @param [out] coll_counter_results Array of Bitvectors of collisions (one entry for each block)
 		 */
-		 /*__global__
+		 /*GVL_GLOBAL
 		 void kernelCollideWithVoxelMapBitMask(const MapVoxelID* this_id_list, BitVectorVoxel *this_voxel_list, uint32_t this_list_size,
 											   const ProbabilisticVoxel *other_map, Vector3ui other_map_dim, float col_threshold,
 											   Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
 		 */
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMapBitMask(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
 
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
@@ -170,13 +170,13 @@ namespace gpu_voxels {
 		 * The Voxels are identified via Morton-Coordinates
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertGlobalPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const float voxel_side_length,
 				const Vector3f* points, const std::size_t sizePoints,
 				const uint32_t offset_new_points, const BitVoxelMeaning voxel_meaning);
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertCoordinateTuples(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const Vector3ui* coordinates, const std::size_t sizePoints,
 				const uint32_t offset_new_points, const BitVoxelMeaning voxel_meaning);
@@ -190,7 +190,7 @@ namespace gpu_voxels {
 		 * @param voxel_meaning Defines the set bits in the generated BitVoxels
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertMetaPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui ref_map_dim, const float voxel_side_length,
 				const MetaPointCloudStruct* meta_point_cloud,
@@ -205,7 +205,7 @@ namespace gpu_voxels {
 		 * @param voxel_meanings Array of voxelmeanings. Each cloud in the Metapointcloud has its own point meaning
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertMetaPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 				const Vector3ui map_dim, const float voxel_side_length,
 				const MetaPointCloudStruct* meta_point_cloud,
@@ -225,7 +225,7 @@ namespace gpu_voxels {
 		 * @param [out] results array of number of collisions (one entry for each block)
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 
 			void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, Voxel* this_voxel_list, uint32_t this_list_size,
 				const OtherVoxel* other_map, Vector3ui other_map_dim, Collider collider,
@@ -244,12 +244,12 @@ namespace gpu_voxels {
 		 * @param [in] offset The other map can be offset for collision check
 		 * @param [out] results array of Bitvectors of collisions (one entry for each block)
 		 */
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* results);
 
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const BitVectorVoxel* other_map, Vector3ui other_map_dim,
 				Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* results);
@@ -267,12 +267,12 @@ namespace gpu_voxels {
 		 * @param [in] bitvoxel_mask The mask that specifies, which BVMs to check
 		 * @param [out] coll_counter_results Array of Bitvectors of collisions (one entry for each block)
 		 */
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
 
-		__global__
+		GVL_GLOBAL
 			void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const BitVectorVoxel* other_map, Vector3ui other_map_dim,
 				Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
@@ -290,7 +290,7 @@ namespace gpu_voxels {
 		 * @param overwrite_meaning [in] Voxels in voxellists have this meaning. Defaults to eBVM_OCCUPIED
 		 */
 		 //template<class Voxel>
-		 //__global__
+		 //GVL_GLOBAL
 		 //void kernelCopyFromBitVoxelMap(BitVectorVoxel* dev_voxels,
 		 //                               const uint32_t map_size,
 		 //                               const Vector3ui map_dimension,

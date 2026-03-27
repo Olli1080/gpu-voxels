@@ -34,7 +34,7 @@
 namespace gpu_voxels
 {
     /* Helper functions that can be used for debugging
-     * surround with HANDLE_CUDA_ERROR(     ) for error handling
+     * surround with GVL_HANDLE_ERROR(     ) for error handling
      */
 
      // print single device variable
@@ -42,7 +42,7 @@ namespace gpu_voxels
     cudaError_t cuPrintDeviceVariable(T* dev_variable)
     {
         T host_variable;
-        cudaError_t error = cudaMemcpy(&host_variable, dev_variable, sizeof(T), cudaMemcpyDeviceToHost);
+        cudaError_t error = GVL_MEMCPY(&host_variable, dev_variable, sizeof(T), GVL_MEMCPY_DEVICE_TO_HOST);
         LOGGING_INFO(Gpu_voxels_helpers, host_variable << endl);
         return error;
     }
@@ -60,7 +60,7 @@ namespace gpu_voxels
     cudaError_t cuPrintDevicePointer(T* dev_pointer)
     {
         T* host_pointer;
-        cudaError_t error = cudaMemcpy(&host_pointer, dev_pointer, sizeof(T*), cudaMemcpyDeviceToHost);
+        cudaError_t error = GVL_MEMCPY(&host_pointer, dev_pointer, sizeof(T*), GVL_MEMCPY_DEVICE_TO_HOST);
         LOGGING_INFO(Gpu_voxels_helpers, host_pointer << endl);
         return error;
     }
@@ -80,7 +80,7 @@ namespace gpu_voxels
         // create host array
         auto host_array = std::vector<T>(array_size);
         // fill host array with contents of device array
-        const cudaError_t error = cudaMemcpy(host_array.data(), dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
+        const cudaError_t error = GVL_MEMCPY(host_array.data(), dev_array, array_size * sizeof(T), GVL_MEMCPY_DEVICE_TO_HOST);
 
         for (unsigned int i = 0; i < array_size; i++)
         {
@@ -95,9 +95,9 @@ namespace gpu_voxels
     template<class T>
     void cuAllocAndCopyArray(T* array, uint32_t size, T** dev_pointer)
     {
-        HANDLE_CUDA_ERROR(cudaMalloc((void**)dev_pointer, sizeof(T) * size));
-        cudaDeviceSynchronize();
-        HANDLE_CUDA_ERROR(cudaMemcpy(*dev_pointer, &array[0], sizeof(T) * size, cudaMemcpyHostToDevice));
+        GVL_HANDLE_ERROR(GVL_MALLOC((void**)dev_pointer, sizeof(T) * size));
+        GVL_SYNCHRONIZE();
+        GVL_HANDLE_ERROR(GVL_MEMCPY(*dev_pointer, &array[0], sizeof(T) * size, GVL_MEMCPY_HOST_TO_DEVICE));
     }
 
     // as above, with info text
@@ -114,13 +114,13 @@ namespace gpu_voxels
     {
         // copy array size
         unsigned int array_size;
-        const cudaError_t error1 = cudaMemcpy(&array_size, device_array_size, sizeof(unsigned int),
-            cudaMemcpyDeviceToHost);
+        const cudaError_t error1 = GVL_MEMCPY(&array_size, device_array_size, sizeof(unsigned int),
+            GVL_MEMCPY_DEVICE_TO_HOST);
 
         // create host array
         auto host_array = std::vector<T>(array_size);
         // fill host array with contents of device array
-        const cudaError_t error2 = cudaMemcpy(host_array.data(), dev_array, array_size * sizeof(T), cudaMemcpyDeviceToHost);
+        const cudaError_t error2 = GVL_MEMCPY(host_array.data(), dev_array, array_size * sizeof(T), GVL_MEMCPY_DEVICE_TO_HOST);
 
         for (unsigned int i = 0; i < array_size; i++)
         {

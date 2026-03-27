@@ -55,22 +55,14 @@ DAMAGE.
 #ifndef ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_HPP_INCLUDED
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_HPP_INCLUDED
 
+#include <gpu_voxels/helpers/SyclBridge.h>
 #include "VoxelMapOperations.hpp"
-
-#if defined(__INTELLISENSE___) || defined(__RESHARPER__) 
-// in here put whatever is your favorite flavor of intellisense workarounds
-#ifndef __CUDACC__ 
-#define __CUDACC__
-#include <device_functions.h>
-#include <device_launch_parameters.h>
-#endif
-#endif
 
 namespace gpu_voxels {
 	namespace voxelmap {
 
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase1FloodZ(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size) {
 			if (dims.x() < blockDim.x) {
 				if (blockIdx.x == 0 && threadIdx.x == 0) {
@@ -134,7 +126,7 @@ namespace gpu_voxels {
 		// optimise: could be done per line instead of per band. but per band prob. faster if no propagation over many bands; would divide work by m1 at most
 		// optimise: is shared memory large enough for Y*m1*2 Voxels (2 per band)? if all bands in a line are on same block, shared memory could be efficient? is running time relevant?
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase1PropagateInterband(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size) {
 			// for all bands (one thread per band):
 			// "combine" first pixel with bands on left
@@ -193,7 +185,7 @@ namespace gpu_voxels {
 		 * //buffer to b; a is Links (top,bottom), b is Color (voxel)
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase1Update(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size)
 		{
 			//optimise: in phase 1 all obstacle information is "z only". eliminate setobstacle, just write z? update phase1, 2
@@ -250,7 +242,7 @@ namespace gpu_voxels {
 		 *
 		 * only used in 2D-PBA
 		 */
-		__device__
+		GVL_DEVICE
 			inline float devicePBAintersection2D(int x1, int y1, int x2, int y2, int x0)
 		{
 			// xM and yM are coordinates of a<->b meeting its perpendicular bisector
@@ -268,7 +260,7 @@ namespace gpu_voxels {
 		 * @brief find intersection of perpendicular bisector of a<->b and the y-column in row x0 and z-layer z0
 		 * input: obstacles a(x1/y1), b(x2/y2) where y1 < y2 and column x0
 		 */
-		__device__ inline float devicePBAintersection3DY(int x1, int y1, int z1, int x2, int y2, int z2, int x0, int z0)
+		GVL_DEVICE inline float devicePBAintersection3DY(int x1, int y1, int z1, int x2, int y2, int z2, int x0, int z0)
 		{
 			// xM/yM/zM are coordinates of a<->b meeting its perpendicular bisecting plane
 			const float xM = (x1 + x2) / 2.0f;
@@ -293,7 +285,7 @@ namespace gpu_voxels {
 		 * if last voxel of band does not contain obstacle information, it becomes a TAIL pointer and has x and z values of PBA_UNINITIALISED_COORD
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2ProximateBackpointers(InputIterator1 input_map, InputIterator2 stack, const Vector3ui dims, int band_size) {
 				const int tx = blockIdx.x * blockDim.x + threadIdx.x;
 				const int band_idx = blockIdx.y * blockDim.y + threadIdx.y; //blockDim.y should be 1
@@ -385,7 +377,7 @@ namespace gpu_voxels {
 		}
 
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2CreateForwardPointers(InputIterator1 list, InputIterator2 forward_ptrs, const Vector3ui dims, int band_size) {
 				const int tx = blockIdx.x * blockDim.x + threadIdx.x;
 				const int band_idx = blockIdx.y * blockDim.y + threadIdx.y; //blockDim.y should be 1
@@ -457,7 +449,7 @@ namespace gpu_voxels {
 		 * to merge the two bands, relevant HEAD, TAIL, forward&backpointers need to be updated
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2MergeBands(InputIterator1 stack, InputIterator2 forward_ptrs, const Vector3ui dims, int band_size) {
 				const int tx = blockIdx.x * blockDim.x + threadIdx.x;
 				const int band1_idx = (blockIdx.y * blockDim.y + threadIdx.y) * 2;  //blockDim.y should be 1
@@ -609,14 +601,14 @@ namespace gpu_voxels {
 		 * m3_block_size = dim3(PBA_M3_BLOCKX (==16), m3); // M3_BLOCKX is the number of bands; m3 is the number of threads within each band
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase3Distances(InputIterator1 stack, InputIterator2 distance_map, const Vector3ui dims) {
 			//TODO: replace all accesses to stack with cuda texture object references; texture<int>
 
-			__shared__ uint3 s_stack_second[PBA_M3_BLOCKX];
-			__shared__ uint3 s_stack_top[PBA_M3_BLOCKX];
-			__shared__ unsigned int s_last_y[PBA_M3_BLOCKX];
-			__shared__ float s_intersection[PBA_M3_BLOCKX];
+			GVL_SHARED uint3 s_stack_second[PBA_M3_BLOCKX];
+			GVL_SHARED uint3 s_stack_top[PBA_M3_BLOCKX];
+			GVL_SHARED unsigned int s_last_y[PBA_M3_BLOCKX];
+			GVL_SHARED float s_intersection[PBA_M3_BLOCKX];
 
 			const int band_id = threadIdx.y; // in 0..(m3-1)
 			const int band_count = blockDim.y; // == m3
@@ -665,7 +657,7 @@ namespace gpu_voxels {
 				s_intersection[threadIdx.x] = intersection;
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (int ty = dims.y() - 1 - band_id; ty >= 0; ty -= band_count) { //band_id is 0..(m3-1); band_count is m3
 				//all m3 threads read same shared value!; the larger m3, the longer the while loop will need to run, causing lots of divergence
@@ -695,7 +687,7 @@ namespace gpu_voxels {
 					}
 				}
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// coalesced global write
 				distance_map[(tz * layer_size) + (ty * row_size) + tx] = DistanceVoxel(Vector3ui(stack_top.x, last_y, stack_top.z));
@@ -705,7 +697,7 @@ namespace gpu_voxels {
 					s_stack_second[threadIdx.x] = stack_second; s_stack_top[threadIdx.x] = stack_top; s_last_y[threadIdx.x] = last_y; s_intersection[threadIdx.x] = intersection;
 				}
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 		}
 
@@ -718,14 +710,14 @@ namespace gpu_voxels {
 		 * partial template specialisation for texture input!
 		 */
 		template<typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase3Distances(cudaTextureObject_t stack, InputIterator2 distance_map, const Vector3ui dims) {
 			//TODO: replace all accesses to stack with cuda texture object references; texture<int>
 
-			__shared__ uint3 s_stack_second[PBA_M3_BLOCKX];
-			__shared__ uint3 s_stack_top[PBA_M3_BLOCKX];
-			__shared__ unsigned int s_last_y[PBA_M3_BLOCKX];
-			__shared__ float s_intersection[PBA_M3_BLOCKX];
+			GVL_SHARED uint3 s_stack_second[PBA_M3_BLOCKX];
+			GVL_SHARED uint3 s_stack_top[PBA_M3_BLOCKX];
+			GVL_SHARED unsigned int s_last_y[PBA_M3_BLOCKX];
+			GVL_SHARED float s_intersection[PBA_M3_BLOCKX];
 
 			const int band_id = threadIdx.y; // in 0..(m3-1)
 			const int band_count = blockDim.y; // == m3
@@ -776,7 +768,7 @@ namespace gpu_voxels {
 				s_intersection[threadIdx.x] = intersection;
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (int ty = dims.y() - 1 - band_id; ty >= 0; ty -= band_count) { //band_id is 0..(m3-1); band_count is m3
 				//all m3 threads read same shared value!; the larger m3, the longer the while loop will need to run, causing lots of divergence
@@ -806,7 +798,7 @@ namespace gpu_voxels {
 					}
 				}
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// coalesced global write
 				distance_map[(tz * layer_size) + (ty * row_size) + tx] = DistanceVoxel(Vector3ui(stack_top.x, last_y, stack_top.z));
@@ -816,7 +808,7 @@ namespace gpu_voxels {
 					s_stack_second[threadIdx.x] = stack_second; s_stack_top[threadIdx.x] = stack_top; s_last_y[threadIdx.x] = last_y; s_intersection[threadIdx.x] = intersection;
 				}
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 		}
 
@@ -830,11 +822,11 @@ namespace gpu_voxels {
 		 * special case blockIdx x==y: load tile1, switch x/y and write back only once!
 		 */
 		template<typename InputIterator>
-		__global__
+		GVL_GLOBAL
 			void kernelPBA3DTransposeXY(InputIterator voxels) {
 
-			__shared__ uint3 tile1[PBA_TILE_DIM][PBA_TILE_DIM + 1]; //+1 padding per row leads to guaranteed offset when same warp accesses y-neighbors
-			__shared__ uint3 tile2[PBA_TILE_DIM][PBA_TILE_DIM + 1];
+			GVL_SHARED uint3 tile1[PBA_TILE_DIM][PBA_TILE_DIM + 1]; //+1 padding per row leads to guaranteed offset when same warp accesses y-neighbors
+			GVL_SHARED uint3 tile2[PBA_TILE_DIM][PBA_TILE_DIM + 1];
 
 			//optimise: could reduce thread count by processing several z-layers in one thread? similar to PBA
 
@@ -877,7 +869,7 @@ namespace gpu_voxels {
 				}
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			//store tile1
 			{

@@ -64,7 +64,7 @@ namespace gpu_voxels
 			m_vbo_offsets.resize(MAX_DRAW_TYPES);
 			m_d_vbo_offsets = m_vbo_offsets;
 
-			m_types_segment_mapping = thrust::host_vector<uint8_t>(MAX_DRAW_TYPES, 0);
+			m_types_segment_mapping = parallel::host_vector<uint8_t>(MAX_DRAW_TYPES, 0);
 			m_has_draw_type_flipped = true;
 		}
 
@@ -161,7 +161,7 @@ namespace gpu_voxels
 			return m_map_name;
 		}
 
-		void DataContext::set_num_voxels_per_type(const thrust::device_vector<uint32_t>& num_voxels_per_type)
+		void DataContext::set_num_voxels_per_type(const parallel::device_vector<uint32_t>& num_voxels_per_type)
 		{
 			m_num_voxels_per_type = num_voxels_per_type;
 			updateVBOOffsets();

@@ -11,34 +11,34 @@ namespace gpu_voxels
 	{
 		void calculateNumberOfCubeTypes(VisualizerContext& current_ctx, CubelistContext& context)
 		{
-			thrust::device_vector<uint32_t> num_voxels_per_type(context.voxel_types(), 0);
-			//thrust::fill(context.m_d_num_voxels_per_type.begin(), context.m_d_num_voxels_per_type.end(), 0);
+			parallel::device_vector<uint32_t> num_voxels_per_type(context.voxel_types(), 0);
+			//parallel::fill(context.m_d_num_voxels_per_type.begin(), context.m_d_num_voxels_per_type.end(), 0);
 			// Launch kernel to copy data into the OpenGL buffer. <<<context.getNumberOfCubes(),1>>><<<num_threads_per_block,num_blocks>>>
 			calculate_cubes_per_type_list<<<context.num_blocks(), context.threads_per_block()>>>(
 				context.getCubesDevicePointer(),/**/
 				context.getNumberOfCubes(),/**/
-				thrust::raw_pointer_cast(num_voxels_per_type.data()),
-				thrust::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
-				thrust::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
-			CHECK_CUDA_ERROR();
+				parallel::raw_pointer_cast(num_voxels_per_type.data()),
+				parallel::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
+				parallel::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			context.set_num_voxels_per_type(num_voxels_per_type);
 		}
 
-		thrust::device_vector<uint32_t> test(VisualizerContext& current_ctx, VoxelmapContext& context)
+		parallel::device_vector<uint32_t> test(VisualizerContext& current_ctx, VoxelmapContext& context)
 		{
-			thrust::device_vector<uint32_t> indices(context.voxel_types(), 0);
+			parallel::device_vector<uint32_t> indices(context.voxel_types(), 0);
 
 			float4* vbo_ptr; //float4 because the translation (x,y,z) and cube size (w) will be stored in there
 			size_t num_bytes; // size of the buffer
-			HANDLE_CUDA_ERROR(cudaGraphicsMapResources(1, context.cuda_ressource(), nullptr));
-			HANDLE_CUDA_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, *context.cuda_ressource()));
+			GVL_HANDLE_ERROR(cudaGraphicsMapResources(1, context.cuda_ressource(), nullptr));
+			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, *context.cuda_ressource()));
 
 			// Launch kernel to copy data into the OpenGL buffer.
 			// fill_vbo_without_precounting<<< dim3(1,1,1), dim3(1,1,1)>>>(/**/
-			// CHECK_CUDA_ERROR();
+			// GVL_CHECK_ERROR();
 			switch (context.m_voxelMap->getMapType())
 			{
 			case MT_BITVECTOR_VOXELMAP:
@@ -56,12 +56,12 @@ namespace gpu_voxels
 					current_ctx.m_view_end_voxel_pos,/**/
 					context.occupancy_threshold(),/**/
 					vbo_ptr,/**/
-					thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
-					thrust::raw_pointer_cast(indices.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
-				CHECK_CUDA_ERROR();
+					parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
+					parallel::raw_pointer_cast(indices.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
+				GVL_CHECK_ERROR();
 				break;
 			}
 			case MT_PROBAB_VOXELMAP:
@@ -75,12 +75,12 @@ namespace gpu_voxels
 					current_ctx.m_view_end_voxel_pos,/**/
 					context.occupancy_threshold(),/**/
 					vbo_ptr,/**/
-					thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
-					thrust::raw_pointer_cast(indices.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
-				CHECK_CUDA_ERROR();
+					parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
+					parallel::raw_pointer_cast(indices.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
+				GVL_CHECK_ERROR();
 				break;
 			}
 			case MT_DISTANCE_VOXELMAP:
@@ -94,12 +94,12 @@ namespace gpu_voxels
 					current_ctx.m_view_end_voxel_pos,/**/
 					static_cast<visualizer_distance_drawmodes>(current_ctx.m_distance_drawmode),/**/
 					vbo_ptr,/*TODO: if there is a way to pass GL_RGBA color info to OpenGL, generate those colors here too? would need to register and map additional cuda resource*/
-					thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
-					thrust::raw_pointer_cast(indices.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
-					thrust::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
-				CHECK_CUDA_ERROR();
+					parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),/**/
+					parallel::raw_pointer_cast(indices.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
+					parallel::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
+				GVL_CHECK_ERROR();
 				break;
 			}
 			default:
@@ -109,20 +109,20 @@ namespace gpu_voxels
 				exit(EXIT_FAILURE);
 			}
 			}
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaGraphicsUnmapResources(1, context.cuda_ressource(), nullptr));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(cudaGraphicsUnmapResources(1, context.cuda_ressource(), nullptr));
 
 			return indices;
 		}
 
 		void fillGLBufferWithCubelistWOUpdate(VisualizerContext& current_ctx, CubelistContext& context, uint32_t index)
 		{
-			thrust::device_vector<uint32_t> indices(context.voxel_types(), 0);
+			parallel::device_vector<uint32_t> indices(context.voxel_types(), 0);
 
 			float4* vbo_ptr;
 			size_t num_bytes;
-			HANDLE_CUDA_ERROR(cudaGraphicsMapResources(1, context.cuda_ressource(), nullptr));
-			HANDLE_CUDA_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, *context.cuda_ressource()));
+			GVL_HANDLE_ERROR(cudaGraphicsMapResources(1, context.cuda_ressource(), nullptr));
+			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, *context.cuda_ressource()));
 
 			// Launch kernel to copy data into the OpenGL buffer.
 			fill_vbo_with_cubelist_host(context.num_blocks(), context.threads_per_block(),
@@ -130,14 +130,14 @@ namespace gpu_voxels
 				context.getCubesDevicePointer(),/**/
 				context.getNumberOfCubes(),/**/
 				vbo_ptr,/**/
-				thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
-				thrust::raw_pointer_cast(indices.data()),/**/
-				thrust::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
-				thrust::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
-			CHECK_CUDA_ERROR();
+				parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),/**/
+				parallel::raw_pointer_cast(indices.data()),/**/
+				parallel::raw_pointer_cast(current_ctx.m_d_draw_types.data()),/**/
+				parallel::raw_pointer_cast(current_ctx.m_d_prefixes.data()));/**/
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaGraphicsUnmapResources(1, context.cuda_ressource(), nullptr));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(cudaGraphicsUnmapResources(1, context.cuda_ressource(), nullptr));
 		}
 
 	}

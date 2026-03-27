@@ -23,12 +23,12 @@
 #ifndef ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_H_INCLUDED
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_H_INCLUDED
 
-#include <cuda_runtime.h>
+#include <gpu_voxels/helpers/SyclBridge.h>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 #include <gpu_voxels/helpers/cuda_datatypes.hpp>
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/ProbabilisticVoxel.h>
 #include <gpu_voxels/voxel/DistanceVoxel.h>
-#include <thrust/device_vector.h>
 
 #include "VoxelMapOperationsPBA.h"
 
@@ -40,7 +40,7 @@ namespace gpu_voxels
 
 		// VoxelMap addressing
 		//! Maps 3D voxel coordinates to linear voxel index
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			uint32_t getVoxelIndexUnsigned(const Vector3ui& dimensions,
 				const uint32_t x, const uint32_t y, const uint32_t z)
 		{
@@ -48,14 +48,14 @@ namespace gpu_voxels
 		}
 
 		//! Maps 3D voxel coordinates to linear voxel index
-		__host__ __device__      __forceinline__
+		GVL_HOST_DEVICE      __forceinline__
 			uint32_t getVoxelIndexUnsigned(const Vector3ui& dimensions, const Vector3ui& coords)
 		{
 			return coords.z() * dimensions.x() * dimensions.y() + coords.y() * dimensions.x() + coords.x();
 		}
 
 		//! Maps 3D voxel coordinates to linear voxel index
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			int32_t getVoxelIndexSigned(const Vector3ui& dimensions,
 				const int32_t x, const int32_t y, const int32_t z)
 		{
@@ -63,7 +63,7 @@ namespace gpu_voxels
 		}
 
 		//! Maps 3D voxel coordinates to linear voxel index
-		__host__ __device__      __forceinline__
+		GVL_HOST_DEVICE      __forceinline__
 			int32_t getVoxelIndexSigned(const Vector3ui& dimensions, const Vector3i& offset)
 		{
 			// cast the values to prevent underflow
@@ -71,15 +71,15 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel>
-		__device__ __host__     __forceinline__
-		Voxel getVoxel(const thrust::device_vector<Voxel>& voxelmap, const Vector3ui& dimensions,
+		GVL_HOST_DEVICE     __forceinline__
+		Voxel getVoxel(const parallel::device_vector<Voxel>& voxelmap, const Vector3ui& dimensions,
 			const uint32_t x, const uint32_t y, const uint32_t z)
 		{
 			return voxelmap[getVoxelIndexUnsigned(dimensions, x, y, z)];
 		}
 
 		template<class Voxel>
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 		Voxel* getVoxelPtr(const Voxel* voxelmap, const Vector3ui& dimensions,
 			const uint32_t x, const uint32_t y, const uint32_t z)
 		{
@@ -87,7 +87,7 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel>
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Voxel* getVoxelPtr(const Voxel* voxelmap, const Vector3ui& dimensions,
 				const Vector3ui& voxel_coords)
 		{
@@ -95,7 +95,7 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel>
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Voxel* getVoxelPtrSignedOffset(const Voxel* voxelmap, const Vector3ui& dimensions,
 				const int32_t x, const int32_t y, const int32_t z)
 		{
@@ -103,14 +103,14 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel>
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Voxel* getVoxelPtrSignedOffset(const Voxel* voxelmap, const Vector3ui& dimensions,
 				const Vector3i& voxel_offset)
 		{
 			return (Voxel*)(voxelmap + getVoxelIndexSigned(dimensions, voxel_offset));
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		inline Vector3ui indexToXYZ(uint32_t index, const Vector3ui& dim)
 		{
 			Vector3ui r;
@@ -122,7 +122,7 @@ namespace gpu_voxels
 
 		//! Maps a voxel address to discrete voxel coordinates
 		template<class Voxel>
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Vector3ui mapToVoxels(const Voxel* voxelmap, const Vector3ui& dimensions,
 				const Voxel* voxel)
 		{
@@ -135,7 +135,7 @@ namespace gpu_voxels
 		}
 
 		//! Partitioning of continuous data into voxels. Maps float coordinates to dicrete voxel coordinates.
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Vector3ui mapToVoxels(const float voxel_side_length, const Vector3f& coordinates)
 		{
 			Vector3ui uint_coords;
@@ -148,7 +148,7 @@ namespace gpu_voxels
 		}
 
 		//! Partitioning of continuous data into voxels. Maps float coordinates to dicrete voxel coordinates.
-		__device__ __host__     __forceinline__
+		GVL_HOST_DEVICE     __forceinline__
 			Vector3i mapToVoxelsSigned(const float voxel_side_length, const Vector3f& coordinates)
 		{
 			Vector3i integer_coordinates;
@@ -161,7 +161,7 @@ namespace gpu_voxels
 		}
 
 		//! Maps a voxel address to discrete voxel coordinates
-		__device__ __host__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			Vector3i mapToVoxelsSigned(int linear_id, const Vector3ui& dimensions)
 		{
 			Vector3i integer_coordinates;
@@ -171,7 +171,7 @@ namespace gpu_voxels
 			return integer_coordinates;
 		}
 
-		__device__ __host__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			Vector3ui mapToVoxels(unsigned int linear_id, const Vector3ui& dimensions)
 		{
 			Vector3ui integer_coordinates;
@@ -182,14 +182,14 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel>
-		__device__ __host__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 		Voxel* getHighestVoxelPtr(const Voxel* base_addr, const Vector3ui& dimensions)
 		{
 			return getVoxelPtr(base_addr, dimensions, dimensions.x() - 1, dimensions.y() - 1, dimensions.z() - 1);
 		}
 
 		//! Returns the center of a voxel as float coordinates. Mainly for boost test purposes!
-		__device__ __host__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			Vector3f getVoxelCenter(float voxel_side_length, const Vector3ui& voxel_coords)
 		{
 
@@ -201,7 +201,7 @@ namespace gpu_voxels
 		}
 
 		//! update min_voxel if newVoxel is valid and closer
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void updateMinVoxel(const DistanceVoxel& new_voxel, DistanceVoxel& min_voxel, const Vector3i& cur_pos)
 		{
 			// optimize: don't skip obstacles in global function to reduce divergence? remove check for 0 or -1 here
@@ -237,7 +237,7 @@ namespace gpu_voxels
 		public:
 
 			//! raycasting from one point to another marks decreases voxel occupancy along the ray
-			__device__ __forceinline__
+			GVL_DEVICE __forceinline__
 				void rayCast(ProbabilisticVoxel* voxelmap, const Vector3ui& dimensions,
 					const Vector3ui& from, const Vector3ui& to)
 			{
@@ -361,7 +361,7 @@ namespace gpu_voxels
 		struct DummyRayCaster : public RayCaster
 		{
 		public:
-			__device__ __forceinline__
+			GVL_DEVICE __forceinline__
 				void rayCast(ProbabilisticVoxel* voxelmap, const Vector3ui& dimensions,
 					const Vector3ui& from, const Vector3ui& to)
 			{
@@ -373,22 +373,22 @@ namespace gpu_voxels
 
 		//! Clear voxel occupancy
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelClearVoxelMap(Voxel* voxelmap, uint32_t voxelmap_size);
 
 		//! Clear voxel occupancy for specific voxel_meaning
 		template<std::size_t bit_length>
-		__global__
+		GVL_GLOBAL
 			void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, uint32_t voxelmap_size, uint32_t bit_index);
 
 		template<std::size_t bit_length>
-		__global__
+		GVL_GLOBAL
 			void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, uint32_t voxelmap_size,
 				BitVector<bit_length> bits);
 
 		///*! Print voxel info from within kernel.
 		// */
-		//__global__
+		//GVL_GLOBAL
 		//void kernelDumpVoxelMap(const Voxel* voxelmap, const Vector3ui dimensions, const uint32_t voxelmap_size);
 
 
@@ -402,7 +402,7 @@ namespace gpu_voxels
 		 * See also function with ray casting.
 		 */
 		template<std::size_t length, class RayCasting>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertSensorData(ProbabilisticVoxel* voxelmap, uint32_t voxelmap_size,
 			                            Vector3ui dimensions, float voxel_side_length, Vector3f sensor_pose,
 				const Vector3f* sensor_data, size_t num_points, bool cut_real_robot,
@@ -412,7 +412,7 @@ namespace gpu_voxels
 		 * Collide two voxel maps.
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideVoxelMaps(Voxel* voxelmap, uint32_t voxelmap_size, OtherVoxel* other_map,
 				Collider collider, bool* results);
 
@@ -423,7 +423,7 @@ namespace gpu_voxels
 		 *
 		 */
 		template<std::size_t length, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 			void kernelCollideVoxelMapsBitvector(BitVoxel<length>* voxelmap, uint32_t voxelmap_size,
 				const OtherVoxel* other_map, Collider collider,
 				BitVector<length>* results, uint16_t* num_collisions, uint16_t sv_offset);
@@ -437,7 +437,7 @@ namespace gpu_voxels
 		 * Warning: Original model is modified!
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideVoxelMapsDebug(Voxel* voxelmap, uint32_t voxelmap_size, const OtherVoxel* other_map,
 			Collider collider, uint16_t* results);
 
@@ -446,74 +446,74 @@ namespace gpu_voxels
 		 *
 		 */
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(Voxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3f* points, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map);
 
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(DistanceVoxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3f* points, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map);
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertCoordinateTuples(Voxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 				const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 				bool* points_outside_map);
 
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertCoordinateTuples(DistanceVoxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map);
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertDilatedCoordinateTuples(Voxel* voxelmap, Vector3ui dimensions,
 			const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map);
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelErode(Voxel* voxelmap_out, const Voxel* voxelmap_in, Vector3ui dimensions, float occupied_threshold, float erode_threshold);
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(Voxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning voxel_meaning, Vector3ui dimensions, float voxel_side_length,
 			bool* points_outside_map);
 
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(DistanceVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning voxel_meaning, Vector3ui dimensions, float voxel_side_length,
 			bool* points_outside_map);
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(Voxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning* voxel_meanings, Vector3ui map_dim,
 			float voxel_side_length,
 			bool* points_outside_map);
 
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(DistanceVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning* voxel_meanings, Vector3ui map_dim,
 			float voxel_side_length,
 			bool* points_outside_map);
 
 		template<class BitVectorVoxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloudSelfCollCheck(BitVectorVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			const BitVoxelMeaning* voxel_meanings, Vector3ui dimensions, unsigned int sub_cloud,
 			float voxel_side_length, const BitVector<BIT_VECTOR_LENGTH>* coll_masks,
 			bool* points_outside_map, BitVector<BIT_VECTOR_LENGTH>* colliding_subclouds);
 
 		template<>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloudSelfCollCheck(BitVectorVoxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			const BitVoxelMeaning* voxel_meanings, Vector3ui dimensions, unsigned int sub_cloud,
 			float voxel_side_length, const BitVector<BIT_VECTOR_LENGTH>* coll_masks,
@@ -524,26 +524,26 @@ namespace gpu_voxels
 		 * Currently this is limited to a shift size <64
 		 */
 		template<std::size_t length>
-		__global__
+		GVL_GLOBAL
 		void kernelShiftBitVector(BitVoxel<length>* voxelmap, uint32_t voxelmap_size, uint8_t shift_size);
 
 		/**
 		 * cjuelg: jump flood distances, obstacle vectors
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelJumpFlood3D(const DistanceVoxel* __restrict__ voxels_input, DistanceVoxel* __restrict__ voxels_output, Vector3ui dims, int32_t step_width);
 
 		/**
 		 * cjuelg: brute force exact obstacle distances
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelExactDistances3D(DistanceVoxel* voxels, Vector3ui dims, float voxel_side_length,
 				Vector3f* obstacles, std::size_t num_obstacles);
 
 
 		struct OccupiedVoxels
 		{
-			__host__ __device__ uint32_t operator()(const BitVectorVoxel& val);
+			GVL_HOST_DEVICE uint32_t operator()(const BitVectorVoxel& val);
 		};
 
 		struct CullHiddenVoxels
@@ -551,10 +551,10 @@ namespace gpu_voxels
 			const uint32_t* m_data;
 			Vector3ui m_dim;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				CullHiddenVoxels(const uint32_t* data, Vector3ui dims);
 
-			__host__ __device__ uint32_t operator()(const uint32_t& idx);
+			GVL_HOST_DEVICE uint32_t operator()(const uint32_t& idx);
 		};
 
 		struct GatherCompacted
@@ -562,32 +562,32 @@ namespace gpu_voxels
 			Vector3ui m_dim;
 			Vector3ui* m_data;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				GatherCompacted(Vector3ui* data, Vector3ui dim);
 
 			//tuple<filter mask, compaction mask, index>
-			__host__ __device__ void operator()(const thrust::tuple<uint32_t, uint32_t, uint32_t>& input);
+			GVL_HOST_DEVICE void operator()(const parallel::tuple<uint32_t, uint32_t, uint32_t>& input);
 		};
 
 		/*
 		 * creates a mask of 1s and 0s based on the occupation of voxels in the vector
 		 */
-		thrust::device_vector<uint32_t> getOccupationVoxels(const thrust::device_vector<BitVectorVoxel>& dev_data);
+		parallel::device_vector<uint32_t> getOccupationVoxels(const parallel::device_vector<BitVectorVoxel>& dev_data);
 
 		/*
 		 * assumes a mask of 1s and 0s adding them up
 		 */
-		uint32_t getOccupied(const thrust::device_vector<uint32_t>& vec);
+		uint32_t getOccupied(const parallel::device_vector<uint32_t>& vec);
 
 		/*
 		 * same as getOccupied but with resulting compaction indices in input array as output
 		 */
-		uint32_t getOccupied_2(thrust::device_vector<uint32_t>& in_out);
+		uint32_t getOccupied_2(parallel::device_vector<uint32_t>& in_out);
 
 		/*
 		 * Removes 1s from a voxel filter if it is surrounded by other voxels
 		 */
-		thrust::device_vector<uint32_t> culled_filter(const thrust::device_vector<uint32_t>& filter, const Vector3ui& dim);
+		parallel::device_vector<uint32_t> culled_filter(const parallel::device_vector<uint32_t>& filter, const Vector3ui& dim);
 
 		/*
 		 * returns all occupied Voxels coordinates which are not surrounded by other voxels
@@ -601,7 +601,7 @@ namespace gpu_voxels
 		/*
 		 * returns all occupied Voxels coordinates which are not surrounded by other voxels
 		 */
-		std::vector<Vector3ui> extract_visual_voxels(const thrust::device_vector<BitVectorVoxel>& in, const Vector3ui& dim);
+		std::vector<Vector3ui> extract_visual_voxels(const parallel::device_vector<BitVectorVoxel>& in, const Vector3ui& dim);
 	} // end of namespace voxelmap
 } // end of namespace gpu_voxels
 #endif

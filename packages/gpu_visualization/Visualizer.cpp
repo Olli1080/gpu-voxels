@@ -132,7 +132,7 @@ namespace gpu_voxels {
 			///////////// cuda device check///////////////////////////
 			int32_t dev_ID = 0;
 			cudaDeviceProp deviceProp;
-			HANDLE_CUDA_ERROR(cudaGetDeviceProperties(&deviceProp, dev_ID));
+			GVL_HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, dev_ID));
 			if (deviceProp.major < 2)
 			{
 				LOGGING_ERROR_C(Visualization, Visualizer, "GPU must at least support compute capability 2.x" << endl);
@@ -303,12 +303,12 @@ namespace gpu_voxels {
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			// register the buffer in a cudaGraphicsResource
 			cudaGraphicsResource* res;
-			HANDLE_CUDA_ERROR(cudaGraphicsGLRegisterBuffer(&res, vbo, cudaGraphicsRegisterFlagsWriteDiscard));
+			GVL_HANDLE_ERROR(cudaGraphicsGLRegisterBuffer(&res, vbo, cudaGraphicsRegisterFlagsWriteDiscard));
 			ExitOnGLError("ERROR: Could not generate a new buffer");
 			//fill the context
 			con.m_vbo = vbo;
 			con.m_cur_vbo_size = default_size;
-			con.m_vbo_segment_voxel_capacities = thrust::host_vector<uint32_t>(
+			con.m_vbo_segment_voxel_capacities = parallel::host_vector<uint32_t>(
 				con.m_vbo_segment_voxel_capacities.size(), num_voxels);
 
 			con.m_d_vbo_segment_voxel_capacities = con.m_vbo_segment_voxel_capacities;
@@ -403,12 +403,12 @@ namespace gpu_voxels {
 			LOGGING_DEBUG_C(Visualization, Visualizer,
 				"New buffer size: " << new_size_byte / 1e+006 << " MByte" << endl);
 			assert(new_size_byte > 0);
-			HANDLE_CUDA_ERROR(cudaGraphicsUnregisterResource(cuda_res));
+			GVL_HANDLE_ERROR(cudaGraphicsUnregisterResource(cuda_res));
 			glBindBuffer(GL_ARRAY_BUFFER, vbo);
 			glBufferData(GL_ARRAY_BUFFER, new_size_byte, nullptr, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			ExitOnGLError("Couldn't resize the OpenGL buffer.");
-			HANDLE_CUDA_ERROR(cudaGraphicsGLRegisterBuffer(&cuda_res, vbo, cudaGraphicsRegisterFlagsWriteDiscard));
+			GVL_HANDLE_ERROR(cudaGraphicsGLRegisterBuffer(&cuda_res, vbo, cudaGraphicsRegisterFlagsWriteDiscard));
 			con.m_cuda_ressources = cuda_res;
 			con.m_cur_vbo_size = new_size_byte;
 			m_cur_mem += new_size_byte;
@@ -619,16 +619,16 @@ namespace gpu_voxels {
 		{
 			updateStartEndViewVoxelIndices();
 			/*
-			thrust::device_vector<uint32_t> indices(context.m_num_voxels_per_type.size(), 0);
+			parallel::device_vector<uint32_t> indices(context.m_num_voxels_per_type.size(), 0);
 
 			float4* vbo_ptr; //float4 because the translation (x,y,z) and cube size (w) will be stored in there
 			size_t num_bytes; // size of the buffer
-			HANDLE_CUDA_ERROR(cudaGraphicsMapResources(1, &(context.m_cuda_ressources), 0));
-			HANDLE_CUDA_ERROR(cudaGraphicsResourceGetMappedPointer(&vbo_ptr, &num_bytes, context.m_cuda_ressources));
+			GVL_HANDLE_ERROR(cudaGraphicsMapResources(1, &(context.m_cuda_ressources), 0));
+			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(&vbo_ptr, &num_bytes, context.m_cuda_ressources));
 
 			// Launch kernel to copy data into the OpenGL buffer.
 			// fill_vbo_without_precounting<<< dim3(1,1,1), dim3(1,1,1)>>>(/**/
-			// CHECK_CUDA_ERROR();
+			// GVL_CHECK_ERROR();
 			/*
 			if (context.m_voxelMap->getMapType() == MT_BITVECTOR_VOXELMAP)
 			{
@@ -644,12 +644,12 @@ namespace gpu_voxels {
 					m_cur_context.m_view_end_voxel_pos,
 					context.m_occupancy_threshold,
 					vbo_ptr,
-					thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
-					thrust::raw_pointer_cast(indices.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
-				CHECK_CUDA_ERROR();
+					parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
+					parallel::raw_pointer_cast(indices.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
+				GVL_CHECK_ERROR();
 
 			}
 			else if (context.m_voxelMap->getMapType() == MT_PROBAB_VOXELMAP)
@@ -663,12 +663,12 @@ namespace gpu_voxels {
 					m_cur_context.m_view_end_voxel_pos,
 					context.m_occupancy_threshold,
 					vbo_ptr,
-					thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
-					thrust::raw_pointer_cast(indices.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
-				CHECK_CUDA_ERROR();
+					parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
+					parallel::raw_pointer_cast(indices.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
+				GVL_CHECK_ERROR();
 			}
 			else if (context.m_voxelMap->getMapType() == MT_DISTANCE_VOXELMAP)
 			{
@@ -681,12 +681,12 @@ namespace gpu_voxels {
 					m_cur_context.m_view_end_voxel_pos,
 					static_cast<visualizer_distance_drawmodes>(m_cur_context.m_distance_drawmode),
 					vbo_ptr,/*TODO: if there is a way to pass GL_RGBA color info to OpenGL, generate those colors here too? would need to register and map additional cuda resource*/
-					/*thrust::raw_pointer_cast(context.m_d_vbo_offsets.data()),
-					thrust::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
-					thrust::raw_pointer_cast(indices.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
-					thrust::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
-				CHECK_CUDA_ERROR();
+					/*parallel::raw_pointer_cast(context.m_d_vbo_offsets.data()),
+					parallel::raw_pointer_cast(context.m_d_vbo_segment_voxel_capacities.data()),
+					parallel::raw_pointer_cast(indices.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_draw_types.data()),
+					parallel::raw_pointer_cast(m_cur_context.m_d_prefixes.data()));
+				GVL_CHECK_ERROR();
 			}
 			else
 			{
@@ -694,8 +694,8 @@ namespace gpu_voxels {
 					"No implementation to fill a voxel map of this type!" << endl);
 				exit(EXIT_FAILURE);
 			}
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaGraphicsUnmapResources(1, &context.m_cuda_ressources, 0));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(cudaGraphicsUnmapResources(1, &context.m_cuda_ressources, 0));
 			*/
 
 			context.m_num_voxels_per_type = test(*m_cur_context, context);//indices;
@@ -799,14 +799,14 @@ namespace gpu_voxels {
 		{
 			float4* dptr;
 			size_t num_bytes;
-			HANDLE_CUDA_ERROR(cudaGraphicsMapResources(1, &context->m_cuda_ressources, nullptr));
-			HANDLE_CUDA_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dptr), &num_bytes, context->m_cuda_ressources));
+			GVL_HANDLE_ERROR(cudaGraphicsMapResources(1, &context->m_cuda_ressources, nullptr));
+			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&dptr), &num_bytes, context->m_cuda_ressources));
 			const size_t num_float4s = num_bytes / sizeof(float4);
 
 			LOGGING_DEBUG_C(Visualization, Visualizer, "Printing VBO:" << endl);
 
 			auto* dest = static_cast<float4*>(malloc(num_bytes));
-			cudaMemcpy(dest, dptr, num_bytes, cudaMemcpyDeviceToHost);
+			GVL_MEMCPY(dest, dptr, num_bytes, GVL_MEMCPY_DEVICE_TO_HOST);
 
 			for (size_t i = 0; i < num_float4s; i++)
 			{
@@ -815,7 +815,7 @@ namespace gpu_voxels {
 					i << ":    " << dest[i].x << ", " << dest[i].y << ", " << dest[i].z << ", " << dest[i].w << endl);
 			}
 			free(dest);
-			HANDLE_CUDA_ERROR(cudaGraphicsUnmapResources(1, &(context->m_cuda_ressources), nullptr));
+			GVL_HANDLE_ERROR(cudaGraphicsUnmapResources(1, &(context->m_cuda_ressources), nullptr));
 		}
 
 		void Visualizer::updateStartEndViewVoxelIndices() const
@@ -1220,20 +1220,20 @@ namespace gpu_voxels {
 						}
 						// copy the data from the list into the OpenGL buffer
 						cudaGraphicsResource* cuda_res;
-						HANDLE_CUDA_ERROR(
+						GVL_HANDLE_ERROR(
 							cudaGraphicsGLRegisterBuffer(&cuda_res, con.m_vbo,
 								cudaGraphicsRegisterFlagsWriteDiscard));
 						glm::vec4* vbo_ptr;
 						size_t num_bytes;
-						HANDLE_CUDA_ERROR(cudaGraphicsMapResources(1, &cuda_res, nullptr));
-						HANDLE_CUDA_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, cuda_res));
+						GVL_HANDLE_ERROR(cudaGraphicsMapResources(1, &cuda_res, nullptr));
+						GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, cuda_res));
 
-						cudaMemcpy(vbo_ptr, dev_ptr_positions, con.m_total_num_voxels * SIZE_OF_TRANSLATION_VECTOR,
-							cudaMemcpyDeviceToDevice);
+						GVL_MEMCPY(vbo_ptr, dev_ptr_positions, con.m_total_num_voxels * SIZE_OF_TRANSLATION_VECTOR,
+							GVL_MEMCPY_DEVICE_TO_DEVICE);
 
 						cudaIpcCloseMemHandle(dev_ptr_positions);
-						HANDLE_CUDA_ERROR(cudaGraphicsUnmapResources(1, &cuda_res, nullptr));
-						HANDLE_CUDA_ERROR(cudaGraphicsUnregisterResource(cuda_res));
+						GVL_HANDLE_ERROR(cudaGraphicsUnmapResources(1, &cuda_res, nullptr));
+						GVL_HANDLE_ERROR(cudaGraphicsUnregisterResource(cuda_res));
 						// update the changed variable in the shared memory
 						m_shm_manager_primitive_arrays->setPrimitiveBufferChangedToFalse(prim_array_num);
 
@@ -2279,12 +2279,12 @@ namespace gpu_voxels {
 
 			for (const auto& m_voxel_map : m_cur_context->m_voxel_maps)
 			{
-				HANDLE_CUDA_ERROR(cudaGraphicsUnregisterResource(m_voxel_map->m_cuda_ressources));
+				GVL_HANDLE_ERROR(cudaGraphicsUnregisterResource(m_voxel_map->m_cuda_ressources));
 				deleteGLBuffer(*m_voxel_map);
 			}
 			for (const auto& m_octree : m_cur_context->m_octrees)
 			{
-				HANDLE_CUDA_ERROR(cudaGraphicsUnregisterResource(m_octree->m_cuda_ressources));
+				GVL_HANDLE_ERROR(cudaGraphicsUnregisterResource(m_octree->m_cuda_ressources));
 				deleteGLBuffer(*m_octree);
 			}
 
@@ -2468,14 +2468,14 @@ namespace gpu_voxels {
 				m_draw_swept_volumes = false;
 				LOGGING_INFO_C(Visualization, Visualizer, "Drawing complete Swept Volumes" << " deactivated" << endl);
 
-				thrust::fill(m_cur_context->m_draw_types.begin() + start, m_cur_context->m_draw_types.begin() + end, 0);
+				parallel::fill(m_cur_context->m_draw_types.begin() + start, m_cur_context->m_draw_types.begin() + end, 0);
 			}
 			else
 			{
 				m_draw_swept_volumes = true;
 				LOGGING_INFO_C(Visualization, Visualizer, "Drawing complete Swept Volumes" << " activated" << endl);
 				// for all from start to end
-				thrust::fill(m_cur_context->m_draw_types.begin() + start, m_cur_context->m_draw_types.begin() + end, 1);
+				parallel::fill(m_cur_context->m_draw_types.begin() + start, m_cur_context->m_draw_types.begin() + end, 1);
 			}
 
 			for (const auto& m_voxel_map : m_cur_context->m_voxel_maps)
@@ -2495,7 +2495,7 @@ namespace gpu_voxels {
 		{
 			m_cur_context->m_d_draw_types = m_cur_context->m_draw_types;
 			m_cur_context->m_prefixes.resize(m_cur_context->m_draw_types.size());
-			thrust::exclusive_scan(m_cur_context->m_draw_types.begin(), m_cur_context->m_draw_types.end(),
+			parallel::exclusive_scan(m_cur_context->m_draw_types.begin(), m_cur_context->m_draw_types.end(),
 				m_cur_context->m_prefixes.begin());
 			m_cur_context->m_d_prefixes = m_cur_context->m_prefixes;
 
@@ -2668,7 +2668,7 @@ namespace gpu_voxels {
 					auto* vm = static_cast<gpu_voxels::voxelmap::BitVectorVoxelMapVisual*>(vm_context.m_voxelMap);
 
 					gpu_voxels::voxelmap::BitVectorVoxelMapVisual::Voxel voxel;
-					cudaMemcpy(&voxel, gpu_voxels::voxelmap::getVoxelPtr(vm->getDeviceDataPtr(), vm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::BitVectorVoxelMapVisual::Voxel), cudaMemcpyDeviceToHost);
+					GVL_MEMCPY(&voxel, gpu_voxels::voxelmap::getVoxelPtr(vm->getDeviceDataPtr(), vm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::BitVectorVoxelMapVisual::Voxel), GVL_MEMCPY_DEVICE_TO_HOST);
 					returnString << "Voxel info: Bitvector = " << voxel << std::endl;
 
 				}
@@ -2676,14 +2676,14 @@ namespace gpu_voxels {
 					auto* vm = static_cast<gpu_voxels::voxelmap::ProbVoxelMapVisual*>(vm_context.m_voxelMap);
 
 					gpu_voxels::voxelmap::ProbVoxelMapVisual::Voxel voxel;
-					cudaMemcpy(&voxel, gpu_voxels::voxelmap::getVoxelPtr(vm->getDeviceDataPtr(), vm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::ProbVoxelMapVisual::Voxel), cudaMemcpyDeviceToHost);
+					GVL_MEMCPY(&voxel, gpu_voxels::voxelmap::getVoxelPtr(vm->getDeviceDataPtr(), vm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::ProbVoxelMapVisual::Voxel), GVL_MEMCPY_DEVICE_TO_HOST);
 					returnString << "Voxel info: " << "Occupancy = " << voxel << " (Probability = " << ProbabilisticVoxel::probabilityToFloat(voxel.getOccupancy()) << ")" << std::endl;
 				}
 				else if (vm_context.m_voxelMap->getMapType() == MT_DISTANCE_VOXELMAP) {
 					auto* dvm = static_cast<gpu_voxels::voxelmap::DistanceVoxelMapVisual*>(vm_context.m_voxelMap);
 
 					gpu_voxels::voxelmap::DistanceVoxelMapVisual::Voxel voxel;
-					cudaMemcpy(&voxel, gpu_voxels::voxelmap::getVoxelPtr(dvm->getDeviceDataPtr(), dvm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::DistanceVoxelMapVisual::Voxel), cudaMemcpyDeviceToHost);
+					GVL_MEMCPY(&voxel, gpu_voxels::voxelmap::getVoxelPtr(dvm->getDeviceDataPtr(), dvm->getDimensions(), n_pos), sizeof(gpu_voxels::voxelmap::DistanceVoxelMapVisual::Voxel), GVL_MEMCPY_DEVICE_TO_HOST);
 					returnString << "Voxel info: Closest obstacle: " << voxel << std::endl;
 				}
 			}
@@ -2709,29 +2709,29 @@ namespace gpu_voxels {
 					// as we can not access cubes by their XYZ coords, we have to search for the right voxel:
 					Cube h_found_cube;
 					Cube* d_found_cube;
-					cudaMalloc(&d_found_cube, sizeof(Cube));
+					GVL_MALLOC(&d_found_cube, sizeof(Cube));
 					bool h_found_flag(false);
 					bool* d_found_flag;
-					cudaMalloc(&d_found_flag, sizeof(bool));
+					GVL_MALLOC(&d_found_flag, sizeof(bool));
 					cudaMemset(d_found_flag, 0, sizeof(bool));
 
 					find_cubes_by_coordinates_host(vm_context.m_num_blocks, vm_context.m_threads_per_block, vm_context.getCubesDevicePointer(),
 						vm_context.getNumberOfCubes(),
 						n_pos, d_found_cube, d_found_flag);
-					CHECK_CUDA_ERROR();
+					GVL_CHECK_ERROR();
 
 
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-					HANDLE_CUDA_ERROR(cudaMemcpy((void*)&h_found_flag, d_found_flag, sizeof(bool), cudaMemcpyDeviceToHost));
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+					GVL_HANDLE_ERROR(GVL_MEMCPY((void*)&h_found_flag, d_found_flag, sizeof(bool), GVL_MEMCPY_DEVICE_TO_HOST));
 
 					if (h_found_flag)
 					{
-						cudaMemcpy((void*)&h_found_cube, d_found_cube, sizeof(Cube), cudaMemcpyDeviceToHost);
+						GVL_MEMCPY((void*)&h_found_cube, d_found_cube, sizeof(Cube), GVL_MEMCPY_DEVICE_TO_HOST);
 						returnString << "Voxel info: " << h_found_cube.m_type_vector << std::endl;
 					}
 
-					cudaFree(d_found_cube);
-					cudaFree(d_found_flag);
+					GVL_FREE(d_found_cube);
+					GVL_FREE(d_found_flag);
 
 					// unmap the CUDA shared mem
 					vm_context.unmapCubesShm();

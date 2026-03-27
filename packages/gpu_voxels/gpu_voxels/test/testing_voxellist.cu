@@ -312,9 +312,9 @@ BOOST_AUTO_TEST_CASE(bitvoxellist_insert_metapointcloud)
 
     list->insertMetaPointCloud(boxes, voxel_meanings);
 
-    thrust::device_vector<Cube>* d_cubes = NULL;
+    parallel::device_vector<Cube>* d_cubes = NULL;
     list->extractCubes(&d_cubes);
-    thrust::host_vector<Cube> h_cubes = *d_cubes;
+    parallel::host_vector<Cube> h_cubes = *d_cubes;
 
     BOOST_CHECK_MESSAGE(h_cubes.size() == 46, "Number of reduced cubes == 46");
 
@@ -642,9 +642,9 @@ BOOST_AUTO_TEST_CASE(bitvoxellist_subtract)
 
     list1.subtract(&list2, Vector3f());
 
-    thrust::device_vector<Cube>* d_cubes = NULL;
+    parallel::device_vector<Cube>* d_cubes = NULL;
     list1.extractCubes(&d_cubes);
-    thrust::host_vector<Cube> h_cubes = *d_cubes;
+    parallel::host_vector<Cube> h_cubes = *d_cubes;
 
     BOOST_CHECK_MESSAGE(h_cubes.size() == 19, "Number of cubes after subtract == 19");
     PERF_MON_SILENT_MEASURE_AND_RESET_INFO_P("bitvoxellist_subtract", "bitvoxellist_subtract", "voxellists");
@@ -772,9 +772,9 @@ BOOST_AUTO_TEST_CASE(countingvoxellist_subtract_bitvectorvoxellist_minimal)
 
     list1->as<CountingVoxelList>()->subtractFromCountingVoxelList(list2->as<BitVectorVoxelList>(), Vector3f());
 
-    thrust::device_vector<Cube> *d_cubes = NULL;
+    parallel::device_vector<Cube> *d_cubes = NULL;
     list1->as<CountingVoxelList>()->extractCubes(&d_cubes);
-    thrust::host_vector<Cube> h_cubes = *d_cubes;
+    parallel::host_vector<Cube> h_cubes = *d_cubes;
 
     BOOST_CHECK_MESSAGE(h_cubes.size() == 1, "Number of cubes after subtract == 1 ");
 
@@ -812,9 +812,9 @@ BOOST_AUTO_TEST_CASE(countingvoxellist_merge_into_bitvectorvoxellist_minimal)
 
     // list2->as<BitVectorVoxelList>()->screendump(true); //DEBUG
 
-    thrust::device_vector<Cube> *d_cubes = NULL;
+    parallel::device_vector<Cube> *d_cubes = NULL;
     list2->as<BitVectorVoxelList>()->extractCubes(&d_cubes);
-    thrust::host_vector<Cube> h_cubes = *d_cubes;
+    parallel::host_vector<Cube> h_cubes = *d_cubes;
 
     BOOST_CHECK_MESSAGE(h_cubes.size() == 4, "Number of cubes after merge == 4 ");
 
@@ -846,9 +846,9 @@ BOOST_AUTO_TEST_CASE(countingvoxellist_subtract_bitvectorvoxellist)
     //list1.subtract(&list2, Vector3f());
     list1.subtractFromCountingVoxelList(&list2, Vector3f());
 
-    thrust::device_vector<Cube>* d_cubes = NULL;
+    parallel::device_vector<Cube>* d_cubes = NULL;
     list1.extractCubes(&d_cubes);
-    thrust::host_vector<Cube> h_cubes = *d_cubes;
+    parallel::host_vector<Cube> h_cubes = *d_cubes;
 
     BOOST_CHECK_MESSAGE(h_cubes.size() == 19, "Number of cubes after subtract == 19");
 

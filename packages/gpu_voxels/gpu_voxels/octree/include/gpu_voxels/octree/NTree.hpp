@@ -124,8 +124,8 @@ namespace gpu_voxels {
 			for (uint32_t i = 0; i < num_items - 1; ++i)
 			{
 				T item_a, item_b;
-				cudaMemcpy((void*)&item_a, (void*)&data[i], sizeof(T), cudaMemcpyDeviceToHost);
-				cudaMemcpy((void*)&item_b, (void*)&data[i + 1], sizeof(T), cudaMemcpyDeviceToHost);
+				GVL_MEMCPY((void*)&item_a, (void*)&data[i], sizeof(T), GVL_MEMCPY_DEVICE_TO_HOST);
+				GVL_MEMCPY((void*)&item_b, (void*)&data[i + 1], sizeof(T), GVL_MEMCPY_DEVICE_TO_HOST);
 				if (!(item_a < item_b))
 				{
 					LOGGING_DEBUG(OctreeLog, "index " << i << " " << item_a << " < " << item_b << endl);
@@ -194,7 +194,7 @@ namespace gpu_voxels {
 
 		struct Trafo_Voxel_to_BasicData
 		{
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Environment::InnerNode::NodeData::BasicData operator()(const Voxel x)
 			{
 				Environment::InnerNode::NodeData::BasicData b(0, 0);
@@ -208,7 +208,7 @@ namespace gpu_voxels {
 
 		struct Trafo_Voxel_to_BasicDataProb
 		{
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Environment::NodeProb::NodeData::BasicData operator()(const Voxel x)
 			{
 				Environment::NodeProb::NodeData::BasicData b(0, 0, 0);
@@ -217,20 +217,20 @@ namespace gpu_voxels {
 			}
 		};
 
-		void getBasicData(thrust::device_vector<Voxel>& voxel,
-			thrust::device_vector<Environment::InnerNode::NodeData::BasicData>& basic_data)
+		void getBasicData(parallel::device_vector<Voxel>& voxel,
+			parallel::device_vector<Environment::InnerNode::NodeData::BasicData>& basic_data)
 		{
 			basic_data.resize(voxel.size());
-			thrust::transform(voxel.begin(), voxel.end(), basic_data.begin(), Trafo_Voxel_to_BasicData());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::transform(voxel.begin(), voxel.end(), basic_data.begin(), Trafo_Voxel_to_BasicData());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
-		void getBasicData(thrust::device_vector<Voxel>& voxel,
-			thrust::device_vector<Environment::NodeProb::NodeData::BasicData>& basic_data)
+		void getBasicData(parallel::device_vector<Voxel>& voxel,
+			parallel::device_vector<Environment::NodeProb::NodeData::BasicData>& basic_data)
 		{
 			basic_data.resize(voxel.size());
-			thrust::transform(voxel.begin(), voxel.end(), basic_data.begin(), Trafo_Voxel_to_BasicDataProb());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::transform(voxel.begin(), voxel.end(), basic_data.begin(), Trafo_Voxel_to_BasicDataProb());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		/**
@@ -309,10 +309,10 @@ namespace gpu_voxels {
 			auto* r = new InnerNode();
 			initRoot(*r);
 			r->setStatus(r->getStatus() | ns_STATIC_MAP | ns_DYNAMIC_MAP);
-			HANDLE_CUDA_ERROR(cudaMalloc(&m_root, sizeof(InnerNode)));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaMemcpy(m_root, r, sizeof(InnerNode), cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_MALLOC(&m_root, sizeof(InnerNode)));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(GVL_MEMCPY(m_root, r, sizeof(InnerNode), GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			m_allocation_list.push_back(m_root);
 			delete r;
 
@@ -334,21 +334,21 @@ namespace gpu_voxels {
 					mapping[i] = gpu_voxels::eBVM_COLLISION;
 			// mapping[i] = gpu_voxels::eBVM_COLLISION;
 
-			HANDLE_CUDA_ERROR(cudaMalloc(&m_status_mapping, mapping_size * sizeof(uint8_t)));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(
-				cudaMemcpy(m_status_mapping, mapping, mapping_size * sizeof(uint8_t), cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_MALLOC(&m_status_mapping, mapping_size * sizeof(uint8_t)));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(
+				GVL_MEMCPY(m_status_mapping, mapping, mapping_size * sizeof(uint8_t), GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			// create default extract data status selection
 			uint8_t selection[extract_selection_size];
 			memset(selection, 1, extract_selection_size * sizeof(uint8_t));
 
-			HANDLE_CUDA_ERROR(cudaMalloc(&m_extract_status_selection, extract_selection_size * sizeof(uint8_t)));
-			HANDLE_CUDA_ERROR(
-				cudaMemcpy(m_extract_status_selection, selection, extract_selection_size * sizeof(uint8_t),
-					cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_MALLOC(&m_extract_status_selection, extract_selection_size * sizeof(uint8_t)));
+			GVL_HANDLE_ERROR(
+				GVL_MEMCPY(m_extract_status_selection, selection, extract_selection_size * sizeof(uint8_t),
+					GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			init_const_memory();
 		}
@@ -357,31 +357,31 @@ namespace gpu_voxels {
 		NTree<branching_factor, level_count, InnerNode, LeafNode>::~NTree()
 		{
 			for (uint32_t i = 0; i < m_allocation_list.size(); ++i)
-				HANDLE_CUDA_ERROR(cudaFree(m_allocation_list[i]));
+				GVL_HANDLE_ERROR(GVL_FREE(m_allocation_list[i]));
 			m_allocation_list.clear();
 
-			HANDLE_CUDA_ERROR(cudaFree(m_status_mapping));
-			HANDLE_CUDA_ERROR(cudaFree(m_extract_status_selection));
+			GVL_HANDLE_ERROR(GVL_FREE(m_status_mapping));
+			GVL_HANDLE_ERROR(GVL_FREE(m_extract_status_selection));
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::build(
-			thrust::host_vector<Vector3ui>& h_points, const bool free_bounding_box)
+			parallel::host_vector<Vector3ui>& h_points, const bool free_bounding_box)
 		{
-			thrust::device_vector<Vector3ui> d_points = h_points;
+			parallel::device_vector<Vector3ui> d_points = h_points;
 			build(d_points, free_bounding_box);
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::toVoxelCoordinates(
-			thrust::host_vector<Vector3f>& h_points, thrust::device_vector<Vector3ui>& d_voxels)
+			parallel::host_vector<Vector3f>& h_points, parallel::device_vector<Vector3ui>& d_voxels)
 		{
 			const size_t num_points = h_points.size();
 			d_voxels.resize(num_points);
-			thrust::device_vector<Vector3f> d_points = h_points;
+			parallel::device_vector<Vector3f> d_points = h_points;
 			kernel_toVoxels<<<numBlocks, numThreadsPerBlock>>>(D_PTR(d_points), num_points, D_PTR(d_voxels), m_resolution / 1000.0f);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		/*
@@ -390,7 +390,7 @@ namespace gpu_voxels {
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::build(
-			const thrust::device_vector<Vector3ui>& d_points, const bool free_bounding_box)
+			const parallel::device_vector<Vector3ui>& d_points, const bool free_bounding_box)
 		{
 #define SORT_WITH_CUB false
 			const std::string prefix = __FUNCTION__;
@@ -423,18 +423,18 @@ namespace gpu_voxels {
 			// transform points into morton code
 			// throughput ~ 3.8 GB/s
 			PERF_MON_START(temp_timer);
-			thrust::device_vector<OctreeVoxelID> d_voxels(num_points);
+			parallel::device_vector<OctreeVoxelID> d_voxels(num_points);
 			kernel_toMortonCode<<<num_blocks, num_threads_per_block>>>(D_PTR(d_points), num_points, D_PTR(d_voxels));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			//// Host-side computation -> slowdown by a factor of about 10
-			//  thrust::device_vector<voxel_id> voxel;
-			//  thrust::host_vector<voxel_id> h_voxel(h_points.size());
+			//  parallel::device_vector<voxel_id> voxel;
+			//  parallel::host_vector<voxel_id> h_voxel(h_points.size());
 			//  for (uint32_t i = 0; i < h_points.size(); ++i)
 			//    h_voxel[i] = morton_code60(h_points[i].x, h_points[i].y, h_points[i].z);
 			//  voxel = h_voxel;
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "ToMorton", prefix);
 			PERF_MON_ADD_STATIC_DATA_P("Voxel", num_points, "build");
 
@@ -458,7 +458,7 @@ namespace gpu_voxels {
 
 			if constexpr (SORT_WITH_CUB)
 			{
-				thrust::device_vector<OctreeVoxelID> voxel_tmp(num_points);
+				parallel::device_vector<OctreeVoxelID> voxel_tmp(num_points);
 				OctreeVoxelID* d_key_buf = D_PTR(d_voxels);
 				OctreeVoxelID* d_key_alt_buf = D_PTR(voxel_tmp);
 				cub::DoubleBuffer<OctreeVoxelID> d_keys(d_key_buf, d_key_alt_buf);
@@ -467,20 +467,20 @@ namespace gpu_voxels {
 				size_t temp_storage_bytes = 0;
 				cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_points);
 				// Allocate temporary storage
-				HANDLE_CUDA_ERROR(cudaMalloc(&d_temp_storage, temp_storage_bytes));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&d_temp_storage, temp_storage_bytes));
 				// Run sorting operation
 				cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_points);
-				HANDLE_CUDA_ERROR(cudaFree(d_temp_storage));
+				GVL_HANDLE_ERROR(GVL_FREE(d_temp_storage));
 				if (d_keys.Current() != d_key_buf)
 					voxel_tmp.swap(d_voxels);
 			}
 			else
-				thrust::sort(d_voxels.begin(), d_voxels.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+				parallel::sort(d_voxels.begin(), d_voxels.end());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 #ifndef LOAD_BALANCING_PROPAGATE
-			thrust::device_vector<OctreeVoxelID> voxel_copy = d_voxels;
+			parallel::device_vector<OctreeVoxelID> voxel_copy = d_voxels;
 #endif
-			LOGGING_DEBUG(OctreeLog, "thrust::sort(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			LOGGING_DEBUG(OctreeLog, "parallel::sort(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #ifdef DEBUG_MODE_EX
 			for (uint32_t i = 0; i < num_points; ++i)
 			{
@@ -506,13 +506,13 @@ namespace gpu_voxels {
 
 			// holds the zOrder IDs of the next level, since InnerNode doesn't store these.
 			// necessary to determine which InnerNodes have the same parent InnerNode
-			thrust::device_vector<OctreeVoxelID> nodeIds(num_points);
+			parallel::device_vector<OctreeVoxelID> nodeIds(num_points);
 
 #ifdef DEBUG_MODE
 			LOGGING_DEBUG(OctreeDebugLog, "allocating nodeCount..." << endl);
 #endif
 
-			thrust::device_vector<OctreeVoxelID> nodeCount(numBlocks * num_threads_per_block);
+			parallel::device_vector<OctreeVoxelID> nodeCount(numBlocks * num_threads_per_block);
 
 #ifdef DEBUG_MODE
 			LOGGING_DEBUG(OctreeDebugLog, "loop start" << endl);
@@ -531,8 +531,8 @@ namespace gpu_voxels {
 				kernel_countNodes<branching_factor, level_count, InnerNode, LeafNode> << <numBlocks, num_threads_per_block >> > (
 					D_PTR(d_voxels), num_points,
 					level, D_PTR(nodeCount));
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				uint32_t lastThread = ceil(static_cast<double>(num_points) / ceil(static_cast<double>(num_points) / (numBlocks * num_threads_per_block))) - 1;
 
@@ -549,8 +549,8 @@ namespace gpu_voxels {
 				//        std::cout << "lastThread: " << lastThread << std::endl;
 #endif
 
-				thrust::inclusive_scan(nodeCount.begin(), nodeCount.begin() + lastThread + 1, nodeCount.begin());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+				parallel::inclusive_scan(nodeCount.begin(), nodeCount.begin() + lastThread + 1, nodeCount.begin());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 
 #ifdef DEBUG_MODE
 				LOGGING_DEBUG(OctreeDebugLog, "voxel counted" << endl);
@@ -567,8 +567,8 @@ namespace gpu_voxels {
 		// Allocate nodes, set nodes, set child pointers
 				OctreeVoxelID numNodes = nodeCount[lastThread];
 				void* nodes = nullptr;
-				HANDLE_CUDA_ERROR(
-					cudaMalloc(&nodes,
+				GVL_HANDLE_ERROR(
+					GVL_MALLOC(&nodes,
 						branching_factor * numNodes * ((level == 0) ? sizeof(LeafNode) : sizeof(InnerNode))));
 				m_allocation_list.push_back(nodes);
 
@@ -580,16 +580,16 @@ namespace gpu_voxels {
 				{
 					this->allocLeafNodes += branching_factor * numNodes;
 					kernel_clearNodes<LeafNode, false> << <numBlocks, num_threads_per_block >> > (branching_factor * numNodes, (LeafNode*)nodes);
-					CHECK_CUDA_ERROR();
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					GVL_CHECK_ERROR();
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef DEBUG_MODE
 					LOGGING_DEBUG(OctreeDebugLog, "clearNodes done L0" << endl);
 #endif
 					kernel_setNodes<LeafNode, InnerNode, branching_factor> << <numBlocks, num_threads_per_block >> > (
 						D_PTR(d_voxels), num_points, level, D_PTR(nodeCount),
 						(LeafNode*)nodes, D_PTR(nodeIds), (InnerNode*)childNodes);
-					CHECK_CUDA_ERROR();
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					GVL_CHECK_ERROR();
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef DEBUG_MODE
 					LOGGING_DEBUG(OctreeDebugLog, "setNodes done L0" << endl);
 #endif
@@ -603,22 +603,22 @@ namespace gpu_voxels {
 					if (level == 1)
 					{
 						kernel_clearNodes<InnerNode, true> << <numBlocks, num_threads_per_block >> > (branching_factor * numNodes, (InnerNode*)nodes);
-						CHECK_CUDA_ERROR();
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						GVL_CHECK_ERROR();
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 						kernel_setNodes<InnerNode, LeafNode, branching_factor> << <numBlocks, num_threads_per_block >> > (
 							D_PTR(d_voxels), num_points, level, D_PTR(nodeCount),
 							(InnerNode*)nodes, D_PTR(nodeIds), (LeafNode*)childNodes);
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 					}
 					else
 					{
 						kernel_clearNodes<InnerNode, false> << <numBlocks, num_threads_per_block >> > (branching_factor * numNodes, (InnerNode*)nodes);
-						CHECK_CUDA_ERROR();
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						GVL_CHECK_ERROR();
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 						kernel_setNodes<InnerNode, InnerNode, branching_factor> << <numBlocks, num_threads_per_block >> > (
 							D_PTR(d_voxels), num_points, level, D_PTR(nodeCount),
 							(InnerNode*)nodes, D_PTR(nodeIds), (InnerNode*)childNodes);
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 					}
 #ifdef DEBUG_MODE
 					LOGGING_DEBUG(OctreeDebugLog, "setNodes done" << endl);
@@ -632,11 +632,11 @@ namespace gpu_voxels {
 			}
 			m_root = (InnerNode*)childNodes;
 			InnerNode k;
-			HANDLE_CUDA_ERROR(cudaMemcpy(&k, m_root, sizeof(InnerNode), cudaMemcpyDeviceToHost));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(&k, m_root, sizeof(InnerNode), GVL_MEMCPY_DEVICE_TO_HOST));
 			initRoot(k);
 			k.setStatus(k.getStatus() | ns_STATIC_MAP);
-			HANDLE_CUDA_ERROR(cudaMemcpy(m_root, &k, sizeof(InnerNode), cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_MEMCPY(m_root, &k, sizeof(InnerNode), GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			PERF_MON_PRINT_INFO_P(temp2_timer, "Build_L_ALL", prefix);
 
 			if (free_bounding_box)
@@ -665,71 +665,71 @@ namespace gpu_voxels {
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::print()
 		{
-			thrust::device_vector<InnerNode> stack1(1000000);
-			thrust::device_vector<InnerNode> stack2(1000000);
+			parallel::device_vector<InnerNode> stack1(1000000);
+			parallel::device_vector<InnerNode> stack2(1000000);
 			kernel_print<branching_factor, level_count, InnerNode, LeafNode> << <1, 1 >> > (m_root, D_PTR(stack1), D_PTR(stack2));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::print2()
 		{
-			thrust::device_vector<MyTripple<InnerNode*, OctreeVoxelID, bool> > stack1(10000000);
-			thrust::device_vector<MyTripple<InnerNode*, OctreeVoxelID, bool> > stack2(10000000);
+			parallel::device_vector<MyTripple<InnerNode*, OctreeVoxelID, bool> > stack1(10000000);
+			parallel::device_vector<MyTripple<InnerNode*, OctreeVoxelID, bool> > stack2(10000000);
 			kernel_print2<branching_factor, level_count, InnerNode, LeafNode> << <1, 1 >> > (m_root, D_PTR(stack1), D_PTR(stack2));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::find(
-			thrust::device_vector<Vector3ui> voxel, void** resultNode,
-			thrust::device_vector<enum NodeType> resultNodeType)
+			parallel::device_vector<Vector3ui> voxel, void** resultNode,
+			parallel::device_vector<enum NodeType> resultNodeType)
 		{
 			assert(voxel.size() == resultNodeType.size());
 			kernel_find<branching_factor, level_count, InnerNode, LeafNode> << <numBlocks, numThreadsPerBlock >> > (
 				m_root, D_PTR(voxel), voxel.size(),
 				resultNode, D_PTR(resultNodeType));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		voxel_count NTree<branching_factor, level_count, InnerNode, LeafNode>::intersect(
-			thrust::host_vector<Vector3ui>& h_voxel)
+			parallel::host_vector<Vector3ui>& h_voxel)
 		{
 			//// Is about 30 ms whereas the current implementation is ~18 ms
-			//  thrust::device_vector<Vector3ui> d_points = h_voxel;
-			//  thrust::device_vector<voxel_id> voxel(h_voxel.size());
+			//  parallel::device_vector<Vector3ui> d_points = h_voxel;
+			//  parallel::device_vector<voxel_id> voxel(h_voxel.size());
 			//  kernel_toMortonCode <<<numBlocks, numThreadsPerBlock>>> (D_PTR(d_points), h_voxel.size(), D_PTR(voxel));
-			//  CHECK_CUDA_ERROR();
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_CHECK_ERROR();
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  d_points.clear();
 			//  d_points.shrink_to_fit();
-			//  thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-			//  thrust::sort(voxel.begin(), voxel.end());
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+			//  parallel::sort(voxel.begin(), voxel.end());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  kernel_intersect<<<numBlocks, numThreadsPerBlock>>>(m_root, D_PTR(voxel), h_voxel.size(), D_PTR(d_num_collisions));
-			//  CHECK_CUDA_ERROR();
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			//  voxel_count collisions = thrust::reduce(d_num_collisions.begin(), d_num_collisions.end());
+			//  GVL_CHECK_ERROR();
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			//  voxel_count collisions = parallel::reduce(d_num_collisions.begin(), d_num_collisions.end());
 			//  return collisions;
 
 			timespec t = getCPUTime();
-			thrust::device_vector<Vector3ui> d_voxel = h_voxel;
-			thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::device_vector<Vector3ui> d_voxel = h_voxel;
+			parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			LOGGING_INFO(OctreeLog, "malloc and copy: " << timeDiff(t, getCPUTime()) << " ms" << endl);
 			t = getCPUTime();
 			kernel_intersect<branching_factor, level_count, InnerNode, LeafNode> << <numBlocks, numThreadsPerBlock >> > (
 				m_root, D_PTR(d_voxel), h_voxel.size(), D_PTR(d_num_collisions));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			LOGGING_INFO(OctreeLog, "kernel_intersect(): " << timeDiff(t, getCPUTime()) << " ms" << endl);
 			t = getCPUTime();
-			voxel_count collisions = thrust::reduce(d_num_collisions.begin(), d_num_collisions.end());
-			LOGGING_INFO(OctreeLog, "thrust::reduce(): " << timeDiff(t, getCPUTime()) << " ms" << endl);
+			voxel_count collisions = parallel::reduce(d_num_collisions.begin(), d_num_collisions.end());
+			LOGGING_INFO(OctreeLog, "parallel::reduce(): " << timeDiff(t, getCPUTime()) << " ms" << endl);
 			return collisions;
 		}
 
@@ -746,8 +746,8 @@ namespace gpu_voxels {
 		//  const std::string prefix = __FUNCTION__;
 		//  PERF_MON_START(prefix);
 		//
-		//  thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-		//  thrust::device_vector<BitVector<VTF_SIZE> > d_voxelTypeFlags(numBlocks);
+		//  parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+		//  parallel::device_vector<BitVector<VTF_SIZE> > d_voxelTypeFlags(numBlocks);
 		//
 		//  kernel_intersect_VoxelMap<
 		//  branching_factor,
@@ -767,18 +767,18 @@ namespace gpu_voxels {
 		//      D_PTR(d_voxelTypeFlags),
 		//      min_level,
 		//      offset);
-		//   CHECK_CUDA_ERROR();
+		//   GVL_CHECK_ERROR();
 		//
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//
-		//  thrust::host_vector<voxel_count> h_num_collisions = d_num_collisions;
-		//  voxel_count collisions = thrust::reduce(h_num_collisions.begin(), h_num_collisions.end());
+		//  parallel::host_vector<voxel_count> h_num_collisions = d_num_collisions;
+		//  voxel_count collisions = parallel::reduce(h_num_collisions.begin(), h_num_collisions.end());
 		//  if (compute_voxelTypeFlags)
 		//  {
-		//    thrust::host_vector<BitVector<VTF_SIZE> > h_voxelTypeFlags = d_voxelTypeFlags;
+		//    parallel::host_vector<BitVector<VTF_SIZE> > h_voxelTypeFlags = d_voxelTypeFlags;
 		//    BitVector<VTF_SIZE> init;
 		//    init.clear();
-		//    *h_result_voxelTypeFlags = thrust::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
+		//    *h_result_voxelTypeFlags = parallel::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
 		//                                              typename BitVector<VTF_SIZE>::reduce_op());
 		//  }
 		//
@@ -800,9 +800,9 @@ namespace gpu_voxels {
 			const std::string prefix = __FUNCTION__;
 			PERF_MON_START(prefix);
 
-			thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-			thrust::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
-			thrust::device_vector<VoxelType> d_voxelTypeFlags(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
+			parallel::device_vector<VoxelType> d_voxelTypeFlags(numBlocks);
 
 			kernel_intersect_VoxelMap<
 				branching_factor,
@@ -823,24 +823,24 @@ namespace gpu_voxels {
 					D_PTR(d_voxelTypeFlags),
 					min_level,
 					offset);
-			CHECK_CUDA_ERROR();
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			thrust::host_vector<voxel_count> h_num_collisions = d_num_collisions;
-			const voxel_count collisions = thrust::reduce(h_num_collisions.begin(), h_num_collisions.end());
+			parallel::host_vector<voxel_count> h_num_collisions = d_num_collisions;
+			const voxel_count collisions = parallel::reduce(h_num_collisions.begin(), h_num_collisions.end());
 
 			if (compute_collsWithUnknown)
 			{
-				thrust::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
-				*num_colls_with_unknown_cells = thrust::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
+				parallel::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
+				*num_colls_with_unknown_cells = parallel::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
 			}
 
 			if (compute_voxelTypeFlags)
 			{
-				thrust::host_vector<VoxelType> h_voxelTypeFlags = d_voxelTypeFlags;
+				parallel::host_vector<VoxelType> h_voxelTypeFlags = d_voxelTypeFlags;
 				VoxelType init;
-				*h_result_voxel = thrust::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
+				*h_result_voxel = parallel::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
 					typename VoxelType::reduce_op());
 			}
 
@@ -862,9 +862,9 @@ namespace gpu_voxels {
 			const std::string prefix = __FUNCTION__;
 			PERF_MON_START(prefix);
 
-			thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-			thrust::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
-			thrust::device_vector<BitVectorVoxel> d_voxelTypeFlags(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
+			parallel::device_vector<BitVectorVoxel> d_voxelTypeFlags(numBlocks);
 
 			kernel_intersect_VoxelList<
 				branching_factor,
@@ -885,24 +885,24 @@ namespace gpu_voxels {
 					D_PTR(d_voxelTypeFlags),
 					min_level,
 					offset);
-			CHECK_CUDA_ERROR();
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			thrust::host_vector<voxel_count> h_num_collisions = d_num_collisions;
-			voxel_count collisions = thrust::reduce(h_num_collisions.begin(), h_num_collisions.end());
+			parallel::host_vector<voxel_count> h_num_collisions = d_num_collisions;
+			voxel_count collisions = parallel::reduce(h_num_collisions.begin(), h_num_collisions.end());
 
 			if (compute_collsWithUnknown)
 			{
-				thrust::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
-				*num_colls_with_unknown_cells = thrust::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
+				parallel::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
+				*num_colls_with_unknown_cells = parallel::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
 			}
 
 			if (compute_voxelTypeFlags)
 			{
-				thrust::host_vector<BitVectorVoxel> h_voxelTypeFlags = d_voxelTypeFlags;
+				parallel::host_vector<BitVectorVoxel> h_voxelTypeFlags = d_voxelTypeFlags;
 				BitVectorVoxel init;
-				*h_result_voxel = thrust::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
+				*h_result_voxel = parallel::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
 					typename BitVectorVoxel::reduce_op());
 			}
 
@@ -927,9 +927,9 @@ namespace gpu_voxels {
 			const std::string prefix = __FUNCTION__;
 			PERF_MON_START(prefix);
 
-			thrust::device_vector<voxel_count> d_num_collisions(numBlocks);
-			thrust::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
-			thrust::device_vector<BitVectorVoxel> d_voxelTypeFlags(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
+			parallel::device_vector<voxel_count> d_num_collisions_w_unknown(numBlocks);
+			parallel::device_vector<BitVectorVoxel> d_voxelTypeFlags(numBlocks);
 
 			kernel_intersect_MortonVoxelList<
 				branching_factor,
@@ -949,24 +949,24 @@ namespace gpu_voxels {
 					D_PTR(d_num_collisions_w_unknown),
 					D_PTR(d_voxelTypeFlags),
 					min_level);
-			CHECK_CUDA_ERROR();
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			thrust::host_vector<voxel_count> h_num_collisions = d_num_collisions;
-			voxel_count collisions = thrust::reduce(h_num_collisions.begin(), h_num_collisions.end());
+			parallel::host_vector<voxel_count> h_num_collisions = d_num_collisions;
+			voxel_count collisions = parallel::reduce(h_num_collisions.begin(), h_num_collisions.end());
 
 			if (compute_collsWithUnknown)
 			{
-				thrust::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
-				*num_colls_with_unknown_cells = thrust::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
+				parallel::host_vector<voxel_count> h_num_collisions_w_unknown = d_num_collisions_w_unknown;
+				*num_colls_with_unknown_cells = parallel::reduce(h_num_collisions_w_unknown.begin(), h_num_collisions_w_unknown.end());
 			}
 
 			if (compute_voxelTypeFlags)
 			{
-				thrust::host_vector<BitVectorVoxel> h_voxelTypeFlags = d_voxelTypeFlags;
+				parallel::host_vector<BitVectorVoxel> h_voxelTypeFlags = d_voxelTypeFlags;
 				BitVectorVoxel init;
-				*h_result_voxel = thrust::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
+				*h_result_voxel = parallel::reduce(h_voxelTypeFlags.begin(), h_voxelTypeFlags.end(), init,
 					typename BitVectorVoxel::reduce_op());
 			}
 
@@ -1014,15 +1014,15 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::find(
-			thrust::host_vector<Vector3ui>& h_voxel, thrust::host_vector<FindResult<LeafNode> >& resultNode)
+			parallel::host_vector<Vector3ui>& h_voxel, parallel::host_vector<FindResult<LeafNode> >& resultNode)
 		{
 			assert(h_voxel.size() == resultNode.size());
-			thrust::device_vector<Vector3ui> voxel(h_voxel);
-			thrust::device_vector<FindResult<LeafNode> > result(resultNode.size());
+			parallel::device_vector<Vector3ui> voxel(h_voxel);
+			parallel::device_vector<FindResult<LeafNode> > result(resultNode.size());
 			kernel_find<branching_factor, level_count, InnerNode, LeafNode> << <numBlocks, numThreadsPerBlock >> > (
 				m_root, D_PTR(voxel), voxel.size(), D_PTR(result));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			resultNode = result;
 		}
 
@@ -1035,7 +1035,7 @@ namespace gpu_voxels {
 			const uint32_t numBlocks = this->numBlocks;
 			const uint32_t numThreadsPerBlock = this->numThreadsPerBlock;
 
-			thrust::device_vector<OctreeVoxelID> numConflicts(numBlocks * numThreadsPerBlock);
+			parallel::device_vector<OctreeVoxelID> numConflicts(numBlocks * numThreadsPerBlock);
 
 			//const uint32_t level_count = robot->level_count;
 			LOGGING_INFO(OctreeLog, "level_count:  " << level_count << endl);
@@ -1045,17 +1045,17 @@ namespace gpu_voxels {
 			LOGGING_INFO(OctreeLog, "llog: " << llog << " splitLevel " << splitLevel << endl);
 
 #ifdef SHARED_STACK
-			uint32_t sMem = numThreadsPerBlock * splitLevel * branching_factor * sizeof(thrust::pair<InnerNode, InnerNode>);
+			uint32_t sMem = numThreadsPerBlock * splitLevel * branching_factor * sizeof(parallel::pair<InnerNode, InnerNode>);
 			LOGGING_DEBUG(OctreeLog, "sMem size: " << sMem << endl);
 #endif
 
 #ifdef SMALL_STACK
-			thrust::device_vector<Triple<InnerNode*, InnerNode*, numChild> > stack(
+			parallel::device_vector<Triple<InnerNode*, InnerNode*, numChild> > stack(
 				numBlocks * numThreadsPerBlock * splitLevel);
 #endif
 
 #ifdef DEFAULT
-			thrust::device_vector<thrust::pair<InnerNode*, o_InnerNode*> > stack(
+			parallel::device_vector<parallel::pair<InnerNode*, o_InnerNode*> > stack(
 				numBlocks * numThreadsPerBlock * splitLevel * branching_factor);
 #endif
 
@@ -1063,49 +1063,49 @@ namespace gpu_voxels {
 
 			time = getCPUTime();
 #ifdef COALESCED
-			uint32_t sMem = numThreadsPerBlock * sizeof(thrust::pair<LeafNode*, o_LeafNode*>);
+			uint32_t sMem = numThreadsPerBlock * sizeof(parallel::pair<LeafNode*, o_LeafNode*>);
 			kernel_intersect_wo_stack_coalesced<branching_factor, level_count, InnerNode, LeafNode, o_InnerNode,
 				o_LeafNode> << <numBlocks, numThreadsPerBlock, sMem >> > (m_root, *other, D_PTR(numConflicts),
 					splitLevel);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
 #ifdef WITHOUT_STACK
 			kernel_intersect_wo_stack << <numBlocks, numThreadsPerBlock >> > (*robot, *environment,
 				D_PTR(numConflicts), splitLevel);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
 #ifdef SMALL_STACK
 			kernel_intersect_smallStack << <numBlocks, numThreadsPerBlock >> > (*robot, *environment,
 				D_PTR(numConflicts),
 				D_PTR(stack), splitLevel);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
 #ifdef SHARED_STACK
 			kernel_intersect_shared << <numBlocks, numThreadsPerBlock, sMem >> > (*robot, *environment,
 				D_PTR(numConflicts), splitLevel);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
 #ifdef DEFAULT
 			kernel_intersect<branching_factor, level_count, InnerNode, LeafNode, o_InnerNode, o_LeafNode> << <
 				numBlocks, numThreadsPerBlock >> > (m_root, other->m_root, D_PTR(numConflicts),
 					D_PTR(stack), splitLevel);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
 			LOGGING_INFO(OctreeLog, "kernel_intersect: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 
 			time = getCPUTime();
-			OctreeVoxelID res = thrust::reduce(numConflicts.begin(), numConflicts.end());
-			LOGGING_INFO(OctreeLog, "thrust::reduce: " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			OctreeVoxelID res = parallel::reduce(numConflicts.begin(), numConflicts.end());
+			LOGGING_INFO(OctreeLog, "parallel::reduce: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 
 			return res;
 		}
@@ -1175,8 +1175,8 @@ namespace gpu_voxels {
 
 		//template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		//void NTree<branching_factor, level_count, InnerNode, LeafNode>::computeFreeSpaceViaRayCast_VoxelList(
-		//    thrust::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
-		//    thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels)
+		//    parallel::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
+		//    parallel::host_vector<parallel::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels)
 		//{
 		//  const uint32_t numThreadsPerBlock = 32;
 		//
@@ -1190,17 +1190,17 @@ namespace gpu_voxels {
 		//      * max_depth_in_voxel;
 		//  printf("max_size_free_space: %u\n", max_size_free_space);
 		//  size_t size = max_size_free_space * sizeof(OctreeVoxelID);
-		//  thrust::device_vector<OctreeVoxelID> d_free_space(max_size_free_space, INVALID_VOXEL);
-		//  thrust::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  parallel::device_vector<OctreeVoxelID> d_free_space(max_size_free_space, INVALID_VOXEL);
+		//  parallel::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		////d_voxel_count.back() = 0;
 		//  printf("Alloc %f MB for free space: %f ms\n", double(size) * cBYTE2MBYTE, timeDiff(time, getCPUTime()));
 		//  time = getCPUTime();
 		//
 		//// ##### init free space #####
-		////  HANDLE_CUDA_ERROR(
+		////  GVL_HANDLE_ERROR(
 		////      cudaMemset((void*) D_PTR(d_free_space), (int) INVALID_VOXEL, max_size_free_space * sizeof(voxel_id)));
-		////  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		////  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		////  double diff = timeDiff(time, getCPUTime());
 		////  printf("Init free space with %f GB/s: %f ms\n", double(size) / 1024.0 / 1024.0 / 1024.0 / (diff / 1000.0),
 		////         diff);
@@ -1209,21 +1209,21 @@ namespace gpu_voxels {
 		//// ##### ray cast #####
 		//  kernel_rayInsert<false, false, branching_factor> <<<numBlocks, numThreadsPerBlock>>>(D_PTR(d_occupied_voxel),kinect_points,
 		//      sensor_origin, D_PTR(d_free_space), D_PTR(d_voxel_count), max_depth_in_voxel * numThreadsPerBlock);
-		//  CHECK_CUDA_ERROR();
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_CHECK_ERROR();
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//  printf("Ray cast: %f ms\n", timeDiff(time, getCPUTime()));
 		//
 		//// ##### sort #####
 		//  time = getCPUTime();
-		//  thrust::sort(d_free_space.begin(), d_free_space.end());
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-		//  printf("thrust::sort(): %f ms\n", timeDiff(time, getCPUTime()));
+		//  parallel::sort(d_free_space.begin(), d_free_space.end());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+		//  printf("parallel::sort(): %f ms\n", timeDiff(time, getCPUTime()));
 		//  time = getCPUTime();
-		//  uint32_t num_free_voxel = thrust::reduce(d_voxel_count.begin(), d_voxel_count.end());
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  uint32_t num_free_voxel = parallel::reduce(d_voxel_count.begin(), d_voxel_count.end());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//  d_voxel_count.clear();
 		//  d_voxel_count.shrink_to_fit();
-		//  printf("thrust::reduce(): %f ms\n", timeDiff(time, getCPUTime()));
+		//  printf("parallel::reduce(): %f ms\n", timeDiff(time, getCPUTime()));
 		//  printf("num_free_voxel: %u\n", num_free_voxel);
 		//
 		//// alternative: http://stackoverflow.com/questions/12463693/how-to-remove-zero-values-from-an-array-in-parallel
@@ -1233,11 +1233,11 @@ namespace gpu_voxels {
 		//  uint32_t remove_invalid_val = 0;
 		//  if (((OctreeVoxelID) d_free_space.back()) == INVALID_VOXEL)
 		//    remove_invalid_val = 1;
-		//  d_free_space.erase(thrust::unique(d_free_space.begin(), d_free_space.end()) - remove_invalid_val,
+		//  d_free_space.erase(parallel::unique(d_free_space.begin(), d_free_space.end()) - remove_invalid_val,
 		//                     d_free_space.end());
 		//  num_free_wo_duplicates = d_free_space.size();
-		//  thrust::device_vector<OctreeVoxelID> d_free_space_wo_duplicates(1);
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  parallel::device_vector<OctreeVoxelID> d_free_space_wo_duplicates(1);
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//  d_free_space_wo_duplicates.swap(d_free_space);
 		//  d_free_space_wo_duplicates.shrink_to_fit();
 		//
@@ -1246,22 +1246,22 @@ namespace gpu_voxels {
 		//
 		////assert(checkSorting(D_PTR(d_free_space_wo_duplicates), num_free_wo_duplicates));
 		//
-		////  thrust::device_vector<voxel_count> d_num_voxel_wo_duplicates(numBlocks + 1); // TODO: do this on host side -> faster
+		////  parallel::device_vector<voxel_count> d_num_voxel_wo_duplicates(numBlocks + 1); // TODO: do this on host side -> faster
 		////  d_num_voxel_wo_duplicates.back() = 0;
 		////  kernel_removeDuplicates<true> <<< numBlocks, numThreadsPerBlock >>>(
 		////      D_PTR(d_free_space), max_size_free_space, nullptr, D_PTR(d_num_voxel_wo_duplicates));
-		////  CHECK_CUDA_ERROR();
-		////  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-		////  thrust::exclusive_scan(d_num_voxel_wo_duplicates.begin(), d_num_voxel_wo_duplicates.end(),
+		////  GVL_CHECK_ERROR();
+		////  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+		////  parallel::exclusive_scan(d_num_voxel_wo_duplicates.begin(), d_num_voxel_wo_duplicates.end(),
 		////                         d_num_voxel_wo_duplicates.begin());
-		////  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		////  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		////
 		////  voxel_count num_free_wo_duplicates = (voxel_count) d_num_voxel_wo_duplicates.back();
-		////  thrust::device_vector<voxel_id> d_free_space_wo_duplicates(num_free_wo_duplicates);
+		////  parallel::device_vector<voxel_id> d_free_space_wo_duplicates(num_free_wo_duplicates);
 		////  kernel_removeDuplicates<false> <<< numBlocks, numThreadsPerBlock >>>(D_PTR(d_free_space), max_size_free_space,
 		////      D_PTR(d_free_space_wo_duplicates), D_PTR(d_num_voxel_wo_duplicates));
-		////  CHECK_CUDA_ERROR();
-		////  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		////  GVL_CHECK_ERROR();
+		////  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		////  d_free_space.clear();
 		////  d_free_space.shrink_to_fit();
 		////  d_num_voxel_wo_duplicates.clear();
@@ -1272,7 +1272,7 @@ namespace gpu_voxels {
 		//
 		//// print voxel wo duplicates
 		////printf("\nfree_space_wo_duplicates:\n");
-		////  thrust::host_vector<voxel_id> h_free_space_wo_duplicates = d_free_space_wo_duplicates;
+		////  parallel::host_vector<voxel_id> h_free_space_wo_duplicates = d_free_space_wo_duplicates;
 		////  for (uint32_t i = 0; i < h_free_space_wo_duplicates.size(); ++i)
 		////    printf("%u: %lu\n", i, (voxel_id) h_free_space_wo_duplicates[i]);
 		////  for (uint32_t i = 0; i < h_free_space_wo_duplicates.size() - 1; ++i)
@@ -1286,8 +1286,8 @@ namespace gpu_voxels {
 		//  {
 		//    //numBlocks = 1;
 		//    // ###### pack voxel of level i ######
-		//    thrust::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
-		//    thrust::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
+		//    parallel::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
+		//    parallel::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
 		//    d_num_voxel_this_level.back() = 0;
 		//    d_num_voxel_next_level.back() = 0;
 		//
@@ -1302,14 +1302,14 @@ namespace gpu_voxels {
 		//    kernel_packVoxel<branching_factor, true> <<<numBlocks, numThreadsPerBlock>>>(
 		//        D_PTR(d_free_space_wo_duplicates), num_free_wo_duplicates,
 		//        D_PTR(d_num_voxel_this_level), D_PTR(d_num_voxel_next_level), l, nullptr, nullptr);
-		//    CHECK_CUDA_ERROR();
-		//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//    GVL_CHECK_ERROR();
+		//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//    // TODO use only one array to do the scan for both and then use an offset since it's more efficient
-		//    thrust::exclusive_scan(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end(),
+		//    parallel::exclusive_scan(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end(),
 		//                           d_num_voxel_this_level.begin());
-		//    thrust::exclusive_scan(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end(),
+		//    parallel::exclusive_scan(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end(),
 		//                           d_num_voxel_next_level.begin());
-		//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//    voxel_count num_this_level = (voxel_count) d_num_voxel_this_level.back();
 		//    voxel_count num_next_level = (voxel_count) d_num_voxel_next_level.back();
 		//    printf("num_this_level: %u num_next_level: %u \n", num_this_level, num_next_level);
@@ -1324,8 +1324,8 @@ namespace gpu_voxels {
 		//    //break;
 		//    // move data
 		//    OctreeVoxelID* d_free_space_this_level = nullptr;
-		//    HANDLE_CUDA_ERROR(cudaMalloc(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
-		//    thrust::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
+		//    GVL_HANDLE_ERROR(GVL_MALLOC(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
+		//    parallel::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
 		//
 		//    //printf("Check sorting 2\n");
 		//    // assert(checkSorting(D_PTR(d_free_space_wo_duplicates), num_free_wo_duplicates));
@@ -1334,8 +1334,8 @@ namespace gpu_voxels {
 		//        D_PTR(d_free_space_wo_duplicates), num_free_wo_duplicates,
 		//        D_PTR(d_num_voxel_this_level), D_PTR(d_num_voxel_next_level),
 		//        l, d_free_space_this_level, D_PTR(d_free_space_next_level));
-		//    CHECK_CUDA_ERROR();
-		//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//    GVL_CHECK_ERROR();
+		//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//    printf("kernel_packVoxel() level %u: %f ms\n", l, timeDiff(time_loop, getCPUTime()));
 		//
 		//    d_free_space_wo_duplicates.clear();
@@ -1347,7 +1347,7 @@ namespace gpu_voxels {
 		//    //assert(checkSorting(d_free_space_this_level, num_this_level));
 		//
 		//    // store level pointer
-		//    h_packed_levels[l] = thrust::make_pair<OctreeVoxelID*, voxel_count>(d_free_space_this_level, num_this_level);
+		//    h_packed_levels[l] = parallel::make_pair<OctreeVoxelID*, voxel_count>(d_free_space_this_level, num_this_level);
 		//
 		//    num_packed_voxel += num_this_level;
 		//
@@ -1361,32 +1361,32 @@ namespace gpu_voxels {
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::packVoxel_Map_and_List(
 			MapProperties<typename InnerNode::RayCastType, branching_factor>& map_properties,
-			thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, voxel_count num_free_voxel,
+			parallel::host_vector<parallel::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, voxel_count num_free_voxel,
 			uint32_t min_level)
 		{
 			// ### pack voxel - compute needed space ###
 			timespec time = getCPUTime();
-			thrust::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
-			thrust::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
+			parallel::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
+			parallel::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
 			d_num_voxel_this_level.back() = 0;
 			d_num_voxel_next_level.back() = 0;
 			// cudaProfilerStart();
 			//  kernel_packByteMap_MemEfficient_Coa2<branching_factor, true> <<<numBlocks, 128>>>(
 			//      D_PTR(d_num_voxel_this_level), D_PTR(d_num_voxel_next_level), map_properties);
-			// CHECK_CUDA_ERROR();
+			// GVL_CHECK_ERROR();
 			kernel_packMortonL0Map<NUM_THREADS_PER_BLOCK, branching_factor, true, false, PACKING_OF_VOXEL, InnerNode> << <
 				numBlocks,
 				NUM_THREADS_PER_BLOCK >> > (D_PTR(d_num_voxel_this_level), D_PTR(d_num_voxel_next_level), map_properties);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  cudaProfilerStop();
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "kernel_packByteMap(): " << timeDiff(time, getCPUTime() << " ms" << endl);
 #endif
 			voxel_count num_this_level =
-				(min_level > 0) ? 0 : thrust::reduce(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end());
-			voxel_count num_next_level = thrust::reduce(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				(min_level > 0) ? 0 : parallel::reduce(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end());
+			voxel_count num_next_level = parallel::reduce(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "num_this_level: " << num_this_level << " num_next_level: " << num_next_level << endl);
 #endif
@@ -1394,22 +1394,22 @@ namespace gpu_voxels {
 
 			// ### pack voxel with ByteMap ###
 			time = getCPUTime();
-			thrust::device_vector<voxel_count> d_this_level_index(1, 0);
-			thrust::device_vector<voxel_count> d_next_level_index(1, 0);
+			parallel::device_vector<voxel_count> d_this_level_index(1, 0);
+			parallel::device_vector<voxel_count> d_next_level_index(1, 0);
 			OctreeVoxelID * d_free_space_this_level = nullptr;
 			if (min_level == 0)
-				HANDLE_CUDA_ERROR(cudaMalloc(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
-			thrust::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
+				GVL_HANDLE_ERROR(GVL_MALLOC(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
+			parallel::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
 			//  kernel_packByteMap_MemEfficient_Coa2<branching_factor, false> <<<numBlocks, 128>>>(
 			//      D_PTR(d_num_voxel_this_level), D_PTR(d_num_voxel_next_level),map_properties, D_PTR(d_this_level_index), D_PTR(d_next_level_index),d_free_space_this_level,D_PTR(d_free_space_next_level));
-			//  CHECK_CUDA_ERROR();
+			//  GVL_CHECK_ERROR();
 			kernel_packMortonL0Map<NUM_THREADS_PER_BLOCK, branching_factor, false, false, PACKING_OF_VOXEL, InnerNode> << <
 				numBlocks,
 				NUM_THREADS_PER_BLOCK >> > (D_PTR(d_num_voxel_this_level),
 					D_PTR(d_num_voxel_next_level), map_properties, D_PTR(d_this_level_index), D_PTR(d_next_level_index),
 					d_free_space_this_level, D_PTR(d_free_space_next_level), nullptr, nullptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "kernel_packByteMap(): " << timeDiff(time, getCPUTime() << " ms" << endl);
@@ -1417,7 +1417,7 @@ namespace gpu_voxels {
 			LOGGING_DEBUG(OctreeFreespaceLog, "next level: " << (voxel_count)d_next_level_index.back() << endl);
 #endif
 
-			HANDLE_CUDA_ERROR(cudaFree(map_properties.d_ptr));
+			GVL_HANDLE_ERROR(GVL_FREE(map_properties.d_ptr));
 
 			// TODO: eliminate the sorting step with the following brute force method (MIGHT BE FASTER):
 			// compute the smallest InnerNode (Super-Voxel) fot the ByteMap
@@ -1428,18 +1428,18 @@ namespace gpu_voxels {
 			time = getCPUTime();
 			if (min_level == 0)
 			{
-				thrust::device_ptr<OctreeVoxelID> ptr(d_free_space_this_level);
-				thrust::sort(ptr, ptr + num_this_level);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				parallel::device_ptr<OctreeVoxelID> ptr(d_free_space_this_level);
+				parallel::sort(ptr, ptr + num_this_level);
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 #ifdef FREESPACE_MESSAGES
-			LOGGING_DEBUG(OctreeFreespaceLog, "thrust::sort(): " << timeDiff(time, getCPUTime() << " ms" << endl);
+			LOGGING_DEBUG(OctreeFreespaceLog, "parallel::sort(): " << timeDiff(time, getCPUTime() << " ms" << endl);
 #endif
 			time = getCPUTime();
-			thrust::sort(d_free_space_next_level.begin(), d_free_space_next_level.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::sort(d_free_space_next_level.begin(), d_free_space_next_level.end());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
-			LOGGING_DEBUG(OctreeFreespaceLog, "thrust::sort(): " << timeDiff(time, getCPUTime() << " ms" << endl);
+			LOGGING_DEBUG(OctreeFreespaceLog, "parallel::sort(): " << timeDiff(time, getCPUTime() << " ms" << endl);
 #endif
 
 			// check for duplicates in both sets
@@ -1449,9 +1449,9 @@ namespace gpu_voxels {
 #ifdef FREESPACE_MESSAGES
 				LOGGING_DEBUG(OctreeFreespaceLog, "checking for duplicates in this and next level..." << endl);
 #endif
-				thrust::device_ptr<OctreeVoxelID> ptr(d_free_space_this_level);
-				thrust::device_vector<OctreeVoxelID> result(max(num_this_level, num_next_level));
-				thrust::device_vector<OctreeVoxelID>::iterator result_end = thrust::set_intersection(
+				parallel::device_ptr<OctreeVoxelID> ptr(d_free_space_this_level);
+				parallel::device_vector<OctreeVoxelID> result(max(num_this_level, num_next_level));
+				parallel::device_vector<OctreeVoxelID>::iterator result_end = parallel::set_intersection(
 					d_free_space_next_level.begin(), d_free_space_next_level.end(), ptr, ptr + num_this_level,
 					result.begin());
 				if (result_end != result.begin())
@@ -1464,16 +1464,16 @@ namespace gpu_voxels {
 			}
 #endif
 
-			h_packed_levels[0] = thrust::make_pair(d_free_space_this_level, num_this_level);
+			h_packed_levels[0] = parallel::make_pair(d_free_space_this_level, num_this_level);
 
 			//  OctreeVoxelID* tmp_ptr = nullptr;
-			//  HANDLE_CUDA_ERROR(cudaMalloc(&tmp_ptr, num_next_level * sizeof(OctreeVoxelID)));
-			//  HANDLE_CUDA_ERROR(
-			//      cudaMemcpy(tmp_ptr, D_PTR(d_free_space_next_level), num_next_level * sizeof(OctreeVoxelID), cudaMemcpyDeviceToDevice));
-			//  h_packed_levels[1] = thrust::make_pair<OctreeVoxelID*, voxel_count>(tmp_ptr, num_next_level);
+			//  GVL_HANDLE_ERROR(GVL_MALLOC(&tmp_ptr, num_next_level * sizeof(OctreeVoxelID)));
+			//  GVL_HANDLE_ERROR(
+			//      GVL_MEMCPY(tmp_ptr, D_PTR(d_free_space_next_level), num_next_level * sizeof(OctreeVoxelID), GVL_MEMCPY_DEVICE_TO_DEVICE));
+			//  h_packed_levels[1] = parallel::make_pair<OctreeVoxelID*, voxel_count>(tmp_ptr, num_next_level);
 			//  return;
 
-			thrust::device_vector<OctreeVoxelID> d_free_space;
+			parallel::device_vector<OctreeVoxelID> d_free_space;
 			d_free_space.swap(d_free_space_next_level);
 			uint32_t num_free_space = num_next_level;
 
@@ -1500,14 +1500,14 @@ namespace gpu_voxels {
 				kernel_packVoxel<branching_factor, true> << <numBlocks, 32 >> > (D_PTR(d_free_space), num_free_space,
 					D_PTR(d_num_voxel_this_level), D_PTR(
 						d_num_voxel_next_level), l, nullptr, nullptr);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				// TODO use only one array to do the scan for both and then use an offset since it's more efficient
-				thrust::exclusive_scan(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end(),
+				parallel::exclusive_scan(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end(),
 					d_num_voxel_this_level.begin());
-				thrust::exclusive_scan(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end(),
+				parallel::exclusive_scan(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end(),
 					d_num_voxel_next_level.begin());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				num_this_level = (min_level > l) ? 0 : (voxel_count)d_num_voxel_this_level.back();
 				num_next_level = (voxel_count)d_num_voxel_next_level.back();
 #ifdef FREESPACE_MESSAGES
@@ -1526,8 +1526,8 @@ namespace gpu_voxels {
 				// move data
 				OctreeVoxelID* d_free_space_this_level = nullptr;
 				if (min_level <= l)
-					HANDLE_CUDA_ERROR(cudaMalloc(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
-				thrust::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
+					GVL_HANDLE_ERROR(GVL_MALLOC(&d_free_space_this_level, num_this_level * sizeof(OctreeVoxelID)));
+				parallel::device_vector<OctreeVoxelID> d_free_space_next_level(num_next_level);
 
 				//printf("Check sorting 2\n");
 				assert(checkSorting(D_PTR(d_free_space), num_free_space));
@@ -1536,8 +1536,8 @@ namespace gpu_voxels {
 					D_PTR(d_num_voxel_this_level), D_PTR(
 						d_num_voxel_next_level),
 					l, d_free_space_this_level, D_PTR(d_free_space_next_level));
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
 				LOGGING_DEBUG(OctreeFreespaceLog, "kernel_packVoxel_count() level " << l << ": " << timeDiff(time_loop, getCPUTime()) << " ms" << endl);
 #endif
@@ -1551,7 +1551,7 @@ namespace gpu_voxels {
 				assert(checkSorting(d_free_space_this_level, num_this_level));
 
 				// store level pointer
-				h_packed_levels[l] = thrust::make_pair(d_free_space_this_level, num_this_level);
+				h_packed_levels[l] = parallel::make_pair(d_free_space_this_level, num_this_level);
 
 				num_packed_voxel += num_this_level;
 
@@ -1567,7 +1567,7 @@ namespace gpu_voxels {
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::packVoxel_Map(
 			MapProperties<typename InnerNode::RayCastType, branching_factor>& map_properties,
-			thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels, voxel_count num_free_voxel,
+			parallel::host_vector<ComputeFreeSpaceData>& h_packed_levels, voxel_count num_free_voxel,
 			uint32_t min_level)
 		{
 			const std::string prefix = __FUNCTION__;
@@ -1580,8 +1580,8 @@ namespace gpu_voxels {
 			timespec time_total = getCPUTime();
 			timespec time;
 #endif
-			thrust::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
-			thrust::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
+			parallel::device_vector<voxel_count> d_num_voxel_this_level(numBlocks + 1);
+			parallel::device_vector<voxel_count> d_num_voxel_next_level(numBlocks + 1);
 			voxel_count num_next_level = 1;
 			MapProperties<typename InnerNode::RayCastType, branching_factor> this_level_map = map_properties;
 			//double total_sort_time = 0.0, total_count_kernel_time = 0.0, total_malloc_time = 0.0, total_kernel_time = 0.0;
@@ -1606,8 +1606,8 @@ namespace gpu_voxels {
 						D_PTR(d_num_voxel_this_level),
 						D_PTR(d_num_voxel_next_level),
 						this_level_map);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef IC_PERFORMANCE_MONITOR
 				// we need the return value, so we need to call the function directly
@@ -1623,12 +1623,12 @@ namespace gpu_voxels {
 #endif
 #endif
 				uint32_t num_this_level =
-					(min_level > l) ? 0 : thrust::reduce(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end());
-				num_next_level = thrust::reduce(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					(min_level > l) ? 0 : parallel::reduce(d_num_voxel_this_level.begin(), d_num_voxel_this_level.end());
+				num_next_level = parallel::reduce(d_num_voxel_next_level.begin(), d_num_voxel_next_level.end());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
 				LOGGING_DEBUG(OctreeFreespaceLog, "num_this_level: " << num_this_level << "num_next_level: " << num_next_level << endl);
-				LOGGING_DEBUG(OctreeFreespaceLog, "thrust::reduce(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
+				LOGGING_DEBUG(OctreeFreespaceLog, "parallel::reduce(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #ifdef _IC_DEBUG_
 				time = getCPUTime();
 #endif
@@ -1639,26 +1639,26 @@ namespace gpu_voxels {
 				assert(last_level_sum + num_next_level * uint32_t(std::pow(branching_factor, l + 1)) == num_free_voxel);
 
 				// ### pack voxel with ByteMap ###
-				thrust::device_vector<voxel_count> d_this_level_index(1, 0);
+				parallel::device_vector<voxel_count> d_this_level_index(1, 0);
 				OctreeVoxelID* d_this_level_voxel_id = nullptr;
 				BasicData* d_this_level_basic_data = nullptr;
 				if (min_level <= l)
 				{
-					HANDLE_CUDA_ERROR(cudaMalloc(&d_this_level_voxel_id, num_this_level * sizeof(OctreeVoxelID)));
-					HANDLE_CUDA_ERROR(cudaMalloc(&d_this_level_basic_data, num_this_level * sizeof(BasicData)));
+					GVL_HANDLE_ERROR(GVL_MALLOC(&d_this_level_voxel_id, num_this_level * sizeof(OctreeVoxelID)));
+					GVL_HANDLE_ERROR(GVL_MALLOC(&d_this_level_basic_data, num_this_level * sizeof(BasicData)));
 				}
 
 				// create new map, alloc and init mem
 				MapProperties<typename InnerNode::RayCastType, branching_factor> next_level_map =
 					this_level_map.createNextLevelMap();
-				HANDLE_CUDA_ERROR(
-					cudaMalloc(&next_level_map.d_ptr,
+				GVL_HANDLE_ERROR(
+					GVL_MALLOC(&next_level_map.d_ptr,
 						next_level_map.size_v * sizeof(typename InnerNode::RayCastType)));
 
 				typename InnerNode::RayCastType init;
 				getRayCastInit(&init);
-				thrust::device_ptr<typename InnerNode::RayCastType> d_ptr(next_level_map.d_ptr);
-				thrust::fill(d_ptr, d_ptr + next_level_map.size_v, init);
+				parallel::device_ptr<typename InnerNode::RayCastType> d_ptr(next_level_map.d_ptr);
+				parallel::fill(d_ptr, d_ptr + next_level_map.size_v, init);
 
 #ifdef IC_PERFORMANCE_MONITOR
 				// we need the return value, so we need to call the function directly
@@ -1685,8 +1685,8 @@ namespace gpu_voxels {
 						d_this_level_basic_data,
 						nullptr,
 						next_level_map);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef IC_PERFORMANCE_MONITOR
 				// we need the return value, so we need to call the function directly
@@ -1695,7 +1695,7 @@ namespace gpu_voxels {
 
 				num_this_level = (voxel_count)d_this_level_index.back();
 
-				HANDLE_CUDA_ERROR(cudaFree(this_level_map.d_ptr));
+				GVL_HANDLE_ERROR(GVL_FREE(this_level_map.d_ptr));
 				this_level_map = next_level_map;
 
 #ifdef FREESPACE_MESSAGES
@@ -1720,8 +1720,8 @@ namespace gpu_voxels {
 					{
 						OctreeVoxelID* key_tmp = nullptr;
 						BasicData* value_tmp = nullptr;
-						HANDLE_CUDA_ERROR(cudaMalloc(&key_tmp, num_this_level * sizeof(OctreeVoxelID)));
-						HANDLE_CUDA_ERROR(cudaMalloc(&value_tmp, num_this_level * sizeof(BasicData)));
+						GVL_HANDLE_ERROR(GVL_MALLOC(&key_tmp, num_this_level * sizeof(OctreeVoxelID)));
+						GVL_HANDLE_ERROR(GVL_MALLOC(&value_tmp, num_this_level * sizeof(BasicData)));
 
 						OctreeVoxelID* d_key_buf = d_this_level_voxel_id;
 						OctreeVoxelID* d_key_alt_buf = key_tmp;
@@ -1735,28 +1735,28 @@ namespace gpu_voxels {
 						size_t temp_storage_bytes = 0;
 						cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_this_level);
 						// Allocate temporary storage
-						HANDLE_CUDA_ERROR(cudaMalloc(&d_temp_storage, temp_storage_bytes));
+						GVL_HANDLE_ERROR(GVL_MALLOC(&d_temp_storage, temp_storage_bytes));
 						// Run sorting operation
 						cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_this_level);
-						HANDLE_CUDA_ERROR(cudaFree(d_temp_storage));
+						GVL_HANDLE_ERROR(GVL_FREE(d_temp_storage));
 
 						if (d_keys.Current() == key_tmp)
-							HANDLE_CUDA_ERROR(cudaFree(d_this_level_voxel_id));
+							GVL_HANDLE_ERROR(GVL_FREE(d_this_level_voxel_id));
 						else
-							HANDLE_CUDA_ERROR(cudaFree(key_tmp));
+							GVL_HANDLE_ERROR(GVL_FREE(key_tmp));
 						if (d_values.Current() == value_tmp)
-							HANDLE_CUDA_ERROR(cudaFree(d_this_level_basic_data));
+							GVL_HANDLE_ERROR(GVL_FREE(d_this_level_basic_data));
 						else
-							HANDLE_CUDA_ERROR(cudaFree(value_tmp));
+							GVL_HANDLE_ERROR(GVL_FREE(value_tmp));
 						d_this_level_voxel_id = d_keys.Current();
 						d_this_level_basic_data = d_values.Current();
 					}
 					else
 					{
-						thrust::device_ptr<OctreeVoxelID> ptr_voxel(d_this_level_voxel_id);
-						thrust::device_ptr<BasicData> ptr_data(d_this_level_basic_data);
-						thrust::sort_by_key(ptr_voxel, ptr_voxel + num_this_level, ptr_data);
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						parallel::device_ptr<OctreeVoxelID> ptr_voxel(d_this_level_voxel_id);
+						parallel::device_ptr<BasicData> ptr_data(d_this_level_basic_data);
+						parallel::sort_by_key(ptr_voxel, ptr_voxel + num_this_level, ptr_data);
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 					}
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -1784,7 +1784,7 @@ namespace gpu_voxels {
 				if (!PACKING_OF_VOXEL)
 					break;
 			}
-			HANDLE_CUDA_ERROR(cudaFree(this_level_map.d_ptr));
+			GVL_HANDLE_ERROR(GVL_FREE(this_level_map.d_ptr));
 
 			// timings for skipped level to be complete
 			for (size_t i = l; i < level_count; ++i)
@@ -1810,8 +1810,8 @@ namespace gpu_voxels {
 
 		//template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		//void NTree<branching_factor, level_count, InnerNode, LeafNode>::computeFreeSpaceViaRayCast(
-		//    thrust::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
-		//    thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, uint32_t min_level)
+		//    parallel::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
+		//    parallel::host_vector<parallel::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, uint32_t min_level)
 		//{
 		//  const bool MODE_MAP_ONLY = true;
 		//
@@ -1820,25 +1820,25 @@ namespace gpu_voxels {
 		//// ### find min/max coordinates ###
 		//  timespec time = getCPUTime();
 		//  voxel_count num_voxel = d_occupied_voxel.size();
-		//  thrust::device_vector<uint32_t> d_x(num_voxel);
-		//  thrust::device_vector<uint32_t> d_y(num_voxel);
-		//  thrust::device_vector<uint32_t> d_z(num_voxel);
+		//  parallel::device_vector<uint32_t> d_x(num_voxel);
+		//  parallel::device_vector<uint32_t> d_y(num_voxel);
+		//  parallel::device_vector<uint32_t> d_z(num_voxel);
 		//  kernel_split_voxel_vector<false, false, false, true> <<<numBlocks, numThreadsPerBlock>>>(
 		//      D_PTR(d_occupied_voxel), num_voxel, nullptr,
 		//      nullptr, nullptr, D_PTR(d_x), D_PTR(d_y), D_PTR(d_z));
-		//  CHECK_CUDA_ERROR();
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_CHECK_ERROR();
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//#ifdef FREESPACE_MESSAGES
 		//  printf("kernel_split_voxel_vector(): %f ms\n", timeDiff(time, getCPUTime()));
 		//#endif
 		//
 		//  time = getCPUTime();
-		//  thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_x =
-		//      thrust::minmax_element(d_x.begin(), d_x.end());
-		//  thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_y =
-		//      thrust::minmax_element(d_y.begin(), d_y.end());
-		//  thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_z =
-		//      thrust::minmax_element(d_z.begin(), d_z.end());
+		//  parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_x =
+		//      parallel::minmax_element(d_x.begin(), d_x.end());
+		//  parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_y =
+		//      parallel::minmax_element(d_y.begin(), d_y.end());
+		//  parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_z =
+		//      parallel::minmax_element(d_z.begin(), d_z.end());
 		//  MapProperties<typename InnerNode::RayCastType, branching_factor> map_properties(0);
 		//  map_properties.coordinate_x = D_PTR(d_x);
 		//  map_properties.coordinate_y = D_PTR(d_y);
@@ -1869,38 +1869,38 @@ namespace gpu_voxels {
 		//
 		//  map_properties.align();
 		//
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//#ifdef FREESPACE_MESSAGES
-		//  printf("thrust::minmax_element(): %f ms\n", timeDiff(time, getCPUTime()));
+		//  printf("parallel::minmax_element(): %f ms\n", timeDiff(time, getCPUTime()));
 		//  cout << map_properties;
 		//#endif
 		//
 		//// ### malloc array ###
 		//  time = getCPUTime();
 		//
-		//  HANDLE_CUDA_ERROR(
-		//      cudaMalloc((void** ) &map_properties.d_ptr,
+		//  GVL_HANDLE_ERROR(
+		//      GVL_MALLOC((void** ) &map_properties.d_ptr,
 		//                 map_properties.size * sizeof(typename InnerNode::RayCastType)));
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//
 		//// ##### init free space #####
 		//  time = getCPUTime();
-		//  HANDLE_CUDA_ERROR(
+		//  GVL_HANDLE_ERROR(
 		//      cudaMemset(map_properties.d_ptr, getRayCastInitByte(typename InnerNode::RayCastType()),
 		//                 sizeof(typename InnerNode::RayCastType) * map_properties.size));
-		////  HANDLE_CUDA_ERROR(
+		////  GVL_HANDLE_ERROR(
 		////      cudaMemset(map_properties.d_ptr, 0, sizeof(typename InnerNode::RayCastType) * map_properties.size));
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//#ifdef FREESPACE_MESSAGES
 		//  printf("cudaMemset : %f ms\n", timeDiff(time, getCPUTime()));
 		//#endif
 		//
-		//  thrust::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
+		//  parallel::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
 		//
 		//  // ##### ray cast #####
 		//// bit vector for ray casting is slow compared to byte array due to the need for an atomic operation
 		//// using morton code for 8 neighbors makes it even slower -> there might be more memory conflicts due to higher memory locality
-		//  thrust::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
+		//  parallel::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
 		//#ifdef FREESPACE_MESSAGES
 		//  printf("sensor origin %u %u %u\n", sensor_origin.x, sensor_origin.y, sensor_origin.z);
 		//#endif
@@ -1908,18 +1908,18 @@ namespace gpu_voxels {
 		//  time = getCPUTime();
 		//  kernel_rayInsert<branching_factor, InnerNode> <<<numBlocks, numThreadsPerBlock>>>(sensor_origin,
 		//                                                                                    D_PTR(d_voxel_count),map_properties);
-		//  CHECK_CUDA_ERROR();
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  GVL_CHECK_ERROR();
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//
 		//#ifdef FREESPACE_MESSAGES
 		//  printf("Ray cast: %f ms\n", timeDiff(time, getCPUTime()));
 		//#endif
 		//
-		//  uint32_t set_to_free = thrust::reduce(d_voxel_count.begin(), d_voxel_count.end());
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+		//  uint32_t set_to_free = parallel::reduce(d_voxel_count.begin(), d_voxel_count.end());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		//  d_voxel_count.clear();
 		//  d_voxel_count.shrink_to_fit();
-		//  uint32_t num_free_voxel = thrust::count_if(d_ptr, d_ptr + map_properties.size, Comp_is_valid<InnerNode>());
+		//  uint32_t num_free_voxel = parallel::count_if(d_ptr, d_ptr + map_properties.size, Comp_is_valid<InnerNode>());
 		//#ifdef FREESPACE_MESSAGES
 		//  printf("set_to_free: %u\n", set_to_free);
 		//  printf("num_free_voxel: %u\n", num_free_voxel);
@@ -1933,8 +1933,8 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::computeFreeSpaceViaRayCast(
-			thrust::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
-			thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels, uint32_t min_level)
+			parallel::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
+			parallel::host_vector<ComputeFreeSpaceData>& h_packed_levels, uint32_t min_level)
 		{
 			assert(sizeof(typename InnerNode::RayCastType) == sizeof(typename InnerNode::RayCastType::Type));
 
@@ -1946,27 +1946,27 @@ namespace gpu_voxels {
 			// ### find min/max coordinates ###
 			timespec time = getCPUTime();
 			voxel_count num_voxel = d_occupied_voxel.size();
-			thrust::device_vector<uint32_t> d_x(num_voxel);
-			thrust::device_vector<uint32_t> d_y(num_voxel);
-			thrust::device_vector<uint32_t> d_z(num_voxel);
+			parallel::device_vector<uint32_t> d_x(num_voxel);
+			parallel::device_vector<uint32_t> d_y(num_voxel);
+			parallel::device_vector<uint32_t> d_z(num_voxel);
 			uint32_t num_threads = 128;
 			uint32_t num_blocks = num_voxel / num_threads + 1;
 			kernel_split_voxel_vector<false, false, false, true> << <num_blocks, num_threads >> > (
 				D_PTR(d_occupied_voxel), num_voxel, nullptr,
 				nullptr, nullptr, D_PTR(d_x), D_PTR(d_y), D_PTR(d_z));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "kernel_split_voxel_vector(): " << timeDiff(time_total, getCPUTime() << " ms" << endl);
 #endif
 
 			time = getCPUTime();
-			thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_x =
-				thrust::minmax_element(d_x.begin(), d_x.end());
-			thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_y =
-				thrust::minmax_element(d_y.begin(), d_y.end());
-			thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> res_z =
-				thrust::minmax_element(d_z.begin(), d_z.end());
+			parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_x =
+				parallel::minmax_element(d_x.begin(), d_x.end());
+			parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_y =
+				parallel::minmax_element(d_y.begin(), d_y.end());
+			parallel::pair<parallel::device_vector<uint32_t>::iterator, parallel::device_vector<uint32_t>::iterator> res_z =
+				parallel::minmax_element(d_z.begin(), d_z.end());
 			MapProperties<typename InnerNode::RayCastType, branching_factor> map_properties(0);
 			map_properties.coordinate_x = D_PTR(d_x);
 			map_properties.coordinate_y = D_PTR(d_y);
@@ -1981,26 +1981,26 @@ namespace gpu_voxels {
 
 			map_properties.align();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
-			LOGGING_DEBUG(OctreeFreespaceLog, "thrust::minmax_element(): " << timeDiff(time, getCPUTime() << " ms" << endl);
+			LOGGING_DEBUG(OctreeFreespaceLog, "parallel::minmax_element(): " << timeDiff(time, getCPUTime() << " ms" << endl);
 			LOGGING_DEBUG(OctreeFreespaceLog, map_properties << endl);
 #endif
 
 			// ### malloc array ###
 			time = getCPUTime();
 
-			HANDLE_CUDA_ERROR(
-				cudaMalloc(&map_properties.d_ptr,
+			GVL_HANDLE_ERROR(
+				GVL_MALLOC(&map_properties.d_ptr,
 					map_properties.size * sizeof(typename InnerNode::RayCastType)));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			// ##### init free space #####
 			time = getCPUTime();
 			typename InnerNode::RayCastType init;
 			getRayCastInit(&init);
-			thrust::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
-			thrust::fill(d_ptr, d_ptr + map_properties.size, init);
+			parallel::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
+			parallel::fill(d_ptr, d_ptr + map_properties.size, init);
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "cudaMemset : " << timeDiff(time, getCPUTime() << " ms" << endl);
 #endif
@@ -2008,8 +2008,8 @@ namespace gpu_voxels {
 			// ##### ray cast #####
 		  // bit vector for ray casting is slow compared to byte array due to the need for an atomic operation
 		  // using morton code for 8 neighbors makes it even slower -> there might be more memory conflicts due to higher memory locality
-			thrust::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::device_vector<uint32_t> d_voxel_count(numBlocks * numThreadsPerBlock);
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREESPACE_MESSAGES
 			LOGGING_DEBUG(OctreeFreespaceLog, "sensor origin " << sensor_origin << endl);
 #endif
@@ -2019,18 +2019,18 @@ namespace gpu_voxels {
 			time = getCPUTime();
 			kernel_rayInsert<branching_factor, InnerNode> << <numBlocks, numThreadsPerBlock >> > (sensor_origin,
 				D_PTR(d_voxel_count), map_properties);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "RayCast", prefix);
 
 #if defined FREESPACE_MESSAGES && defined _IC_DEBUG_
-			uint32_t set_to_free = thrust::reduce(d_voxel_count.begin(), d_voxel_count.end());
+			uint32_t set_to_free = parallel::reduce(d_voxel_count.begin(), d_voxel_count.end());
 #endif
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			d_voxel_count.clear();
 			d_voxel_count.shrink_to_fit();
-			uint32_t num_free_voxel = thrust::count_if(d_ptr, d_ptr + map_properties.size, Comp_is_valid<InnerNode>());
+			uint32_t num_free_voxel = parallel::count_if(d_ptr, d_ptr + map_properties.size, Comp_is_valid<InnerNode>());
 
 			PERF_MON_ADD_DATA_NONTIME_P("NumFreeVoxel", num_free_voxel, prefix);
 
@@ -2058,9 +2058,9 @@ namespace gpu_voxels {
 			assert(checkSorting(d_voxel_vector, num_voxel));
 
 			timespec time = getCPUTime();
-			thrust::device_vector<voxel_count> d_neededNodesPerLevel((numBlocks + 1) * level_count, 0);
-			thrust::device_vector<void*> d_traversalNodes(num_voxel);
-			thrust::device_vector<uint32_t> d_traversalLevels(num_voxel);
+			parallel::device_vector<voxel_count> d_neededNodesPerLevel((numBlocks + 1) * level_count, 0);
+			parallel::device_vector<void*> d_traversalNodes(num_voxel);
+			parallel::device_vector<uint32_t> d_traversalLevels(num_voxel);
 
 			// count number of needed inner and leaf nodes
 			kernel_insert_countNeededNodes<branching_factor, level_count, InnerNode, LeafNode, SET_UPDATE_FLAG> << <
@@ -2070,8 +2070,8 @@ namespace gpu_voxels {
 					D_PTR(d_traversalLevels),
 					target_level
 					);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "kernel_insert_countNeededNodes(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
@@ -2079,19 +2079,19 @@ namespace gpu_voxels {
 			time = getCPUTime();
 
 			// prefix sum
-			thrust::exclusive_scan(d_neededNodesPerLevel.begin(), d_neededNodesPerLevel.end(),
+			parallel::exclusive_scan(d_neededNodesPerLevel.begin(), d_neededNodesPerLevel.end(),
 				d_neededNodesPerLevel.begin());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 			//  for (uint32_t i = 0; i < d_neededNodesPerLevel.size(); ++i)
 			//    printf("d_neededNodesPerLevel %u %u\n", i % numBlocks, (uint32_t) d_neededNodesPerLevel[i]);
 
 #ifdef INSERT_MESSAGES
-			LOGGING_DEBUG(OctreeInsertLog, "thrust::exclusive_scan(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			LOGGING_DEBUG(OctreeInsertLog, "parallel::exclusive_scan(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
 			time = getCPUTime();
 
-			thrust::device_vector<voxel_count> neededNodesPerLevel_h = d_neededNodesPerLevel;
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+			parallel::device_vector<voxel_count> neededNodesPerLevel_h = d_neededNodesPerLevel;
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 			const voxel_count nLeafNodes = neededNodesPerLevel_h[numBlocks];
 			const voxel_count nInnerNodes = neededNodesPerLevel_h.back() - nLeafNodes;
 #ifdef INSERT_MESSAGES
@@ -2103,11 +2103,11 @@ namespace gpu_voxels {
 			const uint32_t off = (leafLevel_size % 128);
 			const uint32_t alignment = (off == 0) ? 0 : 128 - off;
 			size_t nSize = leafLevel_size + alignment + size_t(nInnerNodes) * sizeof(InnerNode);
-			HANDLE_CUDA_ERROR(cudaMalloc(&d_newNodes, nSize));
+			GVL_HANDLE_ERROR(GVL_MALLOC(&d_newNodes, nSize));
 			m_allocation_list.push_back(d_newNodes);
 #ifdef INSERT_MESSAGES
-			LOGGING_DEBUG(OctreeInsertLog, "cudaMalloc() for " << nSize * cBYTE2MBYTE << " MB" << endl);
-			LOGGING_DEBUG(OctreeInsertLog, "cudaMalloc(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			LOGGING_DEBUG(OctreeInsertLog, "GVL_MALLOC() for " << nSize * cBYTE2MBYTE << " MB" << endl);
+			LOGGING_DEBUG(OctreeInsertLog, "GVL_MALLOC(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
 			time = getCPUTime();
 
@@ -2124,18 +2124,18 @@ namespace gpu_voxels {
 			kernel_insert_initNeededNodes<branching_factor, level_count, LeafNode, false> << <numBlocks,
 				numThreadsPerBlock >> > (
 					leafNodes, nLeafNodes);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); //TODO: safe to remove synchronization?
-			//HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); //TODO: safe to remove synchronization?
+			//GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		  //printf("init level 1\n");
 
 		  //level 1
 			kernel_insert_initNeededNodes<branching_factor, level_count, InnerNode, true> << <numBlocks,
 				numThreadsPerBlock >> > (
 					innerNodes_ptr, numNodes);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); //TODO: safe to remove synchronization?
-			//HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); //TODO: safe to remove synchronization?
+			//GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			innerNodes_ptr += numNodes;
 
 			//level 2-n
@@ -2149,13 +2149,13 @@ namespace gpu_voxels {
 					kernel_insert_initNeededNodes<branching_factor, level_count, InnerNode, false> << <numBlocks,
 						numThreadsPerBlock >> > (
 							innerNodes_ptr, numNodes);
-					CHECK_CUDA_ERROR();
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); //TODO: safe to remove synchronization?
-					//HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					GVL_CHECK_ERROR();
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); //TODO: safe to remove synchronization?
+					//GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				}
 				innerNodes_ptr = (InnerNode*)&innerNodes_ptr[numNodes];
 			}
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "kernel_insert_initNeededNodes(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
@@ -2172,8 +2172,8 @@ namespace gpu_voxels {
 					D_PTR(d_traversalNodes),
 					D_PTR(d_traversalLevels),
 					target_level);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			// update counter
 			allocLeafNodes += nLeafNodes;
@@ -2188,20 +2188,20 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::insertVoxel(
-			thrust::device_vector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up)
+			parallel::device_vector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up)
 		{
 			typedef typename NodeData::BasicData BasicData;
 
 			timespec time = getCPUTime();
 			voxel_count num_voxel = d_voxel_vector.size();
-			thrust::device_vector<OctreeVoxelID> d_voxel_id(num_voxel);
-			thrust::device_vector<Probability> d_occupancy(num_voxel);
+			parallel::device_vector<OctreeVoxelID> d_voxel_id(num_voxel);
+			parallel::device_vector<Probability> d_occupancy(num_voxel);
 
 			kernel_split_voxel_vector<true, true, false, false> << <numBlocks, numThreadsPerBlock >> > (
 				D_PTR(d_voxel_vector), num_voxel, D_PTR(d_voxel_id),
 				D_PTR(d_occupancy), nullptr, nullptr, nullptr, nullptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "kernel_split_voxel_vector(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
@@ -2219,7 +2219,7 @@ namespace gpu_voxels {
 
 			BasicData tmp;
 			getHardInsertResetData(tmp);
-			thrust::constant_iterator<BasicData> reset_basic_data(tmp);
+			parallel::constant_iterator<BasicData> reset_basic_data(tmp);
 
 			if (set_free)
 			{
@@ -2229,7 +2229,7 @@ namespace gpu_voxels {
 			{
 				getOccupiedData(tmp);
 			}
-			thrust::constant_iterator<BasicData> set_basic_data(tmp);
+			parallel::constant_iterator<BasicData> set_basic_data(tmp);
 			insertVoxel<update_Flag, BasicData>(D_PTR(d_voxel_id), set_basic_data, reset_basic_data, num_voxel, 0);
 
 #ifdef INSERT_MESSAGES
@@ -2247,8 +2247,8 @@ namespace gpu_voxels {
 #else
 				kernel_propagate_bottom_up_simple<branching_factor, level_count, InnerNode, LeafNode> << <1, 1 >> > (
 					this->m_root, D_PTR(d_voxel_id), num_voxel, 0);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef INSERT_MESSAGES
 				LOGGING_DEBUG(OctreeInsertLog, "kernel_propagate_bottom_up_simple(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
@@ -2259,7 +2259,7 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::insertVoxel(
-			thrust::device_vector<Voxel>& d_free_space_voxel, thrust::device_vector<Voxel>& d_object_voxel,
+			parallel::device_vector<Voxel>& d_free_space_voxel, parallel::device_vector<Voxel>& d_object_voxel,
 			gpu_voxels::Vector3ui sensor_origin, const uint32_t free_space_resolution, const uint32_t object_resolution)
 		{
 			const std::string prefix = __FUNCTION__;
@@ -2306,7 +2306,7 @@ namespace gpu_voxels {
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "\n## computeFreeSpaceViaRayCast ###" << endl);
 #endif
-			thrust::host_vector<ComputeFreeSpaceData> h_packed_levels(level_count, ComputeFreeSpaceData(nullptr, nullptr, 0));
+			parallel::host_vector<ComputeFreeSpaceData> h_packed_levels(level_count, ComputeFreeSpaceData(nullptr, nullptr, 0));
 			//computeFreeSpaceViaRayCast_VoxelList(d_voxel_vector, sensor_origin, h_packed_levels);
 			const uint32_t free_space_scale = free_space_resolution / m_resolution;
 			const gpu_voxels::Vector3ui sensor_origin_scaled = gpu_voxels::Vector3ui(sensor_origin.x() / free_space_scale,
@@ -2324,13 +2324,13 @@ namespace gpu_voxels {
 #endif
 			time = getCPUTime();
 
-			//  thrust::host_vector<thrust::pair<voxel_id*, voxel_count> > h_packed_levels2(
-			//      level_count, thrust::make_pair<voxel_id*, voxel_count>(nullptr, 0));
+			//  parallel::host_vector<parallel::pair<voxel_id*, voxel_count> > h_packed_levels2(
+			//      level_count, parallel::make_pair<voxel_id*, voxel_count>(nullptr, 0));
 			//  computeFreeSpaceViaRayCast(d_voxel_vector, sensor_origin, h_packed_levels2);
 
 			//  kernel_checkBlub<<<1,1>>>(h_packed_levels[0].first, h_packed_levels2[0].second, h_packed_levels2[0].first);
-			//  CHECK_CUDA_ERROR();
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_CHECK_ERROR();
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 #ifdef LOAD_BALANCING_PROPAGATE
 			const bool update_Flag = true;
@@ -2346,7 +2346,7 @@ namespace gpu_voxels {
 #endif
 			time = getCPUTime();
 			const auto free_space_min_level = uint32_t(log2(float(free_space_scale)));
-			//thrust::device_vector<uint8_t> d_status(1, uint8_t(ns_FREE));
+			//parallel::device_vector<uint8_t> d_status(1, uint8_t(ns_FREE));
 			uint32_t free_space_voxel = 0;
 			for (std::size_t l = 0; l < level_count; ++l)
 			{
@@ -2354,9 +2354,9 @@ namespace gpu_voxels {
 				if (h_packed_levels[l].m_count != 0 && free_space_scale != 1)
 				{
 					// scale voxel data if necessary
-					thrust::device_ptr<OctreeVoxelID> ptr(h_packed_levels[l].m_voxel_id);
-					thrust::transform(ptr, ptr + h_packed_levels[l].m_count, ptr, Trafo_OctreeVoxelID(free_space_scale));
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					parallel::device_ptr<OctreeVoxelID> ptr(h_packed_levels[l].m_voxel_id);
+					parallel::transform(ptr, ptr + h_packed_levels[l].m_count, ptr, Trafo_OctreeVoxelID(free_space_scale));
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				}
 
 				const uint32_t my_level = free_space_min_level + l;
@@ -2366,9 +2366,9 @@ namespace gpu_voxels {
 				BasicData tmp;
 				getSoftInsertResetData(tmp);
 				//getOccupancyResetData(tmp);
-				thrust::constant_iterator<BasicData> reset_data(tmp);
+				parallel::constant_iterator<BasicData> reset_data(tmp);
 				//    getFreeData(tmp);
-				//    thrust::constant_iterator<BasicData> set_data(tmp);
+				//    parallel::constant_iterator<BasicData> set_data(tmp);
 				//    insertVoxel<update_Flag, BasicData>(h_packed_levels[l].first, set_data, reset_data,
 				//                                        h_packed_levels[l].second, my_level);
 				insertVoxel<update_Flag, BasicData>(
@@ -2384,7 +2384,7 @@ namespace gpu_voxels {
 
 				//    if (my_level == 0)
 				//    {
-				//      thrust::device_vector<Probability> d_occupancy(1, MIN_PROBABILITY);
+				//      parallel::device_vector<Probability> d_occupancy(1, MIN_PROBABILITY);
 				//#ifdef INSERT
 				//      insertVoxel<update_Flag>(h_packed_levels[l].first, d_occupancy, nullptr, h_packed_levels[l].second,
 				//                               my_level);
@@ -2406,23 +2406,23 @@ namespace gpu_voxels {
 #endif
 
 			// ##### insert occupied voxel ######
-			thrust::device_vector<OctreeVoxelID> d_voxel_id_object(num_voxel_object);
-			thrust::device_vector<Probability> d_occupancy_object(num_voxel_object);
+			parallel::device_vector<OctreeVoxelID> d_voxel_id_object(num_voxel_object);
+			parallel::device_vector<Probability> d_occupancy_object(num_voxel_object);
 
 			// split object data
 			kernel_split_voxel_vector<true, true, false, false> << <numBlocks, numThreadsPerBlock >> > (
 				D_PTR(d_object_voxel), num_voxel_object, D_PTR(d_voxel_id_object),
 				D_PTR(d_occupancy_object), nullptr, nullptr, nullptr, nullptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			// scale voxel data if necessary
 			const uint32_t object_scale = object_resolution / m_resolution;
 			if (object_scale != 1)
 			{
-				thrust::transform(d_voxel_id_object.begin(), d_voxel_id_object.end(), d_voxel_id_object.begin(),
+				parallel::transform(d_voxel_id_object.begin(), d_voxel_id_object.end(), d_voxel_id_object.begin(),
 					Trafo_OctreeVoxelID(object_scale));
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 #ifdef INSERT_MESSAGES
 			LOGGING_DEBUG(OctreeInsertLog, "kernel_split_voxel_vector(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
@@ -2435,13 +2435,13 @@ namespace gpu_voxels {
 			BasicData tmp;
 			//getOccupancyResetData(tmp);
 			getHardInsertResetData(tmp);
-			thrust::constant_iterator<BasicData> reset_data(tmp);
+			parallel::constant_iterator<BasicData> reset_data(tmp);
 
 			//  getOccupiedData(tmp);
-			//  thrust::constant_iterator<BasicData> set_data(tmp);
+			//  parallel::constant_iterator<BasicData> set_data(tmp);
 			//insertVoxel<update_Flag, BasicData>(D_PTR(d_voxel_id_object), set_data, reset_data, num_voxel_object, uint32_t(log2(float(object_scale)))) ;
 
-			thrust::device_vector<BasicData> set_data;
+			parallel::device_vector<BasicData> set_data;
 			getBasicData(d_object_voxel, set_data);
 			insertVoxel<update_Flag, BasicData>(
 				D_PTR(d_voxel_id_object),
@@ -2462,15 +2462,15 @@ namespace gpu_voxels {
 			//  printf("\n ## propagate bottom-up ##\n");
 			//  time = getCPUTime();
 			//  kernel_propagate_bottom_up_simple<branching_factor, level_count, InnerNode, LeafNode> <<<1,1>>>(this->root, D_PTR(d_voxel_id), num_voxel, 0);
-			//  CHECK_CUDA_ERROR();
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_CHECK_ERROR();
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  for (int32_t l = 0; l < level_count - 1; ++l)
 			//  {
 			//    if (h_packed_levels[l].second > 0)
 			//    {
 			//      kernel_propagate_bottom_up_simple<branching_factor, level_count, InnerNode, LeafNode> <<<1,1>>>(this->root, h_packed_levels[l].first, h_packed_levels[l].second, l);
-			//      CHECK_CUDA_ERROR();
-			//      HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//      GVL_CHECK_ERROR();
+			//      GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//    }
 			//  }
 			//  printf("## kernel_propagate_bottom_up_simple(): %f ms ##\n", timeDiff(time, getCPUTime()));
@@ -2513,8 +2513,8 @@ namespace gpu_voxels {
 			{
 				if (h_packed_levels[l].m_count > 0)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(h_packed_levels[l].m_voxel_id));
-					HANDLE_CUDA_ERROR(cudaFree(h_packed_levels[l].m_basic_data));
+					GVL_HANDLE_ERROR(GVL_FREE(h_packed_levels[l].m_voxel_id));
+					GVL_HANDLE_ERROR(GVL_FREE(h_packed_levels[l].m_basic_data));
 				}
 			}
 
@@ -2529,19 +2529,19 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::propagate_bottom_up(
-			thrust::device_vector<Voxel>& d_voxel_vector, uint32_t level)
+			parallel::device_vector<Voxel>& d_voxel_vector, uint32_t level)
 		{
 #ifdef _IC_DEBUG_
 			timespec time = getCPUTime();
 #endif
 			voxel_count num_voxel = d_voxel_vector.size();
-			thrust::device_vector<OctreeVoxelID> d_voxel_id(num_voxel);
+			parallel::device_vector<OctreeVoxelID> d_voxel_id(num_voxel);
 
 			kernel_split_voxel_vector<true, false, false, false> << <numBlocks, numThreadsPerBlock >> > (
 				D_PTR(d_voxel_vector), num_voxel, D_PTR(d_voxel_id),
 				nullptr, nullptr, nullptr, nullptr, nullptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			LOGGING_DEBUG(OctreeLog, "kernel_split_voxel_vector(): " << timeDiff(time, getCPUTime()) << " ms" << endl);
 
 			propagate_bottom_up(D_PTR(d_voxel_id), num_voxel, level);
@@ -2575,8 +2575,8 @@ namespace gpu_voxels {
 				//    kernel_propagate_bottom_up<branching_factor, level_count, InnerNode, LeafNode> <<<numBlocks,
 				//                                                                                      32>>>(
 				//        m_root, d_voxel_id, num_voxel, l);
-				//  CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				//  GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef PROPAGATE_MESSAGES
 				LOGGING_DEBUG(OctreePropagateLog, "kernel_propagate_bottom_up(level = " << l << "): " << timeDiff(time_loop, getCPUTime()) << " ms" << endl);
 #endif
@@ -2590,22 +2590,22 @@ namespace gpu_voxels {
 		bool NTree<branching_factor, level_count, InnerNode, LeafNode>::checkTree()
 		{
 			LOGGING_INFO(OctreeLog, "checking tree . . ." << endl);
-			//thrust::device_vector<uint8_t> error(1);
+			//parallel::device_vector<uint8_t> error(1);
 			uint8_t* ptr = nullptr;
-			HANDLE_CUDA_ERROR(cudaMalloc(&ptr, 128));
+			GVL_HANDLE_ERROR(GVL_MALLOC(&ptr, 128));
 			kernel_checkTree<branching_factor, level_count, InnerNode, LeafNode> << <1, 1 >> > (m_root, ptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			//bool e = (uint8_t) error[0];
 			uint8_t h_e;
-			HANDLE_CUDA_ERROR(cudaMemcpy(&h_e, ptr, 1, cudaMemcpyDeviceToHost));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(&h_e, ptr, 1, GVL_MEMCPY_DEVICE_TO_HOST));
 			const bool e = h_e;
 			if (!e)
 				LOGGING_INFO(OctreeLog, "checkTree() OK" << endl);
 			else
 				LOGGING_ERROR(OctreeLog, "##### ERROR checkTree() FAILED #####" << endl);
-			HANDLE_CUDA_ERROR(cudaFree(ptr));
+			GVL_HANDLE_ERROR(GVL_FREE(ptr));
 			return e;
 		}
 
@@ -2614,11 +2614,11 @@ namespace gpu_voxels {
 			std::vector<Vector3f>& points, uint8_t* d_status_selection, uint32_t min_level)
 		{
 			//TODO: Make this more performant! Use thrust transform...
-			thrust::device_vector<Cube>* d_tmp = nullptr;
+			parallel::device_vector<Cube>* d_tmp = nullptr;
 
 			extractCubes(d_tmp, d_status_selection, min_level);
 
-			thrust::host_vector<Cube> h_tmp = *d_tmp;
+			parallel::host_vector<Cube> h_tmp = *d_tmp;
 
 			//points.resize(h_tmp.size());
 
@@ -2644,12 +2644,12 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		size_t NTree<branching_factor, level_count, InnerNode, LeafNode>::extractCubes(
-			thrust::device_vector<Cube>*& d_cubes, uint8_t* d_status_selection, uint32_t min_level)
+			parallel::device_vector<Cube>*& d_cubes, uint8_t* d_status_selection, uint32_t min_level)
 		{
 			//  std::size_t size = allocInnerNodes + allocLeafNodes;
 			//  d_cubes->resize(size);
 
-			if (!d_cubes) d_cubes = new thrust::device_vector<Cube>(1);
+			if (!d_cubes) d_cubes = new parallel::device_vector<Cube>(1);
 
 			if (d_status_selection == nullptr)
 				d_status_selection = m_extract_status_selection;
@@ -2678,7 +2678,7 @@ namespace gpu_voxels {
 			}
 			LOGGING_DEBUG(OctreeCountBeforeExtractLog, "count: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
-			thrust::device_vector<NodeData> d_node_data(needed_size);
+			parallel::device_vector<NodeData> d_node_data(needed_size);
 			typedef LoadBalancer::Extract<
 				branching_factor,
 				level_count,
@@ -2727,7 +2727,7 @@ namespace gpu_voxels {
 			//  {
 			//    const uint32_t mapping_size = 256;
 			//    uint8_t* m_status_mapping = nullptr;
-			//    HANDLE_CUDA_ERROR(cudaMalloc( &m_status_mapping, mapping_size * sizeof(uint8_t)));
+			//    GVL_HANDLE_ERROR(GVL_MALLOC( &m_status_mapping, mapping_size * sizeof(uint8_t)));
 			//
 			//// create default status to VoxelType mapping
 			//    uint8_t mapping[mapping_size];
@@ -2740,14 +2740,14 @@ namespace gpu_voxels {
 			//    mapping[ns_OCCUPIED | ns_FREE | ns_UNKNOWN] = gpu_voxels::eBVM_OCCUPIED;
 			//    mapping[ns_OCCUPIED | ns_UNKNOWN] = gpu_voxels::eBVM_OCCUPIED;
 			//
-			//    HANDLE_CUDA_ERROR(
-			//        cudaMemcpy((void*) m_status_mapping, (void*) &mapping, mapping_size * sizeof(uint8_t),
-			//                   cudaMemcpyHostToDevice));
+			//    GVL_HANDLE_ERROR(
+			//        GVL_MEMCPY((void*) m_status_mapping, (void*) &mapping, mapping_size * sizeof(uint8_t),
+			//                   GVL_MEMCPY_HOST_TO_DEVICE));
 			//    num_extract_call = -1;
 			//  }
-			thrust::transform(d_node_data.begin(), d_node_data.begin() + used_size, d_cubes->begin(),
+			parallel::transform(d_node_data.begin(), d_node_data.begin() + used_size, d_cubes->begin(),
 				Trafo_NodeData_to_Cube(mapping));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			//++num_extract_call;
 
@@ -2764,7 +2764,7 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode,
-			LeafNode>::internal_rebuild(thrust::device_vector<NodeData>& d_node_data, const uint32_t num_cubes)
+			LeafNode>::internal_rebuild(parallel::device_vector<NodeData>& d_node_data, const uint32_t num_cubes)
 		{
 
 			// This throws a -Wunsused-variable at compile time, since this is only used as template parameter.
@@ -2793,52 +2793,52 @@ namespace gpu_voxels {
 			timespec total_time = getCPUTime();
 			timespec time = getCPUTime();
 #endif
-			thrust::host_vector<voxel_count> num_per_level(level_count);
-			thrust::device_vector<OctreeVoxelID> h_voxel_lists[level_count];
-			//thrust::device_vector<thrust::pair<NodeStatus, Probability> > d_last_level;
-			thrust::device_vector<BasicData>h_basic_data[level_count];
+			parallel::host_vector<voxel_count> num_per_level(level_count);
+			parallel::device_vector<OctreeVoxelID> h_voxel_lists[level_count];
+			//parallel::device_vector<parallel::pair<NodeStatus, Probability> > d_last_level;
+			parallel::device_vector<BasicData>h_basic_data[level_count];
 
 			{
 #if defined REBUILD_MESSAGES && defined _IC_DEBUG_
 				time = getCPUTime();
 #endif
-				thrust::device_vector<NodeData> d_node_data_tmp(num_cubes);
+				parallel::device_vector<NodeData> d_node_data_tmp(num_cubes);
 
 				// compute list of voxel_ids for each tree level
 				for (uint32_t l = 0; l < level_count - 1; ++l)
 				{
 					voxel_count num_items;
 					num_per_level[l] = num_items = voxel_count(
-						thrust::copy_if(d_node_data.begin(), d_node_data.begin() + num_cubes, d_node_data_tmp.begin(),
+						parallel::copy_if(d_node_data.begin(), d_node_data.begin() + num_cubes, d_node_data_tmp.begin(),
 							Comp_has_level(l)) - d_node_data_tmp.begin());
 #ifdef REBUILD_MESSAGES
 					LOGGING_DEBUG(OctreeRebuildLog, "level " << l << " num_items: " << num_items << endl);
 #endif
 
 					// transform to OctreeVoxelID
-					h_voxel_lists[l] = thrust::device_vector<OctreeVoxelID>(num_items);
-					thrust::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items,
+					h_voxel_lists[l] = parallel::device_vector<OctreeVoxelID>(num_items);
+					parallel::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items,
 						h_voxel_lists[l].begin(), Trafo_NodeData_to_OctreeVoxelID());
 
 					//      if (l == 0)
 					//      {
 					//        // transform to Pair
 					//        d_last_level.resize(num_items);
-					//        thrust::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items, d_last_level.begin(),
+					//        parallel::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items, d_last_level.begin(),
 					//                          Trafo_NodeData_to_Pair());
-					//        thrust::sort_by_key(h_voxel_lists[l].begin(), h_voxel_lists[l].end(), d_last_level.begin());
+					//        parallel::sort_by_key(h_voxel_lists[l].begin(), h_voxel_lists[l].end(), d_last_level.begin());
 					//      }
 					//      else
 					//      {
 						  // transform to NodeStatus
-					h_basic_data[l] = thrust::device_vector<BasicData>(num_items);
-					thrust::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items, h_basic_data[l].begin(),
+					h_basic_data[l] = parallel::device_vector<BasicData>(num_items);
+					parallel::transform(d_node_data_tmp.begin(), d_node_data_tmp.begin() + num_items, h_basic_data[l].begin(),
 						Trafo_to_BasicData());
-					thrust::sort_by_key(h_voxel_lists[l].begin(), h_voxel_lists[l].end(), h_basic_data[l].begin());
+					parallel::sort_by_key(h_voxel_lists[l].begin(), h_voxel_lists[l].end(), h_basic_data[l].begin());
 					//}
-					//thrust::sort(h_voxel_lists[l].begin(), h_voxel_lists[l].end());
+					//parallel::sort(h_voxel_lists[l].begin(), h_voxel_lists[l].end());
 				}
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				std::cout << gpu_voxels::getDeviceMemoryInfo();
 			}
 
@@ -2858,7 +2858,7 @@ namespace gpu_voxels {
 			{
 				BasicData tmp;
 				getRebuildResetData(tmp);
-				thrust::constant_iterator<BasicData> reset_data(tmp);
+				parallel::constant_iterator<BasicData> reset_data(tmp);
 
 				insertVoxel<update_Flag, BasicData>(
 					D_PTR(h_voxel_lists[l]),
@@ -2875,16 +2875,16 @@ namespace gpu_voxels {
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "InsertVoxel", prefix);
 
 			//// insert LeafNodes
-			//  thrust::device_vector<Probability> d_ll_probability(d_last_level.size());
-			//  thrust::device_vector<NodeStatus> d_ll_status(d_last_level.size());
-			//  thrust::transform(d_last_level.begin(), d_last_level.end(), d_ll_probability.begin(),
+			//  parallel::device_vector<Probability> d_ll_probability(d_last_level.size());
+			//  parallel::device_vector<NodeStatus> d_ll_status(d_last_level.size());
+			//  parallel::transform(d_last_level.begin(), d_last_level.end(), d_ll_probability.begin(),
 			//                    Trafo_Pair_to_Probability());
-			//  thrust::transform(d_last_level.begin(), d_last_level.end(), d_ll_status.begin(), Trafo_Pair_to_Status());
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  parallel::transform(d_last_level.begin(), d_last_level.end(), d_ll_status.begin(), Trafo_Pair_to_Status());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//
 			//  // insertVoxel<true, true, true, update_Flag>(D_PTR(h_voxel_lists[0]), D_PTR(d_ll_probability), D_PTR(d_ll_status), voxel_count(h_voxel_lists[0].size()), 0);
 			//
-			//  thrust::constant_iterator<NodeStatus> reset_status(STATUS_OCCUPANCY_MASK | ns_DYNAMIC_MAP | ns_STATIC_MAP);
+			//  parallel::constant_iterator<NodeStatus> reset_status(STATUS_OCCUPANCY_MASK | ns_DYNAMIC_MAP | ns_STATIC_MAP);
 			//  insertVoxel<update_Flag>(D_PTR(h_voxel_lists[0]), D_PTR(d_ll_probability), reset_status, D_PTR(d_ll_status),voxel_count(h_voxel_lists[0].size()), 0);
 
 #ifndef LOAD_BALANCING_PROPAGATE
@@ -2952,7 +2952,7 @@ namespace gpu_voxels {
 
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "ExtractCount", prefix);
 
-			thrust::device_vector<NodeData> d_node_data(needed_size);
+			parallel::device_vector<NodeData> d_node_data(needed_size);
 
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "Malloc", prefix);
 
@@ -3080,32 +3080,32 @@ namespace gpu_voxels {
 				temp[i] = OctreeVoxelID(pow(branching_factor, i));
 
 			// copy selection lookup table to constant memory
-			HANDLE_CUDA_ERROR(
-				cudaMemcpyToSymbol(const_voxel_at_level, temp, const_voxel_at_level_size * sizeof(OctreeVoxelID), 0, cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(
+				cudaMemcpyToSymbol(const_voxel_at_level, temp, const_voxel_at_level_size * sizeof(OctreeVoxelID), 0, GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			uint32_t temp2[const_voxel_at_level_size];
 			for (uint32_t i = 0; i < const_voxel_at_level_size; ++i)
 				temp2[i] = uint32_t(pow(pow(branching_factor, 1.0 / 3), i));
 
 			// copy selection lookup table to constant memory
-			HANDLE_CUDA_ERROR(
-				cudaMemcpyToSymbol(const_cube_side_length, temp2, const_voxel_at_level_size * sizeof(uint32_t), 0, cudaMemcpyHostToDevice));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(
+				cudaMemcpyToSymbol(const_cube_side_length, temp2, const_voxel_at_level_size * sizeof(uint32_t), 0, GVL_MEMCPY_HOST_TO_DEVICE));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			//  uint16_t temp3[MORTON_LOOKUP_SIZE];
 			//  for (uint32_t x = 0; x < MORTON_LOOKUP_SIZE; ++x)
 			//    temp3[x] = morton_code(x, 0, 0);
 			//  // copy morton lookup table to constant memory
-			//  HANDLE_CUDA_ERROR(
+			//  GVL_HANDLE_ERROR(
 			//      cudaMemcpyToSymbol(const_motron_lookup, temp3, branching_factor * sizeof(lookUpType), 0,
-			//                         cudaMemcpyHostToDevice));
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//                         GVL_MEMCPY_HOST_TO_DEVICE));
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::free_bounding_box(
-			const thrust::device_vector<Vector3ui>& d_points)
+			const parallel::device_vector<Vector3ui>& d_points)
 		{
 			timespec time = getCPUTime();
 			uint32_t level = 1;
@@ -3113,19 +3113,19 @@ namespace gpu_voxels {
 			MapProperties<typename InnerNode::RayCastType, branching_factor> map_properties(level);
 			voxel_count num_voxel = d_points.size();
 			{
-				thrust::device_vector<uint32_t> d_x(num_voxel);
-				thrust::device_vector<uint32_t> d_y(num_voxel);
-				thrust::device_vector<uint32_t> d_z(num_voxel);
+				parallel::device_vector<uint32_t> d_x(num_voxel);
+				parallel::device_vector<uint32_t> d_y(num_voxel);
+				parallel::device_vector<uint32_t> d_z(num_voxel);
 				uint32_t num_threads = 128;
 				uint32_t num_blocks = num_voxel / num_threads + 1;
 				kernel_splitCoordinates<<<num_blocks, num_threads>>>(D_PTR(d_points), num_voxel, D_PTR(d_x), D_PTR(d_y), D_PTR(d_z));
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-				const auto res_x = thrust::minmax_element(d_x.begin(), d_x.end());
-				const auto res_y = thrust::minmax_element(d_y.begin(), d_y.end());
-				const auto res_z = thrust::minmax_element(d_z.begin(), d_z.end());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				const auto res_x = parallel::minmax_element(d_x.begin(), d_x.end());
+				const auto res_y = parallel::minmax_element(d_y.begin(), d_y.end());
+				const auto res_z = parallel::minmax_element(d_z.begin(), d_z.end());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				map_properties.min_x = *res_x.first;
 				map_properties.max_x = *res_x.second;
@@ -3180,23 +3180,23 @@ namespace gpu_voxels {
 			// ### malloc array ###
 			time = getCPUTime();
 
-			HANDLE_CUDA_ERROR(
-				cudaMalloc(&map_properties.d_ptr,
+			GVL_HANDLE_ERROR(
+				GVL_MALLOC(&map_properties.d_ptr,
 					map_properties.size_v * sizeof(typename InnerNode::RayCastType)));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			// ##### init free space #####
 			typename InnerNode::RayCastType init;
 			getFreeValue(&init);
-			thrust::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
-			thrust::fill(d_ptr, d_ptr + map_properties.size_v, init);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::device_ptr<typename InnerNode::RayCastType> d_ptr(map_properties.d_ptr);
+			parallel::fill(d_ptr, d_ptr + map_properties.size_v, init);
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef FREE_BOUNDING_BOX_MESSAGES
 			LOGGING_DEBUG(OctreeFreeBoundingBoxLog, "cudaMalloc + cudaMemset: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 #endif
 
 			time = getCPUTime();
-			thrust::host_vector<ComputeFreeSpaceData> h_packed_levels(level_count, ComputeFreeSpaceData(nullptr, nullptr, 0));
+			parallel::host_vector<ComputeFreeSpaceData> h_packed_levels(level_count, ComputeFreeSpaceData(nullptr, nullptr, 0));
 			packVoxel_Map(map_properties, h_packed_levels, map_properties.size_v, level);
 
 #ifdef FREE_BOUNDING_BOX_MESSAGES
@@ -3211,7 +3211,7 @@ namespace gpu_voxels {
 				BasicData tmp;
 				getFreeBoxResetData(tmp);
 				//getOccupancyResetData(tmp);
-				thrust::constant_iterator<BasicData> reset_data(tmp);
+				parallel::constant_iterator<BasicData> reset_data(tmp);
 				insertVoxel<true, BasicData>(h_packed_levels[l].m_voxel_id, h_packed_levels[l].m_basic_data, reset_data,
 					h_packed_levels[l].m_count, l);
 				//}
@@ -3274,10 +3274,10 @@ namespace gpu_voxels {
 			load_balancer.run();
 			needed_size = load_balancer.m_num_elements;
 
-			thrust::host_vector<NodeData> h_node_data;
+			parallel::host_vector<NodeData> h_node_data;
 			uint32_t num_cubes;
 			{
-				thrust::device_vector<NodeData> d_node_data(needed_size);
+				parallel::device_vector<NodeData> d_node_data(needed_size);
 				MyLoadBalancer load_balancer(
 					this,
 					D_PTR(d_node_data),
@@ -3330,8 +3330,8 @@ namespace gpu_voxels {
 				in >> size;
 			}
 
-			thrust::host_vector<NodeData> h_node_data(size);
-			thrust::device_vector<NodeData> d_node_data(size);
+			parallel::host_vector<NodeData> h_node_data(size);
+			parallel::device_vector<NodeData> d_node_data(size);
 
 			if (bin_mode)
 			{
@@ -3360,14 +3360,14 @@ namespace gpu_voxels {
 		void NTree<branching_factor, level_count, InnerNode, LeafNode>::clear()
 		{
 			for (uint32_t i = 0; i < m_allocation_list.size(); ++i)
-				HANDLE_CUDA_ERROR(cudaFree((m_allocation_list)[i]));
+				GVL_HANDLE_ERROR(GVL_FREE((m_allocation_list)[i]));
 			m_allocation_list.clear();
 
 			auto* r = new InnerNode();
 			initRoot(*r);
 			r->setStatus(r->getStatus() | ns_STATIC_MAP | ns_DYNAMIC_MAP);
-			HANDLE_CUDA_ERROR(cudaMalloc(&m_root, sizeof(InnerNode)));
-			HANDLE_CUDA_ERROR(cudaMemcpy(m_root, r, sizeof(InnerNode), cudaMemcpyHostToDevice));
+			GVL_HANDLE_ERROR(GVL_MALLOC(&m_root, sizeof(InnerNode)));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(m_root, r, sizeof(InnerNode), GVL_MEMCPY_HOST_TO_DEVICE));
 			m_allocation_list.push_back(m_root);
 			delete r;
 

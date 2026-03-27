@@ -49,20 +49,20 @@ static const std::size_t RAND_SEED = 2746135025UL;
 
 bool testAndInitDevice();
 
-thrust::host_vector<gpu_voxels::Vector3ui> linearPoints(voxel_count num_points, OctreeVoxelID maxValue);
+parallel::host_vector<gpu_voxels::Vector3ui> linearPoints(voxel_count num_points, OctreeVoxelID maxValue);
 
 //struct Trafo_Point_to_Voxel
 //{
-//  __host__ __device__ Voxel operator()(const gpu_voxels::Vector3ui x)
+//  GVL_HOST_DEVICE Voxel operator()(const gpu_voxels::Vector3ui x)
 //  {
 //    return Voxel(morton_code60(x), x, MAX_OCCUPANCY);
 //  }
 //};
 
-//void trafoPointToVoxel(thrust::host_vector<gpu_voxels::Vector3ui>& h_points,
-//                       thrust::device_vector<Voxel>& d_voxel)
+//void trafoPointToVoxel(parallel::host_vector<gpu_voxels::Vector3ui>& h_points,
+//                       parallel::device_vector<Voxel>& d_voxel)
 //{
-//  thrust::transform(h_points.begin(), h_points.end(), d_voxel.begin(), Trafo_Point_to_Voxel());
+//  parallel::transform(h_points.begin(), h_points.end(), d_voxel.begin(), Trafo_Point_to_Voxel());
 //}
 
 template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
@@ -74,7 +74,7 @@ bool buildOctree(NTree<branching_factor, level_count, InnerNode, LeafNode>* tree
   std::size_t num_voxel = pow(branching_factor, level_count - 1);
   std::cout << gpu_voxels::getDeviceMemoryInfo();
 
-  // thrust::device_std::std::vector<voxel_id> voxel;
+  // parallel::device_std::std::vector<voxel_id> voxel;
 
   //  for (uint32_t i = 0; i < num_points; ++i)
   //    if (voxel[i] == 41)
@@ -92,7 +92,7 @@ bool buildOctree(NTree<branching_factor, level_count, InnerNode, LeafNode>* tree
   {
     std::vector<gpu_voxels::Vector3ui> pts;
     transformPointCloud(points, pts, build_result.map_dimensions, scaling);
-    build_result.h_points = thrust::host_vector<gpu_voxels::Vector3ui>(pts.begin(), pts.end());
+    build_result.h_points = parallel::host_vector<gpu_voxels::Vector3ui>(pts.begin(), pts.end());
     num_points = pts.size();
   }
   else
@@ -128,8 +128,8 @@ bool buildOctree(NTree<branching_factor, level_count, InnerNode, LeafNode>* tree
     build_result.h_points[i].z = build_result.h_points[i].z + offset.z;
   }
 
-//  thrust::device_vector<Voxel> d_voxel(build_result.h_points.size());
-//  thrust::transform(build_result.h_points.begin(), build_result.h_points.end(), d_voxel.begin(),
+//  parallel::device_vector<Voxel> d_voxel(build_result.h_points.size());
+//  parallel::transform(build_result.h_points.begin(), build_result.h_points.end(), d_voxel.begin(),
 //                    Trafo_Point_to_Voxel());
 
   tree->build(build_result.h_points, free_bounding_box);
@@ -162,9 +162,9 @@ bool buildOctree(NTree<branching_factor, level_count, InnerNode, LeafNode>* tree
 }
 
 template<int VTF_SIZE>
-thrust::host_vector<BitVector<VTF_SIZE> > randomVoxelTypes(voxel_count num_points)
+parallel::host_vector<BitVector<VTF_SIZE> > randomVoxelTypes(voxel_count num_points)
 {
-  thrust::host_vector<BitVector<VTF_SIZE> > rand_types(num_points);
+  parallel::host_vector<BitVector<VTF_SIZE> > rand_types(num_points);
 
   for (voxel_count i = 0; i < num_points; ++i)
   {

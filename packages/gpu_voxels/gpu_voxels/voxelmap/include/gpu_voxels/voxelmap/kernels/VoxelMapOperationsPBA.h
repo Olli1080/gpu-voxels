@@ -54,6 +54,8 @@ DAMAGE.
 #ifndef ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_H_INCLUDED
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_PBA_H_INCLUDED
 
+#include <gpu_voxels/helpers/SyclBridge.h>
+
 namespace gpu_voxels {
 	namespace voxelmap {
 
@@ -61,49 +63,49 @@ namespace gpu_voxels {
 		 * PBA phase 1: flood obstacles within band slice to right
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__ void kernelPBAphase1FloodZ(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size);
+		GVL_GLOBAL void kernelPBAphase1FloodZ(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int band_size);
 
 		/**
 		 * PBA phase 1: collect possible begins and ends to this band from other bands
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase1PropagateInterband(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
 		/**
 		 * PBA phase 1: update band using new top and bottom pixels; top and bottom in input; transform output voxel
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase1Update(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
 		/**
 		 * PBA phase 2
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2ProximateBackpointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2CreateForwardPointers(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase2MergeBands(InputIterator1 input, InputIterator2 output, const Vector3ui dims, int bandSize);
 
 		/**
 		 * PBA phase 3
 		 */
 		template<typename InputIterator1, typename InputIterator2>
-		__global__
+		GVL_GLOBAL
 			void kernelPBAphase3Distances(InputIterator1 input, InputIterator2 output, const Vector3ui dims, bool calc_distance);
 
 		/**
 		 * in-place transpose x/y coordinates within every z-layer
 		 */
 		template<typename InputIterator>
-		__global__
+		GVL_GLOBAL
 			void kernelPBA3DTransposeXY(InputIterator input);
 
 	} // end of namespace voxelmap

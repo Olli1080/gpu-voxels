@@ -102,7 +102,7 @@ namespace gpu_voxels
          */
         void updatePointCloud(uint16_t cloud, const PointCloud& pointcloud);
 
-        void updatePointCloud(uint16_t cloud, const thrust::device_vector<Vector3f>& pointcloud);
+        void updatePointCloud(uint16_t cloud, const parallel::device_vector<Vector3f>& pointcloud);
 
         /*!
          * \brief updatePointCloud This updates a specific cloud on the host.
@@ -152,7 +152,7 @@ namespace gpu_voxels
          * \brief getPointcloudSizes
          * \return A vector of the sizes of all point clouds.
          */
-        [[nodiscard]] const thrust::host_vector<uint32_t>& getPointcloudSizes() const;
+        [[nodiscard]] const parallel::host_vector<uint32_t>& getPointcloudSizes() const;
 
         /*!
          * \brief getPointCloud
@@ -165,13 +165,13 @@ namespace gpu_voxels
          * \brief getDevicePointer
          * \return Returns a writable pointer to the device data
          */
-        [[nodiscard]] thrust::device_ptr<MetaPointCloudStruct> getDevicePointer() const;
+        [[nodiscard]] parallel::device_ptr<MetaPointCloudStruct> getDevicePointer() const;
 
         /*!
          * \brief getDeviceConstPointer
          * \return Returns a const pointer to the device data for RO access
          */
-        [[nodiscard]] thrust::device_ptr<const MetaPointCloudStruct> getDeviceConstPointer() const;
+        [[nodiscard]] parallel::device_ptr<const MetaPointCloudStruct> getDeviceConstPointer() const;
 
         void debugPointCloud() const;
 
@@ -214,13 +214,13 @@ namespace gpu_voxels
     private:
 
         void addCloud(const Vector3f* points, uint32_t pointcloud_size, bool sync = false, const std::string& name = "");
-        void addCloud(const thrust::device_vector<Vector3f>& point_cloud, const std::string& name = "");
+        void addCloud(const parallel::device_vector<Vector3f>& point_cloud, const std::string& name = "");
 
         /*!
          * \brief Init does the allocation of Device and Host memory
          * \param _point_cloud_sizes The point cloud sizes that are required for the malloc
          */
-        void init(const thrust::host_vector<uint32_t>& _point_cloud_sizes);
+        void init(const parallel::host_vector<uint32_t>& _point_cloud_sizes);
 
         /*!
          * \brief MetaPointCloud::Destruct Private destructor that is also called, when a
@@ -235,11 +235,11 @@ namespace gpu_voxels
         std::shared_ptr<MetaPointCloudStructLocal> m_point_clouds_local;
         std::shared_ptr<MetaPointCloudStruct> m_dev_point_clouds_local;
 
-        thrust::device_vector<Vector3f> m_dev_ptr_to_accumulated_cloud;
-        thrust::device_ptr<MetaPointCloudStruct> m_dev_ptr_to_point_clouds_struct;
-        std::vector<thrust::device_ptr<Vector3f>> m_dev_ptrs_to_addrs;
-        thrust::device_vector<uint32_t> m_dev_ptr_to_cloud_sizes;
-        thrust::device_vector<Vector3f*> m_dev_ptr_to_clouds_base_addresses;
+        parallel::device_vector<Vector3f> m_dev_ptr_to_accumulated_cloud;
+        parallel::device_ptr<MetaPointCloudStruct> m_dev_ptr_to_point_clouds_struct;
+        std::vector<parallel::device_ptr<Vector3f>> m_dev_ptrs_to_addrs;
+        parallel::device_vector<uint32_t> m_dev_ptr_to_cloud_sizes;
+        parallel::device_vector<Vector3f*> m_dev_ptr_to_clouds_base_addresses;
     };
 }
 #endif

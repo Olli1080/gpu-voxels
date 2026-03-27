@@ -83,7 +83,7 @@ namespace gpu_voxels {
 		// but only, if data is available
 		if (m_primitive_array->getVoidDeviceDataPtr())
 		{
-			HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_primitive_array->getVoidDeviceDataPtr()));
+			GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_primitive_array->getVoidDeviceDataPtr()));
 			*m_shm_primitive_diameter = m_primitive_array->getDiameter();
 			*m_shm_primitive_type = m_primitive_array->getPrimitiveType();
 			*m_shm_num_primitives = m_primitive_array->getNumPrimitives();

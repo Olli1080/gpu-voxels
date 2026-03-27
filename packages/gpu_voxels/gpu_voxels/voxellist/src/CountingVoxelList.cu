@@ -20,16 +20,11 @@
 *
 */
 //----------------------------------------------------------------------
-#include "CountingVoxelList.h"
-#include <gpu_voxels/logging/logging_voxellist.h>
-
-#include <thrust/device_vector.h>
-#include <thrust/transform.h>
-#include <thrust/remove.h>
-#include <thrust/system_error.h>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 
 namespace gpu_voxels {
 	namespace voxellist {
+		using namespace gpu_voxels::parallel;
 		// using namespace gpu_voxels::voxelmap;
 
 
@@ -43,7 +38,7 @@ namespace gpu_voxels {
 			// m_colliding_bits_result_list.resize(cMAX_NR_OF_BLOCKS);
 
 			// Allocate a BitVectorVoxel on the device to it use as bitmask for later coll-checks.
-			// cudaMalloc(&m_dev_bitmask, sizeof(CountingVoxel));
+			// GVL_MALLOC(&m_dev_bitmask, sizeof(CountingVoxel));
 
 			//TODO: check memory allocation for bitmask, colliding_bits, dev_colliding_bits
 		}
@@ -59,7 +54,7 @@ namespace gpu_voxels {
 			int8_t threshold;
 			is_collision_candidate(int8_t th) : threshold(th) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(CountingVoxel v) const
 			{
 				return v.getCount() >= threshold;
@@ -71,11 +66,11 @@ namespace gpu_voxels {
 			int8_t threshold;
 			is_underpopulated(int8_t th) : threshold(th) {}
 
-			__host__ __device__
-				bool operator()(thrust::tuple<MapVoxelID, Vector3ui, CountingVoxel> triple_it) const
+			GVL_HOST_DEVICE
+				bool operator()(parallel::tuple<MapVoxelID, Vector3ui, CountingVoxel> triple_it) const
 			{
-				const CountingVoxel cv = thrust::get<2>(triple_it);
-				//printf("voxel count was: %d, id: %d\n", cv.getCount(), thrust::get<0>(triple_it));
+				const CountingVoxel cv = parallel::get<2>(triple_it);
+				//printf("voxel count was: %d, id: %d\n", cv.getCount(), parallel::get<0>(triple_it));
 				return cv.getCount() < threshold;
 			}
 		};
@@ -86,11 +81,11 @@ namespace gpu_voxels {
 
 			std::scoped_lock lock(this->m_mutex, map->m_mutex);
 
-			thrust::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
+			parallel::device_vector<bool> collision_stencil(this->m_dev_id_list.size()); // Temporary data structure
 
 			//after transform the collision_stencil will have a true in every element that should be considered for collision checking
 			const is_collision_candidate filter(static_cast<int>(coll_threshold));
-			thrust::transform(this->m_dev_list.begin(), this->m_dev_list.end(), collision_stencil.begin(), filter);
+			parallel::transform(this->m_dev_list.begin(), this->m_dev_list.end(), collision_stencil.begin(), filter);
 
 			collisions = this->collideVoxellists(map, offset, collision_stencil);
 			return collisions;
@@ -107,11 +102,11 @@ namespace gpu_voxels {
 			const is_underpopulated filter(threshold);
 
 			// remove voxels below threshold
-			const keyCoordVoxelZipIterator new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
+			const keyCoordVoxelZipIterator new_end = parallel::remove_if(this->getBeginTripleZipIterator(),
 			                                                           this->getEndTripleZipIterator(),
 			                                                           filter);
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = parallel::distance(m_dev_id_list.begin(), parallel::get<0>(new_end.get_iterator_tuple()));
 			this->resize(new_length);
 
 			//this->screendump(true); // DEBUG

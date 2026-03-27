@@ -234,7 +234,7 @@ int main(int argc, char* argv[])
         const auto tmp = robotMap->as<voxelmap::BitVectorVoxelMap>();
 
         std::vector<BitVoxel<256>> buffer(tmp->getVoxelMapSize());
-        cudaMemcpy(buffer.data(), robotMap->getConstVoidDeviceDataPtr(), robotMap->getMemoryUsage(), cudaMemcpyDeviceToHost);
+        GVL_MEMCPY(buffer.data(), robotMap->getConstVoidDeviceDataPtr(), robotMap->getMemoryUsage(), GVL_MEMCPY_DEVICE_TO_HOST);
         const auto dim = robotMap->getDimensions();
         auto sl = robotMap->getVoxelSideLength();
         auto sth = robotMap->getMetricDimensions();

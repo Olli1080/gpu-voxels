@@ -83,7 +83,7 @@ struct Benchmark_Parameter
     kinect_fps = 1.0f;
   }
 
-  __host__
+  GVL_HOST
     friend std::ostream& operator<<(std::ostream& out, const Benchmark_Parameter& parameter)
   {
     out << "pc_file: " << parameter.pc_file << std::endl << "num_points: " << parameter.num_points
@@ -187,7 +187,7 @@ struct Provider_Parameter
     model_type = eMT_Probabilistic;
   }
 
-  __host__
+  GVL_HOST
     friend std::ostream& operator<<(std::ostream& out, const Provider_Parameter& parameter)
   {
     return out;
@@ -288,7 +288,7 @@ struct Bech_Parameter
     save_collisions = false;
   }
 
-//  __host__
+//  GVL_HOST
 //   friend std::ostream& operator<<(ostream& out, const Provider_Parameter& parameter)
 //  {
 //    return out;
@@ -332,7 +332,7 @@ struct BuildResult
   uint64_t octree_inner_nodes;
   gpu_voxels::Vector3ui map_dimensions;
   NTree<branching_factor, level_count, InnerNode, LeafNode>* o;
-  thrust::host_vector<gpu_voxels::Vector3ui> h_points;
+  parallel::host_vector<gpu_voxels::Vector3ui> h_points;
   gpu_voxels::Vector3ui center;
 };
 

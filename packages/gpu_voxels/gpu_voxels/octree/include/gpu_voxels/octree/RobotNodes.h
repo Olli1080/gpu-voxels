@@ -44,60 +44,60 @@ namespace gpu_voxels {
 			{
 			public:
 				// default constructor needed
-				__device__ __host__ __forceinline__ LeafNode()
+				GVL_HOST_DEVICE __forceinline__ LeafNode()
 				{
 
 				}
 
-				__device__ __forceinline__
+				GVL_DEVICE __forceinline__
 					void init_d()
 				{
 					m_voxel_meaning.clear();
 				}
 
-				__device__ __forceinline__ void initLastLevel_d()
+				GVL_DEVICE __forceinline__ void initLastLevel_d()
 				{
 					init_d();
 				}
 
-				__host__
+				GVL_HOST
 					void init_h()
 				{
 					m_voxel_meaning.clear();
 				}
 
-				__host__
+				GVL_HOST
 					void init_h(uint32_t level)
 				{
 					init_h();
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isOccupied()
 				{
 					return m_voxel_meaning.getBit(eBVM_OCCUPIED);
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setOccupied(BitVoxelMeaning voxelMeaning)
 				{
 					m_voxel_meaning.setBit(voxelMeaning);
 					m_voxel_meaning.setBit(eBVM_OCCUPIED);
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setOccupied()
 				{
 					m_voxel_meaning.setBit(eBVM_OCCUPIED);
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setChildPtr(void* child)
 				{
 					// dummy
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void* getChildPtr()
 				{
 					// function not supported by this type
@@ -105,7 +105,7 @@ namespace gpu_voxels {
 					return 0;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setFree(BitVoxelMeaning voxelMeaning)
 				{
 					m_voxel_meaning.setBit(voxelMeaning);
@@ -113,11 +113,11 @@ namespace gpu_voxels {
 				}
 
 #ifdef DISABLE_SEPARATE_COMPILTION
-				__device__ __host__
+				GVL_HOST_DEVICE
 					bool isInConflict(Environment::LeafNode env_LeafNode);
 #endif
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isInConflict(Robot::LeafNode rob_LeafNode)
 				{
 					return isOccupied() & rob_LeafNode.isOccupied();
@@ -131,7 +131,7 @@ namespace gpu_voxels {
 			class InnerNode
 			{
 			private:
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void init(NodeStatus status)
 				{
 					m_child_low = 0;
@@ -144,12 +144,12 @@ namespace gpu_voxels {
 			public:
 
 				// default constructor needed
-				__device__ __host__ __forceinline__ InnerNode()
+				GVL_HOST_DEVICE __forceinline__ InnerNode()
 				{
 
 				}
 
-				__device__ __forceinline__
+				GVL_DEVICE __forceinline__
 					void init_d()
 				{
 					init(ns_FREE);
@@ -158,7 +158,7 @@ namespace gpu_voxels {
 					m_voxel_meaning = ~m_voxel_meaning;
 				}
 
-				__device__ __forceinline__
+				GVL_DEVICE __forceinline__
 					void initLastLevel_d()
 				{
 					init(NodeStatus(ns_FREE | ns_LAST_LEVEL));
@@ -168,45 +168,45 @@ namespace gpu_voxels {
 
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool hasStatus(NodeStatus status)
 				{
 					return (getStatus() & status) > 0;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isOccupied()
 				{
 					return hasStatus(NodeStatus(ns_OCCUPIED | ns_PART));
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setOccupied()
 				{
 					// clear all flags except LAST_LEVEL and set PART_OCCUPIED
 					setStatus(NodeStatus((getStatus() & ns_LAST_LEVEL) | ns_PART));
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					NodeStatus getStatus()
 				{
 					return m_status;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setStatus(NodeStatus status)
 				{
 					assert(uint32_t(status) <= 0xFF);
 					m_status = status;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void* getChildPtr()
 				{
 					return (void*)((uint64_t(m_child_high) << (8 * sizeof(m_child_low))) | uint64_t(m_child_low));
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setChildPtr(void* child)
 				{
 					assert(
@@ -217,11 +217,11 @@ namespace gpu_voxels {
 				}
 
 #ifdef DISABLE_SEPARATE_COMPILTION
-				__device__ __host__
+				GVL_HOST_DEVICE
 					bool isInConflict(Environment::InnerNode env_InnerNode);
 #endif
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isInConflict(Robot::InnerNode rob_InnerNode)
 				{
 					return isOccupied() & rob_InnerNode.isOccupied();

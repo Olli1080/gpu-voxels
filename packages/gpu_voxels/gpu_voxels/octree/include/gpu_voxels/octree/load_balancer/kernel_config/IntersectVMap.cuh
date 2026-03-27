@@ -36,7 +36,7 @@ namespace gpu_voxels
 	{
 		namespace LoadBalancer
 		{
-			__device__ __forceinline__
+			GVL_DEVICE __forceinline__
 				void getNextCoordinates(const gpu_voxels::Vector3ui coordinate, uint32_t child, uint8_t level,
 					gpu_voxels::Vector3ui& new_coordinate_min, gpu_voxels::Vector3ui& new_coordinate_max)
 			{
@@ -50,7 +50,7 @@ namespace gpu_voxels
 				new_coordinate_max = new_coordinate_min + gpu_voxels::Vector3ui::Constant(coordinate_step);
 			}
 
-			__device__ __forceinline__
+			GVL_DEVICE __forceinline__
 			void check_border(const gpu_voxels::Vector3ui& ntree_min, const gpu_voxels::Vector3ui& ntree_max,
 				const gpu_voxels::Vector3ui& voxelmap_min, const gpu_voxels::Vector3ui& voxelmap_max, bool& is_inside,
 				bool& is_at_border)
@@ -98,7 +98,7 @@ namespace gpu_voxels
 					std::size_t my_num_collisions;
 					BitVector<vtf_size> my_flags;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						VariablesConfig() :
 						my_num_collisions(0)
 					{
@@ -111,7 +111,7 @@ namespace gpu_voxels
 				{
 				public:
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						ConstConfig(const dim3 p_grid_dim,
 							const dim3 p_block_dim,
 							const dim3 p_block_ids,
@@ -137,7 +137,7 @@ namespace gpu_voxels
 					const uint32_t min_level;
 					BitVector<vtf_size>* result_voxelTypeFlags;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						KernelParameters(const typename Base::AbstractKernelParameters& abstract_params,
 							std::size_t* p_num_collisions,
 							const gpu_voxels::Vector3i p_offset,
@@ -163,7 +163,7 @@ namespace gpu_voxels
 				typedef ConstConfig Constants;
 				typedef KernelParameters KernelParams;
 
-				__device__
+				GVL_DEVICE
 					static void doLoadBalancedWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
@@ -202,7 +202,7 @@ namespace gpu_voxels
 					}
 
 					// handle leaf nodes
-					if (__syncthreads_or(is_last_level))
+					if (GVL_SYNCTHREADS_or(is_last_level))
 					{
 						InnerNode* temp_node;
 						const uint32_t leafs_per_work_item = branching_factor * branching_factor;
@@ -289,14 +289,14 @@ namespace gpu_voxels
 						InnerNode* children = node_active ? ((InnerNode*)node->getChildPtr()) : node;
 						*stackPointer = WorkItem(children, coordinates, level - 1, chk_border, node_active);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (constants.thread_id == 0)
 						shared_mem->num_stack_work_items += insert_count_tid0;
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 
-				__device__
+				GVL_DEVICE
 					static void doReductionWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, Constants& constants, KernelParams& kernel_params)
 				{
@@ -315,7 +315,7 @@ namespace gpu_voxels
 							(unsigned long long int) variables.my_num_collisions);
 				}
 
-				__device__
+				GVL_DEVICE
 					static bool abortLoop(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{

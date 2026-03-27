@@ -88,7 +88,7 @@ namespace gpu_voxels
 		 * \param points Host pointer to points
 		 * \param size Number of points
 		 */
-		void add(const thrust::host_vector<Vector3f>& points);
+		void add(const parallel::host_vector<Vector3f>& points);
 
 		/*!
 		 * \brief update Replaces all points with the points given by the input cloud.
@@ -105,7 +105,7 @@ namespace gpu_voxels
 		 * \param points Host pointer to points.
 		 * \param size Number of points
 		 */
-		void update(const thrust::host_vector<Vector3f>& points);
+		void update(const parallel::host_vector<Vector3f>& points);
 
 		/*!
 		 * \brief transformSelf Applies the transformation to the own points and overrides the points
@@ -131,10 +131,10 @@ namespace gpu_voxels
 		 */
 		void scale(const Vector3f& scaling, PointCloud& scaled_cloud) const;
 
-		thrust::device_vector<Vector3f>& getPointsDevice();
-		const thrust::device_vector<Vector3f>& getPointsDevice() const;
+		parallel::device_vector<Vector3f>& getPointsDevice();
+		const parallel::device_vector<Vector3f>& getPointsDevice() const;
 		uint32_t getPointCloudSize() const;
-		thrust::host_vector<Vector3f> getPoints() const;
+		parallel::host_vector<Vector3f> getPoints() const;
 
 		//for testing
 		void print() const;
@@ -144,7 +144,7 @@ namespace gpu_voxels
 		//! Only allocates memory
 		void resize(uint32_t new_number_of_points);
 
-		thrust::device_vector<Vector3f> m_points_dev;
+		parallel::device_vector<Vector3f> m_points_dev;
 	};
 
 }//end namespace gpu_voxels

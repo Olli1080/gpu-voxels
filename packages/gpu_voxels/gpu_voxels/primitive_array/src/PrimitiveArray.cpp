@@ -41,7 +41,7 @@ namespace gpu_voxels {
             if (m_dev_ptr_to_primitive_positions)
             {
                 //delete old array
-                cudaFree(m_dev_ptr_to_primitive_positions);
+                GVL_FREE(m_dev_ptr_to_primitive_positions);
                 m_dev_ptr_to_primitive_positions = nullptr;
             }
         }
@@ -112,18 +112,18 @@ namespace gpu_voxels {
                 if (m_dev_ptr_to_primitive_positions)
                 {
                     //delete old array
-                    cudaFree(m_dev_ptr_to_primitive_positions);
+                    GVL_FREE(m_dev_ptr_to_primitive_positions);
                     m_dev_ptr_to_primitive_positions = nullptr;
                 }
                 // allocate the accumulated memory for the positions of the primitives
                 m_num_entities = static_cast<uint32_t>(points.size());
-                HANDLE_CUDA_ERROR(
-                    cudaMalloc(reinterpret_cast<void**>(&m_dev_ptr_to_primitive_positions), m_num_entities * sizeof(Vector4f)));
+                GVL_HANDLE_ERROR(
+                    GVL_MALLOC(reinterpret_cast<void**>(&m_dev_ptr_to_primitive_positions), m_num_entities * sizeof(Vector4f)));
             }
 
-            HANDLE_CUDA_ERROR(
-                cudaMemcpy(m_dev_ptr_to_primitive_positions, points.data(), m_num_entities * sizeof(Vector4f),
-                    cudaMemcpyHostToDevice));
+            GVL_HANDLE_ERROR(
+                GVL_MEMCPY(m_dev_ptr_to_primitive_positions, points.data(), m_num_entities * sizeof(Vector4f),
+                    GVL_MEMCPY_HOST_TO_DEVICE));
         }
 
         std::size_t PrimitiveArray::getMemoryUsage()

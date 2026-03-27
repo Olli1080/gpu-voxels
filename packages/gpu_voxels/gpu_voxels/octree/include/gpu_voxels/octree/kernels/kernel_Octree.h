@@ -55,7 +55,7 @@ namespace gpu_voxels
 		 * Counts the number of needed parent nodes to store this level. This is done by checking the prefix of their zorder IDs.
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 		void kernel_countNodes(OctreeVoxelID* const voxel, const OctreeVoxelID numVoxel, const uint32_t level, OctreeVoxelID* const sum)
 		{
 			const OctreeVoxelID chunk_size = ceil(static_cast<double>(numVoxel) / (gridDim.x * blockDim.x));
@@ -84,7 +84,7 @@ namespace gpu_voxels
 		 * Kernel to set the newly allocated nodes to its default value (status to unknown)
 		 */
 		template<typename T, bool lastLevel>
-		__global__
+		GVL_GLOBAL
 		void kernel_clearNodes(const voxel_count size, T* const nodes)
 		{
 			// init nodes
@@ -103,7 +103,7 @@ namespace gpu_voxels
 		 * and set the child pointers for level > 0
 		 */
 		template<typename T1, typename T2, std::size_t branching_factor>
-		__global__
+		GVL_GLOBAL
 		void kernel_setNodes(OctreeVoxelID* const voxel, const OctreeVoxelID numVoxel, const uint32_t level, OctreeVoxelID* const sum, T1* const nodes,
 			OctreeVoxelID* const nodeIds, T2* const childNodes)
 		{
@@ -139,7 +139,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 		void kernel_print(InnerNode* root, InnerNode* stack1, InnerNode* stack2)
 		{
 			int32_t stack1Top = -1;
@@ -195,12 +195,12 @@ namespace gpu_voxels
 			T2 m_b;
 			T3 m_c;
 
-			__host__ __device__ MyTripple()
+			GVL_HOST_DEVICE MyTripple()
 			{
 
 			}
 
-			__host__ __device__ MyTripple(T1 t1, T2 t2, T3 t3)
+			GVL_HOST_DEVICE MyTripple(T1 t1, T2 t2, T3 t3)
 			{
 				m_a = t1;
 				m_b = t2;
@@ -208,7 +208,7 @@ namespace gpu_voxels
 			}
 		};
 
-		__device__
+		GVL_DEVICE
 			static void getStatusString(char* status, uint8_t nodeStatus)
 		{
 			for (uint32_t i = 0; i < 8; ++i)
@@ -233,7 +233,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 			void kernel_print2(InnerNode* root, MyTripple<InnerNode*, OctreeVoxelID, bool>* stack1,
 				MyTripple<InnerNode*, OctreeVoxelID, bool>* stack2)
 		{
@@ -309,7 +309,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__ void kernel_find(InnerNode* root, Vector3ui* voxel, OctreeVoxelID numVoxel, void** resultNode,
+		GVL_GLOBAL void kernel_find(InnerNode* root, Vector3ui* voxel, OctreeVoxelID numVoxel, void** resultNode,
 			enum NodeType* resultNodeType)
 		{
 			const OctreeVoxelID chunk_size = ceil(double(numVoxel) / (gridDim.x * blockDim.x));
@@ -344,10 +344,10 @@ namespace gpu_voxels
 		 * This kernel can not handle voxelmeanings from the colliding list!
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__ void kernel_intersect(InnerNode* root, Vector3ui* voxel, OctreeVoxelID numVoxel,
+		GVL_GLOBAL void kernel_intersect(InnerNode* root, Vector3ui* voxel, OctreeVoxelID numVoxel,
 			voxel_count* num_collisions)
 		{
-			__shared__ voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
 			const OctreeVoxelID id = (blockIdx.x * blockDim.x + threadIdx.x);
 
 			voxel_count my_num_collisions = 0;
@@ -364,13 +364,13 @@ namespace gpu_voxels
 					node->isOccupied();
 			}
 			shared_num_collisions[threadIdx.x] = my_num_collisions;
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			REDUCE(shared_num_collisions, threadIdx.x, blockDim.x, +)
 
 				if (threadIdx.x == 0)
 					num_collisions[blockIdx.x] = shared_num_collisions[0];
-			__syncthreads();
+			GVL_SYNCTHREADS();
 		}
 
 
@@ -423,21 +423,21 @@ namespace gpu_voxels
       }
 
 		template<class Voxel>
-		__device__
+		GVL_DEVICE
 			void reduceVoxels(Voxel& flags, const int thread_id, const int num_threads, Voxel* shared_mem)
 		{
 			shared_mem[thread_id] = flags;
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (int r = num_threads / 2; r != 0; r /= 2)
 			{
 				if (thread_id < r)
 					shared_mem[thread_id] = Voxel::reduce(shared_mem[thread_id], shared_mem[thread_id + r]);
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 			if (thread_id == 0)
 				flags = shared_mem[0];
-			__syncthreads();
+			GVL_SYNCTHREADS();
 		}
 
 		/*!
@@ -449,12 +449,12 @@ namespace gpu_voxels
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			bool set_collision_flag, typename VoxelFlags, bool compute_voxelTypeFlags, bool compute_collsWithUnknown>
-		__global__
+		GVL_GLOBAL
 			void kernel_intersect(InnerNode* root, OctreeVoxelID* voxel, VoxelFlags* voxelFlags, voxel_count num_voxel,
 				voxel_count* num_collisions, VoxelFlags* result_voxelFlags)
 		{
-			__shared__ voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
-			__shared__ voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
 			const uint32_t STEPS = 2;
 			VoxelFlags my_voxel_flags;
 
@@ -507,7 +507,7 @@ namespace gpu_voxels
 				//    const voxel_id nodeID6 = voxel[i + 6];
 				//    TRAVES_MACRO(nodeID6)
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			// The collision counter per thread is incremented by TRAVES_MACRO.
 			// So this summs up the collisions per Block
@@ -538,13 +538,13 @@ namespace gpu_voxels
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			bool set_collision_flag, bool compute_voxelTypeFlags, bool compute_collsWithUnknown, typename VoxelType>
-		__global__ void kernel_intersect_VoxelMap(InnerNode* root, const VoxelType* voxels, uint32_t voxelmap_size,
+		GVL_GLOBAL void kernel_intersect_VoxelMap(InnerNode* root, const VoxelType* voxels, uint32_t voxelmap_size,
 			gpu_voxels::Vector3ui dimensions, voxel_count* num_collisions, voxel_count* num_collisions_w_unknown,
 			VoxelType* d_result_voxels, const uint32_t min_level,
 			const Vector3i voxelmap_offset = Vector3i::Zero())
 		{
-			__shared__ voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
-			__shared__ voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
 			SharedVoxel<VoxelType> shared;
 			VoxelType* shared_voxels = shared.getPointer();
 			VoxelType my_voxel_flags;
@@ -567,7 +567,7 @@ namespace gpu_voxels
 					TRAVES_MACRO(nodeID, my_voxel_flags = VoxelType::reduce(my_voxel_flags, *my_voxel), min_level)
 				}
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			REDUCE(shared_num_collisions, threadIdx.x, blockDim.x, +)
 
@@ -596,13 +596,13 @@ namespace gpu_voxels
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			bool set_collision_flag, bool compute_voxelTypeFlags, bool compute_collsWithUnknown, typename VoxelType>
-		__global__ void kernel_intersect_VoxelList(InnerNode* root, const Vector3ui* voxel_coords, const VoxelType* voxels, uint32_t voxellist_size,
+		GVL_GLOBAL void kernel_intersect_VoxelList(InnerNode* root, const Vector3ui* voxel_coords, const VoxelType* voxels, uint32_t voxellist_size,
 			voxel_count* num_collisions, voxel_count* num_collisions_w_unknown,
 			BitVectorVoxel* d_result_voxels, const uint32_t min_level,
 			const Vector3i voxelmap_offset = Vector3i::Zero())
 		{
-			__shared__ voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
-			__shared__ voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
 
 			if (compute_collsWithUnknown)
 				shared_num_collisions_w_unknown[threadIdx.x] = 0;
@@ -627,7 +627,7 @@ namespace gpu_voxels
 					TRAVES_MACRO(nodeID, my_voxel_flags = BitVectorVoxel::reduce(my_voxel_flags, *(my_voxel)), min_level)
 				}
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			REDUCE(shared_num_collisions, threadIdx.x, blockDim.x, +)
 
@@ -658,12 +658,12 @@ namespace gpu_voxels
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			bool set_collision_flag, bool compute_voxelTypeFlags, bool compute_collsWithUnknown, typename VoxelType>
-		__global__ void kernel_intersect_MortonVoxelList(InnerNode* root, const OctreeVoxelID* voxel_ids, const VoxelType* voxels, uint32_t voxellist_size,
+		GVL_GLOBAL void kernel_intersect_MortonVoxelList(InnerNode* root, const OctreeVoxelID* voxel_ids, const VoxelType* voxels, uint32_t voxellist_size,
 			voxel_count* num_collisions, voxel_count* num_collisions_w_unknown,
 			BitVectorVoxel* d_result_voxels, const uint32_t min_level)
 		{
-			__shared__ voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
-			__shared__ voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions[NUM_THREADS_PER_BLOCK];
+			GVL_SHARED voxel_count shared_num_collisions_w_unknown[NUM_THREADS_PER_BLOCK];
 
 			SharedVoxel<BitVectorVoxel> shared;
 			BitVectorVoxel* shared_voxels = shared.getPointer();
@@ -687,7 +687,7 @@ namespace gpu_voxels
 					TRAVES_MACRO(nodeID, my_voxel_flags = BitVectorVoxel::reduce(my_voxel_flags, *(my_voxel)), min_level)
 				}
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			REDUCE(shared_num_collisions, threadIdx.x, blockDim.x, +)
 
@@ -714,7 +714,7 @@ namespace gpu_voxels
 		 * Returns an array of leaf nodes.
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__ void kernel_find(InnerNode* const root, Vector3ui* const voxel, const voxel_count numVoxel,
+		GVL_GLOBAL void kernel_find(InnerNode* const root, Vector3ui* const voxel, const voxel_count numVoxel,
 			FindResult<LeafNode>* resultNode)
 		{
 
@@ -760,12 +760,12 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_intersect_shared(InnerNode* robot_root, InnerNode* environment_root,
 				OctreeVoxelID side_length_in_voxel, uint32_t num_level, OctreeVoxelID* numConflicts,
 				const OctreeVoxelID splitLevel)
 		{
-			extern __shared__ thrust::pair<InnerNode, InnerNode> stack[];
+			extern GVL_SHARED parallel::pair<InnerNode, InnerNode> stack[];
 
 			// octrees have to model the same space
 			const OctreeVoxelID numVoxel = side_length_in_voxel * side_length_in_voxel * side_length_in_voxel;
@@ -810,11 +810,11 @@ namespace gpu_voxels
 			//    return;
 			//  }
 
-			stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_node, e_node);
+			stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_node, e_node);
 
 			while (r_top != R_TOP)
 			{
-				thrust::pair<InnerNode, InnerNode> tmp = stack[--r_top];
+				parallel::pair<InnerNode, InnerNode> tmp = stack[--r_top];
 				r_node = tmp.first;
 				e_node = tmp.second;
 
@@ -878,21 +878,21 @@ namespace gpu_voxels
 
 #pragma unroll
 						for (uint32_t i = 0; i < branching_factor; ++i)
-							stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[i], e_inner[i]);
+							stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[i], e_inner[i]);
 
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[0], e_inner[0]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[1], e_inner[1]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[2], e_inner[2]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[3], e_inner[3]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[4], e_inner[4]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[5], e_inner[5]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[6], e_inner[6]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode, InnerNode>(r_inner[7], e_inner[7]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[0], e_inner[0]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[1], e_inner[1]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[2], e_inner[2]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[3], e_inner[3]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[4], e_inner[4]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[5], e_inner[5]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[6], e_inner[6]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode, InnerNode>(r_inner[7], e_inner[7]);
 
 								//#pragma unroll
 								//        for (uint32_t c = 0; c < branching_factor; ++c)
 								//        {
-								//          stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&((InnerNode*) r_node->getChildPtr())[c],
+								//          stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&((InnerNode*) r_node->getChildPtr())[c],
 								//                                                                     &((InnerNode*) e_node->getChildPtr())[c]);
 								//        }
 					}
@@ -910,11 +910,11 @@ namespace gpu_voxels
 
 		template<std::size_t branching_factor, std::size_t level_count, typename a_InnerNode, typename a_LeafNode,
 			typename b_InnerNode, typename b_LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_intersect_wo_stack_coalesced(a_InnerNode* nTreeA_root, b_InnerNode* nTreeB_root,
 				OctreeVoxelID* numConflicts, const uint32_t splitLevel)
 		{
-			extern __shared__ thrust::pair<a_LeafNode*, b_LeafNode*> work[];
+			extern GVL_SHARED parallel::pair<a_LeafNode*, b_LeafNode*> work[];
 
 			// octrees have to model the same space
 			const OctreeVoxelID numVoxel = (OctreeVoxelID)powf(double(branching_factor), double(level_count - 1));
@@ -953,8 +953,8 @@ namespace gpu_voxels
 			// each InnerNode of last level with it's branching_factor LeafNodes is processed by branching_factor threads in parallel -> every thread gets one LeafNode
 			// -> coalesced memory access
 			// pointer are exchanged by shared memory
-			work[threadIdx.x] = thrust::make_pair<a_LeafNode*, b_LeafNode*>(a_leaf, b_leaf);
-			__syncthreads();
+			work[threadIdx.x] = parallel::make_pair<a_LeafNode*, b_LeafNode*>(a_leaf, b_leaf);
+			GVL_SYNCTHREADS();
 
 			OctreeVoxelID myNumConflicts = 0;
 #pragma unroll
@@ -966,7 +966,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_intersect_wo_stack(InnerNode* robot_root, InnerNode* environment_root,
 				OctreeVoxelID side_length_in_voxel, uint32_t num_level, OctreeVoxelID* numConflicts,
 				const uint32_t splitLevel)
@@ -1026,12 +1026,12 @@ namespace gpu_voxels
 			T2 x2;
 			T3 x3;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Triple()
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Triple(T1 x1, T2 x2, T3 x3)
 			{
 				this->x1 = x1;
@@ -1041,7 +1041,7 @@ namespace gpu_voxels
 		};
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_intersect_smallStack(InnerNode* robot_root, InnerNode* environment_root,
 				OctreeVoxelID side_length_in_voxel, uint32_t num_level,
 				OctreeVoxelID* numConflicts,
@@ -1158,9 +1158,9 @@ namespace gpu_voxels
 		 */
 		template<std::size_t branching_factor, std::size_t level_count, typename a_InnerNode, typename a_LeafNode,
 			typename b_InnerNode, typename b_LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_intersect(a_InnerNode* nTreeA_root, b_InnerNode* nTreeB_root, OctreeVoxelID* numConflicts,
-				thrust::pair<a_InnerNode*, b_InnerNode*>* stack, const OctreeVoxelID splitLevel)
+				parallel::pair<a_InnerNode*, b_InnerNode*>* stack, const OctreeVoxelID splitLevel)
 		{
 			// octrees have to model the same space
 			const OctreeVoxelID numVoxel = (OctreeVoxelID)powf(double(branching_factor), double(level_count - 1));
@@ -1204,11 +1204,11 @@ namespace gpu_voxels
 			//    return;
 			//  }
 
-			stack[r_top++] = thrust::make_pair<a_InnerNode*, b_InnerNode*>(a_node, b_node);
+			stack[r_top++] = parallel::make_pair<a_InnerNode*, b_InnerNode*>(a_node, b_node);
 
 			while (r_top != R_TOP)
 			{
-				thrust::pair<a_InnerNode*, b_InnerNode*> tmp = stack[--r_top];
+				parallel::pair<a_InnerNode*, b_InnerNode*> tmp = stack[--r_top];
 				a_node = tmp.first;
 				b_node = tmp.second;
 
@@ -1279,21 +1279,21 @@ namespace gpu_voxels
 
 #pragma unroll
 						for (uint32_t i = 0; i < branching_factor; ++i)
-							stack[r_top++] = thrust::make_pair<a_InnerNode*, b_InnerNode*>(&a_inner[i], &b_inner[i]);
+							stack[r_top++] = parallel::make_pair<a_InnerNode*, b_InnerNode*>(&a_inner[i], &b_inner[i]);
 
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[0], &e_inner[0]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[1], &e_inner[1]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[2], &e_inner[2]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[3], &e_inner[3]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[4], &e_inner[4]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[5], &e_inner[5]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[6], &e_inner[6]);
-						//        stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&r_inner[7], &e_inner[7]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[0], &e_inner[0]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[1], &e_inner[1]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[2], &e_inner[2]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[3], &e_inner[3]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[4], &e_inner[4]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[5], &e_inner[5]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[6], &e_inner[6]);
+						//        stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&r_inner[7], &e_inner[7]);
 
 								//#pragma unroll
 								//        for (uint32_t c = 0; c < branching_factor; ++c)
 								//        {
-								//          stack[r_top++] = thrust::make_pair<InnerNode*, InnerNode*>(&((InnerNode*) r_node->getChildPtr())[c],
+								//          stack[r_top++] = parallel::make_pair<InnerNode*, InnerNode*>(&((InnerNode*) r_node->getChildPtr())[c],
 								//                                                                     &((InnerNode*) e_node->getChildPtr())[c]);
 								//        }
 					}
@@ -1311,7 +1311,7 @@ namespace gpu_voxels
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			bool SET_UPDATE_FLAG>
-		__global__
+		GVL_GLOBAL
 			static void kernel_insert_countNeededNodes(InnerNode* const root,
 				OctreeVoxelID* const d_voxel,
 				const voxel_count numVoxel,
@@ -1322,7 +1322,7 @@ namespace gpu_voxels
 		{
 #define UPDATE_STATUS_EX
 
-			__shared__ uint32_t shared_levelCount[level_count];
+			GVL_SHARED uint32_t shared_levelCount[level_count];
 
 			const uint32_t num_threads = blockDim.x;
 			const uint32_t task_id = blockIdx.x;
@@ -1335,7 +1335,7 @@ namespace gpu_voxels
 #pragma unroll
 			for (uint32_t i = thread_id; i < level_count; i += num_threads)
 				shared_levelCount[i] = 0;
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (voxel_count v = from; v < to; v += num_threads)
 			{
@@ -1432,7 +1432,7 @@ namespace gpu_voxels
 					d_traversalNodes[index] = (void*)node;
 					d_traversalLevels[index] = level;
 				}
-				//__syncthreads();
+				//GVL_SYNCTHREADS();
 
 				// node isn't available in tree
 				if (isActive & (level != target_level))
@@ -1450,9 +1450,9 @@ namespace gpu_voxels
 					for (int32_t i = commonLevel - 2; i >= target_level; --i)
 						atomicAdd(&shared_levelCount[i], branching_factor);
 				}
-				//__syncthreads();
+				//GVL_SYNCTHREADS();
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			// copy shared level count data into global memory
 #pragma unroll
@@ -1461,7 +1461,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename T, bool isLastLevel>
-		__global__
+		GVL_GLOBAL
 			static void kernel_insert_initNeededNodes(T* newNodes, voxel_count numNodes)
 		{
 			const uint32_t num_threads = blockDim.x * gridDim.x;
@@ -1478,7 +1478,7 @@ namespace gpu_voxels
 		}
 
 		template<typename InnerNode, bool SET_STATUS, bool SET_UPDATE_FLAG>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void insert_setInnerNodeStatus(InnerNode* innerNode, const NodeStatus node_status, const uint32_t level,
 				const uint32_t target_level)
 		{
@@ -1499,7 +1499,7 @@ namespace gpu_voxels
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode,
 			std::size_t num_threads, typename Iterator1, typename Iterator2, typename BasicData, bool SET_UPDATE_FLAG>
-		__global__
+		GVL_GLOBAL
 			static void kernel_insert_setNodes(InnerNode* const root,
 				OctreeVoxelID* const voxel,
 				Iterator1 d_set_basic_data,
@@ -1525,8 +1525,8 @@ namespace gpu_voxels
 			const voxel_count to = min(from + chunk_size, numVoxel);
 			const voxel_count numLeafNodes = prefixSum[num_tasks];
 
-			volatile __shared__ uint32_t shared_levelCount[level_count];
-			volatile __shared__ uint32_t shared_prefix_sum[num_warps];
+			volatile GVL_SHARED uint32_t shared_levelCount[level_count];
+			volatile GVL_SHARED uint32_t shared_prefix_sum[num_warps];
 
 			// copy level count array into shared memory
 			// start prefix sum at level 1
@@ -1538,7 +1538,7 @@ namespace gpu_voxels
 				tmp -= (i == 0) ? 0 : numLeafNodes;
 				shared_levelCount[i] = tmp;
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (voxel_count v = from; v < to; v += num_threads)
 			{
@@ -1589,7 +1589,7 @@ namespace gpu_voxels
 				{
 					const bool isLeftMost = isActive & (commonLevel > 1);
 					uint32_t total_sum;
-					const uint32_t offset = shared_levelCount[0]; // relies on the __syncthreads() of thread_prefix()
+					const uint32_t offset = shared_levelCount[0]; // relies on the GVL_SYNCTHREADS() of thread_prefix()
 					const uint32_t allVotes = thread_prefix<num_warps>(shared_prefix_sum, thread_id,
 						total_sum, isLeftMost);
 					if (isActive)
@@ -1608,14 +1608,14 @@ namespace gpu_voxels
 				//              + getZOrderNodeId<branching_factor>(myVoxel.voxelId, 0),
 				//          child);
 					}
-					//__syncthreads();
+					//GVL_SYNCTHREADS();
 
 					if (thread_id == 0)
 					{
 						// ReSharper disable once CppRedundantParentheses
 						shared_levelCount[0] = (shared_levelCount[0] + (total_sum * branching_factor));
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 
 				//    if (thread_id == 0)
@@ -1628,7 +1628,7 @@ namespace gpu_voxels
 				{
 					const bool isLeftMost = hasWork & (commonLevel > (l + 1));
 					uint32_t total_sum;
-					const uint32_t offset = shared_levelCount[l]; // relies on the __syncthreads() of thread_prefix()
+					const uint32_t offset = shared_levelCount[l]; // relies on the GVL_SYNCTHREADS() of thread_prefix()
 					const uint32_t allVotes = thread_prefix<num_warps>(shared_prefix_sum, thread_id,
 						total_sum, isLeftMost);
 					if (hasWork)
@@ -1651,7 +1651,7 @@ namespace gpu_voxels
 
 						child = (void*)iNode;
 					}
-					//__syncthreads();
+					//GVL_SYNCTHREADS();
 
 					// increment offset for next chunk of work
 					if (thread_id == 0)
@@ -1659,7 +1659,7 @@ namespace gpu_voxels
 						// ReSharper disable once CppRedundantParentheses
 						shared_levelCount[l] = (shared_levelCount[l] + (total_sum * branching_factor));
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 
 				//    if (thread_id == 0)
@@ -1705,7 +1705,7 @@ namespace gpu_voxels
 			//  cudaPitchedPtr devPitchedPtr;
 			//
 			template<typename T, std::size_t branching_factor>
-			__host__ __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computePtr(uint32_t x, uint32_t y, uint32_t z, uint32_t* bit_index)
 			{
 				if (min_x <= x && x <= max_x && min_y <= y && y <= max_y && min_z <= z && z <= max_z)
@@ -1736,7 +1736,7 @@ namespace gpu_voxels
 			}
 			//
 			//  template<typename T>
-			//  __host__ __device__
+			//  GVL_HOST_DEVICE
 			//  __forceinline__ T* computeOffsetPtr(uint32_t offset_x, uint32_t offset_y, uint32_t offset_z)
 			//  {
 			//    if (offset_x <= size_x && offset_y <= size_y && offset_z <= size_z)
@@ -1748,7 +1748,7 @@ namespace gpu_voxels
 		};
 
 		template<std::size_t branching_factor, typename InnerNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_rayInsert(const gpu_voxels::Vector3ui sensor_origin, voxel_count* free_space_count,
 				MapProperties<typename InnerNode::RayCastType, branching_factor> map_properties)
 		{
@@ -1859,7 +1859,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, typename InnerNode>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			gpu_voxels::Vector3ui getFirstVoxel(
 				uint32_t cube_id, MapProperties<typename InnerNode::RayCastType, branching_factor>& byte_map_properties)
 		{
@@ -1881,7 +1881,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, bool COUNT_MODE>
-		__global__
+		GVL_GLOBAL
 			static void kernel_packByteMap_MemEfficient_Coa2(voxel_count* num_this_level, voxel_count* num_next_level,
 				MapProperties<uint8_t, branching_factor> byte_map_properties,
 				voxel_count* index_this_level = nullptr,
@@ -1901,11 +1901,11 @@ namespace gpu_voxels
 			const uint32_t work_items_at_once = (NUM_THREADS * 4) / branching_factor;
 			const uint32_t branching_factor_third_root = (uint32_t)powf(branching_factor, 1.0 / 3);
 
-			__shared__ gpu_voxels::Vector3ui shared_cubes[NUM_WARPS];
-			__shared__ uint32_t* shared_ptr[NUM_WARPS];
-			__shared__ voxel_count shared_num_this_level[NUM_THREADS];
-			__shared__ voxel_count shared_num_next_level;
-			__shared__ uint32_t shared_votes[2];
+			GVL_SHARED gpu_voxels::Vector3ui shared_cubes[NUM_WARPS];
+			GVL_SHARED uint32_t* shared_ptr[NUM_WARPS];
+			GVL_SHARED voxel_count shared_num_this_level[NUM_THREADS];
+			GVL_SHARED voxel_count shared_num_next_level;
+			GVL_SHARED uint32_t shared_votes[2];
 
 			const uint32_t block_id = blockIdx.x;
 			const uint32_t num_threads = blockDim.x;
@@ -1931,7 +1931,7 @@ namespace gpu_voxels
 			if (thread_id == 0)
 				shared_num_next_level = 0;
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (uint32_t i = block_id * work_items_at_once; i < num_work_items; i += work_items_at_once * gridDim.x)
 			{
@@ -1950,7 +1950,7 @@ namespace gpu_voxels
 
 					assert((tmp.x() + work_items_at_once * branching_factor_third_root) <= byte_map_properties.size_x);
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				const uint32_t is_occupied = shared_ptr[warp_id][lane_id];
 
@@ -1969,7 +1969,7 @@ namespace gpu_voxels
 					if (lane_id == 0)
 						atomicAnd(&shared_votes[i], all_votes);
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// ### handle this level ###
 				if (!COUNT_MODE)
@@ -2012,9 +2012,9 @@ namespace gpu_voxels
 						atomicAdd(&shared_num_next_level, (uint32_t)__popc(shared_votes[i]));
 				}
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			if (COUNT_MODE)
 			{
@@ -2031,7 +2031,7 @@ namespace gpu_voxels
 
 		template<uint32_t num_threads, std::size_t branching_factor, bool COUNT_MODE, bool MAP_ONLY_MODE,
 			bool PACKING, typename InnerNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_packMortonL0Map(
 				voxel_count* num_this_level,
 				voxel_count* num_next_level,
@@ -2057,11 +2057,11 @@ namespace gpu_voxels
 			assert(num_threads == blockDim.x);
 			assert((num_threads % branching_factor) == 0);
 
-			volatile __shared__ T shared_data[num_threads * sizeof(uint32_t) / sizeof(T)];
-			volatile __shared__ uint32_t shared_this_level_prefix[num_warps];
-			volatile __shared__ uint32_t shared_next_level_prefix[num_warps];
-			__shared__ uint32_t shared_this_level_index;
-			__shared__ uint32_t shared_next_level_index;
+			volatile GVL_SHARED T shared_data[num_threads * sizeof(uint32_t) / sizeof(T)];
+			volatile GVL_SHARED uint32_t shared_this_level_prefix[num_warps];
+			volatile GVL_SHARED uint32_t shared_next_level_prefix[num_warps];
+			GVL_SHARED uint32_t shared_this_level_index;
+			GVL_SHARED uint32_t shared_next_level_index;
 
 			volatile uint32_t* const shared_count_reduce = (uint32_t*)shared_data;
 
@@ -2069,7 +2069,7 @@ namespace gpu_voxels
 
 			for (uint32_t i = block_id * num_threads; i < map_properties.size_v; i += num_blocks * num_threads)
 			{
-				__syncthreads(); // sync for the use of continue
+				GVL_SYNCTHREADS(); // sync for the use of continue
 
 				const uint32_t work_size = min(num_threads, uint32_t(map_properties.size_v - i));
 				const bool is_active = thread_id < work_size;
@@ -2080,13 +2080,13 @@ namespace gpu_voxels
 				// T* ptr =  map_ptr + i;
 				// (work_size * sizeof(T))
 			//    blockCopy(shared_data, map_ptr + i, work_size * sizeof(T), thread_id, num_threads);
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				RayCastType my_value;
 				if (is_active)
 					my_value.value = shared_data[thread_id];
 				const bool is_invalid = !is_active || !isValidValue(my_value);
-				const bool all_invalid = __syncthreads_and(is_invalid);
+				const bool all_invalid = GVL_SYNCTHREADS_and(is_invalid);
 				if (all_invalid)
 					continue; // nothing to do here
 
@@ -2110,7 +2110,7 @@ namespace gpu_voxels
 						this_level_sum, has_item_this_level);
 					if (thread_id == 0 && this_level_sum != 0)
 						shared_this_level_index = atomicAdd(index_this_level, this_level_sum);
-					__syncthreads();
+					GVL_SYNCTHREADS();
 					if (has_item_this_level)
 					{
 						const uint32_t pos = shared_this_level_index
@@ -2143,7 +2143,7 @@ namespace gpu_voxels
 							next_level_sum, has_item_next_level);
 						if (thread_id == 0 && next_level_sum != 0)
 							shared_next_level_index = atomicAdd(index_next_level, next_level_sum);
-						__syncthreads();
+						GVL_SYNCTHREADS();
 						if (has_item_next_level)
 						{
 							const uint32_t pos = shared_next_level_index
@@ -2166,16 +2166,16 @@ namespace gpu_voxels
 			if (COUNT_MODE)
 			{
 				// count reduce
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				shared_count_reduce[thread_id] = my_this_level_count;
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				REDUCE(shared_count_reduce, thread_id, num_threads, +)
 					if (thread_id == 0)
 						num_this_level[block_id] = shared_count_reduce[0];
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				shared_count_reduce[thread_id] = my_next_level_count;
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				REDUCE(shared_count_reduce, thread_id, num_threads, +)
 					if (thread_id == 0)
 						num_next_level[block_id] = shared_count_reduce[0];
@@ -2187,14 +2187,14 @@ namespace gpu_voxels
 		 * Removes the duplicates by moving the elements to a new location in a second call.
 		 */
 		template<bool COUNT_MODE>
-		__global__
+		GVL_GLOBAL
 			static void kernel_removeDuplicates(OctreeVoxelID* free_space, voxel_count num_voxel,
 				OctreeVoxelID* free_space_wo_duplicates, voxel_count* voxel_count_wo_duplicates)
 		{
 			assert(blockDim.x <= WARP_SIZE); // otherwise have to implement inter warp prefix sum
 
-			__shared__ uint32_t shared_voxel_count[WARP_SIZE];
-			__shared__ uint32_t shared_offset;
+			GVL_SHARED uint32_t shared_voxel_count[WARP_SIZE];
+			GVL_SHARED uint32_t shared_offset;
 
 			const uint32_t num_threads = blockDim.x;
 			const uint32_t task_id = blockIdx.x;
@@ -2228,18 +2228,18 @@ namespace gpu_voxels
 						const uint32_t my_index = __popc(votes << (32 - thread_id));
 						free_space_wo_duplicates[shared_offset + my_index] = my_element;
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (thread_id == 0)
 						shared_offset += __popc(votes);
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 			}
 
 			// copy into global memory
 			if (COUNT_MODE)
 			{
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				REDUCE(shared_voxel_count, thread_id, num_threads, +);
 				if (thread_id == 0)
 					voxel_count_wo_duplicates[task_id] = shared_voxel_count[0];
@@ -2251,20 +2251,20 @@ namespace gpu_voxels
 		 * and the number for the current level, which can't be packed together.
 		 */
 		template<std::size_t branching_factor, bool COUNT_MODE>
-		__global__
+		GVL_GLOBAL
 			static void kernel_packVoxel(OctreeVoxelID* free_space, voxel_count num_voxel, voxel_count* voxel_count_this_level,
 				voxel_count* voxel_count_next_level, uint32_t level,
 				OctreeVoxelID* free_space_this_level, OctreeVoxelID* free_space_next_level)
 		{
 			assert(blockDim.x == WARP_SIZE); // otherwise have to implement inter warp prefix sum
 
-			__shared__ voxel_count shared_count_this_level;
-			__shared__ voxel_count shared_count_next_level;
-			__shared__ voxel_count shared_num_childs_split_parent;
-			__shared__ voxel_count shared_votes_this_level;
-			__shared__ bool shared_ends_at_split;
-			__shared__ bool shared_is_this_level;
-			__shared__ voxel_count shared_num_with_same_parent;
+			GVL_SHARED voxel_count shared_count_this_level;
+			GVL_SHARED voxel_count shared_count_next_level;
+			GVL_SHARED voxel_count shared_num_childs_split_parent;
+			GVL_SHARED voxel_count shared_votes_this_level;
+			GVL_SHARED bool shared_ends_at_split;
+			GVL_SHARED bool shared_is_this_level;
+			GVL_SHARED voxel_count shared_num_with_same_parent;
 
 			const uint32_t num_threads = blockDim.x;
 			const uint32_t task_id = blockIdx.x;
@@ -2291,7 +2291,7 @@ namespace gpu_voxels
 					shared_num_with_same_parent = 0;
 				}
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			for (voxel_count i = from; i < to; i += num_threads)
 			{
@@ -2303,7 +2303,7 @@ namespace gpu_voxels
 						shared_votes_this_level = 0;
 					}
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				voxel_count my_id = i + thread_id;
 				uint32_t votes = 0;
@@ -2372,7 +2372,7 @@ namespace gpu_voxels
 						}
 					}
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				if (!COUNT_MODE)
 				{
@@ -2385,11 +2385,11 @@ namespace gpu_voxels
 						free_space_next_level[shared_count_next_level + next_level_index] = my_voxel_id;
 						//printf("1 write next level voxel %lu\n", my_voxel_id);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (thread_id == 0)
 						shared_count_next_level += __popc(next_level_votes);
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					// ##### handle this level #####
 					if (((shared_votes_this_level & (1 << thread_id)) > 0) & (free_space_this_level != nullptr))
@@ -2398,11 +2398,11 @@ namespace gpu_voxels
 						free_space_this_level[shared_count_this_level + this_level_index] = my_voxel_id;
 						//printf("1 write this level voxel %lu\n", my_voxel_id);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (thread_id == 0)
 						shared_count_this_level += __popc(shared_votes_this_level);
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 
 				// ##### process next block to handle split parent voxel #####
@@ -2415,7 +2415,7 @@ namespace gpu_voxels
 					if ((thread_id < (branching_factor - shared_num_childs_split_parent + 1)) & (my_id < num_voxel))
 						has_new_parent = (getZOrderPrefix<branching_factor>(free_space[my_id], level)
 							!= getZOrderPrefix<branching_factor>(free_space[my_id - 1], level));
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					votes = __brev(BALLOT(has_new_parent));
 					if (thread_id == 0)
@@ -2436,7 +2436,7 @@ namespace gpu_voxels
 							shared_is_this_level = (shared_num_with_same_parent != branching_factor);
 						}
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (COUNT_MODE)
 					{
@@ -2473,11 +2473,11 @@ namespace gpu_voxels
 								//                   free_space[my_id - shared_num_childs_split_parent], shared_num_with_same_parent,
 								//                   thread_id);
 							}
-							__syncthreads();
+							GVL_SYNCTHREADS();
 
 							if (thread_id == 0)
 								shared_count_this_level += shared_num_with_same_parent;
-							__syncthreads();
+							GVL_SYNCTHREADS();
 						}
 						else if (!shared_is_this_level)
 						{
@@ -2487,12 +2487,12 @@ namespace gpu_voxels
 									- shared_num_childs_split_parent];
 								//            printf("2 write next level voxel %lu\n", my_voxel_id);
 							}
-							__syncthreads();
+							GVL_SYNCTHREADS();
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 					}
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 
 			// copy into global memory
@@ -2503,7 +2503,7 @@ namespace gpu_voxels
 					voxel_count_this_level[task_id] = shared_count_this_level;
 					voxel_count_next_level[task_id] = shared_count_next_level;
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 			}
 		}
 
@@ -2511,7 +2511,7 @@ namespace gpu_voxels
 		 * Splits a vector of Voxel into separate vectors.
 		 */
 		template<bool need_voxel_id, bool need_occupancy, bool need_coordinates, bool need_separate_coordinates>
-		__global__
+		GVL_GLOBAL
 			static void kernel_split_voxel_vector(Voxel* voxel, voxel_count num_voxel, OctreeVoxelID* voxel_id,
 				Probability* occupancy, gpu_voxels::Vector3ui* coordinates, uint32_t* x,
 				uint32_t* y, uint32_t* z)
@@ -2533,7 +2533,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 			static void kernel_checkBlub(OctreeVoxelID* voxel_id1, voxel_count num_voxel, OctreeVoxelID* voxel_id2)
 		{
 			for (uint32_t i = 0; i < num_voxel; ++i)
@@ -2547,7 +2547,7 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			static void traverse(InnerNode* root, OctreeVoxelID voxel, uint32_t target_level, void** out_inner_node,
 				uint32_t* out_level, bool* has_part_status)
 		{
@@ -2574,10 +2574,10 @@ namespace gpu_voxels
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		__global__
+		GVL_GLOBAL
 			static void kernel_checkTree(InnerNode* root, uint8_t* error)
 		{
-			__shared__ InnerNode* shared_stack[level_count];
+			GVL_SHARED InnerNode* shared_stack[level_count];
 
 			*error = 0;
 
@@ -2617,7 +2617,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 			static void kernel_splitCoordinates(const gpu_voxels::Vector3ui* coordinates, voxel_count num_voxel, uint32_t* x,
 				uint32_t* y, uint32_t* z)
 		{

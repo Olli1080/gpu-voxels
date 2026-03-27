@@ -28,7 +28,7 @@
 namespace gpu_voxels
 {
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 	BitVoxel<length>::BitVoxel() :
 		m_bit_vector()
 	{
@@ -42,28 +42,28 @@ namespace gpu_voxels
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 	BitVector<length>& BitVoxel<length>::bitVector()
 	{
 		return m_bit_vector;
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 	const BitVector<length>& BitVoxel<length>::bitVector() const
 	{
 		return m_bit_vector;
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 	void BitVoxel<length>::insert(const BitVoxelMeaning voxel_meaning)
 	{
 		m_bit_vector.setBit(voxel_meaning);
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 	BitVoxel<length> BitVoxel<length>::reduce(const BitVoxel voxel, const BitVoxel other_voxel)
 	{
 		BitVoxel<length> res;
@@ -72,6 +72,7 @@ namespace gpu_voxels
 	}
 
 	template <std::size_t length>
+	GVL_HOST_DEVICE
 	BitVoxel<length> BitVoxel<length>::reduce_op::operator()(const BitVoxel& a,
 		const BitVoxel& b) const
 	{

@@ -45,20 +45,20 @@ namespace gpu_voxels {
 		template<class Voxel, class VoxelIDType>
 		class TemplateVoxelList : public AbstractVoxelList
 		{
-			typedef typename thrust::device_vector<VoxelIDType>::iterator  keyIterator;
+			typedef typename parallel::device_vector<VoxelIDType>::iterator  keyIterator;
 
-			typedef typename thrust::device_vector<Vector3ui>::iterator  coordIterator;
-			typedef typename thrust::device_vector<Voxel>::iterator  voxelIterator;
+			typedef typename parallel::device_vector<Vector3ui>::iterator  coordIterator;
+			typedef typename parallel::device_vector<Voxel>::iterator  voxelIterator;
 
-			typedef thrust::tuple<coordIterator, voxelIterator> valuesIteratorTuple;
-			typedef thrust::zip_iterator<valuesIteratorTuple> zipValuesIterator;
+			typedef parallel::tuple<coordIterator, voxelIterator> valuesIteratorTuple;
+			typedef parallel::zip_iterator<valuesIteratorTuple> zipValuesIterator;
 
-			typedef thrust::tuple<keyIterator, voxelIterator> keyVoxelIteratorTuple;
-			typedef thrust::zip_iterator<keyVoxelIteratorTuple> keyVoxelZipIterator;
+			typedef parallel::tuple<keyIterator, voxelIterator> keyVoxelIteratorTuple;
+			typedef parallel::zip_iterator<keyVoxelIteratorTuple> keyVoxelZipIterator;
 
 		public:
-			typedef thrust::tuple<keyIterator, coordIterator, voxelIterator> keyCoordVoxelIteratorTriple;
-			typedef thrust::zip_iterator<keyCoordVoxelIteratorTriple> keyCoordVoxelZipIterator;
+			typedef parallel::tuple<keyIterator, coordIterator, voxelIterator> keyCoordVoxelIteratorTriple;
+			typedef parallel::zip_iterator<keyCoordVoxelIteratorTriple> keyCoordVoxelZipIterator;
 
 			TemplateVoxelList(Vector3ui ref_map_dim, float voxel_side_length, MapType map_type);
 
@@ -74,15 +74,15 @@ namespace gpu_voxels {
 			virtual keyCoordVoxelZipIterator getEndTripleZipIterator();
 
 			//! get access to data vectors on device
-			typename thrust::device_vector<Voxel>::iterator getDeviceDataVectorBeginning()
+			typename parallel::device_vector<Voxel>::iterator getDeviceDataVectorBeginning()
 			{
 				return m_dev_list.begin();
 			}
-			typename thrust::device_vector<VoxelIDType>::iterator getDeviceIdVectorBeginning()
+			typename parallel::device_vector<VoxelIDType>::iterator getDeviceIdVectorBeginning()
 			{
 				return m_dev_id_list.begin();
 			}
-			typename thrust::device_vector<Vector3ui>::iterator getDeviceCoordVectorBeginning()
+			typename parallel::device_vector<Vector3ui>::iterator getDeviceCoordVectorBeginning()
 			{
 				return m_dev_coord_list.begin();
 			}
@@ -90,40 +90,40 @@ namespace gpu_voxels {
 			//! get pointer to data array on device
 			Voxel* getDeviceDataPtr()
 			{
-				return thrust::raw_pointer_cast(m_dev_list.data());
+				return parallel::raw_pointer_cast(m_dev_list.data());
 			}
 			const Voxel* getConstDeviceDataPtr() const
 			{
-				return thrust::raw_pointer_cast(m_dev_list.data());
+				return parallel::raw_pointer_cast(m_dev_list.data());
 			}
 			VoxelIDType* getDeviceIdPtr()
 			{
-				return thrust::raw_pointer_cast(m_dev_id_list.data());
+				return parallel::raw_pointer_cast(m_dev_id_list.data());
 			}
 			const VoxelIDType* getConstDeviceIdPtr() const
 			{
-				return thrust::raw_pointer_cast(m_dev_id_list.data());
+				return parallel::raw_pointer_cast(m_dev_id_list.data());
 			}
-			thrust::device_vector<Vector3ui>& getDeviceCoords()
+			parallel::device_vector<Vector3ui>& getDeviceCoords()
 			{
 				return m_dev_coord_list;
 			}
-			const thrust::device_vector<Vector3ui>& getDeviceCoords() const
+			const parallel::device_vector<Vector3ui>& getDeviceCoords() const
 			{
 				return m_dev_coord_list;
 			}
 			Vector3ui* getDeviceCoordPtr()
 			{
-				return thrust::raw_pointer_cast(m_dev_coord_list.data());
+				return parallel::raw_pointer_cast(m_dev_coord_list.data());
 			}
 			const Vector3ui* getConstDeviceCoordPtr() const
 			{
-				return thrust::raw_pointer_cast(m_dev_coord_list.data());
+				return parallel::raw_pointer_cast(m_dev_coord_list.data());
 			}
 
 			void* getVoidDeviceDataPtr() override
 			{
-				return (void*)thrust::raw_pointer_cast(m_dev_list.data());
+				return (void*)parallel::raw_pointer_cast(m_dev_list.data());
 			}
 
 			//! get the side length of the voxels.
@@ -132,19 +132,19 @@ namespace gpu_voxels {
 				return m_voxel_side_length;
 			}
 
-			virtual void copyCoordsToHost(thrust::host_vector<Vector3ui>& host_vec);
+			virtual void copyCoordsToHost(parallel::host_vector<Vector3ui>& host_vec);
 
 			// ------ BEGIN Global API functions ------
 			void insertPointCloud(const std::vector<Vector3f>& points, BitVoxelMeaning voxel_meaning) override;
 
 			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override;
 
-			void insertPointCloud(const thrust::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
+			void insertPointCloud(const parallel::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
 
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			/**
 			 * @brief insertMetaPointCloud Inserts a MetaPointCloud into the map.
@@ -205,7 +205,7 @@ namespace gpu_voxels {
 			 * @brief extractCubes Extracts a cube list for visualization
 			 * @param [out] output_vector Resulting cube list
 			 */
-			virtual void extractCubes(thrust::device_vector<Cube>** output_vector) const;
+			virtual void extractCubes(parallel::device_vector<Cube>** output_vector) const;
 
 			/**
 			 * @brief collideVoxellists Internal binary search between voxellists
@@ -215,17 +215,17 @@ namespace gpu_voxels {
 			 * @return Number of collisions
 			 */
 			 // virtual size_t collideVoxellists(const TemplateVoxelList<Voxel, VoxelIDType> *other, const Vector3i &offset,
-			 //                                  thrust::device_vector<bool>& collision_stencil) const;
+			 //                                  parallel::device_vector<bool>& collision_stencil) const;
 			
 			size_t collideVoxellists(const TemplateVoxelList<ProbabilisticVoxel, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				parallel::device_vector<bool>& collision_stencil) const;
 
 			template<size_t length>
 			size_t collideVoxellists(const TemplateVoxelList<BitVoxel<length>, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				parallel::device_vector<bool>& collision_stencil) const;
 			
 			size_t collideVoxellists(const TemplateVoxelList<CountingVoxel, VoxelIDType>* other, const Vector3i& offset,
-				thrust::device_vector<bool>& collision_stencil) const;
+				parallel::device_vector<bool>& collision_stencil) const;
 
 			/**
 			 * @brief collisionCheckWithCollider
@@ -266,12 +266,12 @@ namespace gpu_voxels {
 				VoxelToCube() = default;
 
 				template<size_t length>
-				__host__ __device__
+				GVL_HOST_DEVICE
 				Cube operator()(const Vector3ui& coords, const BitVoxel<length>& voxel) const {
 
 					return { 1, coords, voxel.bitVector() };
 				}
-				__host__ __device__
+				GVL_HOST_DEVICE
 				Cube operator()(const Vector3ui& coords, const CountingVoxel& voxel) const {
 
 					if (voxel.getCount() > 0)
@@ -283,7 +283,7 @@ namespace gpu_voxels {
 						return { 1, coords, eBVM_FREE };
 					}
 				}
-				__host__ __device__
+				GVL_HOST_DEVICE
 				Cube operator()(const Vector3ui& coords, const ProbabilisticVoxel& voxel) const {
 					return { 1, coords, static_cast<BitVoxelMeaning>(voxel.getOccupancy() * eBVM_MAX_OCC_PROB) };
 				}
@@ -292,9 +292,9 @@ namespace gpu_voxels {
 			/* ======== Variables with content on device ======== */
 			/* Follow the Thrust paradigm: Struct of Vectors */
 			/* need to be public in order to be accessed by TemplateVoxelLists with other template arguments*/
-			thrust::device_vector<VoxelIDType> m_dev_id_list;  // contains the voxel addresses / morton codes (This can not be a Voxel*, as Thrust can not sort pointers)
-			thrust::device_vector<Vector3ui> m_dev_coord_list; // contains the voxel metric coordinates
-			thrust::device_vector<Voxel> m_dev_list;           // contains the actual data: bitvector or probability
+			parallel::device_vector<VoxelIDType> m_dev_id_list;  // contains the voxel addresses / morton codes (This can not be a Voxel*, as Thrust can not sort pointers)
+			parallel::device_vector<Vector3ui> m_dev_coord_list; // contains the voxel metric coordinates
+			parallel::device_vector<Voxel> m_dev_list;           // contains the actual data: bitvector or probability
 
 		protected:
 
@@ -309,16 +309,16 @@ namespace gpu_voxels {
 			uint32_t m_threads;
 
 			//! result array for collision check
-			thrust::host_vector<bool> m_collision_check_results;
+			parallel::host_vector<bool> m_collision_check_results;
 			//! result array for collision check with counter
-			thrust::host_vector<uint16_t> m_collision_check_results_counter;
+			parallel::host_vector<uint16_t> m_collision_check_results_counter;
 
 
 			//! results of collision check on device
-			thrust::device_vector<bool> m_dev_collision_check_results;
+			parallel::device_vector<bool> m_dev_collision_check_results;
 
 			//! result array for collision check with counter on device
-			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
+			parallel::device_vector<uint16_t> m_dev_collision_check_results_counter;
 
 			template <typename OtherV, typename OtherVoxelIDType> friend class TemplateVoxelList;
 		};

@@ -26,6 +26,7 @@
 #include <filesystem>
 #include <string>
 
+#include <gpu_voxels/helpers/SyclBridge.h>
 #include <gpu_voxels/logging/logging_gpu_voxels_helpers.h>
 
 namespace gpu_voxels
@@ -243,7 +244,7 @@ namespace gpu_voxels
 	// reduction in shared memory
 #define REDUCE(shared,idx,nThreads,op) do { for (int r = nThreads/2; r != 0; r /= 2) {\
                                               if (idx < r) shared[idx] = shared[idx] op shared[idx + r];\
-                                              __syncthreads(); } } while (0);
+                                              GVL_SYNCTHREADS(); } } while (0);
 // reduction in shared memory
 #define REDUCE2(shared1,shared2,idx,nThreads,op1,op2,branching_factor) do { for (int r = branching_factor/2; r != 0; r /= 2) {\
                                                                               if ((idx % branching_factor) < r)\
@@ -251,7 +252,7 @@ namespace gpu_voxels
                                                                                 shared1[idx] = shared1[idx] op1 shared1[idx + r];\
                                                                                 shared2[idx] = shared2[idx] op2 shared2[idx + r];\
                                                                               }\
-                                                                              __syncthreads(); } } while (0);
+                                                                              GVL_SYNCTHREADS(); } } while (0);
 
 #define PARTIAL_REDUCE(shared, idx, nThreads, block_size, op) {\
   const uint32_t idx_suffix = idx & (block_size - 1); \
@@ -260,7 +261,7 @@ namespace gpu_voxels
     if(idx_suffix < r) \
       shared[idx] = op(shared[idx], shared[idx + r]); \
     if(r > WARP_SIZE) \
-      __syncthreads();\
+      GVL_SYNCTHREADS();\
   }\
 }
 
@@ -269,11 +270,11 @@ namespace gpu_voxels
   for(int r = 1; r < (size / nThreads) ; ++r) \
 	shared[idx] = op(shared[idx], shared[idx + r * nThreads]); \
   if((size / nThreads) > 1) \
-	__syncthreads(); \
+	GVL_SYNCTHREADS(); \
   for (int r = nThreads / 2; r >= final_size; r /= 2) \
   { \
 	if(idx < r) shared[idx] = op(shared[idx], shared[idx + r]); \
-	if(r > WARP_SIZE) __syncthreads();\
+	if(r > WARP_SIZE) GVL_SYNCTHREADS();\
   } \
 }
  */

@@ -24,7 +24,7 @@
 #ifndef GPU_VOXELS_VOXELLIST_BITVOXELLIST_H
 #define GPU_VOXELS_VOXELLIST_BITVOXELLIST_H
 
-#include <thrust/host_vector.h>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 
 #include "TemplateVoxelList.h"
 #include "gpu_voxels/helpers/CollisionInterfaces.h"
@@ -40,7 +40,7 @@ namespace gpu_voxels {
 		template<size_t length>
 		struct BitvectorCollision
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			bool operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs) const
 			{
 				const BitVector<length> both_set = lhs.bitVector() & rhs.bitVector();
@@ -66,7 +66,7 @@ namespace gpu_voxels {
 				sv_offset = sv_offset_;
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			bool operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs)
 			{
 				BitVector<length> collision_result; // TODO: Get rid of this temp variable
@@ -81,7 +81,7 @@ namespace gpu_voxels {
 		template<size_t length>
 		struct BitvectorOr
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			BitVector<length> operator()(const BitVoxel<length>& lhs, const BitVoxel<length>& rhs) const
 			{
 				return lhs.bitVector() | rhs.bitVector();
@@ -98,7 +98,7 @@ namespace gpu_voxels {
 				shift_size = shift_size_;
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			BitVoxel<length> operator()(const BitVoxel<length>& input_voxel) const
 			{
 				BitVoxel<length> ret(input_voxel);
@@ -195,8 +195,8 @@ namespace gpu_voxels {
 
 		private:
 
-			thrust::device_vector<BitVoxel<length>> m_dev_colliding_bits_result_list;
-			thrust::host_vector<BitVoxel<length>> m_colliding_bits_result_list;
+			parallel::device_vector<BitVoxel<length>> m_dev_colliding_bits_result_list;
+			parallel::host_vector<BitVoxel<length>> m_colliding_bits_result_list;
 			BitVoxel<length>* m_dev_bitmask;
 
 		};

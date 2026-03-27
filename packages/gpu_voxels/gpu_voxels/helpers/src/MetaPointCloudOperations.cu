@@ -36,7 +36,7 @@
 
 namespace gpu_voxels
 {
-    __global__
+    GVL_GLOBAL
     void kernelDebugMetaPointCloud(MetaPointCloudStruct* meta_point_clouds_struct)
     {
         printf("================== kernelDebugMetaPointCloud DBG ================== \n");
@@ -76,7 +76,7 @@ namespace gpu_voxels
     }
 
     /*
-    __global__
+    GVL_GLOBAL
     void kernelTransformCloud(const Matrix4f* transformation, const Vector3f* startAddress, Vector3f* transformedAddress, uint32_t numberOfPoints)
     {
 	    const Matrix4f transform = *transformation;
@@ -92,7 +92,7 @@ namespace gpu_voxels
         }
     }
 
-    __global__
+    GVL_GLOBAL
     void kernelScaleCloud(const Vector3f scaling, const Vector3f* startAddress, Vector3f* transformedAddress, uint32_t numberOfPoints)
     {
         uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;

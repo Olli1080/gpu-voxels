@@ -25,18 +25,18 @@ namespace gpu_voxels
          * @brief getByte Gets the reference to the byte that contains the bit at the given index position (given in bits).
          * @return Reference to the byte that contains the bit at the given bit index position
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         item_type* getByte(uint32_t index);
 
     public:
 
-        __host__ __device__
+        GVL_HOST_DEVICE
         BitVector();
 
         /**
          * @brief clear Sets all bits to zero.
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         void clear();
 
         /**
@@ -44,75 +44,75 @@ namespace gpu_voxels
          * @param o Other operand
 
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         BitVector operator|(const BitVector& o) const;
 
         /**
          * @brief operator == Bitwise equal comparison
          * @param o Other operand
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         bool operator==(const BitVector& o) const;
 
         /**
          * @brief operator |= Bitwise or-operator
          * @param o Other operand
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         void operator|=(const BitVector& o);
 
         /**
          * @brief operator ~ Bitwise not-operator
          * @return Returns the bitwise not of 'this'
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         BitVector operator~() const;
 
         /**
          * @brief operator ~ Bitwise and-operator
          * @return Returns the bitwise and of 'this'
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         BitVector operator&(const BitVector& o) const;
 
         /**
          * @brief isZero Checks the bit vector for zero
          * @return True if all bits are zero, false otherwise
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         [[nodiscard]] bool isZero() const;
 
         /**
          * @brief noneButEmpty Checks for semantic emptiness
          * @return True, if none or only the eBVM_FREE bit is set
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         [[nodiscard]] bool noneButEmpty() const;
 
         /**
          * @brief anyNotEmpty Checks for semantic occupation
          * @return True, if any bit is set ignoring eBVM_FREE
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         [[nodiscard]] bool anyNotEmpty() const;
 
         /**
          * @brief getBit Gets the bit at the given bit index.
          * @return Value of the selected bit.
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         [[nodiscard]] bool getBit(const uint32_t index) const;
 
         /**
          * @brief clearBit Clears the bit at the given bit index
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         void clearBit(const uint32_t index);
 
         /**
          * @brief setBit Sets the bit at the given bit index.
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         void setBit(const uint32_t index);
 
         /**
@@ -121,7 +121,7 @@ namespace gpu_voxels
          *
          * @return Byte that contains the bit at the given bit index position
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         [[nodiscard]] item_type getByte(const uint32_t index, const uint8_t dummy = 0) const;
 
         /**
@@ -129,10 +129,10 @@ namespace gpu_voxels
          * @param index Which byte to set (given in bits)
          * @param data Data to write into byte
          */
-        __host__ __device__
+        GVL_HOST_DEVICE
         void setByte(const uint32_t index, const item_type data);
 
-        __host__ __device__
+        GVL_HOST_DEVICE
         void dump();
 
         /**
@@ -140,7 +140,7 @@ namespace gpu_voxels
          * Type 0.
          */
         template<typename T>
-        __host__
+        GVL_HOST
         friend T& operator<<(T& os, const BitVector& dt)
         {
             constexpr size_t byte_size = sizeof(item_type);
@@ -161,7 +161,7 @@ namespace gpu_voxels
          * @brief operator >> Overloaded istream operator. Please note that the input bit string should
          * be starting from Type 0 and it should be complete, meaning it should have all Bits defined.
          */
-        __host__
+        GVL_HOST
         friend std::istream& operator>>(std::istream& in, BitVector& dt)
         {
             //TODO: Check the lengths of the input stream!
@@ -181,11 +181,11 @@ namespace gpu_voxels
         }
 
         // This CUDA Code was taken from Florians BitVoxelFlags that got replaced by BitVectors
-        __device__
+        GVL_DEVICE
         static void reduce(BitVector<num_bits>& flags, const int thread_id, const int num_threads,
             BitVector<num_bits>* shared_mem);
 
-        __device__
+        GVL_DEVICE
         static void reduceAtomic(BitVector<num_bits>& flags, BitVector<num_bits>& global_flags);
 
     protected:
@@ -202,7 +202,7 @@ namespace gpu_voxels
      * @param shift_size How many bits to shift. Must be smaller than 56 bits due to buffer size.
      */
     template<std::size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void performLeftShift(BitVector<num_bits>& bit_vector, const uint8_t shift_size);
 
 
@@ -217,7 +217,7 @@ namespace gpu_voxels
      * @return
      */
     template<std::size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     bool bitMarginCollisionCheck(const BitVector<num_bits>& v1, const BitVector<num_bits>& v2,
         BitVector<num_bits>* collisions, const uint8_t margin, const uint32_t sv_offset);
 
@@ -230,7 +230,7 @@ namespace gpu_voxels
     template<std::size_t num_bits>
     struct BitvectorOr
     {
-        __host__ __device__
+        GVL_HOST_DEVICE
         BitVector<num_bits> operator()(const BitVector<num_bits>& lhs, const BitVector<num_bits>& rhs) const;
     };
 }

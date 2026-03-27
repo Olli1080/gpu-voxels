@@ -91,15 +91,15 @@ namespace gpu_voxels
 				// Call the templated kernel function. It's behavior is defined by the given KernelConfig.
 				size_t dynamic_shared_mem_size = sizeof(typename KernelConfig::SharedMem) + sizeof(typename KernelConfig::SharedVolatileMem);
 				kernelLBWorkConcept<KernelConfig> << <Base::NUM_TASKS, RunConfig::NUM_TRAVERSAL_THREADS, dynamic_shared_mem_size >> > (kernel_params);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 
 			template<std::size_t branching_factor, std::size_t level_count, class InnerNode, class LeafNode, bool clear_collision_flag, bool count_mode>
 			void Extract<branching_factor, level_count, InnerNode, LeafNode, clear_collision_flag, count_mode>::doPostCalculations()
 			{
 				// Copy results from device to host
-				HANDLE_CUDA_ERROR(
-					cudaMemcpy(&m_num_elements, m_dev_global_voxel_list_count, sizeof(uint32_t), cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(
+					GVL_MEMCPY(&m_num_elements, m_dev_global_voxel_list_count, sizeof(uint32_t), GVL_MEMCPY_DEVICE_TO_HOST));
 			}
 			// --------------------------------------------------------
 
@@ -110,7 +110,7 @@ namespace gpu_voxels
 
 				// Push first work item on stack
 				InnerNode a;
-				HANDLE_CUDA_ERROR(cudaMemcpy(&a, m_ntree->m_root, sizeof(InnerNode), cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(GVL_MEMCPY(&a, m_ntree->m_root, sizeof(InnerNode), GVL_MEMCPY_DEVICE_TO_HOST));
 				if (!a.hasStatus(ns_PART))
 					return false;
 				Base::m_init_work_item = WorkItem((InnerNode*)a.getChildPtr(), 0, level_count - 2);
@@ -121,25 +121,25 @@ namespace gpu_voxels
 					// extract all
 					uint8_t selection[extract_selection_size];
 					memset(selection, 1, extract_selection_size * sizeof(uint8_t));
-					HANDLE_CUDA_ERROR(
+					GVL_HANDLE_ERROR(
 						cudaMemcpyToSymbol(const_extract_selection, selection, extract_selection_size * sizeof(uint8_t), 0,
-							cudaMemcpyHostToDevice));
+							GVL_MEMCPY_HOST_TO_DEVICE));
 				}
 				else
 				{
 					// copy selection lookup table to constant memory
-					HANDLE_CUDA_ERROR(
+					GVL_HANDLE_ERROR(
 						cudaMemcpyToSymbol(const_extract_selection, m_dev_status_selection,
-							extract_selection_size * sizeof(uint8_t), 0, cudaMemcpyDeviceToDevice));
+							extract_selection_size * sizeof(uint8_t), 0, GVL_MEMCPY_DEVICE_TO_DEVICE));
 				}
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				// ##############################################
 
 				// Alloc device mem
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_global_voxel_list_count, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_global_voxel_list_count, sizeof(uint32_t)));
 
 				// Init mem
-				HANDLE_CUDA_ERROR(cudaMemset(m_dev_global_voxel_list_count, 0, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(cudaMemset(m_dev_global_voxel_list_count, 0, sizeof(uint32_t)));
 
 				return ret;
 			}
@@ -152,7 +152,7 @@ namespace gpu_voxels
 				// Free allocated device mem
 				if (m_dev_global_voxel_list_count)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_global_voxel_list_count));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_global_voxel_list_count));
 					m_dev_global_voxel_list_count = nullptr;
 				}
 			}

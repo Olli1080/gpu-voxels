@@ -27,20 +27,20 @@
 
 namespace gpu_voxels {
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline ProbabilisticVoxel::ProbabilisticVoxel() :
 		m_occupancy(UNKNOWN_PROBABILITY)
 	{}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline ProbabilisticVoxel::ProbabilisticVoxel(Probability p) :
 		m_occupancy(p)
 	{}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline ProbabilisticVoxel::~ProbabilisticVoxel() = default;
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline Probability ProbabilisticVoxel::updateOccupancy(const Probability occupancy)
 	{
 		// watch out for overflow: cast to int32_t
@@ -57,25 +57,25 @@ namespace gpu_voxels {
 		return m_occupancy;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline Probability& ProbabilisticVoxel::occupancy()
 	{
 		return m_occupancy;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline const Probability& ProbabilisticVoxel::occupancy() const
 	{
 		return m_occupancy;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline Probability ProbabilisticVoxel::getOccupancy() const
 	{
 		return m_occupancy;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 		inline void ProbabilisticVoxel::insert(const BitVoxelMeaning voxel_meaning)
 	{
 		switch (voxel_meaning) {
@@ -103,13 +103,13 @@ namespace gpu_voxels {
 		}
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline bool ProbabilisticVoxel::isOccupied(float col_threshold) const
 	{
 		return static_cast<float>(m_occupancy) >= col_threshold;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline ProbabilisticVoxel ProbabilisticVoxel::reduce(const ProbabilisticVoxel voxel, const ProbabilisticVoxel other_voxel)
 	{
 		ProbabilisticVoxel res = voxel;

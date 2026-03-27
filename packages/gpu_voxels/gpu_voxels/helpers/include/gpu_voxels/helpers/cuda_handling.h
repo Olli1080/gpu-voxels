@@ -32,11 +32,11 @@ namespace gpu_voxels
 {
 	/* Implementation of frequently needed CUDA functions */
 
-#define CHECK_CUDA_ERROR()        cuCheckForError(__FILE__, __LINE__)
+#define GVL_CHECK_ERROR()        cuCheckForError(__FILE__, __LINE__)
 //! Shortcut to check for an active cuda error
 	bool cuCheckForError(const char* file, int line);
 
-#define HANDLE_CUDA_ERROR(error)        cuHandleError(error, __FILE__, __LINE__)
+#define GVL_HANDLE_ERROR(error)        cuHandleError(error, __FILE__, __LINE__)
 	//! Shortcut useful for error handling
 	bool cuHandleError(cudaError_t cuda_error, const char* file, int line);
 
@@ -56,7 +56,7 @@ namespace gpu_voxels
 	std::string getDeviceMemoryInfo();
 
 	/* Helper functions that can be used for debugging
-	   surround all functions with HANDLE_CUDA_ERROR(     ) */
+	   surround all functions with GVL_HANDLE_ERROR(     ) */
 
 	   //! print single device variable
 	template <class T>

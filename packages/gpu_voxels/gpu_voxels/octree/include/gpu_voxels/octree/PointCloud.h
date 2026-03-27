@@ -40,11 +40,11 @@ namespace gpu_voxels {
 
 		// Transforms the point cloud output of a sensor into an sorted set of voxel without duplicates
 		OctreeVoxelID transformKinectPointCloud(gpu_voxels::Vector3f* point_cloud, voxel_count num_points,
-			thrust::device_vector<Voxel>& voxel, Sensor& sensor,
+			parallel::device_vector<Voxel>& voxel, Sensor& sensor,
 			gpu_voxels::Vector3f voxel_dimension);
 
 		voxel_count transformKinectPointCloud_simple(gpu_voxels::Vector3f* d_point_cloud, voxel_count num_points,
-			thrust::device_vector<Voxel>& d_voxel, Sensor* d_sensor,
+			parallel::device_vector<Voxel>& d_voxel, Sensor* d_sensor,
 			uint32_t resolution);
 
 		Vector3ui getMapDimensions(std::vector<Vector3f>& point_cloud, Vector3f& offset, float scaling = 1000.0f);
@@ -60,15 +60,15 @@ namespace gpu_voxels {
 		//                          const DepthData noSampleValue, const DepthData shadowValue,
 		//                          const DepthData max_sensor_distance = MAX_RANGE);
 		//
-		//void preprocessObjectDepthImage(thrust::device_vector<DepthData>& d_depth_image, const uint32_t width,
+		//void preprocessObjectDepthImage(parallel::device_vector<DepthData>& d_depth_image, const uint32_t width,
 		//                            const uint32_t height, const DepthData noSampleValue, const DepthData shadowValue,
 		//                            const DepthData max_sensor_distance = MAX_RANGE);
 		//
-		//void preprocessFreeSpaceDepthImage(thrust::device_vector<DepthData>& d_depth_image, const uint32_t width, const uint32_t height,
+		//void preprocessFreeSpaceDepthImage(parallel::device_vector<DepthData>& d_depth_image, const uint32_t width, const uint32_t height,
 		//                          const DepthData noSampleValue, const DepthData shadowValue,
 		//                          const DepthData max_sensor_distance = MAX_RANGE);
 
-		void removeInvalidPoints(thrust::device_vector<gpu_voxels::Vector3f>& d_depth_image);
+		void removeInvalidPoints(parallel::device_vector<gpu_voxels::Vector3f>& d_depth_image);
 
 	} // end of ns
 } // end of ns

@@ -75,7 +75,7 @@ namespace gpu_voxels {
 
 		}
 		// first open or create and the set the values
-		HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxellist->getVoidDeviceDataPtr()));
+		GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxellist->getVoidDeviceDataPtr()));
 		*m_shm_list_size = m_voxellist->getDimensions().x();
 		*m_shm_VoxelSize = m_voxellist->getVoxelSideLength();
 		*m_shm_voxellist_changed = true;

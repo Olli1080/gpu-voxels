@@ -54,23 +54,23 @@ namespace gpu_voxels {
 #define extract_selection_size 256
 
 		// look-up table in constant memory for extracting only needed data of the NTree with kernel_extractTreeData().
-		__constant__ uint8_t const_extract_selection[extract_selection_size];
+		GVL_CONSTANT uint8_t const_extract_selection[extract_selection_size];
 #define const_voxel_at_level_size 20
 		// number of elements at each tree level
-		__constant__ OctreeVoxelID const_voxel_at_level[const_voxel_at_level_size]; // max 20 level = 60 bit
-		__constant__ uint32_t const_cube_side_length[const_voxel_at_level_size]; // max 20 level = 60 bit
+		GVL_CONSTANT OctreeVoxelID const_voxel_at_level[const_voxel_at_level_size]; // max 20 level = 60 bit
+		GVL_CONSTANT uint32_t const_cube_side_length[const_voxel_at_level_size]; // max 20 level = 60 bit
 
 		//#define MORTON_LOOKUP_SIZE 8
 		//// look-up table for bit-splitting of morton-code computation
-		//__constant__ uint16_t const_morton_splitting_lookup[MORTON_LOOKUP_SIZE];
+		//GVL_CONSTANT uint16_t const_morton_splitting_lookup[MORTON_LOOKUP_SIZE];
 		//
-		//__device__ __forceinline__
+		//GVL_DEVICE __forceinline__
 		//static uint16_t* getMortonLookupPtr(const uint32_t x, const uint32_t y, const uint32_t z)
 		//{
 		//return const_morton_lookup + x + third_root(BRANCHING_FACTOR) * y + third_root(BRANCHING_FACTOR) * y * z;
 		//}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void blockCopy(void* dst, void* src, const std::size_t size, const uint32_t idx, const uint32_t nThreads)
 		{
 #pragma unroll
@@ -82,7 +82,7 @@ namespace gpu_voxels {
 		}
 
 		template<int NUM_WARPS>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			uint32_t thread_prefix(volatile uint32_t* shr_sum, const uint32_t tid, uint32_t& sum,
 				const bool pred)
 		{
@@ -91,7 +91,7 @@ namespace gpu_voxels {
 			if (tid % WARP_SIZE == tid / WARP_SIZE)
 				shr_sum[tid / WARP_SIZE] = __popc(warp_votes); // population count
 			if (NUM_WARPS > 1)
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 			// exclusive sequential prefix sum
 			if (tid == 0)
@@ -106,7 +106,7 @@ namespace gpu_voxels {
 				}
 			}
 			if (NUM_WARPS > 1)
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 			return warp_votes;
 			//
@@ -114,14 +114,14 @@ namespace gpu_voxels {
 			//  return index + __popc(warp_votes << (WARP_SIZE - (tid % WARP_SIZE)));
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			uint32_t getThreadPrefix(volatile uint32_t* shared_warp_prefix, const uint32_t warp_votes,
 				const uint32_t tid)
 		{
 			return shared_warp_prefix[tid / WARP_SIZE] + __popc(warp_votes << (WARP_SIZE - (tid % WARP_SIZE)));
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			uint32_t getThreadPrefix_Inclusive(volatile uint32_t* shared_warp_prefix, const uint32_t warp_votes,
 				const uint32_t tid)
 		{
@@ -129,17 +129,17 @@ namespace gpu_voxels {
 		}
 
 		template<int NUM_WARPS>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool any_thread(const bool pred)
 		{
 			if (NUM_WARPS > 1)
-				return __syncthreads_or(pred);
+				return GVL_SYNCTHREADS_or(pred);
 			else
 				return ANYWARP(pred);
 		}
 
 		template<std::size_t branching_factor, typename T1, typename T2>
-		__device__ __forceinline__ T1 warp_reduction(const T1 value, volatile T1* const shared_memory,
+		GVL_DEVICE __forceinline__ T1 warp_reduction(const T1 value, volatile T1* const shared_memory,
 			const uint32_t thread_id, T2 reduction_op)
 		{
 			const uint32_t index = thread_id % branching_factor;
@@ -157,86 +157,86 @@ namespace gpu_voxels {
 			return shared_memory[first_index];
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool isVoxelOccupied(const gpu_voxels::ProbabilisticVoxel* voxel)
 		{
 			return voxel->occupancy() >= 50;;
 		}
 
 		template<std::size_t length>
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool isVoxelOccupied(const gpu_voxels::BitVoxel<length>* voxel)
 		{
 			return !voxel->bitVector().isZero();;
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void clearNode(Environment::InnerNode* n)
 		{
 			n->setStatus(ns_STATIC_MAP);
 			n->setFlags(nf_NEEDS_UPDATE);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNodeLastLevel(Environment::InnerNode* n)
 		{
 			n->setStatus(ns_STATIC_MAP | ns_LAST_LEVEL);
 			n->setFlags(nf_NEEDS_UPDATE);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNode(Environment::LeafNode* n)
 		{
 			n->setStatus(Environment::LeafNode::INVALID_STATUS | ns_STATIC_MAP);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNodeLastLevel(Environment::LeafNode* n)
 		{
 			clearNode(n);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setOccupied(Environment::InnerNode* n, void* childPtr)
 		{
 			n->setStatus(n->getStatus() | ns_PART);
 			n->setChildPtr(childPtr);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setOccupied(Environment::LeafNode* n, void* childPtr)
 		{
 			n->setStatus((n->getStatus() & ~Environment::LeafNode::INVALID_STATUS) | ns_OCCUPIED);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNode(Environment::InnerNode* n)
 		{
 			n->setStatus(ns_DYNAMIC_MAP);
 			n->setFlags(nf_NEEDS_UPDATE);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNodeLastLevel(Environment::InnerNode* n)
 		{
 			n->setStatus(ns_DYNAMIC_MAP | ns_LAST_LEVEL);
 			n->setFlags(nf_NEEDS_UPDATE);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNode(Environment::LeafNode* n)
 		{
 			n->setStatus(Environment::LeafNode::INVALID_STATUS | ns_DYNAMIC_MAP);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNodeLastLevel(Environment::LeafNode* n)
 		{
 			insertNode(n);
 		}
 
 		template<typename T1, typename T2>
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void _topDownUpdate(T1* node, T2* parent_node, const NodeStatus top_down_status_mask,
 				const NodeStatus status_mask)
 		{
@@ -248,28 +248,28 @@ namespace gpu_voxels {
 			node->setStatus(node_status);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void topDownUpdate(Environment::InnerNode* node, Environment::InnerNode* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
 			_topDownUpdate(node, parent_node, top_down_status_mask, status_mask);
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void topDownUpdate(Environment::LeafNode* node, Environment::InnerNode* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
 			_topDownUpdate(node, parent_node, top_down_status_mask, status_mask);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void topDownSubtreeUpdate(Environment::InnerNode* node, Environment::InnerNode* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
 			// nothing to do since the insert method removed already all children of this node and also doesn't set the ns_UPDATE_SUBTREE flag
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void topDownSubtreeUpdate(Environment::LeafNode* node, Environment::InnerNode* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
@@ -278,7 +278,7 @@ namespace gpu_voxels {
 
 		struct BitAnd_op
 		{
-			__device__ __forceinline__ NodeStatus operator()(const NodeStatus a, const NodeStatus b)
+			GVL_DEVICE __forceinline__ NodeStatus operator()(const NodeStatus a, const NodeStatus b)
 			{
 				return a & b;
 			}
@@ -286,14 +286,14 @@ namespace gpu_voxels {
 
 		struct BitOr_op
 		{
-			__device__ __forceinline__ NodeStatus operator()(const NodeStatus a, const NodeStatus b)
+			GVL_DEVICE __forceinline__ NodeStatus operator()(const NodeStatus a, const NodeStatus b)
 			{
 				return a | b;
 			}
 		};
 
 		// Needed for checking the NTree sequentially
-		__host__ __device__
+		GVL_HOST_DEVICE
 			inline bool isValidParentStatus(void* nodes, const uint32_t node_count, const uint8_t level,
 				Environment::InnerNode* parent)
 		{
@@ -315,7 +315,7 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t branching_factor, typename T1, typename T2>
-		__device__
+		GVL_DEVICE
 			__forceinline__ void _bottomUpUpdate(T1* node, T2* parent_node, volatile uint8_t* shared_mem, const uint32_t thread_id,
 				const uint8_t parent_level)
 		{
@@ -407,7 +407,7 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t branching_factor>
-		__device__
+		GVL_DEVICE
 			__forceinline__ void bottomUpUpdate(Environment::LeafNode* node, Environment::InnerNode* parent_node,
 				volatile uint8_t* shared_mem, const uint32_t thread_id)
 		{
@@ -415,14 +415,14 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t branching_factor>
-		__device__
+		GVL_DEVICE
 			__forceinline__ void bottomUpUpdate(Environment::InnerNode* node, Environment::InnerNode* parent_node,
 				volatile uint8_t* shared_mem, const uint32_t thread_id)
 		{
 			_bottomUpUpdate<branching_factor>(node, parent_node, shared_mem, thread_id, 99);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setNode(Environment::LeafNode* node,
 				const Environment::LeafNode::NodeData::BasicData set_basic_data,
 				const Environment::LeafNode::NodeData::BasicData reset_basic_data)
@@ -430,7 +430,7 @@ namespace gpu_voxels {
 			node->setStatus((node->getStatus() & ~reset_basic_data.m_status) | set_basic_data.m_status);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void updateNode(Environment::LeafNode* node,
 				const Environment::LeafNode::NodeData::BasicData set_basic_data,
 				const Environment::LeafNode::NodeData::BasicData reset_basic_data)
@@ -438,7 +438,7 @@ namespace gpu_voxels {
 			setNode(node, set_basic_data, reset_basic_data);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void _setNode(Environment::InnerNode* node, void* const childPtr,
 				const Environment::InnerNode::NodeData::BasicData set_basic_data,
 				const Environment::InnerNode::NodeData::BasicData reset_basic_data)
@@ -455,7 +455,7 @@ namespace gpu_voxels {
 			node->setStatus(s);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setNode(Environment::InnerNode* node, void* const childPtr,
 				const Environment::InnerNode::NodeData::BasicData set_basic_data,
 				Environment::InnerNode::NodeData::BasicData reset_basic_data)
@@ -464,7 +464,7 @@ namespace gpu_voxels {
 			_setNode(node, childPtr, set_basic_data, reset_basic_data);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void updateNode(Environment::InnerNode* node, void* const childPtr,
 				const Environment::InnerNode::NodeData::BasicData set_basic_data,
 				const Environment::InnerNode::NodeData::BasicData reset_basic_data)
@@ -472,25 +472,25 @@ namespace gpu_voxels {
 			setNode(node, childPtr, set_basic_data, reset_basic_data);
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void getRayCastInit(Environment::InnerNode::RayCastType* const init)
 		{
 			init->value = 0;
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void getRayCastInit(Environment::NodeProb::RayCastType* const init)
 		{
 			init->value = INITIAL_PROBABILITY;
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void handleRayHit(Environment::InnerNode::RayCastType* a, int32_t x, int32_t y, int32_t z)
 		{
 			a->value = ns_FREE;
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool isValidValue(const Environment::NodeProb::RayCastType& a)
 		{
 			Environment::NodeProb::RayCastType init;
@@ -498,7 +498,7 @@ namespace gpu_voxels {
 			return a.value != init.value;
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool isValidValue(const Environment::InnerNode::RayCastType& a)
 		{
 			Environment::InnerNode::RayCastType init;
@@ -509,14 +509,14 @@ namespace gpu_voxels {
 		template<typename InnerNode>
 		struct Comp_is_valid
 		{
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				bool operator()(const typename InnerNode::RayCastType& x)
 			{
 				return isValidValue(x);
 			}
 		};
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool isPackingPossible(const Environment::InnerNode::RayCastType max,
 				const Environment::InnerNode::RayCastType min)
 		{
@@ -526,7 +526,7 @@ namespace gpu_voxels {
 			return max.value == min.value && min.value != init.value;
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			bool maxMinReduction(const Environment::InnerNode::RayCastType my_value,
 				volatile Environment::InnerNode::RayCastType* shared_memory, const uint32_t thread_id,
 				const uint32_t num_threads, const uint32_t branching_factor, const bool is_active,
@@ -545,7 +545,7 @@ namespace gpu_voxels {
 				if (warp_lane == 0)
 					my_shared_mem[thread_id / WARP_SIZE] = __popc(warp_votes);
 
-				const bool all_invalid = __syncthreads_and(!is_valid);
+				const bool all_invalid = GVL_SYNCTHREADS_and(!is_valid);
 				if (all_invalid)
 					return true; // nothing to do
 
@@ -561,14 +561,14 @@ namespace gpu_voxels {
 				const uint32_t my_work_votes = (warp_votes >> (work_id * branching_factor)) & work_mask;
 				max_value->value = min_value->value = (my_work_votes == work_mask);
 
-				const bool all_invalid = __syncthreads_and(!is_valid);
+				const bool all_invalid = GVL_SYNCTHREADS_and(!is_valid);
 				if (all_invalid)
 					return true; // nothing to do
 			}
 			return false;
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void packData(Environment::InnerNode::NodeData::BasicData* ptr, const uint32_t pos,
 				const Environment::InnerNode::RayCastType max, const Environment::InnerNode::RayCastType min,
 				const Environment::InnerNode::RayCastType value)
@@ -578,20 +578,20 @@ namespace gpu_voxels {
 			ptr[pos] = Environment::InnerNode::NodeData::BasicData(value.value, 0);
 		}
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void packData(Environment::InnerNode::RayCastType* ptr, const Environment::InnerNode::RayCastType max,
 				const Environment::InnerNode::RayCastType min, const Environment::InnerNode::RayCastType value)
 		{
 			*ptr = value;
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			inline void getFreeValue(Environment::InnerNode::RayCastType* ptr)
 		{
 			ptr->value = ns_FREE;
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			inline Environment::LeafNode getLeafNode(Environment::InnerNode* ptr)
 		{
 			Environment::LeafNode tmp;
@@ -604,41 +604,41 @@ namespace gpu_voxels {
 		// ############### EnvNodesProbabilistic ###############
 		// #####################################################
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			void clearNode(Environment::InnerNodeProb* n)
 		{
 			clearNode(static_cast<Environment::InnerNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNodeLastLevel(Environment::InnerNodeProb* n)
 		{
 			clearNodeLastLevel(static_cast<Environment::InnerNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNode(Environment::LeafNodeProb* n)
 		{
 			clearNode(static_cast<Environment::LeafNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void clearNodeLastLevel(Environment::LeafNodeProb* n)
 		{
 			clearNode(n);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setOccupied(Environment::InnerNodeProb* n, void* childPtr)
 		{
 			setOccupied(static_cast<Environment::InnerNode*>(n), childPtr);
 			//n->setOccupancy(MAX_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void setOccupied(Environment::LeafNodeProb* n, void* childPtr)
 		{
 			n->setStatus((n->getStatus() & ~Environment::LeafNode::INVALID_STATUS));
@@ -646,34 +646,34 @@ namespace gpu_voxels {
 			n->setOccupancy(MAX_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNode(Environment::InnerNodeProb* n)
 		{
 			insertNode(static_cast<Environment::InnerNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNodeLastLevel(Environment::InnerNodeProb* n)
 		{
 			insertNodeLastLevel(static_cast<Environment::InnerNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNode(Environment::LeafNodeProb* n)
 		{
 			insertNode(static_cast<Environment::LeafNode*>(n));
 			n->setOccupancy(INITIAL_PROBABILITY);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void insertNodeLastLevel(Environment::LeafNodeProb* n)
 		{
 			insertNode(n);
 		}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			Probability updateOccupancy(const Probability old_value, const Probability new_value)
 		{
 			// watch out for overflow: cast to int32_t
@@ -681,32 +681,32 @@ namespace gpu_voxels {
 		}
 
 		//template<typename Node>
-		//__host__ __device__ __forceinline__
+		//GVL_HOST_DEVICE __forceinline__
 		//bool _isOccupied(Node* const node)
 		//{
 		//  return node->getOccupancy() >= THRESHOLD_OCCUPANCY;
 		//}
 		//
-		//__host__ __device__ __forceinline__
+		//GVL_HOST_DEVICE __forceinline__
 		//bool isOccupied(Environment::InnerNodeProb* const node)
 		//{
 		//  return _isOccupied(node);
 		//}
 		//
-		//__host__ __device__ __forceinline__
+		//GVL_HOST_DEVICE __forceinline__
 		//bool isOccupied(Environment::LeafNodeProb* const node)
 		//{
 		//  return _isOccupied(node);
 		//}
 
-		__host__ __device__ __forceinline__
+		GVL_HOST_DEVICE __forceinline__
 			bool isUnknown(Probability const prob)
 		{
 			return prob == UNKNOWN_PROBABILITY;
 		}
 
 		template<typename Node>
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void _updateStatus(Node* const node)
 		{
 			// set node occupied/free according to occupancy
@@ -718,7 +718,7 @@ namespace gpu_voxels {
 			node->setStatus((node->getStatus() & ~(ns_OCCUPIED | ns_FREE | ns_UNKNOWN)) | s);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void topDownUpdate(Environment::InnerNodeProb* node, Environment::InnerNodeProb* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
@@ -728,7 +728,7 @@ namespace gpu_voxels {
 			_updateStatus(node);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			__forceinline__ void topDownUpdate(Environment::LeafNodeProb* node, Environment::InnerNodeProb* parent_node,
 				const NodeStatus top_down_status_mask, const NodeStatus status_mask)
 		{
@@ -740,7 +740,7 @@ namespace gpu_voxels {
 
 		/**
 		 * Update instead of set the occupancy of the subtree.
-		 */__host__ __device__
+		 */GVL_HOST_DEVICE
 	__forceinline__ void topDownSubtreeUpdate(Environment::InnerNodeProb* node,
 		Environment::InnerNodeProb* parent_node,
 		const NodeStatus top_down_status_mask, const NodeStatus status_mask)
@@ -755,7 +755,7 @@ namespace gpu_voxels {
 
 		 /**
 		  * Update instead of set the occupancy of the subtree.
-		  */__host__ __device__
+		  */GVL_HOST_DEVICE
 	__forceinline__ void topDownSubtreeUpdate(Environment::LeafNodeProb* node,
 		Environment::InnerNodeProb* parent_node,
 		const NodeStatus top_down_status_mask, const NodeStatus status_mask)
@@ -766,7 +766,7 @@ namespace gpu_voxels {
 
 		  struct _Occupancy_aggregate_op
 		  {
-			  __device__ __forceinline__ Probability operator()(const Probability a, const Probability b)
+			  GVL_DEVICE __forceinline__ Probability operator()(const Probability a, const Probability b)
 			  {
 				  // attention: prefers unknown space over free space
 				  return max(static_cast<int>(a), static_cast<int>(b));
@@ -774,7 +774,7 @@ namespace gpu_voxels {
 		  };
 
 		  // Needed for checking the NTree sequentially
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  inline bool isValidParentStatus(void* nodes, const uint32_t node_count, const uint8_t level,
 				  Environment::InnerNodeProb* parent)
 		  {
@@ -823,7 +823,7 @@ namespace gpu_voxels {
 		  }
 
 		  template<std::size_t branching_factor, typename T1, typename T2>
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  void _bottomUpUpdateProb(T1* node, T2* parent_node, volatile uint8_t* shared_mem, const uint32_t thread_id)
 		  {
 			  // ### WARP local computation ###
@@ -896,7 +896,7 @@ namespace gpu_voxels {
 		  }
 
 		  template<std::size_t branching_factor>
-		  __device__
+		  GVL_DEVICE
 			  __forceinline__ void bottomUpUpdate(Environment::LeafNodeProb* node, Environment::InnerNodeProb* parent_node,
 				  volatile uint8_t* shared_mem, const uint32_t thread_id)
 		  {
@@ -911,7 +911,7 @@ namespace gpu_voxels {
 		  }
 
 		  template<std::size_t branching_factor>
-		  __device__
+		  GVL_DEVICE
 			  __forceinline__ void bottomUpUpdate(Environment::InnerNodeProb* node, Environment::InnerNodeProb* parent_node,
 				  volatile uint8_t* shared_mem, const uint32_t thread_id)
 		  {
@@ -925,7 +925,7 @@ namespace gpu_voxels {
 			  // _updateStatus(node);
 		  }
 
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  __forceinline__ void updateNode(Environment::LeafNodeProb* node,
 				  const Environment::NodeProb::NodeData::BasicData set_basic_data,
 				  const Environment::NodeProb::NodeData::BasicData reset_basic_data)
@@ -939,7 +939,7 @@ namespace gpu_voxels {
 			  _updateStatus(node);
 		  }
 
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  __forceinline__ void setNode(Environment::LeafNodeProb* node,
 				  const Environment::NodeProb::NodeData::BasicData set_basic_data,
 				  const Environment::NodeProb::NodeData::BasicData reset_basic_data)
@@ -950,7 +950,7 @@ namespace gpu_voxels {
 			  _updateStatus(node);
 		  }
 
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  __forceinline__ void setNode(Environment::InnerNodeProb* node, void* const childPtr,
 				  const Environment::NodeProb::NodeData::BasicData set_basic_data,
 				  const Environment::NodeProb::NodeData::BasicData reset_basic_data)
@@ -964,7 +964,7 @@ namespace gpu_voxels {
 			  }
 		  }
 
-		  __host__ __device__ __forceinline__
+		  GVL_HOST_DEVICE __forceinline__
 			  void updateNode(Environment::InnerNodeProb* node, void* const childPtr,
 				  const Environment::NodeProb::NodeData::BasicData set_basic_data,
 				  const Environment::NodeProb::NodeData::BasicData reset_basic_data)
@@ -988,7 +988,7 @@ namespace gpu_voxels {
 			  }
 		  }
 
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  void handleRayHit(Environment::NodeProb::RayCastType* a, int32_t x, int32_t y, int32_t z)
 		  {
 			  // Concurrent writes to the same cell/voxel can lead to incorrect results.
@@ -1000,7 +1000,7 @@ namespace gpu_voxels {
 			  a->value = static_cast<int32_t>(current) + (std::max)(static_cast<int32_t>(FREE_UPDATE_PROBABILITY), static_cast<int32_t>(MIN_PROBABILITY) - static_cast<int32_t>(current));
 		  }
 
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  bool isPackingPossible(const Environment::NodeProb::RayCastType max,
 				  const Environment::NodeProb::RayCastType min)
 		  {
@@ -1009,7 +1009,7 @@ namespace gpu_voxels {
 
 		  struct _Max_op
 		  {
-			  __device__ __forceinline__ Probability operator()(const Probability a, const Probability b)
+			  GVL_DEVICE __forceinline__ Probability operator()(const Probability a, const Probability b)
 			  {
 				  return (std::max)(static_cast<int>(a), static_cast<int>(b));
 			  }
@@ -1017,13 +1017,13 @@ namespace gpu_voxels {
 
 		  struct _Min_op
 		  {
-			  __device__ __forceinline__ Probability operator()(const Probability a, const Probability b)
+			  GVL_DEVICE __forceinline__ Probability operator()(const Probability a, const Probability b)
 			  {
 				  return (std::min)(static_cast<int>(a), static_cast<int>(b));
 			  }
 		  };
 
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  bool maxMinReduction(const Environment::NodeProb::RayCastType my_value,
 				  volatile Environment::NodeProb::RayCastType* shared_memory, const uint32_t thread_id,
 				  const uint32_t num_threads, const uint32_t branching_factor, const bool is_active,
@@ -1036,32 +1036,32 @@ namespace gpu_voxels {
 			  // max reduce
 			  PARTIAL_REDUCE(my_shared_memory, thread_id, num_threads, branching_factor, _Max_op());
 			  if (branching_factor > WARP_SIZE)
-				  __syncthreads();
+				  GVL_SYNCTHREADS();
 
 			  max_value->value = my_shared_memory[reduction_index];
 			  if (branching_factor > WARP_SIZE)
-				  __syncthreads();
+				  GVL_SYNCTHREADS();
 
 			  //  // causes some trouble!
-			  //  const bool all_invalid = __syncthreads_and(!is_active || !isValidValue(*max_value));
+			  //  const bool all_invalid = GVL_SYNCTHREADS_and(!is_active || !isValidValue(*max_value));
 			  //  if (all_invalid)
 			  //    return true; // nothing to do here
 
 				// fill shared mem with thread data
 			  my_shared_memory[thread_id] = my_value.value;
 			  if (branching_factor > WARP_SIZE)
-				  __syncthreads();
+				  GVL_SYNCTHREADS();
 
 			  // min reduce
 			  PARTIAL_REDUCE(my_shared_memory, thread_id, num_threads, branching_factor, _Min_op());
 			  if (branching_factor > WARP_SIZE)
-				  __syncthreads();
+				  GVL_SYNCTHREADS();
 
 			  min_value->value = my_shared_memory[reduction_index];
 			  return false;
 		  }
 
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  void packData(Environment::NodeProb::NodeData::BasicData* ptr, const uint32_t pos,
 				  const Environment::NodeProb::RayCastType max, const Environment::NodeProb::RayCastType min,
 				  const Environment::NodeProb::RayCastType value)
@@ -1070,20 +1070,20 @@ namespace gpu_voxels {
 			  ptr[pos] = Environment::NodeProb::NodeData::BasicData(0, 0, value.value);
 		  }
 
-		  __device__ __forceinline__
+		  GVL_DEVICE __forceinline__
 			  void packData(Environment::NodeProb::RayCastType* ptr, const Environment::NodeProb::RayCastType max,
 				  const Environment::NodeProb::RayCastType min, const Environment::NodeProb::RayCastType value)
 		  {
 			  *ptr = value; //max.value - (max.value - min.value) / 2;
 		  }
 
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  inline void getFreeValue(Environment::NodeProb::RayCastType* ptr)
 		  {
 			  ptr->value = MIN_PROBABILITY;
 		  }
 
-		  __host__ __device__
+		  GVL_HOST_DEVICE
 			  inline Environment::LeafNodeProb getLeafNode(Environment::InnerNodeProb* ptr)
 		  {
 			  Environment::LeafNodeProb tmp;

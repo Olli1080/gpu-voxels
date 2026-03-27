@@ -51,19 +51,19 @@ namespace gpu_voxels
 	{
 		/**
 		 * Converts an array of voxel identified by Cartesian coordinates x y z to voxel identified by their morton code.
-		 */__global__
+		 */GVL_GLOBAL
 			 void kernel_toMortonCode(uint3* inputVoxel, voxel_count numVoxel, OctreeVoxelID* outputVoxel);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_transformKinectPoints(gpu_voxels::Vector3f* point_cloud, OctreeVoxelID num_points, Voxel* voxel,
 				 Sensor* sensor, gpu_voxels::Vector3f voxel_dimension);
 
-		 __global__ void kernel_transformKinectPoints_simple(gpu_voxels::Vector3f* point_cloud, const voxel_count num_points,
+		 GVL_GLOBAL void kernel_transformKinectPoints_simple(gpu_voxels::Vector3f* point_cloud, const voxel_count num_points,
 			 OctreeVoxelID* voxel, Sensor* sensor,
 			 const uint32_t resolution);
 
 		 template<bool COUNT_MODE>
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_voxelize(OctreeVoxelID* voxelInput, const voxel_count numVoxel, voxel_count* countVoxel,
 				 Voxel* voxel_output)
 		 {
@@ -77,8 +77,8 @@ namespace gpu_voxels
 				 (unsigned long long int) numVoxel);
 			 const uint32_t thread_id = threadIdx.x;
 
-			 __shared__ voxel_count shared_voxel_count[NUM_THREADS];
-			 __shared__ voxel_count shared_write_position;
+			 GVL_SHARED voxel_count shared_voxel_count[NUM_THREADS];
+			 GVL_SHARED voxel_count shared_write_position;
 
 			 voxel_count my_voxel_count = 0;
 
@@ -89,7 +89,7 @@ namespace gpu_voxels
 					 shared_write_position = countVoxel[block_id];
 				 }
 			 }
-			 __syncthreads();
+			 GVL_SYNCTHREADS();
 
 			 for (voxel_count i = from; i < to; i += NUM_THREADS)
 			 {
@@ -140,14 +140,14 @@ namespace gpu_voxels
 						 //        // ## first thread sets the id ##
 
 					 }
-					 __syncthreads();
+					 GVL_SYNCTHREADS();
 
 					 if (thread_id == 0)
 						 shared_write_position += __popc(new_voxel_votes);
-					 __syncthreads();
+					 GVL_SYNCTHREADS();
 				 }
 			 }
-			 __syncthreads();
+			 GVL_SYNCTHREADS();
 
 			 if (!COUNT_MODE)
 			 {
@@ -157,7 +157,7 @@ namespace gpu_voxels
 			 if (COUNT_MODE)
 			 {
 				 shared_voxel_count[thread_id] = my_voxel_count;
-				 __syncthreads();
+				 GVL_SYNCTHREADS();
 
 				 REDUCE(shared_voxel_count, thread_id, NUM_THREADS, +);
 
@@ -166,39 +166,39 @@ namespace gpu_voxels
 			 }
 		 }
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_voxelize_finalStep(OctreeVoxelID* voxelInput, voxel_count numVoxel, const voxel_count num_output_voxel,
 				 Voxel* voxel_output, Sensor* sensor);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_countVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_combineEqualVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel, Voxel* outputVoxel,
 				 Sensor* sensor);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_toMortonCode(const Vector3ui* inputVoxel, voxel_count numVoxel, OctreeVoxelID* outputVoxel);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_transformDepthImage(DepthData* depth_image, gpu_voxels::Vector3f* d_point_cloud, Sensor* sensor,
 				 const DepthData invalid_measure);
 
-		 //__global__
+		 //GVL_GLOBAL
 		 //void kernel_preprocessObjectDepthImage(DepthData* d_depth_image, const uint32_t width, const uint32_t height,
 		 //                                       const DepthData noSampleValue, const DepthData shadowValue,
 		 //                                       const DepthData max_sensor_distance);
 		 //
-		 //__global__
+		 //GVL_GLOBAL
 		 //void kernel_preprocessFreeSpaceDepthImage(DepthData* d_depth_image, const uint32_t width,
 		 //                                          const uint32_t height, const DepthData noSampleValue,
 		 //                                          const DepthData shadowValue, const DepthData max_sensor_distance);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_preprocessDepthImage(DepthData* d_depth_image, const uint32_t width, const uint32_t height,
 				 const SensorDataProcessing arguments);
 
-		 __global__
+		 GVL_GLOBAL
 			 void kernel_toVoxels(const Vector3f* input_points, size_t num_points, Vector3ui* output_voxels, float voxel_side_length);
 
 	}

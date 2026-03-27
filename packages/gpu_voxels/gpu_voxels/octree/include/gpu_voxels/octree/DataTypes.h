@@ -47,7 +47,7 @@ namespace gpu_voxels {
 
 		//-Wno-unknown-pragmas -Wno-unused-function
 
-#define D_PTR(X) thrust::raw_pointer_cast((X).data())
+#define D_PTR(X) parallel::raw_pointer_cast((X).data())
 #define MAX_VALUE(TYPE) ((TYPE)((1 << (sizeof(TYPE) * 8)) - 1))
 
 #define INVALID_VOXEL ULONG_MAX
@@ -195,7 +195,7 @@ namespace gpu_voxels {
 	//// #################################################
 
 		template<typename t0, typename t1, typename t2, typename t3, typename t4, typename t5 = uint32_t, typename t6 = uint32_t>
-		__host__
+		GVL_HOST
 		uint32_t linearApprox(t0 y1, t1 x1, t2 y2, t3 x2, t4 x,
 			t5 alignment = 1, t6 max_val = UINT_MAX)
 		{

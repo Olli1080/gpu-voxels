@@ -30,7 +30,7 @@
 namespace gpu_voxels
 {
 
-	__global__
+	GVL_GLOBAL
 	void kernelDebugMetaPointCloud(MetaPointCloudStruct* meta_point_clouds_struct);
 
 	/*!
@@ -40,7 +40,7 @@ namespace gpu_voxels
 	 * \param transformedAddress address where to store the transformed points. Can be the same as the input_cloud
 	 * \param numberOfPoints number of points to be transformed
 	*/
-	//__global__
+	//GVL_GLOBAL
 	//void kernelTransformCloud(const Matrix4f* transformation, const Vector3f* startAddress, Vector3f* transformedAddress, uint32_t numberOfPoints);
 
 	/*!
@@ -50,7 +50,7 @@ namespace gpu_voxels
 	 * \param transformedAddress address where to store the transformed points. Can be the same as the input_cloud
 	 * \param numberOfPoints number of points to be transformed
 	*/
-	//__global__
+	//GVL_GLOBAL
 	//void kernelScaleCloud(const Vector3f scaling, const Vector3f* startAddress, Vector3f* transformedAddress, uint32_t numberOfPoints);
 
 	struct KernelScale
@@ -61,7 +61,7 @@ namespace gpu_voxels
 			: m_scaling(std::move(scaling))
 		{}
 
-		inline __device__ __host__
+		inline GVL_HOST_DEVICE
 		Vector3f operator()(const Vector3f& point) const
 		{
 			return m_scaling.cwiseProduct(point);
@@ -76,7 +76,7 @@ namespace gpu_voxels
 			: m_transform(std::move(transform))
 		{}
 
-		inline __device__ __host__
+		inline GVL_HOST_DEVICE
 		Vector3f operator()(const Vector3f& point) const
 		{
 			Vector3f result = m_transform.block<3, 1>(0, 3);

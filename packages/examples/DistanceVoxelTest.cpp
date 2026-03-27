@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
 
   LOGGING_INFO(Gpu_voxels, "obstacle count before filtering: "<<obstacles.size()<< endl);
 
-  std::vector<Vector3f>::iterator new_end = thrust::remove_if(obstacles.begin(), obstacles.end(), out_of_bounds<NXY, NZ>());
+  std::vector<Vector3f>::iterator new_end = parallel::remove_if(obstacles.begin(), obstacles.end(), out_of_bounds<NXY, NZ>());
   obstacles.erase(new_end, obstacles.end());
   //    obstacles.resize(new_end - obstacles.begin());
 
@@ -551,7 +551,7 @@ int main(int argc, char* argv[])
 
   jfaDistanceVoxmap->insertPointCloud(obstacles, eBVM_OCCUPIED);
 #ifdef IC_PERFORMANCE_MONITOR
-  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
   PERF_MON_PRINT_INFO_P("outsidetimer", "jfa clearMap and insertPointloud done", "outsideprefix");
 #endif
 
@@ -574,18 +574,18 @@ int main(int argc, char* argv[])
 
   for (int run_id = 0; run_id < JFA_RUNS; run_id++) {
 
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef IC_PERFORMANCE_MONITOR
     PERF_MON_START("outsidetimer");
 #endif
     jfaDistanceVoxmap->clearMap();
     jfaDistanceVoxmap->insertPointCloud(obstacles, eBVM_OCCUPIED);
 #ifdef IC_PERFORMANCE_MONITOR
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_START("computetimer");
 #endif
   jfaDistanceVoxmap->jumpFlood3D(jfa_block_size, 0, false);
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef IC_PERFORMANCE_MONITOR
     PERF_MON_PRINT_AND_RESET_INFO_P("computetimer", "jfa compute done", "computeprefix");
     PERF_MON_PRINT_AND_RESET_INFO_P("outsidetimer", "jfa total done", "outsideprefix");
@@ -755,7 +755,7 @@ int main(int argc, char* argv[])
 
           pbaDistanceVoxmap->insertPointCloud(obstacles, eBVM_OCCUPIED);
 #ifdef IC_PERFORMANCE_MONITOR
-          //      HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+          //      GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
           //      PERF_MON_PRINT_INFO_P("outsidetimer", "pba iteration clearMap and insertPointloud done", "outsideprefix");
 #endif
 

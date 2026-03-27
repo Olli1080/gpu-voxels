@@ -35,25 +35,25 @@ BOOST_FIXTURE_TEST_SUITE(thrustPerformance, ArgsFixture)
 
 BOOST_AUTO_TEST_CASE(binarySearchComparison)
 {
-  thrust::host_vector<int> large_vec_h(10000000);
+  parallel::host_vector<int> large_vec_h(10000000);
   srand(13);
-  thrust::generate(large_vec_h.begin(), large_vec_h.end(), rand);
+  parallel::generate(large_vec_h.begin(), large_vec_h.end(), rand);
 
-  thrust::device_vector<int> large_vec_d = large_vec_h;
+  parallel::device_vector<int> large_vec_d = large_vec_h;
 
-  thrust::host_vector<int> small_vec_h(1000);
+  parallel::host_vector<int> small_vec_h(1000);
   srand(13);
-  thrust::generate(small_vec_h.begin(), small_vec_h.end(), rand);
+  parallel::generate(small_vec_h.begin(), small_vec_h.end(), rand);
 
-  thrust::device_vector<int> small_vec_d = small_vec_h;
+  parallel::device_vector<int> small_vec_d = small_vec_h;
 
-  thrust::device_vector<bool> output_d(10000000);
+  parallel::device_vector<bool> output_d(10000000);
 
   PERF_MON_START("binarySearchSmallVectorInLargeVector");
   for(int i = 0; i < iterationCount; i++)
   {
 
-    thrust::binary_search(thrust::device,
+    parallel::binary_search(parallel::device,
                           large_vec_d.begin(), large_vec_d.end(),
                           small_vec_d.begin(), small_vec_d.end(),
                           output_d.begin());
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(binarySearchComparison)
   for(int i = 0; i < iterationCount; i++)
   {
 
-    thrust::binary_search(thrust::device,
+    parallel::binary_search(parallel::device,
                           small_vec_d.begin(), small_vec_d.end(),
                           large_vec_d.begin(), large_vec_d.end(),
                           output_d.begin());

@@ -64,7 +64,7 @@ namespace gpu_voxels {
 
 			void updateVBOOffsets() override
 			{
-				thrust::exclusive_scan(m_vbo_segment_voxel_capacities.begin(),
+				parallel::exclusive_scan(m_vbo_segment_voxel_capacities.begin(),
 					m_vbo_segment_voxel_capacities.end(),
 					m_vbo_offsets.begin());
 				m_d_vbo_offsets = m_vbo_offsets;

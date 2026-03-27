@@ -51,7 +51,7 @@ namespace gpu_voxels
 			 * (derived from paths_to_pointclouds), if they should be kinematically
 			 * transformed.
 			 */
-			__host__
+			GVL_HOST
 			KinematicChain(const std::vector<std::string>& linknames,
 				const std::vector<robot::DHParameters<convention>>& dh_params,
 				const std::vector<std::string>& paths_to_pointclouds,
@@ -69,13 +69,13 @@ namespace gpu_voxels
 			 * (derived from paths_to_pointclouds), if they should be kinematically
 			 * transformed.
 			 */
-			__host__
+			GVL_HOST
 			KinematicChain(const std::vector<std::string>& linknames,
 				const std::vector<robot::DHParameters<convention>>& dh_params,
 				const MetaPointCloud& pointclouds,
 				const Matrix4f& base_transformation = Matrix4f::Identity());
 
-			__host__
+			GVL_HOST
 			~KinematicChain() override = default;
 
 			/**
@@ -90,7 +90,7 @@ namespace gpu_voxels
 			 * \param joint_values Robot joint values. Will get
 			 * matched by names, so not all joints have to be specified.
 			 */
-			__host__
+			GVL_HOST
 			void setConfiguration(const JointValueMap& joint_values) override;
 
 			/*!
@@ -98,7 +98,7 @@ namespace gpu_voxels
 			 * \param joint_values This map will get extended, if
 			 * jointnames are missing.
 			 */
-			__host__
+			GVL_HOST
 			void getConfiguration(JointValueMap& joint_values) override;
 
 
@@ -140,7 +140,7 @@ namespace gpu_voxels
 			//[[nodiscard]] Vector3f transform_point(const Eigen::Vector3f& p) const override;
 
 			//! for testing purposes
-			//__host__
+			//GVL_HOST
 			//void transformPointAlongChain(Vector3f point);
 
 		private:

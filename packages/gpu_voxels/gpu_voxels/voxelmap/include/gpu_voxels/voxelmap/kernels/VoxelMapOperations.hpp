@@ -23,27 +23,18 @@
 #ifndef ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_HPP_INCLUDED
 #define ICL_PLANNING_GPU_KERNELS_VOXELMAP_OPERATIONS_HPP_INCLUDED
 
+#include <gpu_voxels/helpers/SyclBridge.h>
 #include "VoxelMapOperations.h"
 #include <gpu_voxels/voxel/BitVoxel.h>
 #include <gpu_voxels/voxel/DistanceVoxel.hpp>
 
 #include "VoxelMapOperationsPBA.hpp"
 
-
-#if defined(__INTELLISENSE___) || defined(__RESHARPER__) 
-// in here put whatever is your favorite flavor of intellisense workarounds
-#ifndef __CUDACC__ 
-#define __CUDACC__
-#include <device_functions.h>
-#include "device_launch_parameters.h"
-#endif
-#endif
-
 namespace gpu_voxels {
 	namespace voxelmap {
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelClearVoxelMap(Voxel* voxelmap, const uint32_t voxelmap_size)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size; i += gridDim.x * blockDim.x)
@@ -51,7 +42,7 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t bit_length>
-		__global__
+		GVL_GLOBAL
 		void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, const uint32_t voxelmap_size, const uint32_t bit_index)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size; i += gridDim.x * blockDim.x)
@@ -63,7 +54,7 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t bit_length>
-		__global__
+		GVL_GLOBAL
 		void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, uint32_t voxelmap_size,
 			BitVector<bit_length> bits)
 		{
@@ -84,11 +75,11 @@ namespace gpu_voxels {
 		 * greater or equal given thresholds.
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideVoxelMaps(Voxel* voxelmap, const uint32_t voxelmap_size, OtherVoxel* other_map,
 			Collider collider, bool* results)
 		{
-			__shared__ bool cache[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED bool cache[cMAX_THREADS_PER_BLOCK];
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
 			cache[cache_index] = false;
@@ -102,7 +93,7 @@ namespace gpu_voxels {
 			}
 
 			cache[cache_index] = temp;
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -111,7 +102,7 @@ namespace gpu_voxels {
 				if (cache_index < j)
 					cache[cache_index] = cache[cache_index] || cache[cache_index + j];
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -132,12 +123,12 @@ namespace gpu_voxels {
 		 * Warning: Original model is modified!
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideVoxelMapsDebug(Voxel* voxelmap, const uint32_t voxelmap_size, const OtherVoxel* other_map,
 			Collider collider, uint16_t* results)
 		{
 			//#define DISABLE_STORING_OF_COLLISIONS
-			__shared__ uint16_t cache[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED uint16_t cache[cMAX_THREADS_PER_BLOCK];
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
 			cache[cache_index] = 0;
@@ -166,7 +157,7 @@ namespace gpu_voxels {
 		  //    printf("Collision at voxel (%u) = (%u, %u, %u). Memory addresses are %p and %p.\n",
 		  //           i, col_coord.x, col_coord.y, col_coord.z, (void*)&(voxelmap[i]), (void*)&(other_map[i]));
 		  //  }
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -175,7 +166,7 @@ namespace gpu_voxels {
 				if (cache_index < j)
 					cache[cache_index] = cache[cache_index] + cache[cache_index + j];
 
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -187,13 +178,13 @@ namespace gpu_voxels {
 
 
 		template<std::size_t length, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideVoxelMapsBitvector(BitVoxel<length>* voxelmap, const uint32_t voxelmap_size,
 			const OtherVoxel* other_map, Collider collider,
 			BitVector<length>* results, uint16_t* num_collisions, const uint16_t sv_offset)
 		{
-			extern __shared__ BitVector<length> cache[]; //[cMAX_THREADS_PER_BLOCK];
-			__shared__ uint16_t cache_num[cMAX_THREADS_PER_BLOCK];
+			extern GVL_SHARED BitVector<length> cache[]; //[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED uint16_t cache_num[cMAX_THREADS_PER_BLOCK];
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
 			cache[cache_index] = BitVector<length>();
@@ -215,7 +206,7 @@ namespace gpu_voxels {
 				}
 				i += blockDim.x * gridDim.x;
 			}
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -226,7 +217,7 @@ namespace gpu_voxels {
 					cache[cache_index] = cache[cache_index] | cache[cache_index + j];
 					cache_num[cache_index] = cache_num[cache_index] + cache_num[cache_index + j];
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -241,7 +232,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(Voxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3f* points, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map)
@@ -266,7 +257,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertCoordinateTuples(Voxel* voxelmap, Vector3ui map_dim, float voxel_side_length,
 			const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map)
@@ -291,7 +282,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertDilatedCoordinateTuples(Voxel* voxelmap, Vector3ui dimensions,
 			const Vector3ui* coordinates, std::size_t sizePoints, BitVoxelMeaning voxel_meaning,
 			bool* points_outside_map)
@@ -329,7 +320,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelErode(Voxel* voxelmap_out, const Voxel* voxelmap_in, Vector3ui dimensions, float occupied_threshold, float erode_threshold)
 		{
 			constexpr int32_t SE_SIZE = 1;
@@ -377,7 +368,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(Voxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning voxel_meaning, Vector3ui dimensions, float voxel_side_length,
 			bool* points_outside_map)
@@ -419,7 +410,7 @@ namespace gpu_voxels {
 		//TODO: specialize every occurence of voxel->insert(meaning) for DistanceVoxel to use voxel->insert(integer_coordinates, meaning)
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(Voxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
 			BitVoxelMeaning* voxel_meanings, const Vector3ui map_dim,
 			float voxel_side_length,
@@ -472,7 +463,7 @@ namespace gpu_voxels {
 		}
 
 		//template<std::size_t length>
-		//__global__
+		//GVL_GLOBAL
 		//void kernelInsertSensorDataWithRayCasting(ProbabilisticVoxel* voxelmap, const uint32_t voxelmap_size,
 		//                                          const Vector3ui dimensions, const float voxel_side_length,
 		//                                          Sensor* sensor, const Vector3f* sensor_data,
@@ -538,7 +529,7 @@ namespace gpu_voxels {
 		 * See also function with ray casting.
 		 */
 		template<std::size_t length, class RayCasting>
-		__global__
+		GVL_GLOBAL
 			void kernelInsertSensorData(ProbabilisticVoxel* voxelmap, const uint32_t voxelmap_size,
 				const Vector3ui dimensions, const float voxel_side_length, const Vector3f sensor_pose,
 				const Vector3f* sensor_data, const size_t num_points, const bool cut_real_robot,
@@ -586,7 +577,7 @@ namespace gpu_voxels {
 		}
 
 		template<std::size_t length>
-		__global__
+		GVL_GLOBAL
 			void kernelShiftBitVector(BitVoxel<length>* voxelmap,
 				const uint32_t voxelmap_size, uint8_t shift_size)
 		{

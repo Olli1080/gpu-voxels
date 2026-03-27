@@ -58,7 +58,7 @@ namespace gpu_voxels
 				// Alloc device mem
 				// Push first work item on stack
 				InnerNode a;
-				HANDLE_CUDA_ERROR(cudaMemcpy(&a, m_ntree->m_root, sizeof(InnerNode), cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(GVL_MEMCPY(&a, m_ntree->m_root, sizeof(InnerNode), GVL_MEMCPY_DEVICE_TO_HOST));
 				if (!a.hasStatus(ns_PART)) // abort if there is only the root node
 					return false;
 				Base::m_init_work_item = WorkItem((InnerNode*)a.getChildPtr(), m_ntree->m_root, true, level_count - 2, false);
@@ -91,7 +91,7 @@ namespace gpu_voxels
 				// Call the templated kernel function. It's behavior is defined by the given KernelConfig.
 				size_t dynamic_shared_mem_size = sizeof(typename KernelConfig::SharedMem) + sizeof(typename KernelConfig::SharedVolatileMem);
 				kernelLBWorkConcept<KernelConfig> << <Base::NUM_TASKS, RunConfig::NUM_TRAVERSAL_THREADS, dynamic_shared_mem_size >> > (kernel_params);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 
 			template<std::size_t branching_factor, std::size_t level_count, class InnerNode, class LeafNode>

@@ -32,7 +32,7 @@
 //forward declaration
 namespace gpu_voxels {
 	namespace voxelmap {
-		__device__ __host__
+		GVL_HOST_DEVICE
 		Vector3i mapToVoxelsSigned(int linear_id, const Vector3ui& dimensions);
 	};
 };
@@ -50,7 +50,7 @@ namespace gpu_voxels {
 		typedef int32_t pba_dist_t;
 		typedef uint32_t pba_voxel_t; // This stores the xyz-postiton as 3x 9Bit interger (+ x3 1Bit as "uninitialized" marker)
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] Vector3ui getObstacle() const;
 
 		/**
@@ -61,76 +61,76 @@ namespace gpu_voxels {
 		 * To get all DistanceVoxels obstacle distances, use DVM.extract_distances.
 		 *
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] pba_dist_t squaredObstacleDistance(Vector3i this_position) const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DistanceVoxel();
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DistanceVoxel(const Vector3ui& o);
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		explicit DistanceVoxel(const pba_voxel_t o);
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DistanceVoxel(const uint x, const uint y, const uint z);
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		DistanceVoxel(const uint3& o);
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void setObstacle(const Vector3ui& o);
 
 		/**
 		 * @brief sets obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void setObstacle(const Vector3i& o);
 
 		/**
 		 * @brief setPBAUninitialised
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void setPBAUninitialised();
 
 		/**
 		 * @brief NOP
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void insert(const uint32_t voxel_meaning);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 		/**
 		 * @brief insert Inserts new data into this voxel
 		 * @param voxel_type if type is occupied, mark voxel as obstacle
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void insert(const Vector3ui& current_position, const uint32_t voxel_meaning);
 
 		//  /**
-		//   * @brief used in combination with thrust::replace_if to replace all obstacle values
+		//   * @brief used in combination with parallel::replace_if to replace all obstacle values
 		//   */
 		//  struct is_not_obstacle
 		//  {
-		//    __host__ __device__
+		//    GVL_HOST_DEVICE
 		//    bool operator()(const DistanceVoxel& a) const {
 		//      return a.getDistance() != DISTANCE_OBSTACLE;
 		//    }
@@ -138,21 +138,21 @@ namespace gpu_voxels {
 
 		struct extract_byte_distance
 		{
-			typedef thrust::tuple<DistanceVoxel, int > tuple_t;
+			typedef parallel::tuple<DistanceVoxel, int > tuple_t;
 			typedef int8_t free_space_t;
 
 			Vector3i dims;
 			int robot_radius;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				extract_byte_distance(Vector3i dims, int robot_radius) : dims(dims), robot_radius(robot_radius) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				free_space_t operator()(const tuple_t tuple) const {
 				// get pos from zipiterator/tuple
 
-				DistanceVoxel dv = thrust::get<0>(tuple);
-				int linear_id = thrust::get<1>(tuple);
+				DistanceVoxel dv = parallel::get<0>(tuple);
+				int linear_id = parallel::get<1>(tuple);
 
 				// pos is the position of the voxel dv
 				Vector3i pos;
@@ -163,9 +163,9 @@ namespace gpu_voxels {
 				//TODO: check for negative result
 				//TODO: define return value with meaningful name
 				 //TODO remove
-				if (dims.x() - pos.x() < 0) printf("pos.x is too large: %d, id: %d\n", pos.x(), thrust::get<1>(tuple));
-				if (dims.y() - pos.y() < 0) printf("pos.y is too large! %d, id: %d\n", pos.y(), thrust::get<1>(tuple));
-				if (dims.z() - pos.z() < 0) printf("pos.z is too large! %d, id: %d\n", pos.z(), thrust::get<1>(tuple));
+				if (dims.x() - pos.x() < 0) printf("pos.x is too large: %d, id: %d\n", pos.x(), parallel::get<1>(tuple));
+				if (dims.y() - pos.y() < 0) printf("pos.y is too large! %d, id: %d\n", pos.y(), parallel::get<1>(tuple));
+				if (dims.z() - pos.z() < 0) printf("pos.z is too large! %d, id: %d\n", pos.z(), parallel::get<1>(tuple));
 
 				if (pos.x() > (dims.x() - robot_radius)) return dims.x() - pos.x() < 0 ? 0 : dims.x() - pos.x();
 				if (pos.y() > (dims.y() - robot_radius)) return dims.y() - pos.y() < 0 ? 0 : dims.y() - pos.y();
@@ -195,10 +195,10 @@ namespace gpu_voxels {
 
 			int robot_radius;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			init_floodfill_distance(int robot_radius) : robot_radius(robot_radius) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			manhattan_dist_t operator()(const extract_byte_distance::free_space_t dist) const {
 				// get pos from zipiterator/tuple
 
@@ -213,11 +213,11 @@ namespace gpu_voxels {
 		//TODO: thrust transform pbaDistanceVoxmap->getDeviceDataPtr() to byte[] (round down to 0..255, cap at 255; could even parameterize on robot size and create boolean
 
 		  /**
-		   * @brief used in combination with thrust::count_if to determine number of (un)initialised voxels
+		   * @brief used in combination with parallel::count_if to determine number of (un)initialised voxels
 		   */
 		struct is_initialised
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(const DistanceVoxel& a) const {
 				if (a.getObstacle().x() != PBA_UNINITIALISED_COORD) return true;
 				if (a.getObstacle().y() != PBA_UNINITIALISED_COORD) return true;
@@ -227,15 +227,15 @@ namespace gpu_voxels {
 			}
 		};
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			operator uint3() const;
 
 		//  /**
-		//   * @brief used in combination with thrust::transform to replace all obstacle values
+		//   * @brief used in combination with parallel::transform to replace all obstacle values
 		//   */
 		//  struct pba_transform
 		//  {
-		//    __host__ __device__
+		//    GVL_HOST_DEVICE
 		//    DistanceVoxel operator()(const DistanceVoxel& a) const {
 		//      if (a.distanceToObstacle() == DISTANCE_OBSTACLE) {
 		//        DistanceVoxel pba_obstacle_voxel;
@@ -256,11 +256,11 @@ namespace gpu_voxels {
 		//  };
 
 		//  /**
-		//   * @brief used in combination with thrust::transform to replace all obstacle values
+		//   * @brief used in combination with parallel::transform to replace all obstacle values
 		//   */
 		//  struct obstacle_zero_transform
 		//  {
-		//    __host__ __device__
+		//    GVL_HOST_DEVICE
 		//    DistanceVoxel operator()(const DistanceVoxel& a) const {
 		//      if (a.getDistance() == DISTANCE_OBSTACLE) {
 		//        DistanceVoxel pba_obstacle_voxel;
@@ -279,13 +279,13 @@ namespace gpu_voxels {
 		   */
 		struct accumulated_diff
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			accumulated_diff() : sum(0), count(0), maxerr(0) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			accumulated_diff(double d) : sum(d), count(d != 0 ? 1 : 0), maxerr(d) {}
 
-			__host__
+			GVL_HOST
 			[[nodiscard]] std::string str() const
 				{
 				std::stringstream ss;
@@ -306,21 +306,21 @@ namespace gpu_voxels {
 		 */
 		struct diff_op
 		{
-			//    typedef thrust::tuple<thrust::device_ptr<gpu_voxels::DistanceVoxel>, thrust::counting_iterator<int> > tuple_t;
-			typedef thrust::tuple<DistanceVoxel, int > tuple_t;
-			//    typedef thrust::zip_iterator<tuple_t> iterator_t;
+			//    typedef parallel::tuple<parallel::device_ptr<gpu_voxels::DistanceVoxel>, parallel::counting_iterator<int> > tuple_t;
+			typedef parallel::tuple<DistanceVoxel, int > tuple_t;
+			//    typedef parallel::zip_iterator<tuple_t> iterator_t;
 			Vector3ui dims;
 
 			diff_op(Vector3ui dims) : dims(dims) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				double operator()(const tuple_t ia, const tuple_t ib) const
 			{
-				DistanceVoxel a = thrust::get<0>(ia);
-				const int linear_id_a = thrust::get<1>(ia);
+				DistanceVoxel a = parallel::get<0>(ia);
+				const int linear_id_a = parallel::get<1>(ia);
 
-				DistanceVoxel b = thrust::get<0>(ib);
-				const int linear_id_b = thrust::get<1>(ib);
+				DistanceVoxel b = parallel::get<0>(ib);
+				const int linear_id_b = parallel::get<1>(ib);
 
 				if (a.getObstacle().x() == PBA_UNINITIALISED_COORD) return MAX_OBSTACLE_DISTANCE;
 				if (a.getObstacle().y() == PBA_UNINITIALISED_COORD) return MAX_OBSTACLE_DISTANCE;
@@ -347,7 +347,7 @@ namespace gpu_voxels {
 		 */
 		struct accumulate_op
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 				accumulated_diff operator()(const accumulated_diff d1, const accumulated_diff d2) const
 			{
 				accumulated_diff res(d1);
@@ -362,7 +362,7 @@ namespace gpu_voxels {
 		 * @brief operator >> Overloaded ostream operator.
 		 */
 		 /*template<typename T>
-		 __host__
+		 GVL_HOST
 			 friend T& operator<<(T& os, const DistanceVoxel& dv)
 		 {
 			 os << dv.getObstacle().x << "/" << dv.getObstacle().y << "/" << dv.getObstacle().z;
@@ -380,7 +380,7 @@ namespace gpu_voxels {
 	* @brief operator >> Overloaded ostream operator.
 	*/
 	template<typename T>
-	__host__
+	GVL_HOST
 		T& operator<<(T& os, const DistanceVoxel& dv)
 	{
 		os << dv.getObstacle().x() << "/" << dv.getObstacle().y() << "/" << dv.getObstacle().z();

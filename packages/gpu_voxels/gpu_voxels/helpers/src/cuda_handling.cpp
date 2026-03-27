@@ -42,14 +42,14 @@ namespace gpu_voxels
 
     bool cuGetNrOfDevices(int* nr_of_devices)
     {
-        return HANDLE_CUDA_ERROR(cudaGetDeviceCount(nr_of_devices));
+        return GVL_HANDLE_ERROR(cudaGetDeviceCount(nr_of_devices));
     }
 
     bool cuGetDeviceInfo(cudaDeviceProp* device_properties, int nr_of_devices)
     {
         for (int i = 0; i < nr_of_devices; i++)
         {
-            if (!HANDLE_CUDA_ERROR(cudaGetDeviceProperties(&device_properties[i], i)))
+            if (!GVL_HANDLE_ERROR(cudaGetDeviceProperties(&device_properties[i], i)))
                 return false;
         }
         return true;
@@ -99,7 +99,7 @@ namespace gpu_voxels
         for (int i = 0; i < device_count; ++i)
         {
             cudaDeviceProp properties{};
-            HANDLE_CUDA_ERROR(cudaGetDeviceProperties(&properties, i));
+            GVL_HANDLE_ERROR(cudaGetDeviceProperties(&properties, i));
             if (properties.major > 5 || (properties.major == 5 && properties.minor >= 2))
             {
                 device = i;
@@ -113,16 +113,16 @@ namespace gpu_voxels
                 << std::endl;
             return false;
         }
-        cudaSetDevice(device);
-        HANDLE_CUDA_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
-        //HANDLE_CUDA_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferShared));
+        GVL_SET_DEVICE(device);
+        GVL_HANDLE_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+        //GVL_HANDLE_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferShared));
         return true;
     }
 
     std::string getDeviceMemoryInfo()
     {
         std::stringstream tmp_stream;
-        HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+        GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
         //unsigned int free, total, used;
         size_t free, total;
         cudaMemGetInfo(&free, &total);

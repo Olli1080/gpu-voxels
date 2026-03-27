@@ -39,23 +39,23 @@ namespace gpu_voxels {
 
 			struct RandGen
 			{
-				thrust::uniform_real_distribution<float> dist_x;
-				thrust::uniform_real_distribution<float> dist_y;
-				thrust::uniform_real_distribution<float> dist_z;
+				parallel::uniform_real_distribution<float> dist_x;
+				parallel::uniform_real_distribution<float> dist_y;
+				parallel::uniform_real_distribution<float> dist_z;
 
-				__host__   __device__
+				GVL_HOST_DEVICE
 					RandGen(Vector3f min, Vector3f max) {
 					// create a uniform_real_distribution to produce floats
-					dist_x = thrust::uniform_real_distribution<float>(min.x, max.x);
-					dist_y = thrust::uniform_real_distribution<float>(min.y, max.y);
-					dist_z = thrust::uniform_real_distribution<float>(min.z, max.z);
+					dist_x = parallel::uniform_real_distribution<float>(min.x, max.x);
+					dist_y = parallel::uniform_real_distribution<float>(min.y, max.y);
+					dist_z = parallel::uniform_real_distribution<float>(min.z, max.z);
 				}
 
-				__host__   __device__
+				GVL_HOST_DEVICE
 					Vector3f operator() (const unsigned int n)
 				{
 					// create a minstd_rand object to act as our source of randomness
-					thrust::minstd_rand rnd;
+					parallel::minstd_rand rnd;
 					rnd.discard(n);
 					return { dist_x(rnd), dist_y(rnd), dist_z(rnd) };
 				}
@@ -65,29 +65,29 @@ namespace gpu_voxels {
 			void triggerAddressingTest(Vector3ui dimensions, float voxel_side_length,
 				size_t nr_of_tests, bool* success)
 			{
-				thrust::device_vector<Vector3f> dev_testpoint_list(nr_of_tests);
+				parallel::device_vector<Vector3f> dev_testpoint_list(nr_of_tests);
 
 				srand(time(nullptr));
 				Voxel* voxelmap_base_adress = (Voxel*)1234;
 
 				bool* dev_success;
-				HANDLE_CUDA_ERROR(cudaMalloc(&dev_success, sizeof(bool)));
-				HANDLE_CUDA_ERROR(cudaMemcpy(dev_success, success, sizeof(bool), cudaMemcpyHostToDevice));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&dev_success, sizeof(bool)));
+				GVL_HANDLE_ERROR(GVL_MEMCPY(dev_success, success, sizeof(bool), GVL_MEMCPY_HOST_TO_DEVICE));
 
 				const RandGen myRandGen(Vector3f::Zero(), dimensions * voxel_side_length);
 
-				const thrust::counting_iterator<unsigned int> index_sequence_begin(0);
-				thrust::transform(index_sequence_begin, index_sequence_begin + nr_of_tests, dev_testpoint_list.begin(), myRandGen);
+				const parallel::counting_iterator<unsigned int> index_sequence_begin(0);
+				parallel::transform(index_sequence_begin, index_sequence_begin + nr_of_tests, dev_testpoint_list.begin(), myRandGen);
 
 				uint32_t num_blocks;
 				uint32_t threads_per_block;
 				computeLinearLoad(nr_of_tests, &num_blocks, &threads_per_block);
 				kernelAddressingTest << < num_blocks, threads_per_block >> > (voxelmap_base_adress, dimensions, voxel_side_length,
-					thrust::raw_pointer_cast(dev_testpoint_list.data()),
+					parallel::raw_pointer_cast(dev_testpoint_list.data()),
 					nr_of_tests, dev_success);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-				HANDLE_CUDA_ERROR(cudaMemcpy(success, dev_success, sizeof(bool), cudaMemcpyDeviceToHost));
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+				GVL_HANDLE_ERROR(GVL_MEMCPY(success, dev_success, sizeof(bool), GVL_MEMCPY_DEVICE_TO_HOST));
 			}
 
 		} // end of namespace

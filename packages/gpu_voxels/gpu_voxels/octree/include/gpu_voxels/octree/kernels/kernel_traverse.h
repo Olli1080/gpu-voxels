@@ -36,7 +36,7 @@ namespace gpu_voxels
 {
 	namespace NTree
 	{
-		__device__
+		GVL_DEVICE
 			void compute_new_status(const NodeStatus status, const bool do_final_computation, NodeStatus* new_status,
 				const uint32_t work_lane_mask, const uint32_t warp_lane, const uint32_t level,
 				int* shared_mem)
@@ -101,7 +101,7 @@ namespace gpu_voxels
 
 		struct unary_zero
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(const uint32_t& x)
 			{
 				return x == 0;
@@ -111,7 +111,7 @@ namespace gpu_voxels
 		template<typename T>
 		struct isZero
 		{
-			__host__ __device__ T operator()(const T& x) const
+			GVL_HOST_DEVICE T operator()(const T& x) const
 			{
 				return x == 0;
 			}
@@ -119,7 +119,7 @@ namespace gpu_voxels
 		// end negate
 
 
-		__device__ __forceinline__
+		GVL_DEVICE __forceinline__
 			void getNextCoordinates(const gpu_voxels::Vector3ui coordinate, uint32_t child, uint8_t level,
 				gpu_voxels::Vector3ui& new_coordinate_min, gpu_voxels::Vector3ui& new_coordinate_max)
 		{

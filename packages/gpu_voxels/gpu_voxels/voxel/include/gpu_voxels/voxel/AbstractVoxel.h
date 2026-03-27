@@ -47,7 +47,7 @@ namespace gpu_voxels {
 	//	 * @brief insert Inserts new data into this voxel
 	//	 * @param voxel_meaning Meaning of the voxel to insert data into
 	//	 */
-	//	__host__ __device__
+	//	GVL_HOST_DEVICE
 	//	void insert(const BitVoxelMeaning voxel_meaning);
 
 	//	/**
@@ -55,10 +55,10 @@ namespace gpu_voxels {
 	//	 * @param other_voxel
 	//	 * @return Reduced voxel
 	//	 */
-	//	__host__ __device__
+	//	GVL_HOST_DEVICE
 	//	AbstractVoxel reduce(const AbstractVoxel other_voxel);
 
-	//	__host__ __device__
+	//	GVL_HOST_DEVICE
 	//	[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 	//};

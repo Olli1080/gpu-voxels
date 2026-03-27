@@ -44,7 +44,7 @@ namespace gpu_voxels
 		uint32_t* cloud_sizes;
 		Vector3f** clouds_base_addresses;
 
-		__device__ __host__
+		GVL_HOST_DEVICE
 			MetaPointCloudStruct()
 			: num_clouds(0), accumulated_cloud_size(0),
 			cloud_sizes(nullptr),
@@ -56,10 +56,10 @@ namespace gpu_voxels
 	{
 		uint16_t num_clouds;
 		uint32_t accumulated_cloud_size;
-		thrust::host_vector<uint32_t> cloud_sizes;
+		parallel::host_vector<uint32_t> cloud_sizes;
 		std::vector<std::vector<Vector3f>::iterator> clouds_base_addresses;
 
-		__device__ __host__
+		GVL_HOST_DEVICE
 			MetaPointCloudStructLocal()
 			: num_clouds(0), accumulated_cloud_size(0)
 		{}
@@ -68,21 +68,21 @@ namespace gpu_voxels
 	struct Cube
 	{
 		// Default constructor is needed
-		__device__ __host__ Cube()
+		GVL_HOST_DEVICE Cube()
 		{
 			m_side_length = 0;
 			m_position = Vector3ui(0);
 			m_type_vector.setBit(eBVM_UNDEFINED);
 		}
 
-		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVoxelMeaning type)
+		GVL_HOST_DEVICE Cube(uint32_t side_length, Vector3ui position, BitVoxelMeaning type)
 		{
 			m_side_length = side_length;
 			m_position = position;
 			m_type_vector.setBit(type);
 		}
 
-		__device__ __host__ Cube(uint32_t side_length, Vector3ui position, BitVector<visualization::MAX_DRAW_TYPES> type_vector)
+		GVL_HOST_DEVICE Cube(uint32_t side_length, Vector3ui position, BitVector<visualization::MAX_DRAW_TYPES> type_vector)
 		{
 			m_side_length = side_length;
 			m_position = position;

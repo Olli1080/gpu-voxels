@@ -48,10 +48,10 @@ enum Intersection_Type
   SIMPLE, LOAD_BALANCE
 };
 
-thrust::host_vector<gpu_voxels::Vector3ui> randomPoints(voxel_count num_points, OctreeVoxelID maxValue);
-thrust::host_vector<Voxel> randomVoxel(OctreeVoxelID num_points, OctreeVoxelID maxValue, Probability occupancy);
+parallel::host_vector<gpu_voxels::Vector3ui> randomPoints(voxel_count num_points, OctreeVoxelID maxValue);
+parallel::host_vector<Voxel> randomVoxel(OctreeVoxelID num_points, OctreeVoxelID maxValue, Probability occupancy);
 
-thrust::host_vector<gpu_voxels::Vector3ui> randomCube(
+parallel::host_vector<gpu_voxels::Vector3ui> randomCube(
     gpu_voxels::Vector3ui map_dimensions, uint32_t cube_side_length);
 
 bool mortonTest(uint32_t num_runs);
@@ -62,10 +62,10 @@ bool buildTest(std::vector<Vector3f>& points, uint32_t num_points, double & time
 
 //bool intersectionTest(OctreeVoxelID num_points, Intersection_Type insect_type, double & time);
 
-void rotate(thrust::host_vector<gpu_voxels::Vector3ui>& points, float angle_degree,
+void rotate(parallel::host_vector<gpu_voxels::Vector3ui>& points, float angle_degree,
             gpu_voxels::Vector3f translation);
 
-void translate(thrust::host_vector<gpu_voxels::Vector3ui>& points,
+void translate(parallel::host_vector<gpu_voxels::Vector3ui>& points,
                gpu_voxels::Vector3f translation);
 
 }

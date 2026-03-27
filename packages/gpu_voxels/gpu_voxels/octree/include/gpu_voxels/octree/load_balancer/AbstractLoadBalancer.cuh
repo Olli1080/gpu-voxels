@@ -60,24 +60,24 @@ namespace gpu_voxels
 			{
 				if (doPreparations())
 				{
-					HANDLE_CUDA_ERROR(cudaMemcpy(&m_dev_work_stacks1[0], &m_init_work_item, sizeof(WorkItem), cudaMemcpyHostToDevice));
+					GVL_HANDLE_ERROR(GVL_MEMCPY(&m_dev_work_stacks1[0], &m_init_work_item, sizeof(WorkItem), GVL_MEMCPY_HOST_TO_DEVICE));
 					constexpr uint32_t initial_stack_count = 1;
-					HANDLE_CUDA_ERROR(cudaMemcpy(&m_dev_work_stacks1_item_count[0], &initial_stack_count, sizeof(uint32_t), cudaMemcpyHostToDevice));
+					GVL_HANDLE_ERROR(GVL_MEMCPY(&m_dev_work_stacks1_item_count[0], &initial_stack_count, sizeof(uint32_t), GVL_MEMCPY_HOST_TO_DEVICE));
 
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 					std::size_t total_work_items = 1;
 					std::size_t num_balance_tasks = 0;
 					std::size_t num_work_tasks = 0;
 					while (total_work_items > 0)
 					{
-						if (!HANDLE_CUDA_ERROR(cudaMemset(m_dev_tasks_idle_count, 0, sizeof(uint32_t)))) break; // avoid error spam
+						if (!GVL_HANDLE_ERROR(cudaMemset(m_dev_tasks_idle_count, 0, sizeof(uint32_t)))) break; // avoid error spam
 						doWork();
-						if (!HANDLE_CUDA_ERROR(cudaDeviceSynchronize())) break; // avoid error spam
+						if (!GVL_HANDLE_ERROR(GVL_SYNCHRONIZE())) break; // avoid error spam
 
 						++num_work_tasks;
 
 						uint32_t idle_count;
-						if (!HANDLE_CUDA_ERROR(cudaMemcpy(&idle_count, m_dev_tasks_idle_count, sizeof(uint32_t), cudaMemcpyDeviceToHost)))
+						if (!GVL_HANDLE_ERROR(GVL_MEMCPY(&idle_count, m_dev_tasks_idle_count, sizeof(uint32_t), GVL_MEMCPY_DEVICE_TO_HOST)))
 						{
 							break; // avoid error spam
 						}
@@ -104,16 +104,16 @@ namespace gpu_voxels
 			bool AbstractLoadBalancer<branching_factor, level_count, InnerNode, LeafNode, WorkItem, RunConfig>::doPreparations()
 			{
 				// Allocates the work stacks
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_work_stacks1, sizeof(WorkItem) * NUM_TASKS * STACK_SIZE_PER_TASK));
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_work_stacks2, sizeof(WorkItem) * NUM_TASKS * STACK_SIZE_PER_TASK));
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_work_stacks1_item_count, sizeof(uint32_t) * NUM_TASKS));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_work_stacks1, sizeof(WorkItem) * NUM_TASKS * STACK_SIZE_PER_TASK));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_work_stacks2, sizeof(WorkItem) * NUM_TASKS * STACK_SIZE_PER_TASK));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_work_stacks1_item_count, sizeof(uint32_t) * NUM_TASKS));
 
 				// Some other allocations
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_tasks_idle_count, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_tasks_idle_count, sizeof(uint32_t)));
 
 				// Init memory
-				HANDLE_CUDA_ERROR(cudaMemset(m_dev_work_stacks1_item_count, 0, sizeof(uint32_t) * NUM_TASKS));
-				HANDLE_CUDA_ERROR(cudaMemset(m_dev_tasks_idle_count, 0, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(cudaMemset(m_dev_work_stacks1_item_count, 0, sizeof(uint32_t) * NUM_TASKS));
+				GVL_HANDLE_ERROR(cudaMemset(m_dev_tasks_idle_count, 0, sizeof(uint32_t)));
 
 				return true;
 			}
@@ -142,24 +142,24 @@ namespace gpu_voxels
 				// Free allocated the work stacks
 				if (m_dev_work_stacks1)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_work_stacks1));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_work_stacks1));
 					m_dev_work_stacks1 = nullptr;
 				}
 				if (m_dev_work_stacks2)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_work_stacks2));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_work_stacks2));
 					m_dev_work_stacks2 = nullptr;
 				}
 				if (m_dev_work_stacks1_item_count)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_work_stacks1_item_count));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_work_stacks1_item_count));
 					m_dev_work_stacks1_item_count = nullptr;
 				}
 
 				// Some other frees
 				if (m_dev_tasks_idle_count)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_tasks_idle_count));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_tasks_idle_count));
 					m_dev_tasks_idle_count = nullptr;
 				}
 			}

@@ -52,7 +52,7 @@ OctomapProvider::~OctomapProvider()
 void OctomapProvider::visualize()
 {
 //  m_mutex.lock();
-//  HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, (void * ) m_voxelMap->getDeviceDataPtr()));
+//  GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, (void * ) m_voxelMap->getDeviceDataPtr()));
 //  *m_shm_mapDim = m_voxelMap->getDimensions();
 //  *m_shm_VoxelSize = m_voxelMap->getVoxelSideLength();
 //  m_changed = false;

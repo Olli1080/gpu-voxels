@@ -75,11 +75,11 @@ namespace gpu_voxels {
 				m_slice_axis_position(0),
 				m_distance_drawmode(0)
 			{
-				m_draw_types = thrust::host_vector<uint8_t>(MAX_DRAW_TYPES, 0);
+				m_draw_types = parallel::host_vector<uint8_t>(MAX_DRAW_TYPES, 0);
 				m_draw_types[eBVM_OCCUPIED] = (uint8_t)1;
 				m_draw_types[eBVM_COLLISION] = (uint8_t)1;
 
-				thrust::fill(m_draw_types.begin() + static_cast<unsigned int>(eBVM_SWEPT_VOLUME_START),
+				parallel::fill(m_draw_types.begin() + static_cast<unsigned int>(eBVM_SWEPT_VOLUME_START),
 					m_draw_types.begin() + static_cast<unsigned int>(eBVM_UNDEFINED), 1); // this does not include eBVM_UNDEFINED but only eBVM_SWEPT_VOLUME_END!!
 			}
 
@@ -152,12 +152,12 @@ namespace gpu_voxels {
 			glm::vec4 m_background_color, m_edge_color, m_grid_color;
 
 			//  i-th byte represents if type i should be drawn
-			thrust::host_vector<uint8_t> m_draw_types;
-			thrust::device_vector<uint8_t> m_d_draw_types;
+			parallel::host_vector<uint8_t> m_draw_types;
+			parallel::device_vector<uint8_t> m_d_draw_types;
 			//BitVector<MAX_DRAW_TYPES> m_meanings_to_draw; // <== This should replace the draw_types
 			// stores the segment position for each type
-			thrust::host_vector<uint8_t> m_prefixes;
-			thrust::device_vector<uint8_t> m_d_prefixes;
+			parallel::host_vector<uint8_t> m_prefixes;
+			parallel::device_vector<uint8_t> m_d_prefixes;
 
 			// the scale factor for one unit of length and the unit type
 			std::pair<float, std::string> m_scale_unit;

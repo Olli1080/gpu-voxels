@@ -35,8 +35,7 @@
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
 #include <gpu_voxels/voxel/DefaultCollider.h>
 
-#include <thrust/device_ptr.h>
-#include <thrust/device_vector.h>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 
 /**
  * @namespace gpu_voxels::voxelmap
@@ -76,19 +75,19 @@ namespace gpu_voxels {
 				return m_dev_data.data().get();
 			}
 
-			const thrust::device_vector<Voxel>& getDeviceData() const
+			const parallel::device_vector<Voxel>& getDeviceData() const
 			{
 				return m_dev_data;
 			}
 
 			void* getVoidDeviceDataPtr() override
 			{
-				return thrust::raw_pointer_cast(m_dev_data.data());
+				return parallel::raw_pointer_cast(m_dev_data.data());
 			}
 
 			const void* getConstVoidDeviceDataPtr() const override
 			{
-				return thrust::raw_pointer_cast(m_dev_data.data());
+				return parallel::raw_pointer_cast(m_dev_data.data());
 			}
 
 			//! get the number of voxels held in the voxelmap
@@ -113,7 +112,7 @@ namespace gpu_voxels {
 			//! print data array to screen for debugging (low performance)
 			virtual void printVoxelMapData();
 
-			virtual void gatherVoxelsByIndex(thrust::device_ptr<unsigned int> dev_indices_begin, thrust::device_ptr<unsigned int> dev_indices_end, thrust::device_ptr<Voxel> dev_output_begin);
+			virtual void gatherVoxelsByIndex(parallel::device_ptr<unsigned int> dev_indices_begin, parallel::device_ptr<unsigned int> dev_indices_end, parallel::device_ptr<Voxel> dev_output_begin);
 
 			/* --- collision check operations --- */
 			/*! Test for collision with other VoxelMap
@@ -127,7 +126,7 @@ namespace gpu_voxels {
 			bool collisionCheck(TemplateVoxelMap<OtherVoxel>* other, Collider collider);
 
 
-			//  __host__
+			//  GVL_HOST
 			//  bool collisionCheckAlternative(const uint8_t threshold, VoxelMap* other,
 			//          const uint8_t other_threshold, uint32_t loop_size);
 
@@ -137,7 +136,7 @@ namespace gpu_voxels {
 			template< class OtherVoxel, class Collider>
 			uint32_t collisionCheckWithCounterRelativeTransform(const TemplateVoxelMap<OtherVoxel>* other, Collider collider = DefaultCollider(), const Vector3i& offset = Vector3i::Zero());
 
-			//  __host__
+			//  GVL_HOST
 			//  bool collisionCheckBoundingBox(uint8_t threshold, VoxelMap* other, uint8_t other_threshold,
 			//                        Vector3ui bounding_box_start, Vector3ui bounding_box_end);
 
@@ -147,12 +146,12 @@ namespace gpu_voxels {
 
 			void insertPointCloud(const PointCloud& pointcloud, BitVoxelMeaning voxel_meaning) override;
 
-			void insertPointCloud(const thrust::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
+			void insertPointCloud(const parallel::device_vector<Vector3f>& d_points, BitVoxelMeaning voxel_meaning) override;
 
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			/**
 			 * @brief insertMetaPointCloud Inserts a MetaPointCloud into the map.
@@ -192,12 +191,12 @@ namespace gpu_voxels {
 			 * @param d_coordinates the coordinates to be dilated and inserted, in device memory
 			 * @param voxel_meaning the voxel_meaning that will be used for inserted voxels
 			 */
-			virtual void insertDilatedCoordinateList(const thrust::device_vector<Vector3ui> d_coordinates, BitVoxelMeaning insert_voxel_meaning);
+			virtual void insertDilatedCoordinateList(const parallel::device_vector<Vector3ui> d_coordinates, BitVoxelMeaning insert_voxel_meaning);
 
-			virtual void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
+			virtual void insertClosedCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
 			virtual void insertClosedCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, TemplateVoxelMap<Voxel>& buffer);
 
-			virtual void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
+			virtual void insertClosedCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
 			virtual void insertClosedCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold = 0);
 
 			/**
@@ -258,9 +257,9 @@ namespace gpu_voxels {
 			uint32_t m_result_array_size;
 
 			//! result array for collision check
-			thrust::host_vector<bool> m_collision_check_results;
+			parallel::host_vector<bool> m_collision_check_results;
 			//! result array for collision check with counter
-			thrust::host_vector<uint16_t> m_collision_check_results_counter;
+			parallel::host_vector<uint16_t> m_collision_check_results_counter;
 
 			//! performance measurement start time
 			cudaEvent_t m_start;
@@ -273,7 +272,7 @@ namespace gpu_voxels {
 
 			/*! VoxelMap data on device.
 			 *  storage format is: index = z * dim.x * dim.y + y * dim.x + x  */
-			thrust::device_vector<Voxel> m_dev_data;
+			parallel::device_vector<Voxel> m_dev_data;
 
 			/*! This is used by insertion kernels to indicate,
 			 * if points were outside map dimensions
@@ -284,16 +283,16 @@ namespace gpu_voxels {
 			 * copy overhead when access from kernels is necessary  */
 
 			 //! results of collision check on device
-			thrust::device_vector<bool> m_dev_collision_check_results;
+			parallel::device_vector<bool> m_dev_collision_check_results;
 
 			//! result array for collision check with counter on device
-			thrust::device_vector<uint16_t> m_dev_collision_check_results_counter;
+			parallel::device_vector<uint16_t> m_dev_collision_check_results_counter;
 
 			void erode(Voxel* d_dest_data, const Voxel* d_src_data, float erode_threshold, float occupied_threshold) const;
 
-			void insertDilatedCoordinateList(Voxel* d_dest_data, const thrust::device_vector<Vector3ui>& d_src_coordinates, BitVoxelMeaning voxel_meaning);
+			void insertDilatedCoordinateList(Voxel* d_dest_data, const parallel::device_vector<Vector3ui>& d_src_coordinates, BitVoxelMeaning voxel_meaning);
 
-			void insertClosedCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, Voxel* d_buffer);
+			void insertClosedCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning insert_voxel_meaning, float erode_threshold, float occupied_threshold, Voxel* d_buffer);
 		};
 
 	} // end of namespace voxelmap

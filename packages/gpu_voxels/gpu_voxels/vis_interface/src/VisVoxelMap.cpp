@@ -72,7 +72,7 @@ namespace gpu_voxels {
 		}
 
 		// first open or create and the set the values
-		HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxelmap->getVoidDeviceDataPtr()));
+		GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxelmap->getVoidDeviceDataPtr()));
 		*m_shm_mapDim = m_voxelmap->getDimensions();
 		*m_shm_VoxelSize = m_voxelmap->getVoxelSideLength();
 		*m_shm_voxelmap_changed = true;

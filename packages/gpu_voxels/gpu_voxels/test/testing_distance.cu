@@ -75,26 +75,26 @@ BOOST_AUTO_TEST_CASE(distance_correctness)
     // calculate distances using three different algorithms:
 
     //std::cout << "Calculating JFA..." << std::endl;
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_START("distance_jfa_timer");
     jfa_dist_map->jumpFlood3D();
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_PRINT_AND_RESET_INFO("distance_jfa_timer", "jumpFlood3D done");
     std::cout << "... JFA distance done" << std::endl;
 
     //std::cout << "Calculating PBA..." << std::endl;
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_START("distance_pba_timer");
     pba_dist_map->parallelBanding3D(1, 1, 1);
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_PRINT_AND_RESET_INFO("distance_pba_timer", "parallelBanding3D done");
     std::cout << "...PBA distance done" << std::endl;
 
     //std::cout << "Calculating exact distances..." << std::endl;
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_START("distance_exact_timer");
     exact_dist_map->exactDistances3D(obstacles);
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     PERF_MON_PRINT_AND_RESET_INFO("distance_exact_timer", "exactDistances3D done");
     std::cout << "...naive exact distance done" << std::endl;
 
@@ -168,8 +168,8 @@ BOOST_AUTO_TEST_CASE(distance_extraction)
     pba_dist_map->insertPointCloud(obstacles, eBVM_OCCUPIED);
 
     // use gatherVoxelsByIndex
-    thrust::device_vector<uint> d_indices(h_indices);
-    thrust::device_vector<DistanceVoxel> d_voxels(h_indices.size());
+    parallel::device_vector<uint> d_indices(h_indices);
+    parallel::device_vector<DistanceVoxel> d_voxels(h_indices.size());
       
     pba_dist_map->gatherVoxelsByIndex(&(*d_indices.begin()), &(*d_indices.end()), d_voxels.data());
     
@@ -198,9 +198,9 @@ BOOST_AUTO_TEST_CASE(distance_extraction)
     }
     
     //std::cout << "Calculating PBA..." << std::endl;
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     pba_dist_map->parallelBanding3D(1, 1, 1);
-    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     
     // get neighbor distances
     std::vector<int> distances_neighbors(h_indices_neighbors.size());

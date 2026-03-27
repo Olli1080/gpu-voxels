@@ -33,21 +33,21 @@ namespace gpu_voxels {
 		{
 		public:
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			DefaultCollider() :
 				m_occupancy_threshold(THRESHOLD_OCCUPANCY)
 			{
 
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			DefaultCollider(float coll_theshold) :
 				m_occupancy_threshold(floatToProbability(coll_theshold))
 			{
 
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			DefaultCollider(Probability threshold) :
 				m_occupancy_threshold(threshold)
 			{
@@ -55,31 +55,31 @@ namespace gpu_voxels {
 			}
 
 			// ##### Deterministic tree nodes #####
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collideNode(const Environment::Node& a, const Environment::Node& b) const
 			{
 				return a.hasStatus(ns_OCCUPIED) && b.hasStatus(ns_OCCUPIED);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::InnerNode& a, const Environment::InnerNode& b) const
 			{
 				return collideNode(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::LeafNode& a, const Environment::LeafNode& b) const
 			{
 				return collideNode(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::LeafNode& a, const Environment::InnerNode& b) const
 			{
 				return collideNode(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::InnerNode& a, const Environment::LeafNode& b) const
 			{
 				return collideNode(a, b);
@@ -87,44 +87,44 @@ namespace gpu_voxels {
 			//######################################
 
 			// ##### Probabilistic tree nodes #####
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool isOccupied(const Environment::NodeProb& a) const
 			{
 				return (a.getOccupancy() != UNKNOWN_PROBABILITY && a.getOccupancy() >= m_occupancy_threshold);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collideNodeProb(const Environment::NodeProb& a, const Environment::NodeProb& b) const
 			{
 				return isOccupied(a) && isOccupied(b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::InnerNodeProb& a, const Environment::InnerNodeProb& b) const
 			{
 				return collideNodeProb(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::LeafNodeProb& a, const Environment::LeafNodeProb& b) const
 			{
 				return collideNodeProb(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::InnerNodeProb& a, const Environment::LeafNodeProb& b) const
 			{
 				return collideNodeProb(a, b);
 			}
 
-			__host__ __device__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 			bool collide(const Environment::LeafNodeProb& a, const Environment::InnerNodeProb& b) const
 			{
 				return collideNodeProb(a, b);
 			}
 			//######################################
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			static Probability floatToProbability(const float val)
 			{
 				return static_cast<Probability>((val * static_cast<float>(MAX_PROBABILITY - MIN_PROBABILITY)) + static_cast<float>(MIN_PROBABILITY));

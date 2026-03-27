@@ -36,31 +36,31 @@ namespace gpu_voxels {
 	{
 	public:
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		BitVoxel();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		bool operator==(const BitVoxel& other) const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		BitVector<length>& bitVector();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		const BitVector<length>& bitVector() const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void insert(const BitVoxelMeaning voxel_meaning);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		static BitVoxel reduce(const BitVoxel voxel, const BitVoxel other_voxel);
 
 		struct reduce_op
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			BitVoxel operator()(const BitVoxel& a, const BitVoxel& b) const;
 		};
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool isOccupied(float col_threshold) const;
 
 		/**
@@ -68,7 +68,7 @@ namespace gpu_voxels {
 		 * Type 0.
 		 */
 		template<typename T>
-		__host__
+		GVL_HOST
 		friend T& operator<<(T& os, const BitVoxel& dt)
 		{
 			os << dt.bitVector();
@@ -79,7 +79,7 @@ namespace gpu_voxels {
 		 * @brief operator << Overloaded istream operator. Please note that the input bit string should
 		 * be starting from Type 0 and it should be complete, meaning it should have all Bits defined.
 		 */
-		__host__
+		GVL_HOST
 		friend std::istream& operator>>(std::istream& in, BitVoxel& dt)
 		{
 			in >> dt.bitVector();

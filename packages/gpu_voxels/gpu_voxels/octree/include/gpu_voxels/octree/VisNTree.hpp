@@ -85,17 +85,17 @@ namespace gpu_voxels {
 				{
 					// extractCubes() allocates memory for the d_cubes_1, if the pointer is nullptr
 					cube_buffer_size = m_ntree->extractCubes(m_d_cubes_1, nullptr, m_min_level);
-					d_cubes_buffer = thrust::raw_pointer_cast(m_d_cubes_1->data());
+					d_cubes_buffer = parallel::raw_pointer_cast(m_d_cubes_1->data());
 					m_internal_buffer_1 = false;
 				}
 				else {
 					// extractCubes() allocates memory for the d_cubes_2, if the pointer is nullptr
 					cube_buffer_size = m_ntree->extractCubes(m_d_cubes_2, nullptr, m_min_level);
-					d_cubes_buffer = thrust::raw_pointer_cast(m_d_cubes_2->data());
+					d_cubes_buffer = parallel::raw_pointer_cast(m_d_cubes_2->data());
 					m_internal_buffer_1 = true;
 				}
 
-				HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, d_cubes_buffer));
+				GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, d_cubes_buffer));
 				*m_shm_numCubes = cube_buffer_size;
 				*m_shm_bufferSwapped = true;
 

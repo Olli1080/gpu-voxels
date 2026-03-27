@@ -23,10 +23,10 @@ using namespace std;
 namespace gpu_voxels {
 	namespace NTree {
 
-		__host__
+		GVL_HOST
 			void Sensor::_processDepthImage(const DepthData* h_sensor_data,
-				thrust::device_vector<Vector3f>& d_free_space_points,
-				thrust::device_vector<Vector3f>& d_object_points)
+				parallel::device_vector<Vector3f>& d_free_space_points,
+				parallel::device_vector<Vector3f>& d_object_points)
 		{
 #ifdef IC_PERFORMANCE_MONITOR
 			const string prefix = "processSensorData";
@@ -43,8 +43,8 @@ namespace gpu_voxels {
 			const bool process_free_space_data = !data_equals && free_space_data.m_process_data;
 			LOGGING_INFO_C(OctreeLog, Sensor, "process_free_space_data " << process_free_space_data << endl);
 
-			thrust::device_vector<DepthData> d_depth_image(data_width * data_height);
-			thrust::device_vector<DepthData> d_depth_image_free_space;
+			parallel::device_vector<DepthData> d_depth_image(data_width * data_height);
+			parallel::device_vector<DepthData> d_depth_image_free_space;
 			d_object_points.resize(data_width * data_height);
 
 			if (process_free_space_data)
@@ -54,10 +54,10 @@ namespace gpu_voxels {
 			}
 
 			// copy to GPU
-			HANDLE_CUDA_ERROR(cudaMemcpy(D_PTR(d_depth_image), h_sensor_data, d_depth_image.size() * sizeof(DepthData), cudaMemcpyHostToDevice));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(D_PTR(d_depth_image), h_sensor_data, d_depth_image.size() * sizeof(DepthData), GVL_MEMCPY_HOST_TO_DEVICE));
 
 			// wait for copy to complete
-			//HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef IC_PERFORMANCE_MONITOR
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "Memcpy", prefix);
 #endif
@@ -71,22 +71,22 @@ namespace gpu_voxels {
 			{
 				// copy depth image for separate processing
 				d_depth_image_free_space = d_depth_image;
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				kernel_preprocessDepthImage << <num_blocks, num_threads >> >
 					(D_PTR(d_depth_image_free_space), data_width, data_height, free_space_data);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 			if (process_object_data)
 			{
 				kernel_preprocessDepthImage << <num_blocks, num_threads >> >
 					(D_PTR(d_depth_image), data_width, data_height, object_data);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 #ifdef IC_PERFORMANCE_MONITOR
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "Preprocessing", prefix);
 #endif
 			// transform depth image to point cloud in sensor coordinate system
-			thrust::device_vector<Sensor> d_sensor(1, *this);
+			parallel::device_vector<Sensor> d_sensor(1, *this);
 			if (process_free_space_data)
 			{
 				kernel_transformDepthImage << <num_blocks, num_threads >> >
@@ -94,7 +94,7 @@ namespace gpu_voxels {
 						D_PTR(d_free_space_points),
 						D_PTR(d_sensor),
 						free_space_data.m_invalid_measure);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 
 			if (process_object_data)
@@ -104,7 +104,7 @@ namespace gpu_voxels {
 						D_PTR(d_object_points),
 						D_PTR(d_sensor),
 						object_data.m_invalid_measure);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 #ifdef IC_PERFORMANCE_MONITOR
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "ToPointCloud", prefix);
@@ -115,30 +115,30 @@ namespace gpu_voxels {
 			}
 		}
 
-		__host__
+		GVL_HOST
 		void Sensor::processSensorData(const Vector3f* h_points,
-			thrust::device_vector<Voxel>*& d_free_space_voxel,
-			thrust::device_vector<Voxel>*& d_object_voxel)
+			parallel::device_vector<Voxel>*& d_free_space_voxel,
+			parallel::device_vector<Voxel>*& d_object_voxel)
 		{
 
-			if (!d_free_space_voxel) d_free_space_voxel = new thrust::device_vector<Voxel>;
-			if (!d_object_voxel) d_object_voxel = new thrust::device_vector<Voxel>;
+			if (!d_free_space_voxel) d_free_space_voxel = new parallel::device_vector<Voxel>;
+			if (!d_object_voxel) d_object_voxel = new parallel::device_vector<Voxel>;
 
-			thrust::device_vector<gpu_voxels::Vector3f> d_points_free(data_width * data_height);
-			thrust::device_vector<gpu_voxels::Vector3f> d_points_object(data_width * data_height);
+			parallel::device_vector<gpu_voxels::Vector3f> d_points_free(data_width * data_height);
+			parallel::device_vector<gpu_voxels::Vector3f> d_points_object(data_width * data_height);
 
 			// copy to GPU
-			HANDLE_CUDA_ERROR(cudaMemcpy(D_PTR(d_points_object), h_points, d_points_free.size() * sizeof(gpu_voxels::Vector3f), cudaMemcpyHostToDevice));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(D_PTR(d_points_object), h_points, d_points_free.size() * sizeof(gpu_voxels::Vector3f), GVL_MEMCPY_HOST_TO_DEVICE));
 
 			d_points_free = d_points_object;
 			_processSensorData(d_points_free, d_points_object, *d_free_space_voxel, *d_object_voxel);
 		}
 
-		__host__
-		void Sensor::_processSensorData(thrust::device_vector<Vector3f>& d_free_space_points,
-			thrust::device_vector<Vector3f>& d_object_points,
-			thrust::device_vector<Voxel>& d_free_space_voxel,
-			thrust::device_vector<Voxel>& d_object_voxel)
+		GVL_HOST
+		void Sensor::_processSensorData(parallel::device_vector<Vector3f>& d_free_space_points,
+			parallel::device_vector<Vector3f>& d_object_points,
+			parallel::device_vector<Voxel>& d_free_space_voxel,
+			parallel::device_vector<Voxel>& d_object_voxel)
 		{
 #ifdef IC_PERFORMANCE_MONITOR
 			const string prefix = "processSensorData";
@@ -158,7 +158,7 @@ namespace gpu_voxels {
 			if (process_object_data)
 				removeInvalidPoints(d_object_points);
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #ifdef IC_PERFORMANCE_MONITOR
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "RemoveInvalidPoints", prefix);
 
@@ -176,9 +176,9 @@ namespace gpu_voxels {
 				Sensor free_space_sensor = *this;
 				free_space_sensor.sensorModel.setInitialProbability(free_space_data.m_initial_probability);
 				free_space_sensor.sensorModel.setUpdateProbability(free_space_data.m_update_probability);
-				thrust::device_vector<Sensor> d_tmp_sensor(1);
+				parallel::device_vector<Sensor> d_tmp_sensor(1);
 				d_tmp_sensor[0] = free_space_sensor;
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				transformKinectPointCloud_simple(D_PTR(d_free_space_points),
 					static_cast<uint32_t>(d_free_space_points.size()),
@@ -191,9 +191,9 @@ namespace gpu_voxels {
 				Sensor object_sensor = *this;
 				object_sensor.sensorModel.setInitialProbability(object_data.m_initial_probability);
 				object_sensor.sensorModel.setUpdateProbability(object_data.m_update_probability);
-				thrust::device_vector<Sensor> d_tmp_sensor(1);
+				parallel::device_vector<Sensor> d_tmp_sensor(1);
 				d_tmp_sensor[0] = object_sensor;
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				transformKinectPointCloud_simple(D_PTR(d_object_points),
 					static_cast<uint32_t>(d_object_points.size()),
@@ -220,16 +220,16 @@ namespace gpu_voxels {
 #endif
 		}
 
-		__host__
+		GVL_HOST
 			void Sensor::processSensorData(const DepthData* h_sensor_data,
-				thrust::device_vector<Voxel>*& d_free_space_voxel,
-				thrust::device_vector<Voxel>*& d_object_voxel)
+				parallel::device_vector<Voxel>*& d_free_space_voxel,
+				parallel::device_vector<Voxel>*& d_object_voxel)
 		{
-			if (!d_free_space_voxel) d_free_space_voxel = new thrust::device_vector<Voxel>;
-			if (!d_object_voxel) d_object_voxel = new thrust::device_vector<Voxel>;
+			if (!d_free_space_voxel) d_free_space_voxel = new parallel::device_vector<Voxel>;
+			if (!d_object_voxel) d_object_voxel = new parallel::device_vector<Voxel>;
 
-			thrust::device_vector<Vector3f> d_free_space_points;
-			thrust::device_vector<Vector3f> d_object_points;
+			parallel::device_vector<Vector3f> d_free_space_points;
+			parallel::device_vector<Vector3f> d_object_points;
 			_processDepthImage(h_sensor_data, d_free_space_points, d_object_points);
 			_processSensorData(d_free_space_points, d_object_points, *d_free_space_voxel, *d_object_voxel);
 
@@ -246,10 +246,10 @@ namespace gpu_voxels {
 			//  bool process_free_space_data = !data_equals && free_space_data.m_process_data;
 			//  printf("process_free_space_data %i \n", process_free_space_data);
 			//
-			//  thrust::device_vector<DepthData> d_depth_image(data_width * data_height);
-			//  thrust::device_vector<DepthData> d_depth_image_free_space;
-			//  thrust::device_vector<gpu_voxels::Vector3f> free_space_points; // object and free space points
-			//  thrust::device_vector<gpu_voxels::Vector3f> object_points(data_width * data_height); // only object points
+			//  parallel::device_vector<DepthData> d_depth_image(data_width * data_height);
+			//  parallel::device_vector<DepthData> d_depth_image_free_space;
+			//  parallel::device_vector<gpu_voxels::Vector3f> free_space_points; // object and free space points
+			//  parallel::device_vector<gpu_voxels::Vector3f> object_points(data_width * data_height); // only object points
 			//
 			//  if(process_free_space_data)
 			//  {
@@ -258,10 +258,10 @@ namespace gpu_voxels {
 			//  }
 			//
 			//  // copy to GPU
-			//  HANDLE_CUDA_ERROR(cudaMemcpy(D_PTR(d_depth_image), h_sensor_data, d_depth_image.size() * sizeof(DepthData), cudaMemcpyHostToDevice));
+			//  GVL_HANDLE_ERROR(GVL_MEMCPY(D_PTR(d_depth_image), h_sensor_data, d_depth_image.size() * sizeof(DepthData), GVL_MEMCPY_HOST_TO_DEVICE));
 			//
 			//  // wait for copy to complete
-			//  //HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  //GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//
 			//  PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "Memcpy", prefix);
 			//
@@ -275,22 +275,22 @@ namespace gpu_voxels {
 			//  {
 			//    // copy depth image for separate processing
 			//    d_depth_image_free_space = d_depth_image;
-			//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//    kernel_preprocessDepthImage<<<num_blocks, num_threads>>>
 			//    (D_PTR(d_depth_image_free_space), data_width, data_height, free_space_data);
-			//    CHECK_CUDA_ERROR();
+			//    GVL_CHECK_ERROR();
 			//  }
 			//  if (process_object_data)
 			//  {
 			//    kernel_preprocessDepthImage<<<num_blocks, num_threads>>>
 			//    (D_PTR(d_depth_image), data_width, data_height, object_data);
-			//    CHECK_CUDA_ERROR();
+			//    GVL_CHECK_ERROR();
 			//  }
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "Preprocessing", prefix);
 			//
 			//  // transform depth image to point cloud in sensor coordinate system
-			//  thrust::device_vector<Sensor> d_sensor(1, *this);
+			//  parallel::device_vector<Sensor> d_sensor(1, *this);
 			//  if (process_free_space_data)
 			//  {
 			//    kernel_transformDepthImage<<<num_blocks, num_threads>>>
@@ -298,7 +298,7 @@ namespace gpu_voxels {
 			//        D_PTR(free_space_points),
 			//        D_PTR(d_sensor),
 			//        free_space_data.m_invalid_measure);
-			//    CHECK_CUDA_ERROR();
+			//    GVL_CHECK_ERROR();
 			//  }
 			//
 			//  if (process_object_data)
@@ -308,9 +308,9 @@ namespace gpu_voxels {
 			//        D_PTR(object_points),
 			//        D_PTR(d_sensor),
 			//        object_data.m_invalid_measure);
-			//    CHECK_CUDA_ERROR();
+			//    GVL_CHECK_ERROR();
 			//  }
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "ToPointCloud", prefix);
 			//
 			//
@@ -323,7 +323,7 @@ namespace gpu_voxels {
 			//  {
 			//    removeInvalidPoints(object_points);
 			//  }
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "RemoveInvalidPoints", prefix);
 			//
 			//  std::size_t n_free = 0, n_object = 0;
@@ -340,9 +340,9 @@ namespace gpu_voxels {
 			//    Sensor free_space_sensor = *this;
 			//    free_space_sensor.sensorModel.setInitialProbability(free_space_data.m_initial_probability);
 			//    free_space_sensor.sensorModel.setUpdateProbability(free_space_data.m_update_probability);
-			//    thrust::device_vector<Sensor> d_tmp_sensor(1);
+			//    parallel::device_vector<Sensor> d_tmp_sensor(1);
 			//    d_tmp_sensor[0] = free_space_sensor;
-			//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//
 			//    transformKinectPointCloud_simple(D_PTR(free_space_points),
 			//    free_space_points.size(),
@@ -355,9 +355,9 @@ namespace gpu_voxels {
 			//    Sensor object_sensor = *this;
 			//    object_sensor.sensorModel.setInitialProbability(object_data.m_initial_probability);
 			//    object_sensor.sensorModel.setUpdateProbability(object_data.m_update_probability);
-			//    thrust::device_vector<Sensor> d_tmp_sensor(1);
+			//    parallel::device_vector<Sensor> d_tmp_sensor(1);
 			//    d_tmp_sensor[0] = object_sensor;
-			//    HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//    GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//
 			//    transformKinectPointCloud_simple(D_PTR(object_points),
 			//    object_points.size(),

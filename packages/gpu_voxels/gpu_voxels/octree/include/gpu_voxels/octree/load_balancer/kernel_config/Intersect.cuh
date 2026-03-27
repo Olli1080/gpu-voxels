@@ -65,7 +65,7 @@ namespace gpu_voxels
 				public:
 					std::size_t my_num_collisions;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						VariablesConfig() :
 						my_num_collisions(0)
 					{
@@ -76,7 +76,7 @@ namespace gpu_voxels
 				{
 				public:
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						ConstConfig(const dim3 p_grid_dim,
 							const dim3 p_block_dim,
 							const dim3 p_block_ids,
@@ -100,7 +100,7 @@ namespace gpu_voxels
 					std::size_t* num_collisions;
 					Collider collider;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						KernelParameters(const typename Base::AbstractKernelParameters& abstract_params, const uint32_t p_min_level,
 							std::size_t* p_num_collisions, Collider p_collider) :
 						Base::AbstractKernelParameters(abstract_params),
@@ -118,7 +118,7 @@ namespace gpu_voxels
 				typedef ConstConfig Constants;
 				typedef KernelParameters KernelParams;
 
-				__device__
+				GVL_DEVICE
 					static void doLoadBalancedWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
@@ -158,7 +158,7 @@ namespace gpu_voxels
 					}
 
 					// handle leaf nodes
-					if (__syncthreads_or(is_last_level) && kernel_params.min_level == 0)
+					if (GVL_SYNCTHREADS_or(is_last_level) && kernel_params.min_level == 0)
 					{
 						InnerNode1* a_temp;
 						InnerNode2* b_temp;
@@ -234,14 +234,14 @@ namespace gpu_voxels
 							shared_mem->work_item_cache[constants.work_index].level - 1, a_active,
 							b_active);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (constants.thread_id == 0)
 						shared_mem->num_stack_work_items += insert_count_tid0;
-					__syncthreads();
+					GVL_SYNCTHREADS();
 				}
 
-				__device__
+				GVL_DEVICE
 					static void doReductionWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{

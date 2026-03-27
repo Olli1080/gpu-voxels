@@ -62,21 +62,21 @@ namespace gpu_voxels {
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const
 	{
 		return v1.getOccupancy() >= m_threshold1 && !v2.bitVector().noneButEmpty();
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const
 	{
 		return collide(v2, v1);
 	}
 
 	//template<std::size_t length>
-	//__host__ __device__
+	//GVL_HOST_DEVICE
 	//bool SVCollider::collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const
 	//{
 	//  BitVector<length> collisions;
@@ -85,7 +85,7 @@ namespace gpu_voxels {
 	//}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2,
 			BitVector<length>* collisions, const uint32_t sv_offset) const
 	{
@@ -94,7 +94,7 @@ namespace gpu_voxels {
 
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2, BitVector<length>* collisions, const uint32_t sv_offset) const
 	{
 		if ((v2.getOccupancy() >= m_threshold2) && (!v1.bitVector().noneButEmpty()))
@@ -106,7 +106,7 @@ namespace gpu_voxels {
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2, BitVector<length>* collisions, const uint32_t sv_offset) const
 	{
 		if ((v1.getOccupancy() >= m_threshold1) && (!v2.bitVector().noneButEmpty()))
@@ -119,13 +119,13 @@ namespace gpu_voxels {
 
 
 	template<class OtherVoxel>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const DistanceVoxel& v1, const OtherVoxel& v2) const {
 		return false; // has no meaning
 	}
 
 	template<class OtherVoxel>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool SVCollider::collide(const OtherVoxel& v1, const DistanceVoxel& v2) const {
 		return false; // has no meaning
 	}

@@ -49,7 +49,7 @@ namespace gpu_voxels
 	 * \param _yaw
 	 * \return
 	 */
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline Eigen::Quaternionf createFromRPY(float _roll, float _pitch, float _yaw)
 	{
 		const Eigen::AngleAxisf roll(_roll, Eigen::Vector3f::UnitX());
@@ -66,13 +66,13 @@ namespace gpu_voxels
 	 * \param rpy Vector of Roll Pitch and Yaw
 	 * \return Matrix where rotation is set.
 	 */
-	__device__ __host__
+	GVL_HOST_DEVICE
 	inline Eigen::Quaternionf createFromRPY(Vector3f rpy)
 	{
 		return createFromRPY(rpy.x(), rpy.y(), rpy.z());
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline [[nodiscard]] Vector3f orientationMatrixDiff(const Matrix3f& first, const Matrix3f& other)
 	{
 		Vector3f tmp1 = first.col(0);
@@ -90,7 +90,7 @@ namespace gpu_voxels
 		return { asinf(d.x() / 2.f), asinf(d.y() / 2.f), asinf(d.z() / 2.f) };
 	}
 
-	__host__
+	GVL_HOST
 	inline std::ostream& operator<<(std::ostream& out, const Matrix3f& matrix)
 	{
 		out.precision(3);
@@ -102,7 +102,7 @@ namespace gpu_voxels
 		return out;
 	}
 
-	__host__
+	GVL_HOST
 	inline icl_core::logging::ThreadStream& operator<<(icl_core::logging::ThreadStream& out, const Matrix3f& matrix)
 	{
 		out << "\n" <<
@@ -113,7 +113,7 @@ namespace gpu_voxels
 		return out;
 	}
 
-	__device__ __host__
+	GVL_HOST_DEVICE
 	inline void print(const Eigen::Matrix4f& mat)
 	{
 		printf("  %0.7f  %0.7f  %0.7f  %0.7f\n", mat(0, 0), mat(0, 1), mat(0, 2), mat(0, 3));
@@ -122,7 +122,7 @@ namespace gpu_voxels
 		printf("  %0.7f  %0.7f  %0.7f  %0.7f\n\n", mat(3, 0), mat(3, 1), mat(3, 2), mat(3, 3));
 	}
 
-	__host__
+	GVL_HOST
 	inline std::ostream& operator<<(std::ostream& out, const Matrix4f& matrix)
 	{
 		out.precision(3);
@@ -135,7 +135,7 @@ namespace gpu_voxels
 		return out;
 	}
 
-	__host__
+	GVL_HOST
 	inline icl_core::logging::ThreadStream& operator<<(icl_core::logging::ThreadStream& out, const Matrix4f& matrix)
 	{
 		out << "\n" <<

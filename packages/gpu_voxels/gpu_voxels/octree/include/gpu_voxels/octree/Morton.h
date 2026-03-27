@@ -90,7 +90,7 @@ uint32_t hi_y = y >> 10u;       \
 uint32_t hi_z = z >> 10u;       \
 return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo_x, lo_y, lo_z));
 
-		__host__  __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ uint32_t morton_code(uint32_t x, uint32_t y, uint32_t z)
 		{
 			x = (x | (x << 16)) & 0x030000FF;
@@ -112,7 +112,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 		}
 		// #######################################################################################################
 
-		__host__  __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ uint16_t morton_code12(uint16_t x, uint16_t y, uint16_t z)
 		{
 			x = (x | (x << 4)) & 0xC30C3;
@@ -127,7 +127,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 			return x | (y << 1) | (z << 2);
 		}
 
-		//__host__ __device__
+		//GVL_HOST_DEVICE
 		//static __forceinline__ uint64_t morton_code60___(uint64_t x, uint64_t y, uint64_t z)
 		//{
 		//  uint64_t lo_x = x & 1023u;
@@ -142,7 +142,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 
 		// http://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 		// Inverse of Part1By2 - "delete" all bits not at positions divisible by 3
-		__host__  __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ uint32_t Compact1By2(uint32_t x)
 		{
 			x &= 0x09249249;                  // x = ---- 9--8 --7- -6-- 5--4 --3- -2-- 1--0
@@ -153,7 +153,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 			return x;
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ void inv_morton_code(uint32_t zcode, uint32_t& x, uint32_t& y, uint32_t& z)
 		{
 			assert(zcode <= ((1 << 30) - 1));
@@ -162,7 +162,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 			z = Compact1By2(zcode >> 2);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ void inv_morton_code60(uint64_t zcode, uint32_t& x, uint32_t& y, uint32_t& z)
 		{
 			assert(zcode <= ((uint64_t(1) << 60) - 1));
@@ -174,13 +174,13 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 			z = (Compact1By2(high_30 >> 2) << 10) | Compact1By2(low_30 >> 2);
 		}
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ void inv_morton_code60(uint64_t zcode, gpu_voxels::Vector3ui& coordinates)
 		{
 			inv_morton_code60(zcode, coordinates.x(), coordinates.y(), coordinates.z());
 		}
 
-		__host__  __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ uint64_t morton_code60(uint32_t x, uint32_t y, uint32_t z)
 		{
 #if !defined(__CUDA_ARCH__)
@@ -195,14 +195,14 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 #endif
 		}
 
-		__host__  __device__
+		GVL_HOST_DEVICE
 			static __forceinline__ uint64_t morton_code60(gpu_voxels::Vector3ui coordinates)
 		{
 			return morton_code60(coordinates.x(), coordinates.y(), coordinates.z());
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getVoxelSideLength(uint32_t level)
 		{
 			return static_cast<OctreeVoxelID>(powf(powf(branching_factor, 1.0f / 3.0f), level));
@@ -211,7 +211,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 		template<typename T>
 		struct transform_to_morton
 		{
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ OctreeVoxelID operator()(T value)
 			{
 				MORTON_TRAFO_PARAM(value.)
@@ -219,14 +219,14 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 		};
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getZOrderPrefix(OctreeVoxelID value, uint32_t level)
 		{
 			return value >> ((level + 1) * (uint32_t)log2(float(branching_factor)));
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getZOrderNodeId(const OctreeVoxelID value, const uint32_t level)
 		{
 			return (value >> (level * (uint32_t)log2(float(branching_factor)))) & (branching_factor - 1);
@@ -236,7 +236,7 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 		 *  Returns the ID of the level from where both leafs have the same path to the root.
 		 */
 		template<std::size_t branching_factor>
-		__device__
+		GVL_DEVICE
 			__forceinline__ uint8_t getCommonLevel(OctreeVoxelID idA, OctreeVoxelID idB)
 		{
 			assert(sizeof(OctreeVoxelID) == 8); // otherwise use __clz() instead of __clzll()
@@ -255,28 +255,28 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getNextSubTree(OctreeVoxelID value, uint32_t level)
 		{
 			return value >> ((level + 1) * (OctreeVoxelID)log2(float(branching_factor)));
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ uint64_t getTree(OctreeVoxelID id, uint32_t splitLevel)
 		{
 			return id << (splitLevel * (OctreeVoxelID)log2(float(branching_factor)));
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getZOrderNextLevel(OctreeVoxelID prefix, uint32_t child)
 		{
 			return (prefix << (uint32_t)log2(float(branching_factor))) + child;
 		}
 
 		template<std::size_t branching_factor>
-		__host__  __device__
+		GVL_HOST_DEVICE
 			__forceinline__ OctreeVoxelID getZOrderLastLevel(OctreeVoxelID prefix, uint32_t level)
 		{
 			return prefix << (level * uint32_t(log2(float(branching_factor))));
@@ -290,12 +290,12 @@ return (uint64_t(morton_code(hi_x, hi_y, hi_z)) << 30) | uint64_t(morton_code(lo
 			OctreeVoxelID m_voxel_id; // morton code of the voxel, only the prefix according to the level matters
 			uint8_t m_level; // level of the voxel in the tree and therefore the length of the morton prefix
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				MortonCube() : m_voxel_id(0), m_level(255)
 			{
 			}
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				MortonCube(const OctreeVoxelID voxel_id, const uint8_t level) : m_voxel_id(voxel_id), m_level(level)
 			{
 			}

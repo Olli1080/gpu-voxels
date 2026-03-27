@@ -30,7 +30,7 @@
 
 namespace gpu_voxels {
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline Vector3ui DistanceVoxel::getObstacle() const
 	{
 		const uint x = m_obstacle & 0x3ff; //1023
@@ -40,7 +40,7 @@ namespace gpu_voxels {
 		return Vector3ui(x, y, z);
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::pba_dist_t DistanceVoxel::squaredObstacleDistance(Vector3i this_position) const
 	{
 		const Vector3ui obstacle = getObstacle();
@@ -59,56 +59,56 @@ namespace gpu_voxels {
 		return static_cast<pba_dist_t>((this_position.cast<int64_t>() - obstacle.cast<int64_t>()).array().square().sum());
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::DistanceVoxel() = default; //default-initialise
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::DistanceVoxel(const Vector3ui& o) {
 		m_obstacle = o.x();
 		m_obstacle |= o.y() << 10;
 		m_obstacle |= o.z() << 20;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::DistanceVoxel(const pba_voxel_t o) {
 		m_obstacle = o;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::DistanceVoxel(const uint x, const uint y, const uint z) {
 		m_obstacle = x;
 		m_obstacle |= y << 10;
 		m_obstacle |= z << 20;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline DistanceVoxel::DistanceVoxel(const uint3& o) {
 		m_obstacle = o.x;
 		m_obstacle |= o.y << 10;
 		m_obstacle |= o.z << 20;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline void DistanceVoxel::setObstacle(const Vector3ui& o) {
 		m_obstacle = o.x();
 		m_obstacle |= o.y() << 10;
 		m_obstacle |= o.z() << 20;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline void DistanceVoxel::setObstacle(const Vector3i& o) {
 		m_obstacle = o.x();
 		m_obstacle |= o.y() << 10;
 		m_obstacle |= o.z() << 20;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	inline void DistanceVoxel::setPBAUninitialised() {
 		const Vector3ui temp = Vector3ui::Constant(PBA_UNINITIALISED_COORD);
 		setObstacle(temp);
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 		inline bool DistanceVoxel::isOccupied(float col_threshold) const
 	{
 		//NOP
@@ -118,7 +118,7 @@ namespace gpu_voxels {
 	}
 
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 		inline void DistanceVoxel::insert(const uint32_t voxel_meaning)
 	{
 		//NOP
@@ -128,7 +128,7 @@ namespace gpu_voxels {
 		printf("DistanceVoxel.insert(voxel_type: %d) should not be called! use insert(pos, type)\n", voxel_meaning);
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 		inline void DistanceVoxel::insert(const Vector3ui& voxel_position, const uint32_t voxel_meaning)
 	{
 		if (voxel_meaning == eBVM_OCCUPIED)
@@ -144,7 +144,7 @@ namespace gpu_voxels {
 		}
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 		inline DistanceVoxel::operator uint3() const {
 		uint3 t;
 		t.x = m_obstacle & 1023;

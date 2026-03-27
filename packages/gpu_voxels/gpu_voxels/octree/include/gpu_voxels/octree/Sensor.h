@@ -40,7 +40,7 @@ namespace gpu_voxels {
 		struct SensorDataProcessing
 		{
 		public:
-			__host__ __device__
+			GVL_HOST_DEVICE
 				SensorDataProcessing() :
 				m_sensor_range(MAX_VALUE(DepthData)),
 				m_cut_x_boarder(0),
@@ -56,7 +56,7 @@ namespace gpu_voxels {
 
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				[[nodiscard]] bool equals(const SensorDataProcessing& b) const
 			{
 				return this->m_sensor_range == b.m_sensor_range
@@ -86,32 +86,32 @@ namespace gpu_voxels {
 		//struct ProcessedSensorData
 		//{
 		//public:
-		//  __host__ __device__
+		//  GVL_HOST_DEVICE
 		//  ProcessedSensorData()
 		//  {
 		//
 		//  }
 		//
-		//  thrust::device_vector<Voxel> free_space_voxel;
-		//  thrust::device_vector<Voxel> object_voxel;
+		//  parallel::device_vector<Voxel> free_space_voxel;
+		//  parallel::device_vector<Voxel> object_voxel;
 		//};
 
 		struct Sensor
 		{
 		public:
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Sensor()
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Sensor(gpu_voxels::Matrix4f _pose, uint32_t _data_width, uint32_t _data_height) :
 				pose(_pose), data_width(_data_width), data_height(_data_height)
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Sensor(const Sensor& other) :
 				pose(other.pose), data_width(other.data_width), data_height(
 					other.data_height)
@@ -121,7 +121,7 @@ namespace gpu_voxels {
 			/**
 			 * Takes coordinates in meter and returns the transformed coordinates also in meter
 			 */
-			__host__ __device__
+			GVL_HOST_DEVICE
 				__forceinline__
 				gpu_voxels::Vector3f sensorCoordinatesToWorldCoordinates(const gpu_voxels::Vector3f& point) const
 			{
@@ -170,7 +170,7 @@ namespace gpu_voxels {
 			 /**
 			  * Returned coordinates are in meter.
 			  */
-			__host__ __device__
+			GVL_HOST_DEVICE
 				__forceinline__
 				gpu_voxels::Vector3f sensorMeasureToSensorCoordinates(DepthData measure, const int x, const int y,
 					const DepthData invalid_measure)
@@ -193,26 +193,26 @@ namespace gpu_voxels {
 				return my_point;
 			}
 
-			__host__
+			GVL_HOST
 				void processSensorData(const DepthData* h_sensor_data,
-					thrust::device_vector<Voxel>*& d_free_space_voxel,
-					thrust::device_vector<Voxel>*& d_object_voxel);
+					parallel::device_vector<Voxel>*& d_free_space_voxel,
+					parallel::device_vector<Voxel>*& d_object_voxel);
 
-			__host__
+			GVL_HOST
 				void processSensorData(const Vector3f* h_points,
-					thrust::device_vector<Voxel>*& d_free_space_voxel,
-					thrust::device_vector<Voxel>*& d_object_voxel);
+					parallel::device_vector<Voxel>*& d_free_space_voxel,
+					parallel::device_vector<Voxel>*& d_object_voxel);
 
 		private:
-			__host__
+			GVL_HOST
 				void _processDepthImage(const DepthData* h_sensor_data,
-					thrust::device_vector<Vector3f>& d_free_space_points,
-					thrust::device_vector<Vector3f>& d_object_points);
-			__host__
-				void _processSensorData(thrust::device_vector<Vector3f>& d_free_space_points,
-					thrust::device_vector<Vector3f>& d_object_points,
-					thrust::device_vector<Voxel>& d_free_space_voxel,
-					thrust::device_vector<Voxel>& d_object_voxel);
+					parallel::device_vector<Vector3f>& d_free_space_points,
+					parallel::device_vector<Vector3f>& d_object_points);
+			GVL_HOST
+				void _processSensorData(parallel::device_vector<Vector3f>& d_free_space_points,
+					parallel::device_vector<Vector3f>& d_object_points,
+					parallel::device_vector<Voxel>& d_free_space_voxel,
+					parallel::device_vector<Voxel>& d_object_voxel);
 
 		public:
 			//gpu_voxels::Vector3f position;

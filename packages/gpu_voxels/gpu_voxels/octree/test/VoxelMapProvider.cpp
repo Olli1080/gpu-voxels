@@ -61,7 +61,7 @@ VoxelMapProvider::~VoxelMapProvider()
 void VoxelMapProvider::visualize()
 {
   m_mutex.lock();
-  HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxelMap->getVoidDeviceDataPtr()));
+  GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, m_voxelMap->getVoidDeviceDataPtr()));
   *m_shm_mapDim = m_voxelMap->getDimensions();
   *m_shm_VoxelSize = m_voxelMap->getVoxelSideLength();
   m_changed = false;

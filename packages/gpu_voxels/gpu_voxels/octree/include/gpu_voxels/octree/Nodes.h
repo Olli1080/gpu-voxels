@@ -49,7 +49,7 @@ namespace gpu_voxels {
 		/*
 		 * Computes the new node status based on the status of the child nodes.
 		 */
-		__host__   __device__   inline NodeStatus getNewStatus(const NodeStatus child_status_or,
+		GVL_HOST_DEVICE   inline NodeStatus getNewStatus(const NodeStatus child_status_or,
 			const NodeStatus child_status_and,
 			const uint8_t level_of_node)
 		{
@@ -69,7 +69,7 @@ namespace gpu_voxels {
 			return new_status;
 		}
 
-		__host__   __device__   __forceinline__ enum gpu_voxels::BitVoxelMeaning statusToBitVoxelMeaning(NodeStatus status)
+		GVL_HOST_DEVICE   __forceinline__ enum gpu_voxels::BitVoxelMeaning statusToBitVoxelMeaning(NodeStatus status)
 		{
 			status = (status & (ns_FREE | ns_UNKNOWN | ns_OCCUPIED));
 			enum gpu_voxels::BitVoxelMeaning res;
@@ -95,7 +95,7 @@ namespace gpu_voxels {
 			return res;
 		}
 
-		__host__   __device__   __forceinline__ enum gpu_voxels::BitVoxelMeaning statusToBitVoxelMeaning(uint8_t* mapping_lookup,
+		GVL_HOST_DEVICE   __forceinline__ enum gpu_voxels::BitVoxelMeaning statusToBitVoxelMeaning(uint8_t* mapping_lookup,
 			NodeStatus status)
 		{
 			return static_cast<gpu_voxels::BitVoxelMeaning>(mapping_lookup[status & (ns_FREE | ns_UNKNOWN | ns_OCCUPIED | ns_COLLISION)]);

@@ -43,7 +43,7 @@
 #include <thrust/sort.h>
 #include <thrust/remove.h>
 #include <thrust/binary_search.h>
-#include <thrust/system_error.h>
+#include <gpu_voxels/helpers/oneDPLBridge.h>
 
 namespace gpu_voxels
 {
@@ -54,21 +54,21 @@ namespace gpu_voxels
 		template<class Voxel, class VoxelIDType>
 		struct Merge 
 		{
-			typedef thrust::tuple<VoxelIDType, Voxel> keyVoxelTuple;
+			typedef parallel::tuple<VoxelIDType, Voxel> keyVoxelTuple;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				keyVoxelTuple operator()(const keyVoxelTuple& lhs, const keyVoxelTuple& rhs) const
 			{
-				VoxelIDType l_key = thrust::get<0>(lhs);
-				Voxel l_voxel = thrust::get<1>(lhs);
+				VoxelIDType l_key = parallel::get<0>(lhs);
+				Voxel l_voxel = parallel::get<1>(lhs);
 
-				VoxelIDType r_key = thrust::get<0>(rhs);
-				Voxel r_voxel = thrust::get<1>(rhs);
+				VoxelIDType r_key = parallel::get<0>(rhs);
+				Voxel r_voxel = parallel::get<1>(rhs);
 
 				keyVoxelTuple ret = rhs;
 
 				if (l_key == r_key)
-					thrust::get<1>(ret) = Voxel::reduce(l_voxel, r_voxel);
+					parallel::get<1>(ret) = Voxel::reduce(l_voxel, r_voxel);
 
 				return ret;
 			}
@@ -78,7 +78,7 @@ namespace gpu_voxels
 		template<class VoxelIDType>
 		struct applyOffsetOperator
 		{
-			typedef thrust::tuple<Vector3ui, VoxelIDType> coordKeyTuple;
+			typedef parallel::tuple<Vector3ui, VoxelIDType> coordKeyTuple;
 
 			ptrdiff_t addr_offset;
 			Vector3i coord_offset;
@@ -88,12 +88,12 @@ namespace gpu_voxels
 				addr_offset = voxelmap::getVoxelIndexSigned(ref_map_dim, offset);
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				coordKeyTuple operator()(const coordKeyTuple& input) const
 			{
 				coordKeyTuple ret;
-				thrust::get<0>(ret) = (thrust::get<0>(input).template cast<int64_t>() + coord_offset.template cast<int64_t>()).template cast<uint32_t>();
-				thrust::get<1>(ret) = thrust::get<1>(input) + addr_offset;
+				parallel::get<0>(ret) = (parallel::get<0>(input).template cast<int64_t>() + coord_offset.template cast<int64_t>()).template cast<uint32_t>();
+				parallel::get<1>(ret) = parallel::get<1>(input) + addr_offset;
 				return ret;
 			}
 		};
@@ -129,8 +129,8 @@ namespace gpu_voxels
 				LOGGING_DEBUG_C(VoxellistLog, TemplateVoxelList, "List size before make_unique: " << m_dev_list.size() << endl);
 
 
-				//    thrust::host_vector<VoxelIDType> dev_id_list_h(m_dev_id_list);
-				//    thrust::host_vector<Vector3ui> dev_coord_list_h(m_dev_coord_list);
+				//    parallel::host_vector<VoxelIDType> dev_id_list_h(m_dev_id_list);
+				//    parallel::host_vector<Vector3ui> dev_coord_list_h(m_dev_coord_list);
 
 
 				//    for(uint i = 0; i < dev_id_list_h.size(); i++)
@@ -144,12 +144,12 @@ namespace gpu_voxels
 
 
 					// the ZipIterator represents the data that is sorted by the keys in m_dev_id_list
-				thrust::sort_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
-					thrust::make_zip_iterator(thrust::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())),
-					thrust::less<VoxelIDType>());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				parallel::sort_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
+					parallel::make_zip_iterator(parallel::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())),
+					parallel::less<VoxelIDType>());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
-			catch (thrust::system_error& e)
+			catch (parallel::system_error& e)
 			{
 				LOGGING_ERROR(VoxellistLog, "GetLastError: " << cudaGetLastError() << endl);
 				//    cudaDeviceReset();
@@ -160,13 +160,13 @@ namespace gpu_voxels
 			{
 				// Reverse iterate over sorted entries and merge successive voxel-bitvectors into the predecessor
 				// of voxels with the same key. We dont touch the coordinates as they are the same either.
-				thrust::inclusive_scan(thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
-					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.begin(), m_dev_list.begin()))),
-					thrust::make_reverse_iterator(thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
+				parallel::inclusive_scan(parallel::make_reverse_iterator(parallel::make_zip_iterator(parallel::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
+					parallel::make_reverse_iterator(parallel::make_zip_iterator(parallel::make_tuple(m_dev_id_list.begin(), m_dev_list.begin()))),
+					parallel::make_reverse_iterator(parallel::make_zip_iterator(parallel::make_tuple(m_dev_id_list.end(), m_dev_list.end()))),
 					Merge<Voxel, VoxelIDType>());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
-			catch (thrust::system_error& e)
+			catch (parallel::system_error& e)
 			{
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Caught Thrust exception while doing inclusive_scan: " << e.what() << endl);
 				exit(-1);
@@ -175,14 +175,14 @@ namespace gpu_voxels
 			// This will remove successors and keep the first entry with the merged bitvectors.
 			try
 			{
-				 thrust::pair<keyIterator, zipValuesIterator> new_end = thrust::unique_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
-					thrust::make_zip_iterator(thrust::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())));
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-				const size_t new_length = thrust::distance(m_dev_id_list.begin(), new_end.first);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				 parallel::pair<keyIterator, zipValuesIterator> new_end = parallel::unique_by_key(m_dev_id_list.begin(), m_dev_id_list.end(),
+					parallel::make_zip_iterator(parallel::make_tuple(m_dev_coord_list.begin(), m_dev_list.begin())));
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+				const size_t new_length = parallel::distance(m_dev_id_list.begin(), new_end.first);
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				this->resize(new_length);
 			}
-			catch (thrust::system_error& e)
+			catch (parallel::system_error& e)
 			{
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Caught Thrust exception while dropping duplicates: " << e.what() << endl);
 				exit(-1);
@@ -192,7 +192,7 @@ namespace gpu_voxels
 		
 		template<class Voxel, class VoxelIDType>
 		size_t TemplateVoxelList<Voxel, VoxelIDType>::collideVoxellists(const TemplateVoxelList<ProbabilisticVoxel, VoxelIDType>* other,
-			const Vector3i& offset, thrust::device_vector<bool>& collision_stencil) const
+			const Vector3i& offset, parallel::device_vector<bool>& collision_stencil) const
 		{
 			LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "colliding any VoxelList with a ProbabilisticVoxelList is no supported! Not performing collision check." << endl);
 			return 0;
@@ -200,7 +200,7 @@ namespace gpu_voxels
 
 		template<class Voxel, class VoxelIDType>
 		size_t TemplateVoxelList<Voxel, VoxelIDType>::collideVoxellists(const TemplateVoxelList<CountingVoxel, VoxelIDType>* other,
-			const Vector3i& offset, thrust::device_vector<bool>& collision_stencil) const
+			const Vector3i& offset, parallel::device_vector<bool>& collision_stencil) const
 		{
 			LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "colliding any VoxelList with a CountingVoxelList is no supported! Not performing collision check." << endl);
 			return 0;
@@ -208,7 +208,7 @@ namespace gpu_voxels
 
 		struct logicalAND {
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(bool a, bool b)
 			{
 				return a && b;
@@ -218,7 +218,7 @@ namespace gpu_voxels
 		template<class Voxel, class VoxelIDType>
 		template<size_t length>
 		size_t TemplateVoxelList<Voxel, VoxelIDType>::collideVoxellists(const TemplateVoxelList<BitVoxel<length>, VoxelIDType>* other,
-			const Vector3i& offset, thrust::device_vector<bool>& collision_stencil) const
+			const Vector3i& offset, parallel::device_vector<bool>& collision_stencil) const
 		{
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
@@ -227,7 +227,7 @@ namespace gpu_voxels
 			{
 				//will contain a stencil of elements that should be considered for collision checking
 				//TODO: initialise to empty if not CVL
-				thrust::device_vector<bool> filtermask_device(collision_stencil.size());
+				parallel::device_vector<bool> filtermask_device(collision_stencil.size());
 
 				// if offset is given, we need our own comparison operator which is a lot slower than the comparison on built-in data types!
 				// See: http://stackoverflow.com/questions/9037906/fast-cuda-thrust-custom-comparison-operator
@@ -242,33 +242,33 @@ namespace gpu_voxels
 					if (this->m_map_type == MT_COUNTING_VOXELLIST)
 						//if the collision_stencil contains a true value it will be treated as a filter mask
 					{
-						thrust::copy(collision_stencil.begin(), collision_stencil.end(), filtermask_device.begin());
-						HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+						parallel::copy(collision_stencil.begin(), collision_stencil.end(), filtermask_device.begin());
+						GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 					}
 
-					thrust::binary_search(thrust::device,
+					parallel::binary_search(parallel::device,
 						other->m_dev_id_list.begin(), other->m_dev_id_list.end(),
 						m_dev_id_list.begin(), m_dev_id_list.end(),
 						collision_stencil.begin());
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				}
 
 				if (this->m_map_type == MT_COUNTING_VOXELLIST)
 				{ // is used to count the collisions, without overriding the collision_stencil, because it is used in the subtract methods
-					thrust::device_vector<bool> count_device(collision_stencil.size());
+					parallel::device_vector<bool> count_device(collision_stencil.size());
 
 					//TODO: why does this not zero out all collisions in case of CVL.subtractFromCVL(BVL)?
-					thrust::transform(collision_stencil.begin(), collision_stencil.end(), filtermask_device.begin(), count_device.begin(), logicalAND());
-					HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+					parallel::transform(collision_stencil.begin(), collision_stencil.end(), filtermask_device.begin(), count_device.begin(), logicalAND());
+					GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-					return thrust::count(count_device.begin(), count_device.end(), true);
+					return parallel::count(count_device.begin(), count_device.end(), true);
 				}
 				else
 				{
-					return thrust::count(collision_stencil.begin(), collision_stencil.end(), true);
+					return parallel::count(collision_stencil.begin(), collision_stencil.end(), true);
 				}
 			}
-			catch (thrust::system_error& e)
+			catch (parallel::system_error& e)
 			{
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Caught Thrust exception " << e.what() << endl);
 				exit(-1);
@@ -276,7 +276,7 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel, class VoxelIDType>
-		void TemplateVoxelList<Voxel, VoxelIDType>::copyCoordsToHost(thrust::host_vector<Vector3ui>& host_vec)
+		void TemplateVoxelList<Voxel, VoxelIDType>::copyCoordsToHost(parallel::host_vector<Vector3ui>& host_vec)
 		{
 			host_vec = m_dev_coord_list;
 		}
@@ -287,11 +287,11 @@ namespace gpu_voxels
 			Vector3ui dims;
 			is_out_of_bounds(Vector3ui map_dims) : dims(map_dims) {}
 
-			__host__ __device__
-				bool operator()(thrust::tuple<VoxelIDType, Vector3ui, Voxel> triple_it) const
+			GVL_HOST_DEVICE
+				bool operator()(parallel::tuple<VoxelIDType, Vector3ui, Voxel> triple_it) const
 			{
-				const Vector3ui v = thrust::get<1>(triple_it);
-				//printf("voxel count was: %d, id: %d\n", v, thrust::get<0>(triple_it));
+				const Vector3ui v = parallel::get<1>(triple_it);
+				//printf("voxel count was: %d, id: %d\n", v, parallel::get<0>(triple_it));
 
 				return (v.x() >= dims.x()) || (v.y() >= dims.y()) || (v.z() >= dims.z());
 			}
@@ -310,13 +310,13 @@ namespace gpu_voxels
 			is_out_of_bounds<Voxel, VoxelIDType> filter(m_ref_map_dim);
 
 			// remove voxels below threshold
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
+			new_end = parallel::remove_if(this->getBeginTripleZipIterator(),
 				this->getEndTripleZipIterator(),
 				filter);
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
+			const size_t new_length = parallel::distance(m_dev_id_list.begin(), parallel::get<0>(new_end.get_iterator_tuple()));
 			this->resize(new_length);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			//this->screendump(true); // DEBUG
 		}
@@ -324,7 +324,7 @@ namespace gpu_voxels
 		template<class Voxel, class VoxelIDType>
 		void TemplateVoxelList<Voxel, VoxelIDType>::insertPointCloud(const std::vector<Vector3f>& points, const BitVoxelMeaning voxel_meaning)
 		{
-			const thrust::device_vector<Vector3f> d_points = { points.begin(), points.end() };
+			const parallel::device_vector<Vector3f> d_points = { points.begin(), points.end() };
 			insertPointCloud(d_points, voxel_meaning);
 		}
 
@@ -335,7 +335,7 @@ namespace gpu_voxels
 		}
 
 		template<class Voxel, class VoxelIDType>
-		void TemplateVoxelList<Voxel, VoxelIDType>::insertPointCloud(const thrust::device_vector<Vector3f>& d_points, const BitVoxelMeaning voxel_meaning)
+		void TemplateVoxelList<Voxel, VoxelIDType>::insertPointCloud(const parallel::device_vector<Vector3f>& d_points, const BitVoxelMeaning voxel_meaning)
 		{
 			if (d_points.empty())
 				return;
@@ -348,19 +348,19 @@ namespace gpu_voxels
 			this->resize(offset_new_entries + d_points.size());
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = parallel::raw_pointer_cast(m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = parallel::raw_pointer_cast(m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			// copy points to the gpu
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_points.size(), num_blocks, threads_per_block);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			kernelInsertGlobalPointCloud<<<num_blocks, threads_per_block>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				d_points.data().get(), d_points.size(), offset_new_entries, voxel_meaning);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			remove_out_of_bounds();
 
@@ -370,12 +370,12 @@ namespace gpu_voxels
 		template<class Voxel, class VoxelIDType>
 		void TemplateVoxelList<Voxel, VoxelIDType>::insertCoordinateList(const std::vector<Vector3ui>& coordinates, const BitVoxelMeaning voxel_meaning)
 		{
-			const thrust::device_vector<Vector3ui> d_coordinates = { coordinates.begin(), coordinates.end() };
+			const parallel::device_vector<Vector3ui> d_coordinates = { coordinates.begin(), coordinates.end() };
 			insertCoordinateList(d_coordinates, voxel_meaning);
 		}
 
 		template<class Voxel, class VoxelIDType>
-		void TemplateVoxelList<Voxel, VoxelIDType>::insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning)
+		void TemplateVoxelList<Voxel, VoxelIDType>::insertCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning)
 		{
 			if (d_coordinates.empty())
 				return;
@@ -388,18 +388,18 @@ namespace gpu_voxels
 			this->resize(offset_new_entries + d_coordinates.size());
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = parallel::raw_pointer_cast(m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = parallel::raw_pointer_cast(m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			// copy points to the gpu
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_coordinates.size(), num_blocks, threads_per_block);
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			kernelInsertCoordinateTuples<<<num_blocks, threads_per_block>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, d_coordinates.data().get(), d_coordinates.size(), offset_new_entries, voxel_meaning);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			remove_out_of_bounds();
 
@@ -422,17 +422,17 @@ namespace gpu_voxels
 			this->resize(offset_new_entries + total_points);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = parallel::raw_pointer_cast(m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = parallel::raw_pointer_cast(m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			computeLinearLoad(total_points, m_blocks, m_threads);
 			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				meta_point_cloud.getDeviceConstPointer().get(),
 				offset_new_entries, voxel_meaning);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			remove_out_of_bounds();
 
@@ -457,24 +457,24 @@ namespace gpu_voxels
 			this->resize(offset_new_entries + total_points);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			Vector3ui* dev_coord_list_ptr = thrust::raw_pointer_cast(m_dev_coord_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = parallel::raw_pointer_cast(m_dev_list.data());
+			Vector3ui* dev_coord_list_ptr = parallel::raw_pointer_cast(m_dev_coord_list.data());
+			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			BitVoxelMeaning* dev_voxel_meanings;
 			const size_t size = voxel_meanings.size() * sizeof(BitVoxelMeaning);
-			HANDLE_CUDA_ERROR(cudaMalloc(&dev_voxel_meanings, size));
-			HANDLE_CUDA_ERROR(cudaMemcpy(dev_voxel_meanings, voxel_meanings.data(), size, cudaMemcpyHostToDevice));
+			GVL_HANDLE_ERROR(GVL_MALLOC(&dev_voxel_meanings, size));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(dev_voxel_meanings, voxel_meanings.data(), size, GVL_MEMCPY_HOST_TO_DEVICE));
 
 			computeLinearLoad(total_points, m_blocks, m_threads);
 			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				meta_point_cloud.getDeviceConstPointer().get(),
 				offset_new_entries, dev_voxel_meanings);
-			CHECK_CUDA_ERROR();
+			GVL_CHECK_ERROR();
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			HANDLE_CUDA_ERROR(cudaFree(dev_voxel_meanings));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			GVL_HANDLE_ERROR(GVL_FREE(dev_voxel_meanings));
 
 			remove_out_of_bounds();
 
@@ -536,7 +536,7 @@ namespace gpu_voxels
 
 			filterByBoundaries(Vector3ui upper, Vector3ui lower) : upper_bound(upper), lower_bound(lower) {}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(Vector3ui a)
 			{
 				const bool inBound = a.x() >= lower_bound.x() && a.y() >= lower_bound.y() && a.z() >= lower_bound.z()
@@ -547,7 +547,7 @@ namespace gpu_voxels
 
 		struct sumVector3ui
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			Vector3ui operator()(Vector3ui a, Vector3ui b)
 			{
 				return {a.x() + b.x(), a.y() + b.y(), a.z() + b.z() };
@@ -566,7 +566,7 @@ namespace gpu_voxels
 		Vector3f TemplateVoxelList<Voxel, VoxelIDType>::getCenterOfMass(Vector3ui lower_bound, Vector3ui upper_bound) const
 		{
 			const filterByBoundaries filter(upper_bound, lower_bound);
-			const int voxelCount = thrust::count_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), filter);
+			const int voxelCount = parallel::count_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), filter);
 
 			if (voxelCount <= 0)
 			{
@@ -578,12 +578,12 @@ namespace gpu_voxels
 			}
 
 			//filter by axis alligned bounding box
-			thrust::device_vector<Vector3ui> inBoundaries(voxelCount);
-			thrust::copy_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), inBoundaries.begin(), filter);
+			parallel::device_vector<Vector3ui> inBoundaries(voxelCount);
+			parallel::copy_if(m_dev_coord_list.begin(), m_dev_coord_list.end(), inBoundaries.begin(), filter);
 
 			//calculate sum of all voxelpositions
 			Vector3ui tmp = Vector3ui::Zero();
-			const Vector3ui sumVector = thrust::reduce(inBoundaries.begin(), inBoundaries.end(), tmp, sumVector3ui());
+			const Vector3ui sumVector = parallel::reduce(inBoundaries.begin(), inBoundaries.end(), tmp, sumVector3ui());
 			//divide by voxel count
 			const Vector3f metricSum = sumVector.template cast<float>() * m_voxel_side_length;
 			const Vector3f coM = Vector3f(metricSum.x() / voxelCount, metricSum.y() / voxelCount, metricSum.z() / voxelCount);
@@ -605,9 +605,9 @@ namespace gpu_voxels
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Write to file " << path << " failed!" << endl);
 				return false;
 			}
-			thrust::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
-			thrust::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
-			thrust::host_vector<Voxel> host_list = m_dev_list;
+			parallel::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
+			parallel::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
+			parallel::host_vector<Voxel> host_list = m_dev_list;
 
 			uint32_t num_voxels = host_list.size();
 			int32_t map_type = m_map_type;
@@ -629,9 +629,9 @@ namespace gpu_voxels
 		bool TemplateVoxelList<Voxel, VoxelIDType>::readFromDisk(const std::string path)
 		{
 			std::lock_guard guard(this->m_mutex);
-			thrust::host_vector<VoxelIDType> host_id_list;
-			thrust::host_vector<Vector3ui> host_coord_list;
-			thrust::host_vector<Voxel> host_list;
+			parallel::host_vector<VoxelIDType> host_id_list;
+			parallel::host_vector<Vector3ui> host_coord_list;
+			parallel::host_vector<Voxel> host_list;
 
 			uint32_t num_voxels;
 			float voxel_side_length;
@@ -697,7 +697,7 @@ namespace gpu_voxels
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				bool operator()(const Voxel& voxel)
 			{
 				return voxel.isOccupied(occupied_threshold);
@@ -715,7 +715,7 @@ namespace gpu_voxels
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Vector3ui operator()(MapVoxelID voxel_id)
 			{
 				return voxelmap::mapToVoxels(base_ptr, dim, base_ptr + voxel_id);
@@ -733,7 +733,7 @@ namespace gpu_voxels
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Voxel& operator()(MapVoxelID voxel_id)
 			{
 				return *(base_ptr + voxel_id);
@@ -750,7 +750,7 @@ namespace gpu_voxels
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				MapVoxelID operator()(const Voxel& voxel) const
 			{
 				return &voxel - base_ptr;
@@ -772,21 +772,21 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// find the overlapping voxels:
-			thrust::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
+			parallel::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
 			collideVoxellists(other, voxel_offset, overlap_stencil);
 
 			keyCoordVoxelZipIterator new_end;
 
 
 			// remove the overlapping voxels:
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
+			new_end = parallel::remove_if(this->getBeginTripleZipIterator(),
 				this->getEndTripleZipIterator(),
 				overlap_stencil.begin(),
-				thrust::identity<bool>());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				parallel::identity<bool>());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			const size_t new_length = parallel::distance(m_dev_id_list.begin(), parallel::get<0>(new_end.get_iterator_tuple()));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			this->resize(new_length);
 
 			return true;
@@ -806,21 +806,21 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// find the overlapping voxels:
-			thrust::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
+			parallel::device_vector<bool> overlap_stencil(m_dev_id_list.size()); // A stencil of the voxels in collision
 			collideVoxellists(other, voxel_offset, overlap_stencil);
 
 			keyCoordVoxelZipIterator new_end;
 
 
 			// remove the overlapping voxels:
-			new_end = thrust::remove_if(this->getBeginTripleZipIterator(),
+			new_end = parallel::remove_if(this->getBeginTripleZipIterator(),
 				this->getEndTripleZipIterator(),
 				overlap_stencil.begin(),
-				thrust::identity<bool>());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				parallel::identity<bool>());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			const size_t new_length = thrust::distance(m_dev_id_list.begin(), thrust::get<0>(new_end.get_iterator_tuple()));
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			const size_t new_length = parallel::distance(m_dev_id_list.begin(), parallel::get<0>(new_end.get_iterator_tuple()));
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			this->resize(new_length);
 
 			return true;
@@ -850,18 +850,18 @@ namespace gpu_voxels
 		template<class Voxel, class VoxelIDType>
 		TemplateVoxelList<Voxel, VoxelIDType>::keyCoordVoxelZipIterator TemplateVoxelList<Voxel, VoxelIDType>::getBeginTripleZipIterator()
 		{
-			return thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.begin(), m_dev_coord_list.begin(), m_dev_list.begin()));
+			return parallel::make_zip_iterator(parallel::make_tuple(m_dev_id_list.begin(), m_dev_coord_list.begin(), m_dev_list.begin()));
 		}
 
 		template<class Voxel, class VoxelIDType>
 		TemplateVoxelList<Voxel, VoxelIDType>::keyCoordVoxelZipIterator TemplateVoxelList<Voxel, VoxelIDType>::getEndTripleZipIterator()
 		{
-			return thrust::make_zip_iterator(thrust::make_tuple(m_dev_id_list.end(), m_dev_coord_list.end(), m_dev_list.end()));
+			return parallel::make_zip_iterator(parallel::make_tuple(m_dev_id_list.end(), m_dev_coord_list.end(), m_dev_list.end()));
 		}
 
 
 		template <class Voxel, class VoxelIDType>
-		void TemplateVoxelList<Voxel, VoxelIDType>::extractCubes(thrust::device_vector<Cube>** output_vector) const
+		void TemplateVoxelList<Voxel, VoxelIDType>::extractCubes(parallel::device_vector<Cube>** output_vector) const
 		{
 			std::lock_guard guard(this->m_mutex);
 
@@ -869,18 +869,18 @@ namespace gpu_voxels
 			{
 				if (*output_vector == nullptr)
 				{
-					*output_vector = new thrust::device_vector<Cube>(m_dev_list.size());
+					*output_vector = new parallel::device_vector<Cube>(m_dev_list.size());
 				}
 				else
 				{
 					(*output_vector)->resize(m_dev_list.size());
 				}
 				// Transform Iterator that takes coordinates and bitvector and writes cubes to output_vector
-				thrust::transform(m_dev_coord_list.begin(), m_dev_coord_list.end(), m_dev_list.begin(), (*output_vector)->begin(),
+				parallel::transform(m_dev_coord_list.begin(), m_dev_coord_list.end(), m_dev_list.begin(), (*output_vector)->begin(),
 					VoxelToCube());
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
-			catch (thrust::system_error& e)
+			catch (parallel::system_error& e)
 			{
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Caught Thrust exception " << e.what() << endl);
 				exit(-1);
@@ -905,19 +905,19 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
 			// get raw pointers to the thrust vectors data:
-			Voxel* dev_voxel_list_ptr = thrust::raw_pointer_cast(m_dev_list.data());
-			VoxelIDType* dev_id_list_ptr = thrust::raw_pointer_cast(m_dev_id_list.data());
+			Voxel* dev_voxel_list_ptr = parallel::raw_pointer_cast(m_dev_list.data());
+			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(getDimensions().x(), num_blocks, threads_per_block);
 			size_t dynamic_shared_mem_size = sizeof(BitVectorVoxel) * cMAX_THREADS_PER_BLOCK;
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, getDimensions().x(),
 				other->getConstDeviceDataPtr(), m_ref_map_dim, collider, offset,
 				m_dev_collision_check_results_counter.data().get());
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			m_collision_check_results_counter = m_dev_collision_check_results_counter;
 			
 			uint32_t number_of_collisions = 0;
@@ -935,9 +935,9 @@ namespace gpu_voxels
 
 			std::lock_guard guard(this->m_mutex);
 
-			thrust::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
-			thrust::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
-			thrust::host_vector<Voxel> host_list = m_dev_list;
+			parallel::host_vector<VoxelIDType> host_id_list = m_dev_id_list;
+			parallel::host_vector<Vector3ui> host_coord_list = m_dev_coord_list;
+			parallel::host_vector<Voxel> host_list = m_dev_list;
 
 			if (with_voxel_content)
 			{
@@ -970,9 +970,9 @@ namespace gpu_voxels
 			std::scoped_lock lock(this->m_mutex, other.m_mutex);
 
 			bool equal = true;
-			equal &= thrust::equal(m_dev_list.begin(), m_dev_list.end(), other.m_dev_list.begin());
-			equal &= thrust::equal(m_dev_id_list.begin(), m_dev_id_list.end(), other.m_dev_id_list.begin());
-			equal &= thrust::equal(m_dev_coord_list.begin(), m_dev_coord_list.end(), other.m_dev_coord_list.begin());
+			equal &= parallel::equal(m_dev_list.begin(), m_dev_list.end(), other.m_dev_list.begin());
+			equal &= parallel::equal(m_dev_id_list.begin(), m_dev_id_list.end(), other.m_dev_id_list.begin());
+			equal &= parallel::equal(m_dev_coord_list.begin(), m_dev_coord_list.end(), other.m_dev_coord_list.begin());
 
 			return equal;
 		}
@@ -988,15 +988,15 @@ namespace gpu_voxels
 
 			std::scoped_lock lock(this->m_mutex, other.m_mutex);
 
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			this->m_dev_id_list.resize(other.m_dev_id_list.size());
 			this->m_dev_coord_list.resize(other.m_dev_coord_list.size());
 			this->m_dev_list.resize(other.m_dev_list.size());
 
-			thrust::copy(other.m_dev_id_list.begin(), other.m_dev_id_list.end(), this->m_dev_id_list.begin());
-			thrust::copy(other.m_dev_coord_list.begin(), other.m_dev_coord_list.end(), this->m_dev_coord_list.begin());
-			thrust::copy(other.m_dev_list.begin(), other.m_dev_list.end(), this->m_dev_list.begin());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::copy(other.m_dev_id_list.begin(), other.m_dev_id_list.end(), this->m_dev_id_list.begin());
+			parallel::copy(other.m_dev_coord_list.begin(), other.m_dev_coord_list.end(), this->m_dev_coord_list.begin());
+			parallel::copy(other.m_dev_list.begin(), other.m_dev_list.end(), this->m_dev_list.begin());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
 
 	} // end of namespace voxellist

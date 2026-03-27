@@ -53,7 +53,7 @@ namespace gpu_voxels {
 
 			void insertCoordinateList(const std::vector<Vector3ui>& coordinates, BitVoxelMeaning voxel_meaning) override;
 
-			void insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
+			void insertCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, BitVoxelMeaning voxel_meaning) override;
 
 			void insertMetaPointCloud(const MetaPointCloud& meta_point_cloud, BitVoxelMeaning voxelType) override;
 
@@ -133,12 +133,12 @@ namespace gpu_voxels {
 				const Vector3i& offset = Vector3i::Zero());
 
 		protected:
-			virtual void insertVoxelData(const thrust::device_vector<Vector3ui>& d_voxels);
+			virtual void insertVoxelData(const parallel::device_vector<Vector3ui>& d_voxels);
 
 		private:
 			Sensor m_sensor;
-			thrust::device_vector<Voxel>* m_d_free_space_voxel2;
-			thrust::device_vector<Voxel>* m_d_object_voxel2;
+			parallel::device_vector<Voxel>* m_d_free_space_voxel2;
+			parallel::device_vector<Voxel>* m_d_object_voxel2;
 
 		};
 

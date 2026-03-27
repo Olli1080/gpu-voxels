@@ -130,7 +130,7 @@ uint32_t NTreeProvider::generateCubes_wo_locking(Cube** ptr)
 
 #ifdef VISUALIZER_OBJECT_DATA_ONLY
   const uint32_t selection_size = 256;
-  HANDLE_CUDA_ERROR(cudaMalloc((void** ) &selection_ptr, selection_size * sizeof(uint8_t)));
+  GVL_HANDLE_ERROR(GVL_MALLOC((void** ) &selection_ptr, selection_size * sizeof(uint8_t)));
   uint8_t selection[selection_size];
   memset(&selection, 1, selection_size * sizeof(uint8_t));
 // disable UNKNOWN and FREE
@@ -141,10 +141,10 @@ uint32_t NTreeProvider::generateCubes_wo_locking(Cube** ptr)
       selection[i] = 0;
     }
   }
-  HANDLE_CUDA_ERROR(
-      cudaMemcpy((void* ) selection_ptr, (void* ) &selection, selection_size * sizeof(uint8_t),
-          cudaMemcpyHostToDevice));
-  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+  GVL_HANDLE_ERROR(
+      GVL_MEMCPY((void* ) selection_ptr, (void* ) &selection, selection_size * sizeof(uint8_t),
+          GVL_MEMCPY_HOST_TO_DEVICE));
+  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 #endif
 
   uint32_t cube_buffer_size;
@@ -153,12 +153,12 @@ uint32_t NTreeProvider::generateCubes_wo_locking(Cube** ptr)
   {
     // extractCubes() allocates memory for the d_cubes_1, if the pointer is NULL
     cube_buffer_size = m_ntree->extractCubes(m_d_cubes_1, selection_ptr, m_min_level);
-    *ptr = thrust::raw_pointer_cast(m_d_cubes_1->data());
+    *ptr = parallel::raw_pointer_cast(m_d_cubes_1->data());
     m_internal_buffer_1 = false;
   }else{
     // extractCubes() allocates memory for the d_cubes_2, if the pointer is NULL
     cube_buffer_size = m_ntree->extractCubes(m_d_cubes_2, selection_ptr, m_min_level);
-    *ptr = thrust::raw_pointer_cast(m_d_cubes_2->data());
+    *ptr = parallel::raw_pointer_cast(m_d_cubes_2->data());
     m_internal_buffer_1 = true;
   }
 
@@ -176,7 +176,7 @@ void NTreeProvider::visualize()
   Cube* ptr = NULL;
   uint32_t num_cubes = generateCubes_wo_locking(&ptr);
 
-  HANDLE_CUDA_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, ptr));
+  GVL_HANDLE_ERROR(cudaIpcGetMemHandle(m_shm_memHandle, ptr));
   *m_shm_numCubes = num_cubes;
   *m_shm_bufferSwapped = true;
   m_mutex.unlock();

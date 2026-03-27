@@ -45,18 +45,18 @@ namespace gpu_voxels {
 			InnerNode* x;
 			InnerNode* y;
 
-			__host__ __device__ Work_Item()
+			GVL_HOST_DEVICE Work_Item()
 			{
 
 			}
 
-			__host__ __device__ Work_Item(InnerNode* x, InnerNode* y)
+			GVL_HOST_DEVICE Work_Item(InnerNode* x, InnerNode* y)
 			{
 				this->x = x;
 				this->y = y;
 			}
 
-			__host__ __device__ Work_Item(bool init)
+			GVL_HOST_DEVICE Work_Item(bool init)
 			{
 				x = nullptr;
 				y = nullptr;
@@ -69,18 +69,18 @@ namespace gpu_voxels {
 			InnerNode* x;
 			InnerNode* y;
 
-			__host__ __device__ Work_Item_Small()
+			GVL_HOST_DEVICE Work_Item_Small()
 			{
 
 			}
 
-			__host__ __device__ Work_Item_Small(InnerNode* x, InnerNode* y)
+			GVL_HOST_DEVICE Work_Item_Small(InnerNode* x, InnerNode* y)
 			{
 				this->x = x;
 				this->y = y;
 			}
 
-			__host__ __device__ Work_Item_Small(bool init)
+			GVL_HOST_DEVICE Work_Item_Small(bool init)
 			{
 				x = nullptr;
 				y = nullptr;
@@ -99,12 +99,12 @@ namespace gpu_voxels {
 			bool a_active;
 			bool b_active;
 
-			__host__ __device__ WorkItemIntersect()
+			GVL_HOST_DEVICE WorkItemIntersect()
 			{
 
 			}
 
-			__host__ __device__ WorkItemIntersect(a_InnerNode* a, b_InnerNode* b, uint8_t level, bool a_active,
+			GVL_HOST_DEVICE WorkItemIntersect(a_InnerNode* a, b_InnerNode* b, uint8_t level, bool a_active,
 				bool b_active)
 			{
 				this->a = a;
@@ -125,11 +125,11 @@ namespace gpu_voxels {
 			OctreeVoxelID nodeId;
 			uint8_t level;
 
-			__host__ __device__ WorkItemExtract()
+			GVL_HOST_DEVICE WorkItemExtract()
 			{
 			}
 
-			__host__ __device__ WorkItemExtract(InnerNode* node, OctreeVoxelID nodeId, uint8_t level)
+			GVL_HOST_DEVICE WorkItemExtract(InnerNode* node, OctreeVoxelID nodeId, uint8_t level)
 			{
 				this->node = node;
 				this->nodeId = nodeId;
@@ -150,11 +150,11 @@ namespace gpu_voxels {
 			bool is_top_down;
 			bool update_subtree;
 
-			__host__ __device__ WorkItemPropagate()
+			GVL_HOST_DEVICE WorkItemPropagate()
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				//WorkItemPropagate(InnerNode* node, InnerNode* parent_node, NodeStatus parent_status, uint8_t level)
 				WorkItemPropagate(InnerNode* const node, InnerNode* const parent_node, const bool is_top_down,
 					const uint8_t level, const bool update_subtree)
@@ -180,12 +180,12 @@ namespace gpu_voxels {
 			bool check_border;
 			bool active;
 
-			__host__ __device__ WorkItemIntersectVoxelMap()
+			GVL_HOST_DEVICE WorkItemIntersectVoxelMap()
 			{
 
 			}
 
-			__host__ __device__ WorkItemIntersectVoxelMap(InnerNode* node, gpu_voxels::Vector3ui coordinates, uint8_t level,
+			GVL_HOST_DEVICE WorkItemIntersectVoxelMap(InnerNode* node, gpu_voxels::Vector3ui coordinates, uint8_t level,
 				bool check_border, bool active)
 			{
 				this->node = node;
@@ -201,19 +201,19 @@ namespace gpu_voxels {
 			void* a;
 			void* b;
 
-			__host__ __device__ Work_Cache()
+			GVL_HOST_DEVICE Work_Cache()
 			{
 			}
 		};
 
-		//__host__ __device__ __forceinline__
+		//GVL_HOST_DEVICE __forceinline__
 		//OctreeVoxelID computeVoxelID(const uint32_t index, const uint32_t size_x, const uint32_t size_y)
 		//{
 		//  gpu_voxels::Vector3ui coordinates = computeCoordinates(index, size_x, size_y);
 		//  return morton_code60(coordinates);
 		//}
 		//
-		//__host__ __device__ __forceinline__
+		//GVL_HOST_DEVICE __forceinline__
 		//OctreeVoxelID computeVoxelID_morton(const uint32_t index, const uint32_t size_x, const uint32_t size_y,
 		//                              const uint32_t log_branching_factor, const uint32_t branching_factor,
 		//                              const gpu_voxels::Vector3ui coordinates_offset)
@@ -248,7 +248,7 @@ namespace gpu_voxels {
 			uint16_t morton_mask;
 			gpu_voxels::Vector3ui next_map_shift;
 
-			//  __host__ __device__ MapProperties()
+			//  GVL_HOST_DEVICE MapProperties()
 			//  {
 			//
 			//  }
@@ -269,18 +269,18 @@ namespace gpu_voxels {
 				return out;
 			}
 
-			__host__ __device__ MapProperties()
+			GVL_HOST_DEVICE MapProperties()
 			{
 
 			}
 
-			//  __host__ __device__ MapProperties() :
+			//  GVL_HOST_DEVICE MapProperties() :
 			//      level(0), log_branching_factor(0), log_branching_factor3(0), morton_mask(0), coordinate_shift(0)
 			//  {
 			//
 			//  }
 
-			__host__ __device__ MapProperties(const uint32_t level)
+			GVL_HOST_DEVICE MapProperties(const uint32_t level)
 			{
 				this->level = level;
 				log_branching_factor = cub::Log2<branching_factor>::VALUE;
@@ -290,7 +290,7 @@ namespace gpu_voxels {
 			}
 
 			//  template<typename T>
-			//  __host__ __device__
+			//  GVL_HOST_DEVICE
 			//  __forceinline__ T* computePtr(uint32_t x, uint32_t y, uint32_t z)
 			//  {
 			//    if (min_x <= x && x <= max_x && min_y <= y && y <= max_y && min_z <= z && z <= max_z)
@@ -300,7 +300,7 @@ namespace gpu_voxels {
 			//      return nullptr;
 			//  }
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computePtr(uint32_t x, uint32_t y, uint32_t z)
 			{
 				assert(min_x <= x && x <= max_x);
@@ -311,7 +311,7 @@ namespace gpu_voxels {
 			}
 
 			//  template<typename T>
-			//  __host__ __device__
+			//  GVL_HOST_DEVICE
 			//  __forceinline__ T* computeOffsetPtr(uint32_t offset_x, uint32_t offset_y, uint32_t offset_z)
 			//  {
 			////    if (offset_x <= size_x && offset_y <= size_y && offset_z <= size_z)
@@ -321,7 +321,7 @@ namespace gpu_voxels {
 			////      return nullptr;
 			//  }
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computeOffsetPtr(uint32_t offset_x, uint32_t offset_y,
 					uint32_t offset_z)
 			{
@@ -330,7 +330,7 @@ namespace gpu_voxels {
 					+ (offset_z >> coordinate_shift) * size_vy * size_vx;
 			}
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computeRelativeMortonOffsetPtr(uint32_t offset_x, uint32_t offset_y,
 					uint32_t offset_z)
 			{
@@ -344,7 +344,7 @@ namespace gpu_voxels {
 						<< log_branching_factor) | morton);
 			}
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computeMortonOffsetPtr(uint32_t offset_x, uint32_t offset_y,
 					uint32_t offset_z)
 			{
@@ -354,19 +354,19 @@ namespace gpu_voxels {
 				return computeRelativeMortonOffsetPtr(offset_x, offset_y, offset_z);
 			}
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computeMortonOffsetPtr(gpu_voxels::Vector3ui offset)
 			{
 				return computeMortonOffsetPtr(offset.x(), offset.y(), offset.z());
 			}
 
-			__host__  __device__
+			GVL_HOST_DEVICE
 				__forceinline__ T* computeRelativeMortonOffsetPtr(gpu_voxels::Vector3ui offset)
 			{
 				return computeRelativeMortonOffsetPtr(offset.x(), offset.y(), offset.z());
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				void align()
 			{
 				const uint32_t alignment = 1 << ((level + 1) * log_branching_factor3);
@@ -403,7 +403,7 @@ namespace gpu_voxels {
 				//    assert((size_z & ((1 << log_bf3) - 1)) == 0);
 			}
 
-			__host__   __device__ MapProperties createNextLevelMap(uint32_t l)
+			GVL_HOST_DEVICE MapProperties createNextLevelMap(uint32_t l)
 			{
 				MapProperties new_map(l);
 
@@ -423,12 +423,12 @@ namespace gpu_voxels {
 				return new_map;
 			}
 
-			__host__   __device__ MapProperties createNextLevelMap()
+			GVL_HOST_DEVICE MapProperties createNextLevelMap()
 			{
 				return createNextLevelMap(level + 1);
 			}
 
-			__host__  __device__  __forceinline__ gpu_voxels::Vector3ui computeNextRelativeCoordinates(uint32_t index) const
+			GVL_HOST_DEVICE  __forceinline__ gpu_voxels::Vector3ui computeNextRelativeCoordinates(uint32_t index) const
 			{
 				index = index >> log_branching_factor;
 				const uint32_t x_y_plane = morton_size_vx * morton_size_vy;
@@ -436,7 +436,7 @@ namespace gpu_voxels {
 				return gpu_voxels::Vector3ui(tmp % morton_size_vx, tmp / morton_size_vx, index / x_y_plane);
 			}
 
-			__host__  __device__  __forceinline__ T* computeNextMapPtr(const uint32_t this_map_index,
+			GVL_HOST_DEVICE  __forceinline__ T* computeNextMapPtr(const uint32_t this_map_index,
 				MapProperties next_map)
 			{
 				gpu_voxels::Vector3ui rel_coordinates = computeNextRelativeCoordinates(this_map_index);
@@ -445,19 +445,19 @@ namespace gpu_voxels {
 				return next_map.computeRelativeMortonOffsetPtr(rel_coordinates);
 			}
 
-			//  __host__ __device__ __forceinline__
+			//  GVL_HOST_DEVICE __forceinline__
 			//  gpu_voxels::Vector3ui trafoRelativeToNextMap(gpu_voxels::Vector3ui rel_coordinates)
 			//  {
 			//    return (rel_coordinates >> log_branching_factor3);
 			//  }
 			//
-			//  __host__ __device__ __forceinline__
+			//  GVL_HOST_DEVICE __forceinline__
 			//  gpu_voxels::Vector3ui trafoRelativeToAbsolute(gpu_voxels::Vector3ui rel_coordinates)
 			//  {
 			//    return (rel_coordinates << (log_branching_factor3 * level));
 			//  }
 
-			__host__  __device__  __forceinline__ OctreeVoxelID computeVoxelID_morton(const uint32_t index)
+			GVL_HOST_DEVICE  __forceinline__ OctreeVoxelID computeVoxelID_morton(const uint32_t index)
 			{
 				const uint32_t m = index & (branching_factor - 1);
 				const gpu_voxels::Vector3ui offset(min_x, min_y, min_z);

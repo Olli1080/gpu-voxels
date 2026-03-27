@@ -407,7 +407,7 @@ int32_t main(int32_t argc, char* argv[])
 	{
 		runVisualisation(&argc, argv);
 	}
-	catch (const thrust::system::system_error& e)
+	catch (const parallel::system::system_error& e)
 	{
 		// TODO: Is this path portable?
 		const std::string shmPath("/dev/shm/");

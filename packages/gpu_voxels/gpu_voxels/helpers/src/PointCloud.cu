@@ -88,7 +88,7 @@ namespace gpu_voxels
             return false;
         }
 
-        return thrust::equal(thrust::device, m_points_dev.begin(), m_points_dev.end(), other.m_points_dev.begin());
+        return parallel::equal(parallel::device, m_points_dev.begin(), m_points_dev.end(), other.m_points_dev.begin());
     }
 
     void PointCloud::add(const PointCloud& cloud)
@@ -102,7 +102,7 @@ namespace gpu_voxels
         m_points_dev.insert(m_points_dev.end(), points.begin(), points.end());
     }
 
-    void PointCloud::add(const thrust::host_vector<Vector3f>& points)
+    void PointCloud::add(const parallel::host_vector<Vector3f>& points)
     {
         m_points_dev.reserve(m_points_dev.size() + points.size());
         m_points_dev.insert(m_points_dev.end(), points.begin(), points.end());
@@ -118,7 +118,7 @@ namespace gpu_voxels
         m_points_dev = { points.begin(), points.end() };
     }
 
-    void PointCloud::update(const thrust::host_vector<Vector3f>& points)
+    void PointCloud::update(const parallel::host_vector<Vector3f>& points)
     {
         m_points_dev = points;
     }
@@ -134,11 +134,11 @@ namespace gpu_voxels
             transformed_cloud.resize(static_cast<uint32_t>(m_points_dev.size()));
         
         // transform the cloud via Kernel.
-        thrust::transform(thrust::cuda::par_nosync, m_points_dev.begin(), m_points_dev.end(), 
+        parallel::transform(parallel::cuda::par_nosync, m_points_dev.begin(), m_points_dev.end(), 
             transformed_cloud.getPointsDevice().begin(), KernelTransform(transform));
-        CHECK_CUDA_ERROR();
+        GVL_CHECK_ERROR();
 
-        HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+        GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     }
 
     void PointCloud::scaleSelf(const Vector3f& scaling)
@@ -152,26 +152,26 @@ namespace gpu_voxels
             scaled_cloud.resize(static_cast<uint32_t>(m_points_dev.size()));
 
         // transform the cloud via Kernel.
-        thrust::transform(thrust::cuda::par_nosync, m_points_dev.begin(), m_points_dev.end(),
+        parallel::transform(parallel::cuda::par_nosync, m_points_dev.begin(), m_points_dev.end(),
             scaled_cloud.getPointsDevice().begin(), KernelScale(scaling));
-        CHECK_CUDA_ERROR();
+        GVL_CHECK_ERROR();
 
-        HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+        GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
     }
 
-    thrust::device_vector<Vector3f>& PointCloud::getPointsDevice()
+    parallel::device_vector<Vector3f>& PointCloud::getPointsDevice()
     {
         return m_points_dev;
     }
 
-    const thrust::device_vector<Vector3f>& PointCloud::getPointsDevice() const
+    const parallel::device_vector<Vector3f>& PointCloud::getPointsDevice() const
     {
         return m_points_dev;
     }
 
-    thrust::host_vector<Vector3f> PointCloud::getPoints() const
+    parallel::host_vector<Vector3f> PointCloud::getPoints() const
     {
-        thrust::host_vector<Vector3f> out = m_points_dev;
+        parallel::host_vector<Vector3f> out = m_points_dev;
         return out;
     }
 

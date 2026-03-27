@@ -59,8 +59,8 @@ namespace gpu_voxels {
 
 		private:
 
-			// thrust::device_vector<CountingVoxel> m_dev_colliding_bits_result_list;
-			// thrust::host_vector<CountingVoxel> m_colliding_bits_result_list;
+			// parallel::device_vector<CountingVoxel> m_dev_colliding_bits_result_list;
+			// parallel::host_vector<CountingVoxel> m_colliding_bits_result_list;
 			// CountingVoxel* m_dev_bitmask;
 		};
 

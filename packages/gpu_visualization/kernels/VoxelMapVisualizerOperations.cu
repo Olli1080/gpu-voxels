@@ -53,7 +53,7 @@ namespace gpu_voxels {
 		 * @param draw_voxel_type: if 0 the corresponding type at this index will not be drawn.
 		 * @param prefixes: stores the index of the VBO segment for each voxel type.
 		 */
-		__global__ void fill_vbo_without_precounting(ProbabilisticVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(ProbabilisticVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, Probability occupancy_threshold, float4* vbo,
 			uint32_t* vbo_offsets, uint32_t* vbo_limits,
@@ -130,7 +130,7 @@ namespace gpu_voxels {
 		 * @param draw_voxel_type: if 0 the corresponding type at this index will not be drawn.
 		 * @param prefixes: stores the index of the VBO segment for each voxel type.
 		 */
-		__global__ void fill_vbo_without_precounting(const BitVectorVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(const BitVectorVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, uint8_t occupancy_threshold, float4* vbo,
 			const uint32_t* vbo_offsets, const uint32_t* vbo_limits,
@@ -218,7 +218,7 @@ namespace gpu_voxels {
 		 * @param draw_voxel_type: if 0 the corresponding type at this index will not be drawn.
 		 * @param prefixes: stores the index of the VBO segment for each voxel type.
 		 */
-		__global__ void fill_vbo_without_precounting(DistanceVoxel* voxelMap, Vector3ui dim_voxel_map,
+		GVL_GLOBAL void fill_vbo_without_precounting(DistanceVoxel* voxelMap, Vector3ui dim_voxel_map,
 			Vector3ui dim_super_voxel, Vector3ui start_voxel,
 			Vector3ui end_voxel, visualizer_distance_drawmodes distance_drawmode, float4* vbo,
 			uint32_t* vbo_offsets, uint32_t* vbo_limits,
@@ -520,7 +520,7 @@ namespace gpu_voxels {
 		 * @param draw_voxel_type: if 0 the corresponding type at this index will not be drawn.
 		 * @param prefixes: stores the index of the VBO segment for each voxel type.
 		 */
-		__global__ void fill_vbo_with_cubelist(Cube* cubes, uint32_t size, float4* vbo, uint32_t* vbo_offsets,
+		GVL_GLOBAL void fill_vbo_with_cubelist(Cube* cubes, uint32_t size, float4* vbo, uint32_t* vbo_offsets,
 			uint32_t* write_index, uint8_t* draw_voxel_type, uint8_t* prefixes)
 		{
 			//use Grid-Stride Loops
@@ -566,7 +566,7 @@ namespace gpu_voxels {
 		 * @param draw_voxel_type: if 0 the corresponding type at this index will not be drawn.
 		 * @param prefixes: stores the index of the VBO segment for each voxel type.
 		 */
-		__global__ void calculate_cubes_per_type_list(const Cube* cubes, uint32_t size, uint32_t* cubes_per_type, const uint8_t* draw_voxel_type, const uint8_t* prefixes)
+		GVL_GLOBAL void calculate_cubes_per_type_list(const Cube* cubes, uint32_t size, uint32_t* cubes_per_type, const uint8_t* draw_voxel_type, const uint8_t* prefixes)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < size; i += blockDim.x * gridDim.x)
 			{
@@ -605,7 +605,7 @@ namespace gpu_voxels {
 		 * @param found_cube: found voxel will be written into this.
 		 * @param found_flag: True if found, not modified if not found. So set to false before calling.
 		 */
-		__global__ void find_cubes_by_coordinates(const Cube* cubes, size_t num_cubes, Vector3ui coords, Cube* found_cube, bool* found_flag)
+		GVL_GLOBAL void find_cubes_by_coordinates(const Cube* cubes, size_t num_cubes, Vector3ui coords, Cube* found_cube, bool* found_flag)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < num_cubes; i += blockDim.x * gridDim.x)
 			{

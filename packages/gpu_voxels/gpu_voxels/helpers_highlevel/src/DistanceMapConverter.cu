@@ -44,7 +44,7 @@ namespace gpu_voxels
     {
         using namespace voxellist;
 
-        __global__
+        GVL_GLOBAL
             void kernelConvertToBitVectorVoxellist(const free_space_t* free_space_list, const MapVoxelID* voxel_id_list, size_t num_elemets, const Vector3ui dims,
                 MapVoxelID* ret_voxel_id, Vector3ui* ret_coords, BitVectorVoxel* ret_voxel)
         {
@@ -99,25 +99,25 @@ namespace gpu_voxels
          * More than 255 Units free: All SV-IDs set + Undefined Bit set.
          *
          */
-        struct transform_to_bitvoxel : thrust::tuple<MapVoxelID, Vector3ui, BitVectorVoxel>
+        struct transform_to_bitvoxel : parallel::tuple<MapVoxelID, Vector3ui, BitVectorVoxel>
         {
-            typedef thrust::tuple<MapVoxelID, Vector3ui, BitVectorVoxel> keyCoordVoxelTriple;
-            typedef thrust::tuple<free_space_t, MapVoxelID > dist_tuple_t;
+            typedef parallel::tuple<MapVoxelID, Vector3ui, BitVectorVoxel> keyCoordVoxelTriple;
+            typedef parallel::tuple<free_space_t, MapVoxelID > dist_tuple_t;
 
             Vector3ui dims;
 
 
-            __host__ __device__
+            GVL_HOST_DEVICE
                 transform_to_bitvoxel(Vector3ui dims_) :
                 dims(dims_) {}
 
-            __host__ __device__
+            GVL_HOST_DEVICE
                 keyCoordVoxelTriple operator()(const dist_tuple_t& tuple) const {
                 keyCoordVoxelTriple ret_triple;
 
                 // get pos from zipiterator/tuple
-                uint16_t free_space = thrust::get<0>(tuple); // cast to larger range, to prevent overflow
-                MapVoxelID linear_id = thrust::get<1>(tuple);
+                uint16_t free_space = parallel::get<0>(tuple); // cast to larger range, to prevent overflow
+                MapVoxelID linear_id = parallel::get<1>(tuple);
 
                 // pos is the position of the voxel dv
                 Vector3ui pos;
@@ -144,9 +144,9 @@ namespace gpu_voxels
                     ret_voxel.bitVector().setBit(sv_id);
                 }
 
-                thrust::get<0>(ret_triple) = linear_id;
-                thrust::get<1>(ret_triple) = pos;
-                thrust::get<2>(ret_triple) = ret_voxel;
+                parallel::get<0>(ret_triple) = linear_id;
+                parallel::get<1>(ret_triple) = pos;
+                parallel::get<2>(ret_triple) = ret_voxel;
 
                 return ret_triple;
             }
@@ -157,34 +157,34 @@ namespace gpu_voxels
             BitVectorVoxelList& result) {
 
             // Step 1: Create an Vector containing the free-space distances of all voxels:
-            thrust::device_vector<free_space_t> distances(dist_map.getVoxelMapSize());
-            dist_map.extract_distances(thrust::raw_pointer_cast(distances.data()), 0);
+            parallel::device_vector<free_space_t> distances(dist_map.getVoxelMapSize());
+            dist_map.extract_distances(parallel::raw_pointer_cast(distances.data()), 0);
             // Step 2: Count distances that match criteria and allocate a Bitvecor-Voxellist of that length
-            size_t num_matching_voxels = thrust::count_if(distances.begin(), distances.end(), in_range(min_dist, max_dist));
+            size_t num_matching_voxels = parallel::count_if(distances.begin(), distances.end(), in_range(min_dist, max_dist));
             result.resize(num_matching_voxels);
-            thrust::device_vector<free_space_t> matching_distances_dists(num_matching_voxels);
-            thrust::device_vector<MapVoxelID> matching_distances_ids(num_matching_voxels);
+            parallel::device_vector<free_space_t> matching_distances_dists(num_matching_voxels);
+            parallel::device_vector<MapVoxelID> matching_distances_ids(num_matching_voxels);
             // Step 3: Copy matching Distance voxels into two new vectors
-            thrust::counting_iterator<MapVoxelID> count_start(0);
-            thrust::copy_if(thrust::make_zip_iterator(thrust::make_tuple(distances.begin(), count_start)),
-                thrust::make_zip_iterator(thrust::make_tuple(distances.end(), count_start + dist_map.getVoxelMapSize())),
-                thrust::make_zip_iterator(thrust::make_tuple(matching_distances_dists.begin(), matching_distances_ids.begin())),
+            parallel::counting_iterator<MapVoxelID> count_start(0);
+            parallel::copy_if(parallel::make_zip_iterator(parallel::make_tuple(distances.begin(), count_start)),
+                parallel::make_zip_iterator(parallel::make_tuple(distances.end(), count_start + dist_map.getVoxelMapSize())),
+                parallel::make_zip_iterator(parallel::make_tuple(matching_distances_dists.begin(), matching_distances_ids.begin())),
                 in_range_tuple(min_dist, max_dist));
             // Step 4: Transform distances and IDs into a Voxellist
-            thrust::transform(thrust::make_zip_iterator(thrust::make_tuple(matching_distances_dists.begin(), matching_distances_ids.begin())),
-                thrust::make_zip_iterator(thrust::make_tuple(matching_distances_dists.end(), matching_distances_ids.end())),
+            parallel::transform(parallel::make_zip_iterator(parallel::make_tuple(matching_distances_dists.begin(), matching_distances_ids.begin())),
+                parallel::make_zip_iterator(parallel::make_tuple(matching_distances_dists.end(), matching_distances_ids.end())),
                 result.getBeginTripleZipIterator(),
                 transform_to_bitvoxel(dist_map.getDimensions()));
 
             //  uint32_t num_blocks, threads_per_block;
             //  computeLinearLoad(num_matching_voxels, &num_blocks, &threads_per_block);
-            //  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-            //  kernelConvertToBitVectorVoxellist<<<num_blocks, threads_per_block>>>(thrust::raw_pointer_cast(matching_distances_dists.data()),
-            //                                                                       thrust::raw_pointer_cast(matching_distances_ids.data()),
+            //  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+            //  kernelConvertToBitVectorVoxellist<<<num_blocks, threads_per_block>>>(parallel::raw_pointer_cast(matching_distances_dists.data()),
+            //                                                                       parallel::raw_pointer_cast(matching_distances_ids.data()),
             //                                                                       num_matching_voxels, dist_map.getDimensions(),
             //                                                                       result.getDeviceIdPtr(), result.getDeviceCoordPtr(), result.getDeviceDataPtr());
-            //  CHECK_CUDA_ERROR();
-            HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+            //  GVL_CHECK_ERROR();
+            GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
             return num_matching_voxels;
         }

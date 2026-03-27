@@ -41,11 +41,11 @@ bool testAndInitDevice()
 // The test requires an architecture SM35 or greater (CDP capable).
 
   int device_count = 0, device = -1;
-  HANDLE_CUDA_ERROR(cudaGetDeviceCount(&device_count));
+  GVL_HANDLE_ERROR(cudaGetDeviceCount(&device_count));
   for (int i = 0; i < device_count; ++i)
   {
     cudaDeviceProp properties;
-    HANDLE_CUDA_ERROR(cudaGetDeviceProperties(&properties, i));
+    GVL_HANDLE_ERROR(cudaGetDeviceProperties(&properties, i));
     if (properties.major > 2 || (properties.major == 2 && properties.minor >= 0))
     {
       device = i;
@@ -60,16 +60,16 @@ bool testAndInitDevice()
         << std::endl;
     return false;
   }
-  cudaSetDevice(device);
-  HANDLE_CUDA_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
-//HANDLE_CUDA_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferShared));
+  GVL_SET_DEVICE(device);
+  GVL_HANDLE_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+//GVL_HANDLE_ERROR(cudaDeviceSetCacheConfig(cudaFuncCachePreferShared));
   return true;
 }
 
-thrust::host_vector<gpu_voxels::Vector3ui> linearPoints(voxel_count num_points, OctreeVoxelID maxValue)
+parallel::host_vector<gpu_voxels::Vector3ui> linearPoints(voxel_count num_points, OctreeVoxelID maxValue)
 {
   uint32_t max_coordinate = (uint32_t) ceil(pow(maxValue, 1.0 / 3));
-  thrust::host_vector<gpu_voxels::Vector3ui> points(num_points);
+  parallel::host_vector<gpu_voxels::Vector3ui> points(num_points);
   for (voxel_count i = 0; i < num_points; ++i)
   {
     points[i].x = (uint32_t) (i % max_coordinate);

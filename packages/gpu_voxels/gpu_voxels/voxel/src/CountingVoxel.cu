@@ -25,43 +25,43 @@
 
 namespace gpu_voxels {
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	CountingVoxel::CountingVoxel()
 		: m_count(0)
 	{
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	bool CountingVoxel::isOccupied(uint8_t occ_threshold) const
 	{
 		return m_count >= occ_threshold;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	int8_t CountingVoxel::getCount() const
 	{
 		return m_count;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	int8_t& CountingVoxel::count()
 	{
 		return m_count;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	const int8_t& CountingVoxel::count() const
 	{
 		return m_count;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	void CountingVoxel::insert(const uint32_t voxel_meaning)
 	{
 		m_count++;
 	}
 
-	__host__ __device__
+	GVL_HOST_DEVICE
 	CountingVoxel CountingVoxel::reduce(const CountingVoxel voxel, const CountingVoxel other_voxel)
 	{
 		CountingVoxel res = voxel;

@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
       gvl->visualizePrimitivesArray("measurementPoints");
 
       // For the measurement points we query the clearance to the closest obstacle:
-      thrust::device_ptr<DistanceVoxel> dvm_thrust_ptr(pbaDistanceVoxmap->getDeviceDataPtr());
+      parallel::device_ptr<DistanceVoxel> dvm_thrust_ptr(pbaDistanceVoxmap->getDeviceDataPtr());
       for(size_t i = 0; i < measurement_points.size(); i++)
       {
         int id = voxelmap::getVoxelIndexSigned(map_dimensions, measurement_points[i]);
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
         //get DistanceVoxel with closest obstacle information
         // DistanceVoxel dv = dvm_thrust_ptr[id]; // worked before Cuda9
         DistanceVoxel dv; //get DistanceVoxel with closest obstacle information
-        cudaMemcpy(&dv, (dvm_thrust_ptr+id).get(), sizeof(DistanceVoxel), cudaMemcpyDeviceToHost);
+        GVL_MEMCPY(&dv, (dvm_thrust_ptr+id).get(), sizeof(DistanceVoxel), GVL_MEMCPY_DEVICE_TO_HOST);
 
         float metric_free_space = sqrtf(dv.squaredObstacleDistance(measurement_points[i])) * voxel_side_length;
         LOGGING_INFO(Gpu_voxels, "Obstacle @ " << dv.getObstacle() << " Voxel @ " << measurement_points[i] << " has a clearance of " << metric_free_space << "m." << endl);

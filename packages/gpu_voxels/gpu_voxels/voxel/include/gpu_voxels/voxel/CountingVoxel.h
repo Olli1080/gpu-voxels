@@ -38,30 +38,30 @@ namespace gpu_voxels {
 		/**
 		 * @brief CountingVoxel
 		 */
-		__host__ __device__
+		GVL_HOST_DEVICE
 		CountingVoxel();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] bool isOccupied(uint8_t occ_threshold) const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] int8_t getCount() const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		int8_t& count();
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		[[nodiscard]] const int8_t& count() const;
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		void insert(const uint32_t voxel_meaning);
 
-		__host__ __device__
+		GVL_HOST_DEVICE
 		static CountingVoxel reduce(const CountingVoxel voxel, const CountingVoxel other_voxel);
 
 		struct reduce_op
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			CountingVoxel operator()(const CountingVoxel& a, const CountingVoxel& b) const
 			{
 				CountingVoxel tmp = a;
@@ -71,14 +71,14 @@ namespace gpu_voxels {
 		};
 
 		template <typename T>
-		__host__
+		GVL_HOST
 		friend T& operator<<(T& os, const CountingVoxel& dt)
 		{
 			os << static_cast<int>(dt.m_count);
 			return os;
 		}
 
-		__host__
+		GVL_HOST
 		friend std::istream& operator>>(std::istream& in, CountingVoxel& dt)
 		{
 			uint8_t tmp;

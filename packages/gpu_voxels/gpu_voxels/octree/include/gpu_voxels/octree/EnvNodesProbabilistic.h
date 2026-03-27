@@ -48,27 +48,27 @@ namespace gpu_voxels {
 			class BasicDataProb : public BasicData
 			{
 			public:
-				__host__ __device__
+				GVL_HOST_DEVICE
 					BasicDataProb() : BasicData()
 				{
 
 				}
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					BasicDataProb(const NodeStatus status, const NodeFlags flags, const Probability occupancy) :
 					BasicData(status, flags)
 				{
 					m_occupancy = occupancy;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::ostream& operator<<(std::ostream& os, const BasicDataProb& dt)
 				{
 					os << dt.m_occupancy << " " << BasicData(dt);
 					return os;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::istream& operator>>(std::istream& in, BasicDataProb& dt)
 				{
 					in >> dt.m_occupancy;
@@ -88,13 +88,13 @@ namespace gpu_voxels {
 			public:
 				typedef Environment::BasicDataProb BasicData;
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					NodeDataProb()
 				{
 
 				}
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					NodeDataProb(const OctreeVoxelID voxelID, const voxel_count level, const BasicData basic_data)
 				{
 					m_voxel_id = voxelID;
@@ -102,14 +102,14 @@ namespace gpu_voxels {
 					m_basic_data = basic_data;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::ostream& operator<<(std::ostream& os, const NodeDataProb& dt)
 				{
 					os << dt.m_voxel_id << " " << dt.m_level << " " << dt.m_basic_data;
 					return os;
 				}
 
-				__host__
+				GVL_HOST
 					friend std::istream& operator>>(std::istream& in, NodeDataProb& dt)
 				{
 					in >> dt.m_voxel_id;
@@ -142,19 +142,19 @@ namespace gpu_voxels {
 					Type value;
 				} RayCastType;
 
-				__device__ __host__
+				GVL_HOST_DEVICE
 					NodeProb() :
 					m_occupancy(0)
 				{
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					Probability getOccupancy() const
 				{
 					return m_occupancy;
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					void setOccupancy(const Probability occupancy)
 				{
 					m_occupancy = occupancy;
@@ -181,14 +181,14 @@ namespace gpu_voxels {
 				//Stack dump:
 				//0.      Running pass 'NVPTX DAG->DAG Pattern Instruction Selection' on function '@_ZN15icl_environment3gpu5NTree17kernel_clearNodesINS1_11Environment9InnerNodeEEEvmPT_j'
 				//Aborted (core dumped)
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					LeafNodeProb()
 				{
 				}
 
 #include "EnvNodesProbCommon.h"
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					NodeData extractData(const OctreeVoxelID voxel_id, const voxel_count level) const
 				{
 					return NodeData(voxel_id, level, NodeData::BasicData(m_status, 0, m_occupancy));
@@ -206,12 +206,12 @@ namespace gpu_voxels {
 				typedef NodeProb::RayCastType RayCastType;
 
 				// default constructor needed
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					InnerNodeProb()
 				{
 				}
 
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					NodeData extractData(const OctreeVoxelID voxel_id, const voxel_count level) const
 				{
 					return NodeData(voxel_id, level, NodeData::BasicData(m_status, m_flags, m_occupancy));
@@ -220,7 +220,7 @@ namespace gpu_voxels {
 #include "EnvNodesProbCommon.h"
 
 				//TODO remove/move out of Node
-				__device__ __host__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 					bool isInConflict(const InnerNodeProb env_InnerNode) const
 				{
 					return isOccupied() & env_InnerNode.isOccupied();

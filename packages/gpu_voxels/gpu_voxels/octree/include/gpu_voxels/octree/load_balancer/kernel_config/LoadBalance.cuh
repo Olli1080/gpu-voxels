@@ -36,7 +36,7 @@ namespace gpu_voxels
 		namespace LoadBalancer
 		{
 			// used to avoid "non-empty default constructor" problems in shared memory arrays
-			extern __shared__ int dynamic_shared_mem[];
+			extern GVL_SHARED int dynamic_shared_mem[];
 
 			/**
 			 * @brief First step of balancing the work stacks. For each stack the work elements are counted by level.
@@ -47,11 +47,11 @@ namespace gpu_voxels
 			 * @param inter_stack_offsets Offsets calculated for each stack and level.
 			 */
 			template<class WorkItem, std::size_t level_count>
-			__global__ void kernelCountElements(WorkItem* work_stacks, uint32_t* work_stacks_item_count,
+			GVL_GLOBAL void kernelCountElements(WorkItem* work_stacks, uint32_t* work_stacks_item_count,
 				const uint32_t stack_size_per_task, uint32_t* item_sums_per_level,
 				uint32_t* inter_stack_offsets)
 			{
-				__shared__ uint32_t shared_task_sum_array[level_count];
+				GVL_SHARED uint32_t shared_task_sum_array[level_count];
 
 				const uint32_t task_id = blockIdx.x;
 				const uint32_t thread_id = threadIdx.x;
@@ -69,7 +69,7 @@ namespace gpu_voxels
 #pragma unroll
 				for (uint32_t i = thread_id; i < level_count; i += num_threads)
 					shared_task_sum_array[i] = 0;
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// count elements per level
 				for (uint32_t i = thread_id; i < num_elements; i += num_threads)
@@ -86,14 +86,14 @@ namespace gpu_voxels
 					}
 					atomicAdd(&shared_task_sum_array[my_work_stack[i].level], 1);
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// store each level consecutive in memory to be able to use the thrust scan without a custom iterator
 				// start with highest level (reverse level order)
 #pragma unroll
 				for (uint32_t i = thread_id; i < level_count; i += num_threads)
 					item_sums_per_level[gridDim.x * (level_count - 1 - i) + task_id] = shared_task_sum_array[i];
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// stack local prefix sum from right (starting at highest level)
 				if (thread_id == 0)
@@ -107,19 +107,19 @@ namespace gpu_voxels
 						sum += tmp;
 					}
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// store local prefix sum
 #pragma unroll
 				for (uint32_t i = thread_id; i < level_count; i += num_threads)
 					inter_stack_offsets[task_id * level_count + i] = shared_task_sum_array[i];
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				//  // compute a stack local prefix sum, so each threads can compute it's inter level offset to move the data
 				//  // Specialize BlockScan for 128 threads on type int
 				//  typedef cub::BlockScan<uint32_t, TRAVERSAL_THREADS> BlockScan;
 				//  // Allocate shared memory for BlockScan
-				//  __shared__ typename BlockScan::TempStorage temp_storage;
+				//  GVL_SHARED typename BlockScan::TempStorage temp_storage;
 				//
 				//  // Collectively compute the block-wide exclusive prefix sum
 				//  BlockScan(temp_storage).ExclusiveSum(shared_sumArray[threadId],
@@ -137,11 +137,11 @@ namespace gpu_voxels
 			 * @param stack_size_per_task
 			 */
 			template<class WorkItem, std::size_t level_count>
-			__global__ void kernelMoveElements(WorkItem* work_stacks_in, WorkItem* work_stacks_out,
+			GVL_GLOBAL void kernelMoveElements(WorkItem* work_stacks_in, WorkItem* work_stacks_out,
 				uint32_t* work_stacks_item_count, uint32_t* item_sums_per_level,
 				uint32_t* inter_stack_offsets, uint32_t* num_total_work_items, const uint32_t stack_size_per_task)
 			{
-				__shared__ uint32_t shared_offsets[level_count * 2];
+				GVL_SHARED uint32_t shared_offsets[level_count * 2];
 
 				const uint32_t task_id = blockIdx.x;
 				const uint32_t thread_id = threadIdx.x;
@@ -158,7 +158,7 @@ namespace gpu_voxels
 #pragma unroll
 				for (uint32_t i = thread_id; i < level_count; i += num_threads)
 					shared_offsets[level_count + i] = inter_stack_offsets[task_id * level_count + i];
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				// move elements
 				for (uint32_t i = thread_id; i < num_elements; i += num_threads)
@@ -198,10 +198,10 @@ namespace gpu_voxels
 				uint32_t* sums_per_level = nullptr;
 				uint32_t* inter_stack_offsets = nullptr;
 				uint32_t* dev_num_total_work_items = nullptr;
-				HANDLE_CUDA_ERROR(cudaMalloc(&inter_stack_offsets, sizeof(uint32_t) * level_count * num_tasks));
-				HANDLE_CUDA_ERROR(cudaMalloc(&sums_per_level, sizeof(uint32_t) * (num_tasks * level_count + 1)));
-				HANDLE_CUDA_ERROR(cudaMalloc(&dev_num_total_work_items, sizeof(uint32_t)));
-				HANDLE_CUDA_ERROR(cudaMemset(&sums_per_level[num_tasks * level_count], 0, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&inter_stack_offsets, sizeof(uint32_t) * level_count * num_tasks));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&sums_per_level, sizeof(uint32_t) * (num_tasks * level_count + 1)));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&dev_num_total_work_items, sizeof(uint32_t)));
+				GVL_HANDLE_ERROR(cudaMemset(&sums_per_level[num_tasks * level_count], 0, sizeof(uint32_t)));
 
 				time1 = getCPUTime();
 				kernelCountElements<WorkItem, level_count> << <num_tasks, num_threads >> > (dev_work_stacks_in,
@@ -209,20 +209,20 @@ namespace gpu_voxels
 					stack_size_per_task,
 					sums_per_level,
 					inter_stack_offsets);
-				CHECK_CUDA_ERROR();
+				GVL_CHECK_ERROR();
 
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				//printf("kernelCountElements: %f ms\n", timeDiff(time1, getCPUTime()));
 
 				time1 = getCPUTime();
 
 				// make prefix sum for each sumArray entry since the thrust function
 				// can't be used to reduce a variable sized array as element
-				thrust::exclusive_scan(thrust::device_ptr<uint32_t>(sums_per_level),
-					thrust::device_ptr<uint32_t>(sums_per_level + num_tasks * level_count + 1),
-					thrust::device_ptr<uint32_t>(sums_per_level));
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
-				//printf("thrust::exclusive_scan: %f ms\n", timeDiff(time1, getCPUTime()));
+				parallel::exclusive_scan(parallel::device_ptr<uint32_t>(sums_per_level),
+					parallel::device_ptr<uint32_t>(sums_per_level + num_tasks * level_count + 1),
+					parallel::device_ptr<uint32_t>(sums_per_level));
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
+				//printf("parallel::exclusive_scan: %f ms\n", timeDiff(time1, getCPUTime()));
 
 				time1 = getCPUTime();
 				// distribute data into new stacks
@@ -234,17 +234,17 @@ namespace gpu_voxels
 					dev_num_total_work_items,
 					stack_size_per_task);
 
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 				//printf("kernelMoveElements: %f ms\n", timeDiff(time1, getCPUTime()));
 
-				HANDLE_CUDA_ERROR(
-					cudaMemcpy(host_num_total_work_items, dev_num_total_work_items, sizeof(uint32_t),
-						cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(
+					GVL_MEMCPY(host_num_total_work_items, dev_num_total_work_items, sizeof(uint32_t),
+						GVL_MEMCPY_DEVICE_TO_HOST));
 
 				time1 = getCPUTime();
-				HANDLE_CUDA_ERROR(cudaFree(sums_per_level));
-				HANDLE_CUDA_ERROR(cudaFree(inter_stack_offsets));
-				HANDLE_CUDA_ERROR(cudaFree(dev_num_total_work_items));
+				GVL_HANDLE_ERROR(GVL_FREE(sums_per_level));
+				GVL_HANDLE_ERROR(GVL_FREE(inter_stack_offsets));
+				GVL_HANDLE_ERROR(GVL_FREE(dev_num_total_work_items));
 			}
 
 			// #########################################################################################
@@ -331,7 +331,7 @@ namespace gpu_voxels
 					 * @param p_stack_size_per_task
 					 * @param p_stack_items_threshold
 					 */
-					__host__ __device__
+					GVL_HOST_DEVICE
 						AbstractConstConfig(const dim3 p_grid_dim,
 							const dim3 p_block_dim,
 							const dim3 p_block_ids,
@@ -366,7 +366,7 @@ namespace gpu_voxels
 					uint32_t* tasks_idle_count;
 					const uint32_t idle_count_threshold;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						AbstractKernelParameters(WorkItem* p_work_stacks, uint32_t* p_work_stacks_item_count,
 							const uint32_t p_stack_size_per_task, uint32_t* p_tasks_idle_count,
 							const uint32_t p_idle_count_threshold) :
@@ -383,7 +383,7 @@ namespace gpu_voxels
 					 * @brief AbstractKernelParameters copy constructor.
 					 * @param params
 					 */
-					__host__ __device__
+					GVL_HOST_DEVICE
 						AbstractKernelParameters(const AbstractKernelParameters& params) :
 						work_stacks(params.work_stacks),
 						work_stacks_item_count(params.work_stacks_item_count),
@@ -429,7 +429,7 @@ namespace gpu_voxels
 				 * @param constants
 				 * @param kernel_params
 				 */
-				__device__
+				GVL_DEVICE
 					static void doLoadBalancedWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params);
 
@@ -441,7 +441,7 @@ namespace gpu_voxels
 				 * @param constants
 				 * @param kernel_params
 				 */
-				__device__
+				GVL_DEVICE
 					static void doReductionWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params);
 
@@ -454,7 +454,7 @@ namespace gpu_voxels
 				 * @param kernel_params
 				 * @return
 				 */
-				__device__
+				GVL_DEVICE
 					static bool abortLoop(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
@@ -466,7 +466,7 @@ namespace gpu_voxels
 					}
 					else
 					{
-						const bool idle_threshold_reached = __syncthreads_or(
+						const bool idle_threshold_reached = GVL_SYNCTHREADS_or(
 							constants.thread_id == 0 && (*kernel_params.tasks_idle_count >= kernel_params.idle_count_threshold));
 						return idle_threshold_reached;
 					}
@@ -479,21 +479,21 @@ namespace gpu_voxels
 			 * @param kernel_params The necessary data that is going to be processed.
 			 */
 			template<class LBKernelConfig>
-			__global__
+			GVL_GLOBAL
 				void kernelLBWorkConcept(typename LBKernelConfig::KernelParams kernel_params)
 			{
 				typename LBKernelConfig::SharedMem* const shared_mem = (typename LBKernelConfig::SharedMem*)dynamic_shared_mem;  //size: sizeof(typename LBKernelConfig::SharedMem)
 				volatile typename LBKernelConfig::SharedVolatileMem* const shared_volatile_mem = (volatile typename LBKernelConfig::SharedVolatileMem*) & shared_mem[1];  //size: sizeof(typename LBKernelConfig::SharedVolatileMem);
 				typename LBKernelConfig::Variables variables;
 				const typename LBKernelConfig::Constants constants(gridDim, blockDim, blockIdx, threadIdx, kernel_params.stack_size_per_task);
-				__syncthreads(); // make sure race conditions for initializing the shared memory doen't lead to data inconsistency
+				GVL_SYNCTHREADS(); // make sure race conditions for initializing the shared memory doen't lead to data inconsistency
 
 				if (constants.thread_id == 0)
 				{
 					shared_mem->num_stack_work_items = kernel_params.work_stacks_item_count[constants.block_id];
 					shared_mem->my_work_stack = &kernel_params.work_stacks[constants.block_id * kernel_params.stack_size_per_task];
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 
 				assert(shared_mem->num_stack_work_items < constants.stack_items_threshold);
 
@@ -508,12 +508,12 @@ namespace gpu_voxels
 					// every thread grabs some work
 					blockCopy(shared_mem->work_item_cache, &shared_mem->my_work_stack[shared_mem->num_stack_work_items - variables.num_work_items],
 						variables.num_work_items * sizeof(LBKernelConfig::WorkItem), constants.thread_id, LBKernelConfig::NUM_THREADS);
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					// decrease num work items in stack by the grabbed work
 					if (constants.thread_id == 0)
 						shared_mem->num_stack_work_items -= variables.num_work_items;
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					LBKernelConfig::doLoadBalancedWork(shared_mem, shared_volatile_mem, variables, constants, kernel_params);
 				}

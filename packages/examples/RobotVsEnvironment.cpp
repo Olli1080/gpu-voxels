@@ -445,7 +445,7 @@ int main(int argc, char* argv[])
         const auto robotMap = gvl->getMap(robot_id)->as<voxelmap::BitVectorVoxelMap>();
         //const auto tmp = robotMap->as<voxelmap::BitVectorVoxelMap>();
 
-        //thrust::host_vector<BitVoxel<BIT_VECTOR_LENGTH>> buffer = dev_data;
+        //parallel::host_vector<BitVoxel<BIT_VECTOR_LENGTH>> buffer = dev_data;
 
         const auto dim = robotMap->getDimensions();
         auto sl = robotMap->getVoxelSideLength();

@@ -57,13 +57,13 @@ namespace gpu_voxels {
 			uint8_t m_level;
 			LeafNode m_node_data; //InnerNodes are converted to LeafNodes
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			FindResult()
 			{
 
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			FindResult(void* device_node_pointer, uint8_t level, LeafNode node_data)
 			{
 				m_device_node_pointer = device_node_pointer;
@@ -93,7 +93,7 @@ namespace gpu_voxels {
 			//  gpu_voxels::Vector3ui origin;
 			//  uint32_t sideLengthInVoxel;
 			//  float voxelSideLength;
-			thrust::device_vector<void*> m_allocation_list;
+			parallel::device_vector<void*> m_allocation_list;
 			uint32_t numBlocks, numThreadsPerBlock;
 			voxel_count allocInnerNodes, allocLeafNodes;
 			uint8_t* m_status_mapping;
@@ -123,28 +123,28 @@ namespace gpu_voxels {
 			 * @param h_points Set of occupied points. Coordinates in meter.
 			 * @param free_bounding_box True to set the bounding-box of the given set of points as free space.
 			 */
-			void build(thrust::host_vector<Vector3ui>& h_points, const bool free_bounding_box = false);
+			void build(parallel::host_vector<Vector3ui>& h_points, const bool free_bounding_box = false);
 
 			/**
 			 * @brief Builds an NTree out of the given set of occupied points.
 			 * @param h_points Set of occupied points. Coordinates in voxels of the NTree.
 			 * @param free_bounding_box True to set the bounding-box of the given set of points as free space.
 			 */
-			void build(const thrust::device_vector<Vector3ui>& d_points, const bool free_bounding_box = false);
+			void build(const parallel::device_vector<Vector3ui>& d_points, const bool free_bounding_box = false);
 
 			void print();
 			void print2();
-			void find(thrust::device_vector<Vector3ui> voxel, void** resultNode,
-				thrust::device_vector<enum NodeType> resultNodeType);
+			void find(parallel::device_vector<Vector3ui> voxel, void** resultNode,
+				parallel::device_vector<enum NodeType> resultNodeType);
 
 			/**
 			 * @brief Searches for the given Voxel \c h_voxel in the NTree and returns the found Nodes \c resultNode
 			 * @param h_voxel
 			 * @param resultNode
 			 */
-			void find(thrust::host_vector<Vector3ui>& h_voxel, thrust::host_vector<FindResult<LeafNode> >& resultNode);
+			void find(parallel::host_vector<Vector3ui>& h_voxel, parallel::host_vector<FindResult<LeafNode> >& resultNode);
 
-			voxel_count intersect(thrust::host_vector<Vector3ui>& h_voxel);
+			voxel_count intersect(parallel::host_vector<Vector3ui>& h_voxel);
 
 			/**
 			 * @brief intersect_sparse Intersect NTree and VoxelMap by checking every occupied voxel of the VoxelMap in the NTree. Performs good for a sparsely occupied VoxelMap.
@@ -243,16 +243,16 @@ namespace gpu_voxels {
 			/*
 			 * Inserts the given voxel in the tree and updates their occupancy. The given voxel have to be sorted by their id.
 			 */
-			void insertVoxel(thrust::device_vector<Voxel>& d_free_space_voxel,
-				thrust::device_vector<Voxel>& d_object_voxel, gpu_voxels::Vector3ui sensor_origin,
+			void insertVoxel(parallel::device_vector<Voxel>& d_free_space_voxel,
+				parallel::device_vector<Voxel>& d_object_voxel, gpu_voxels::Vector3ui sensor_origin,
 				const uint32_t free_space_resolution, const uint32_t object_resolution);
 
 			/*
 			 * Inserts the given voxel in the tree and updates their occupancy. The given voxel have to be sorted by their id.
 			 */
-			void insertVoxel(thrust::device_vector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up);
+			void insertVoxel(parallel::device_vector<Voxel>& d_voxel_vector, bool set_free, bool propagate_up);
 
-			void propagate_bottom_up(thrust::device_vector<Voxel>& d_voxel_vector, uint32_t level = 0);
+			void propagate_bottom_up(parallel::device_vector<Voxel>& d_voxel_vector, uint32_t level = 0);
 
 			void propagate_bottom_up(OctreeVoxelID* d_voxel_id, voxel_count num_voxel, uint32_t level = 0);
 
@@ -269,7 +269,7 @@ namespace gpu_voxels {
 
 			size_t extractCubes(std::vector<Vector3f>& points, uint8_t* d_status_selection = nullptr, uint32_t min_level = 0);
 
-			size_t extractCubes(thrust::device_vector<Cube>*& d_cubes, uint8_t* d_status_selection = nullptr,
+			size_t extractCubes(parallel::device_vector<Cube>*& d_cubes, uint8_t* d_status_selection = nullptr,
 				uint32_t min_level = 0);
 
 			/**
@@ -309,7 +309,7 @@ namespace gpu_voxels {
 
 			struct Trafo_NodeData_to_OctreeVoxelID
 			{
-				__host__ __device__ OctreeVoxelID operator()(NodeData x)
+				GVL_HOST_DEVICE OctreeVoxelID operator()(NodeData x)
 				{
 					return x.m_voxel_id;
 				}
@@ -317,7 +317,7 @@ namespace gpu_voxels {
 
 			//  struct Trafo_NodeData_to_Cube
 			//  {
-			//    __host__ __device__
+			//    GVL_HOST_DEVICE
 			//    Cube operator()(NodeData x)
 			//    {
 			//      Cube c;
@@ -342,12 +342,12 @@ namespace gpu_voxels {
 			{
 				voxel_count m_level;
 
-				__host__ __device__ Comp_has_level(voxel_count level)
+				GVL_HOST_DEVICE Comp_has_level(voxel_count level)
 				{
 					m_level = level;
 				}
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					bool operator()(NodeData x)
 				{
 					return x.m_level == m_level;
@@ -356,7 +356,7 @@ namespace gpu_voxels {
 
 			struct Trafo_to_BasicData
 			{
-				__host__ __device__ typename NodeData::BasicData operator()(NodeData x)
+				GVL_HOST_DEVICE typename NodeData::BasicData operator()(NodeData x)
 				{
 					return x.m_basic_data;
 				}
@@ -364,16 +364,16 @@ namespace gpu_voxels {
 
 			//  struct Trafo_NodeData_to_Pair
 			//  {
-			//    __host__ __device__
-			//    thrust::pair<NodeStatus, Probability> operator()(NodeData x)
+			//    GVL_HOST_DEVICE
+			//    parallel::pair<NodeStatus, Probability> operator()(NodeData x)
 			//    {
-			//      return thrust::make_pair<NodeStatus, Probability>(x.m_status, x.m_occupancy);
+			//      return parallel::make_pair<NodeStatus, Probability>(x.m_status, x.m_occupancy);
 			//    }
 			//  };
 
 			struct Trafo_Pair_to_Probability
 			{
-				__host__ __device__ Probability operator()(thrust::pair<NodeStatus, Probability> x)
+				GVL_HOST_DEVICE Probability operator()(parallel::pair<NodeStatus, Probability> x)
 				{
 					return x.second;
 				}
@@ -381,7 +381,7 @@ namespace gpu_voxels {
 
 			struct Trafo_Pair_to_Status
 			{
-				__host__ __device__ NodeStatus operator()(thrust::pair<NodeStatus, Probability> x)
+				GVL_HOST_DEVICE NodeStatus operator()(parallel::pair<NodeStatus, Probability> x)
 				{
 					return x.first;
 				}
@@ -391,12 +391,12 @@ namespace gpu_voxels {
 			{
 				uint32_t m_scale;
 
-				__host__ __device__ Trafo_Scale_Coordinate(uint32_t scale)
+				GVL_HOST_DEVICE Trafo_Scale_Coordinate(uint32_t scale)
 				{
 					m_scale = scale;
 				}
 
-				__host__ __device__ uint32_t operator()(uint32_t x)
+				GVL_HOST_DEVICE uint32_t operator()(uint32_t x)
 				{
 					return x / m_scale;
 				}
@@ -406,12 +406,12 @@ namespace gpu_voxels {
 			{
 				uint32_t m_scale;
 
-				__host__ __device__ Trafo_OctreeVoxelID(uint32_t scale)
+				GVL_HOST_DEVICE Trafo_OctreeVoxelID(uint32_t scale)
 				{
 					m_scale = scale;
 				}
 
-				__host__ __device__ OctreeVoxelID operator()(OctreeVoxelID x)
+				GVL_HOST_DEVICE OctreeVoxelID operator()(OctreeVoxelID x)
 				{
 					gpu_voxels::Vector3ui coordinates;
 					inv_morton_code60(x, coordinates);
@@ -421,7 +421,7 @@ namespace gpu_voxels {
 
 			struct Comp_is_collision
 			{
-				__host__ __device__
+				GVL_HOST_DEVICE
 				bool operator()(const Cube x)
 				{
 					return x.m_type_vector.getBit(gpu_voxels::eBVM_COLLISION);
@@ -430,12 +430,12 @@ namespace gpu_voxels {
 
 			struct ComputeFreeSpaceData
 			{
-				__host__ __device__
+				GVL_HOST_DEVICE
 					ComputeFreeSpaceData()
 				{
 				}
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 					ComputeFreeSpaceData(OctreeVoxelID* voxel_id, BasicData* basic_data, voxel_count count) :
 					m_voxel_id(voxel_id), m_basic_data(basic_data), m_count(count)
 				{
@@ -450,13 +450,13 @@ namespace gpu_voxels {
 			{
 				uint8_t* m_mapping_lookup;
 
-				__host__ __device__
+				GVL_HOST_DEVICE
 				Trafo_NodeData_to_Cube(uint8_t* mapping_lookup)
 				{
 					m_mapping_lookup = mapping_lookup;
 				}
 				
-				__host__ __device__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 				Cube nodeDataToCube(Environment::NodeData& x)
 				{
 					Cube c;
@@ -469,7 +469,7 @@ namespace gpu_voxels {
 					return c;
 				}
 				
-				__host__ __device__ __forceinline__
+				GVL_HOST_DEVICE __forceinline__
 				Cube nodeDataToCube(Environment::NodeDataProb& x)
 				{
 					Cube c;
@@ -490,7 +490,7 @@ namespace gpu_voxels {
 				}
 
 				template<typename NodeData>
-				__host__ __device__
+				GVL_HOST_DEVICE
 				Cube operator()(NodeData& x)
 				{
 					return nodeDataToCube(x);
@@ -503,16 +503,16 @@ namespace gpu_voxels {
 			 * Method needed for inserting new sensor data. Computes the free space by ray casting and inserts it into the tree.
 			 
 			void computeFreeSpaceViaRayCast_VoxelList(
-				thrust::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
-				thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels);
+				parallel::device_vector<Voxel>& d_occupied_voxel, gpu_voxels::Vector3ui sensor_origin,
+				parallel::host_vector<parallel::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels);
 				*/
 
 			/*
 			 * Method needed for inserting new sensor data. Computes the free space by ray casting and inserts it into the tree.
 			 */
-			void computeFreeSpaceViaRayCast(thrust::device_vector<Voxel>& d_occupied_voxel,
+			void computeFreeSpaceViaRayCast(parallel::device_vector<Voxel>& d_occupied_voxel,
 				gpu_voxels::Vector3ui sensor_origin,
-				thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels,
+				parallel::host_vector<ComputeFreeSpaceData>& h_packed_levels,
 				uint32_t min_level = 0);
 
 			/*
@@ -526,18 +526,18 @@ namespace gpu_voxels {
 
 			void packVoxel_Map_and_List(
 				MapProperties<typename InnerNode::RayCastType, branching_factor>& map_properties,
-				thrust::host_vector<thrust::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, voxel_count num_free_voxel,
+				parallel::host_vector<parallel::pair<OctreeVoxelID*, voxel_count> >& h_packed_levels, voxel_count num_free_voxel,
 				uint32_t min_level);
 
 			void packVoxel_Map(MapProperties<typename InnerNode::RayCastType, branching_factor>& map_properties,
-				thrust::host_vector<ComputeFreeSpaceData>& h_packed_levels, voxel_count num_free_voxel,
+				parallel::host_vector<ComputeFreeSpaceData>& h_packed_levels, voxel_count num_free_voxel,
 				uint32_t min_level);
 
-			void free_bounding_box(const thrust::device_vector<Vector3ui>& d_points);
+			void free_bounding_box(const parallel::device_vector<Vector3ui>& d_points);
 
-			void toVoxelCoordinates(thrust::host_vector<Vector3f>& h_points, thrust::device_vector<Vector3ui>& d_voxels);
+			void toVoxelCoordinates(parallel::host_vector<Vector3f>& h_points, parallel::device_vector<Vector3ui>& d_voxels);
 
-			void internal_rebuild(thrust::device_vector<NodeData>& d_node_data, const uint32_t num_cubes);
+			void internal_rebuild(parallel::device_vector<NodeData>& d_node_data, const uint32_t num_cubes);
 		};
 
 #ifndef NTREE_PRECOMPILE

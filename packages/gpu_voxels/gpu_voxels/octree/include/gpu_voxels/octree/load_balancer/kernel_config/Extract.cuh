@@ -75,7 +75,7 @@ namespace gpu_voxels
 				struct ConstConfig : public Base::AbstractConstConfig
 				{
 				public:
-					__host__ __device__
+					GVL_HOST_DEVICE
 						ConstConfig(const dim3 p_grid_dim,
 							const dim3 p_block_dim,
 							const dim3 p_block_ids,
@@ -105,7 +105,7 @@ namespace gpu_voxels
 					uint32_t* global_voxel_list_count;
 					const MortonCube borders;
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						KernelParameters(const typename Base::AbstractKernelParameters& abstract_params,
 							const uint32_t p_min_level,
 							NodeData* p_node_data,
@@ -121,7 +121,7 @@ namespace gpu_voxels
 
 					}
 
-					__host__ __device__
+					GVL_HOST_DEVICE
 						KernelParameters(const typename Base::AbstractKernelParameters& abstract_params,
 							const uint32_t p_min_level,
 							NodeData* p_node_data,
@@ -149,7 +149,7 @@ namespace gpu_voxels
 				typedef ConstConfig Constants;
 				typedef KernelParameters KernelParams;
 
-				__device__
+				GVL_DEVICE
 					static void doLoadBalancedWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
@@ -215,7 +215,7 @@ namespace gpu_voxels
 						shared_mem->votes_new_queue_items[constants.warp_id] = __popc(votes_new_queue_items);
 						shared_mem->votes_voxel_list[constants.warp_id] = __popc(votes_voxel_list);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					// sequential warp prefix sum
 					if (constants.thread_id == 0)
@@ -238,7 +238,7 @@ namespace gpu_voxels
 							shared_mem->voxel_list_last_level_count += tmp;
 						}
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					// ### handle new work queue items ###
 					if (variables.is_active & is_part & !is_last_level & !is_min_level)
@@ -255,7 +255,7 @@ namespace gpu_voxels
 								constants.work_lane),
 							shared_mem->work_item_cache[constants.work_index].level - 1);
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (constants.thread_id == 0)
 					{
@@ -273,7 +273,7 @@ namespace gpu_voxels
 									- (shared_mem->voxel_list_count + shared_mem->voxel_list_last_level_count)));
 						}
 					}
-					__syncthreads();
+					GVL_SYNCTHREADS();
 
 					if (!count_mode)
 					{
@@ -342,18 +342,18 @@ namespace gpu_voxels
 								}
 							}
 						}
-						__syncthreads();
+						GVL_SYNCTHREADS();
 					}
 				}
 
-				__device__
+				GVL_DEVICE
 					static void doReductionWork(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{
 					// Nothing to do
 				}
 
-				__device__
+				GVL_DEVICE
 					static bool abortLoop(SharedMem* const shared_mem, volatile SharedVolatileMem* const shared_volatile_mem,
 						Variables& variables, const Constants& constants, KernelParams& kernel_params)
 				{

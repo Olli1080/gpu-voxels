@@ -78,8 +78,8 @@ namespace gpu_voxels {
 			else
 			{
 				// Copy points to gpu and transform to voxel coordinates
-				thrust::host_vector<Vector3f> h_points(point_cloud.begin(), point_cloud.end());
-				thrust::device_vector<Vector3ui> d_voxels;
+				parallel::host_vector<Vector3f> h_points(point_cloud.begin(), point_cloud.end());
+				parallel::device_vector<Vector3ui> d_voxels;
 				this->toVoxelCoordinates(h_points, d_voxels);
 
 				insertVoxelData(d_voxels);
@@ -95,11 +95,11 @@ namespace gpu_voxels {
 				LOGGING_ERROR_C(OctreeLog, NTree, GPU_VOXELS_MAP_ONLY_SUPPORTS_BVM_OCCUPIED << endl);
 			else
 			{
-				thrust::device_vector<Vector3ui> d_voxels(pointcloud.getPointCloudSize());
+				parallel::device_vector<Vector3ui> d_voxels(pointcloud.getPointCloudSize());
 
 				kernel_toVoxels<<<this->numBlocks, this->numThreadsPerBlock>>>(pointcloud.getPointsDevice().data().get(), pointcloud.getPointCloudSize(), D_PTR(d_voxels), static_cast<float>(this->m_resolution) / 1000.0f);
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				insertVoxelData(d_voxels);
 			}
@@ -114,14 +114,14 @@ namespace gpu_voxels {
 			else
 			{
 				// Copy points to gpu and transform to voxel coordinates
-				thrust::device_vector<Vector3ui> d_voxels = { coordinates.begin(), coordinates.end() };
+				parallel::device_vector<Vector3ui> d_voxels = { coordinates.begin(), coordinates.end() };
 
 				insertVoxelData(d_voxels);
 			}
 		}
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
-		void GvlNTree<branching_factor, level_count, InnerNode, LeafNode>::insertCoordinateList(const thrust::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning)
+		void GvlNTree<branching_factor, level_count, InnerNode, LeafNode>::insertCoordinateList(const parallel::device_vector<Vector3ui>& d_coordinates, const BitVoxelMeaning voxel_meaning)
 		{
 			std::lock_guard guard(this->m_mutex);
 			if (voxel_meaning != eBVM_OCCUPIED)
@@ -393,14 +393,14 @@ namespace gpu_voxels {
 			// Get address from device
 			Vector3f* d_points = nullptr;
 			MetaPointCloudStruct tmp_struct;
-			HANDLE_CUDA_ERROR(cudaMemcpy(&tmp_struct, meta_point_cloud.getDeviceConstPointer().get(), sizeof(MetaPointCloudStruct), cudaMemcpyDeviceToHost));
-			HANDLE_CUDA_ERROR(cudaMemcpy(&d_points, tmp_struct.clouds_base_addresses, sizeof(Vector3f*), cudaMemcpyDeviceToHost));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(&tmp_struct, meta_point_cloud.getDeviceConstPointer().get(), sizeof(MetaPointCloudStruct), GVL_MEMCPY_DEVICE_TO_HOST));
+			GVL_HANDLE_ERROR(GVL_MEMCPY(&d_points, tmp_struct.clouds_base_addresses, sizeof(Vector3f*), GVL_MEMCPY_DEVICE_TO_HOST));
 
 			const size_t num_points = meta_point_cloud.getAccumulatedPointcloudSize();
-			thrust::device_vector<Vector3ui> d_voxels(num_points);
+			parallel::device_vector<Vector3ui> d_voxels(num_points);
 			kernel_toVoxels<<<this->numBlocks, this->numThreadsPerBlock>>>(d_points, num_points, D_PTR(d_voxels), this->m_resolution / 1000.0f);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			insertVoxelData(d_voxels);
 		}
@@ -519,7 +519,7 @@ namespace gpu_voxels {
 
 		template<std::size_t branching_factor, std::size_t level_count, typename InnerNode, typename LeafNode>
 		void GvlNTree<branching_factor, level_count, InnerNode, LeafNode>::insertVoxelData(
-			const thrust::device_vector<Vector3ui>& d_voxels)
+			const parallel::device_vector<Vector3ui>& d_voxels)
 		{
 			const uint32_t num_points = static_cast<uint32_t>(d_voxels.size());
 			if (num_points <= 0)
@@ -529,24 +529,24 @@ namespace gpu_voxels {
 			{
 				// Have to insert voxels and adjust occupancy since there are already some voxels in the NTree
 				// Transform voxel coordinates to morton code
-				thrust::device_vector<OctreeVoxelID> d_voxels_morton(num_points);
+				parallel::device_vector<OctreeVoxelID> d_voxels_morton(num_points);
 				kernel_toMortonCode<<<this->numBlocks, this->numThreadsPerBlock>>>(D_PTR(d_voxels), num_points, D_PTR(d_voxels_morton));
-				CHECK_CUDA_ERROR();
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_CHECK_ERROR();
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 				// Sort and remove duplicates
-				// TODO: remove thrust::unique() and adapt NTree::insert() to handle duplicates in the input data
-				thrust::sort(d_voxels_morton.begin(), d_voxels_morton.end());
-				const thrust::device_vector<OctreeVoxelID>::iterator new_end = thrust::unique(d_voxels_morton.begin(),
+				// TODO: remove parallel::unique() and adapt NTree::insert() to handle duplicates in the input data
+				parallel::sort(d_voxels_morton.begin(), d_voxels_morton.end());
+				const parallel::device_vector<OctreeVoxelID>::iterator new_end = parallel::unique(d_voxels_morton.begin(),
 				                                                                              d_voxels_morton.end());
 				size_t num_voxel_unique = new_end - d_voxels_morton.begin();
 
 				// Insert voxels
 				typename base::BasicData tmp;
 				getHardInsertResetData(tmp);
-				thrust::constant_iterator<typename base::BasicData> reset_data(tmp);
+				parallel::constant_iterator<typename base::BasicData> reset_data(tmp);
 				getOccupiedData(tmp);
-				thrust::constant_iterator<typename base::BasicData> set_basic_data(tmp);
+				parallel::constant_iterator<typename base::BasicData> set_basic_data(tmp);
 				this->template insertVoxel<true, typename base::BasicData>(D_PTR(d_voxels_morton), set_basic_data, reset_data, num_voxel_unique, 0);
 
 				// Recover tree invariant

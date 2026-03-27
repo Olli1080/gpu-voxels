@@ -83,29 +83,29 @@ namespace gpu_voxels
         {
         public:
 
-            __host__
+            GVL_HOST
             KinematicLink(const DHParameters<convention>& dh_parameters);
 
-            __host__
+            GVL_HOST
             KinematicLink(float d, float theta, float a, float alpha, float joint_value, DHJointType joint_type);
 
             //! destructor.
-            __host__
+            GVL_HOST
             ~KinematicLink() = default;
 
-            __host__
+            GVL_HOST
             void setJointValue(float value)
             {
                 m_dh_parameters.value = value;
             }
 
-            __host__
+            GVL_HOST
             [[nodiscard]] DHJointType getJointType() const
             {
 				return m_dh_parameters.joint_type;
             }
 
-            __host__
+            GVL_HOST
             [[nodiscard]] float getJointValue() const
             {
 	            if (m_dh_parameters.joint_type == PRISMATIC)
@@ -117,7 +117,7 @@ namespace gpu_voxels
 	            return 0;
             }
 
-            __host__
+            GVL_HOST
             [[nodiscard]] DHParameters<convention> getDHParam() const
             {
 				return m_dh_parameters;

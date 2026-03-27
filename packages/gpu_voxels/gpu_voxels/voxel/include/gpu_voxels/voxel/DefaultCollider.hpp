@@ -60,34 +60,34 @@ namespace gpu_voxels {
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool DefaultCollider::collide(const ProbabilisticVoxel& v1, const BitVoxel<length>& v2) const
 	{
 		return v1.getOccupancy() >= m_threshold1 && !(v2.bitVector().noneButEmpty());
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool DefaultCollider::collide(const BitVoxel<length>& v1, const ProbabilisticVoxel& v2) const
 	{
 		return v2.getOccupancy() >= m_threshold2 && !(v1.bitVector().noneButEmpty());
 	}
 
 	template<std::size_t length>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool DefaultCollider::collide(const BitVoxel<length>& v1, const BitVoxel<length>& v2) const
 	{
 		return !v1.bitVector().noneButEmpty() && !(v2.bitVector().noneButEmpty());
 	}
 
 	template<class OtherVoxel>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool DefaultCollider::collide(const DistanceVoxel& v1, const OtherVoxel& v2) const {
 		return false; // has no meaning
 	}
 
 	template<class OtherVoxel>
-	__host__ __device__
+	GVL_HOST_DEVICE
 		bool DefaultCollider::collide(const OtherVoxel& v1, const DistanceVoxel& v2) const {
 		return false; // has no meaning
 	}

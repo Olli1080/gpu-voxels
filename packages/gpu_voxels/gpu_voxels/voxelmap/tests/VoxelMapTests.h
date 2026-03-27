@@ -34,7 +34,7 @@ namespace test {
 
 ////! Function that tests 3d -> 1d mapping of voxel map storage
 template<class Voxel>
-__global__
+GVL_GLOBAL
 void kernelAddressingTest(const Voxel* voxelmap_base_address, const Vector3ui dimensions, const float voxel_side_length,
                           const Vector3f *testpoints, const size_t testpoints_size, bool* success);
 

@@ -45,8 +45,8 @@ namespace gpu_voxels {
 	protected:
 		voxellist::TemplateVoxelList<Voxel, VoxelIDType>* m_voxellist;
 		cudaIpcMemHandle_t* m_shm_memHandle;
-		thrust::device_vector<Cube>* m_dev_buffer_1;
-		thrust::device_vector<Cube>* m_dev_buffer_2;
+		parallel::device_vector<Cube>* m_dev_buffer_1;
+		parallel::device_vector<Cube>* m_dev_buffer_2;
 		bool* m_shm_bufferSwapped;
 		uint32_t* m_shm_num_cubes;
 		bool m_internal_buffer_1;

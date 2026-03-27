@@ -36,14 +36,14 @@ namespace gpu_voxels
             free_space_t min_dist;
             free_space_t max_dist;
 
-            __host__ __device__
+            GVL_HOST_DEVICE
                 in_range(free_space_t min_dist_, free_space_t max_dist_) :
                 min_dist(min_dist_), max_dist(max_dist_)
             {
                 printf("Constructed in_range operator \n");
             }
 
-            __host__ __device__
+            GVL_HOST_DEVICE
                 bool operator()(const free_space_t& dist) const
             {
                 return (dist >= min_dist && dist <= max_dist);
@@ -55,14 +55,14 @@ namespace gpu_voxels
             free_space_t min_dist;
             free_space_t max_dist;
 
-            __host__ __device__
+            GVL_HOST_DEVICE
                 in_range_tuple(free_space_t min_dist_, free_space_t max_dist_) :
                 min_dist(min_dist_), max_dist(max_dist_) {}
 
-            __host__ __device__
-                bool operator()(const thrust::tuple<free_space_t, MapVoxelID>& dist_tuple) const
+            GVL_HOST_DEVICE
+                bool operator()(const parallel::tuple<free_space_t, MapVoxelID>& dist_tuple) const
             {
-                return (thrust::get<0>(dist_tuple) >= min_dist && thrust::get<0>(dist_tuple) <= max_dist);
+                return (parallel::get<0>(dist_tuple) >= min_dist && parallel::get<0>(dist_tuple) <= max_dist);
             }
         };
 

@@ -42,13 +42,13 @@ namespace gpu_voxels {
 			OctreeVoxelID voxelId;
 			Vector3ui coordinates;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				friend bool operator<(Voxel a, Voxel b)
 			{
 				return a.voxelId < b.voxelId; // | (a.voxel_id == b.voxel_id & a.occupation < b.occupation);
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				friend bool operator==(Voxel a, Voxel b)
 			{
 				return a.voxelId == b.voxelId && a.coordinates == b.coordinates && a.occupancy == b.occupancy;
@@ -59,12 +59,12 @@ namespace gpu_voxels {
 
 		public:
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Voxel()
 			{
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				Voxel(OctreeVoxelID voxelID, Vector3ui coordinates, Probability occupancy)
 			{
 				this->voxelId = voxelID;
@@ -72,14 +72,14 @@ namespace gpu_voxels {
 				this->occupancy = occupancy;
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				__forceinline__
 				Probability getOccupancy() const
 			{
 				return occupancy;
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				__forceinline__
 				void setOccupancy(Probability value)
 			{
@@ -92,13 +92,13 @@ namespace gpu_voxels {
 		{
 			OctreeVoxelID m_cube_side_length;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				count_per_size(OctreeVoxelID cube_side_length)
 			{
 				m_cube_side_length = cube_side_length;
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 			voxel_count operator()(Cube value)
 			{
 				return value.m_side_length == m_cube_side_length;

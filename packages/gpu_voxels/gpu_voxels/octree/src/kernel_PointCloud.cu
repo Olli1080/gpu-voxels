@@ -27,7 +27,7 @@ namespace gpu_voxels
 {
 	namespace NTree
 	{
-		__global__
+		GVL_GLOBAL
 			void kernel_transformKinectPoints(gpu_voxels::Vector3f* point_cloud, OctreeVoxelID num_points, Voxel* voxel,
 				Sensor* sensor, gpu_voxels::Vector3f voxel_dimension)
 		{
@@ -50,7 +50,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 			void kernel_transformKinectPoints_simple(gpu_voxels::Vector3f* point_cloud, const voxel_count num_points,
 				OctreeVoxelID* voxel, Sensor* sensor, const uint32_t resolution)
 		{
@@ -70,7 +70,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 			void kernel_voxelize_finalStep(OctreeVoxelID* voxelInput, const voxel_count numVoxel, const voxel_count num_output_voxel,
 				Voxel* voxel_output, Sensor* sensor)
 		{
@@ -89,7 +89,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 			void kernel_toMortonCode(ulong3* inputVoxel, voxel_count numVoxel, OctreeVoxelID* outputVoxel)
 		{
 			const voxel_count id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -99,7 +99,7 @@ namespace gpu_voxels
 				outputVoxel[i] = morton_code60(inputVoxel[i].x, inputVoxel[i].y, inputVoxel[i].z);
 		}
 
-		__global__ void kernel_countVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel)
+		GVL_GLOBAL void kernel_countVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel)
 		{
 			const OctreeVoxelID chunkSize = floor(static_cast<double>(numVoxel) / (gridDim.x * blockDim.x));
 			const OctreeVoxelID overhead = numVoxel - chunkSize * gridDim.x * blockDim.x;
@@ -122,7 +122,7 @@ namespace gpu_voxels
 			countVoxel[id] = myVoxelCount;
 		}
 
-		__global__ void kernel_combineEqualVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel,
+		GVL_GLOBAL void kernel_combineEqualVoxel(Voxel* voxelInput, OctreeVoxelID numVoxel, OctreeVoxelID* countVoxel,
 			Voxel* outputVoxel, Sensor* sensor)
 		{
 			const OctreeVoxelID chunkSize = floor(static_cast<double>(numVoxel) / (gridDim.x * blockDim.x));
@@ -167,7 +167,7 @@ namespace gpu_voxels
 			}
 		}
 
-		__global__
+		GVL_GLOBAL
 		void kernel_toMortonCode(const Vector3ui* inputVoxel, voxel_count numVoxel, OctreeVoxelID* outputVoxel)
 		{
 			const voxel_count id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -177,7 +177,7 @@ namespace gpu_voxels
 				outputVoxel[i] = morton_code60(inputVoxel[i].x(), inputVoxel[i].y(), inputVoxel[i].z());
 		}
 
-		__global__
+		GVL_GLOBAL
 		void kernel_toVoxels(const Vector3f* input_points, size_t num_points, Vector3ui* output_voxels, float voxel_side_length)
 		{
 			const voxel_count id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -194,7 +194,7 @@ namespace gpu_voxels
 		}
 
 
-		__global__
+		GVL_GLOBAL
 		void kernel_transformDepthImage(DepthData* depth_image, gpu_voxels::Vector3f* d_point_cloud, Sensor* sensor, const DepthData invalid_measure)
 		{
 			const uint32_t width = sensor->data_width;
@@ -208,7 +208,7 @@ namespace gpu_voxels
 			}
 		}
 
-		//__global__
+		//GVL_GLOBAL
 		//void kernel_preprocessObjectDepthImage(DepthData* d_depth_image, const uint32_t width, const uint32_t height,
 		//                                       const DepthData noSampleValue, const DepthData shadowValue,
 		//                                       const DepthData max_sensor_distance)
@@ -229,7 +229,7 @@ namespace gpu_voxels
 		//  }
 		//}
 		//
-		//__global__
+		//GVL_GLOBAL
 		//void kernel_preprocessFreeSpaceDepthImage(DepthData* d_depth_image, const uint32_t width,
 		//                                          const uint32_t height, const DepthData noSampleValue,
 		//                                          const DepthData shadowValue, const DepthData max_sensor_distance)
@@ -262,7 +262,7 @@ namespace gpu_voxels
 		//  }
 		//}
 
-		__global__
+		GVL_GLOBAL
 			void kernel_preprocessDepthImage(DepthData* d_depth_image, const uint32_t width, const uint32_t height,
 				const SensorDataProcessing arguments)
 		{

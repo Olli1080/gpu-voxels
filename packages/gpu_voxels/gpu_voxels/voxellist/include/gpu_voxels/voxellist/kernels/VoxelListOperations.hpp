@@ -21,18 +21,10 @@
 */
 //----------------------------------------------------------------------
 
+#include <gpu_voxels/helpers/SyclBridge.h>
 #include "VoxelListOperations.h"
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
 #include <gpu_voxels/octree/Morton.h>
-
-#if defined(__INTELLISENSE___) || defined(__RESHARPER__) 
-// in here put whatever is your favorite flavor of intellisense workarounds
-#ifndef __CUDACC__ 
-#define __CUDACC__
-#include <device_functions.h>
-#include "device_launch_parameters.h"
-#endif
-#endif
 
 namespace gpu_voxels {
 	namespace voxellist {
@@ -44,10 +36,10 @@ namespace gpu_voxels {
 
 
 		// used to avoid "non-empty default constructor" problems in shared memory arrays
-		extern __shared__ int dynamic_shared_mem[];
+		// extern GVL_SHARED int dynamic_shared_mem[]; // This will need a different approach in SYCL
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const Vector3f* points, const std::size_t sizePoints,
@@ -68,7 +60,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertCoordinateTuples(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const Vector3ui* coordinates, const std::size_t sizeVoxels,
 			const uint32_t offset_new_voxels, const BitVoxelMeaning voxel_meaning)
@@ -89,7 +81,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const MetaPointCloudStruct* meta_point_cloud,
@@ -113,7 +105,7 @@ namespace gpu_voxels {
 
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const MetaPointCloudStruct* meta_point_cloud,
@@ -150,12 +142,12 @@ namespace gpu_voxels {
 		 * Counting collision results.
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, Voxel* this_voxel_list, uint32_t this_list_size,
 			const OtherVoxel* other_map, Vector3ui other_map_dim, Collider collider,
 			Vector3i offset, uint16_t* results)
 		{
-			__shared__ uint16_t cache[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED uint16_t cache[cMAX_THREADS_PER_BLOCK];
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
 			cache[cache_index] = 0;
@@ -181,7 +173,7 @@ namespace gpu_voxels {
 				i += blockDim.x * gridDim.x;
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -191,7 +183,7 @@ namespace gpu_voxels {
 				{
 					cache[cache_index] = cache[cache_index] + cache[cache_index + j];
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -206,15 +198,18 @@ namespace gpu_voxels {
 		 * Calculating Bitvector results and counting collisions
 		 */
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results)
 		{
-			__shared__ uint16_t coll_counter_cache[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED uint16_t coll_counter_cache[cMAX_THREADS_PER_BLOCK];
 
 			// points to dynamic shared memory; memory is uninitialised
-			BitVectorVoxel* bitvoxel_cache = (BitVectorVoxel*)dynamic_shared_mem; //size: cMAX_THREADS_PER_BLOCK
+			// BitVectorVoxel* bitvoxel_cache = (BitVectorVoxel*)dynamic_shared_mem; //size: cMAX_THREADS_PER_BLOCK
+            // SYCL needs a different way to handle dynamic shared memory. 
+            // For now, we'll use a fixed size if possible or abstract it.
+            GVL_SHARED BitVectorVoxel bitvoxel_cache[cMAX_THREADS_PER_BLOCK];
 
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
@@ -242,7 +237,7 @@ namespace gpu_voxels {
 				i += blockDim.x * gridDim.x;
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -253,7 +248,7 @@ namespace gpu_voxels {
 					coll_counter_cache[cache_index] = coll_counter_cache[cache_index] + coll_counter_cache[cache_index + j];
 					bitvoxel_cache[cache_index].bitVector() = bitvoxel_cache[cache_index].bitVector() | bitvoxel_cache[cache_index + j].bitVector();
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -266,14 +261,14 @@ namespace gpu_voxels {
 		}
 
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results)
 		{}
 
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results)
@@ -284,12 +279,12 @@ namespace gpu_voxels {
 		 * The other map voxel are checked for eBVM_OCCUPIED.
 		 */
 		template<class VoxelType>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMapBitMask(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results)
 		{
-			__shared__ uint16_t coll_counter_cache[cMAX_THREADS_PER_BLOCK];
+			GVL_SHARED uint16_t coll_counter_cache[cMAX_THREADS_PER_BLOCK];
 
 			uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 			uint32_t cache_index = threadIdx.x;
@@ -318,7 +313,7 @@ namespace gpu_voxels {
 				i += blockDim.x * gridDim.x;
 			}
 
-			__syncthreads();
+			GVL_SYNCTHREADS();
 
 			uint32_t j = blockDim.x / 2;
 
@@ -328,7 +323,7 @@ namespace gpu_voxels {
 				{
 					coll_counter_cache[cache_index] = coll_counter_cache[cache_index] + coll_counter_cache[cache_index + j];
 				}
-				__syncthreads();
+				GVL_SYNCTHREADS();
 				j /= 2;
 			}
 
@@ -344,10 +339,10 @@ namespace gpu_voxels {
 		// ================================================================================
 
 		// used to avoid "non-empty default constructor" problems in shared memory arrays
-		extern __shared__ int dynamic_shared_mem[];
+		// extern GVL_SHARED int dynamic_shared_mem[];
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertGlobalPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const Vector3f* points, const std::size_t sizePoints,
@@ -365,7 +360,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertCoordinateTuples(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const Vector3ui* coordinates, const std::size_t sizeVoxels,
 			const uint32_t offset_new_points, const BitVoxelMeaning voxel_meaning)
@@ -383,7 +378,7 @@ namespace gpu_voxels {
 		}
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const MetaPointCloudStruct* meta_point_cloud,
@@ -406,7 +401,7 @@ namespace gpu_voxels {
 
 
 		template<class Voxel>
-		__global__
+		GVL_GLOBAL
 		void kernelInsertMetaPointCloud(OctreeVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
 			const Vector3ui ref_map_dim, const float voxel_side_length,
 			const MetaPointCloudStruct* meta_point_cloud,
@@ -443,19 +438,19 @@ namespace gpu_voxels {
 		 * Counting collision results.
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, Voxel* this_voxel_list, uint32_t this_list_size,
 			const OtherVoxel* other_map, Vector3ui other_map_dim, Collider collider,
 			Vector3i offset, uint16_t* results)
 		{
 			// NOP
-			printf("kernelCollideWithVoxelMap not implemented for Octreee!");
+			// printf("kernelCollideWithVoxelMap not implemented for Octreee!");
 		}
 
 		/*!
 		 * Calculating Bitvector results and counting collisions
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results);
@@ -463,17 +458,17 @@ namespace gpu_voxels {
 		/*!
 		 * Calculating Bitvector results and counting collisions
 		 */
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMap(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const BitVectorVoxel* other_map, Vector3ui other_map_dim,
 			Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results);
 
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const ProbabilisticVoxel* other_map, Vector3ui other_map_dim, float col_threshold,
 			Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);
 
-		__global__
+		GVL_GLOBAL
 		void kernelCollideWithVoxelMapBitMask(const OctreeVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 			const BitVectorVoxel* other_map, Vector3ui other_map_dim,
 			Vector3i offset, const BitVectorVoxel* bitvoxel_mask, uint16_t* coll_counter_results);

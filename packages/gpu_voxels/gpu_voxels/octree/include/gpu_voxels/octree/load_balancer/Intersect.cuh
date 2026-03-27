@@ -66,17 +66,17 @@ namespace gpu_voxels
 				bool ret = Base::doPreparations();
 
 				// Alloc device mem
-				HANDLE_CUDA_ERROR(cudaMalloc(&m_dev_num_collisions, sizeof(std::size_t)));
+				GVL_HANDLE_ERROR(GVL_MALLOC(&m_dev_num_collisions, sizeof(std::size_t)));
 
 				// Push first work item on stack
 				InnerNode a;
 				InnerNode2 b;
-				HANDLE_CUDA_ERROR(cudaMemcpy(&a, m_ntree_a->m_root, sizeof(InnerNode), cudaMemcpyDeviceToHost));
-				HANDLE_CUDA_ERROR(cudaMemcpy(&b, m_ntree_b->m_root, sizeof(InnerNode2), cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(GVL_MEMCPY(&a, m_ntree_a->m_root, sizeof(InnerNode), GVL_MEMCPY_DEVICE_TO_HOST));
+				GVL_HANDLE_ERROR(GVL_MEMCPY(&b, m_ntree_b->m_root, sizeof(InnerNode2), GVL_MEMCPY_DEVICE_TO_HOST));
 				Base::m_init_work_item = WorkItem((InnerNode*)a.getChildPtr(), (InnerNode2*)b.getChildPtr(), level_count - 2, true, true);
 
 				// Init mem
-				HANDLE_CUDA_ERROR(cudaMemset(m_dev_num_collisions, 0, sizeof(std::size_t)));
+				GVL_HANDLE_ERROR(cudaMemset(m_dev_num_collisions, 0, sizeof(std::size_t)));
 
 				return ret;
 			}
@@ -115,7 +115,7 @@ namespace gpu_voxels
 				// Call the templated kernel function. It's behavior is defined by the given KernelConfig.
 				size_t dynamic_shared_mem_size = sizeof(typename KernelConfig::SharedMem) + sizeof(typename KernelConfig::SharedVolatileMem);
 				kernelLBWorkConcept<KernelConfig><<<Base::NUM_TASKS, RunConfig::NUM_TRAVERSAL_THREADS, dynamic_shared_mem_size>>>(kernel_params);
-				HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			}
 
 			template<std::size_t branching_factor, std::size_t level_count, class InnerNode, class LeafNode,
@@ -123,8 +123,8 @@ namespace gpu_voxels
 			void Intersect<branching_factor, level_count, InnerNode, LeafNode, InnerNode2, LeafNode2, Collider, mark_collisions>::doPostCalculations()
 			{
 				// Copy results from device to host
-				HANDLE_CUDA_ERROR(
-					cudaMemcpy(&m_num_collisions, m_dev_num_collisions, sizeof(std::size_t), cudaMemcpyDeviceToHost));
+				GVL_HANDLE_ERROR(
+					GVL_MEMCPY(&m_num_collisions, m_dev_num_collisions, sizeof(std::size_t), GVL_MEMCPY_DEVICE_TO_HOST));
 			}
 			// --------------------------------------------------------
 
@@ -137,7 +137,7 @@ namespace gpu_voxels
 				// Free allocated device mem
 				if (m_dev_num_collisions)
 				{
-					HANDLE_CUDA_ERROR(cudaFree(m_dev_num_collisions));
+					GVL_HANDLE_ERROR(GVL_FREE(m_dev_num_collisions));
 					m_dev_num_collisions = nullptr;
 				}
 			}

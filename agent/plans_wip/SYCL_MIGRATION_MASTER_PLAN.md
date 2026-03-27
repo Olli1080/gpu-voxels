@@ -14,19 +14,20 @@ Migrate the GPU-Voxels library from CUDA to SYCL using AdaptiveCpp to support mu
 ---
 
 ## Sub-Plan 1: Preparation & Infrastructure
+- [x] **Macro Bridge**: Create a header `SyclBridge.h` to abstract `__host__ __device__`, `__global__`, and CUDA error handling.
+- [x] **Runtime API Abstraction**: Abstracted `cudaMalloc`, `cudaMemcpy`, `cudaFree`, `cudaMemset`, and `cudaDeviceSynchronize` via `GVL_` macros.
 - [ ] **Infrastructure**: Set up a CI/CD environment with AdaptiveCpp and compatible hardware (Intel/AMD/NVIDIA).
-- [ ] **Macro Bridge**: Create a header `SyclBridge.h` to abstract `__host__ __device__`, `__global__`, and CUDA error handling.
 - [ ] **Test Harness**: Enhance existing tests to support side-by-side comparison between CUDA and SYCL implementations.
 
 ## Sub-Plan 2: Thrust to SYCL/oneDPL Migration
-- [ ] **Iterative Step**: Identify a single `thrust::copy` or `thrust::transform` usage (e.g., in `TemplateVoxelList.cu`).
-- [ ] **Snippet**: Replace with a SYCL-based parallel algorithm (oneDPL).
+- [x] **Iterative Step**: Identify and migrate Thrust usages in `TemplateVoxelList` and `BitVoxelList` using `gpu_voxels::parallel` namespace.
+- [x] **Snippet**: Replaced `thrust::` calls with abstracted `parallel::` calls across major data structures.
 - [ ] **Verification**: Run unit tests for `VoxelList` to ensure bit-level parity.
-- [ ] **Batch**: Gradually replace all Thrust calls with SYCL-equivalent algorithms.
+- [ ] **Batch**: Gradually replace all remaining Thrust calls in other components.
 
 ## Sub-Plan 3: Memory Management (USM)
-- [ ] **Abstraction**: Implement a SYCL-based memory manager that uses Unified Shared Memory (USM).
-- [ ] **Iterative Step**: Port `GpuVoxelsMap` to use SYCL USM instead of `cudaMalloc`.
+- [x] **Abstraction**: Implement a SYCL-compatible runtime abstraction layer in `SyclBridge.h`.
+- [x] **Iterative Step**: Port core maps (`GpuVoxelsMap`, `TemplateVoxelMap`) to use abstracted memory macros.
 - [ ] **Verification**: Ensure host-to-device transfers and pointer accessibility work as expected in isolation.
 
 ## Sub-Plan 4: Kernel Migration

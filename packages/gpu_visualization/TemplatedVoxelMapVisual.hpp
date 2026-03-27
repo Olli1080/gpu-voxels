@@ -150,7 +150,7 @@ namespace gpu_voxels {
 				return m_dev_data.get();
 			}
 
-			/*const thrust::device_vector<Voxel>& getDeviceData() const
+			/*const parallel::device_vector<Voxel>& getDeviceData() const
 			{
 				//return m_dev_data;
 				return {};
@@ -158,13 +158,13 @@ namespace gpu_voxels {
 
 			void* getVoidDeviceDataPtr() override
 			{
-				//return thrust::raw_pointer_cast(m_dev_data.data());
+				//return parallel::raw_pointer_cast(m_dev_data.data());
 				return m_dev_data.get();
 			}
 
 			const void* getConstVoidDeviceDataPtr() const override
 			{
-				//return thrust::raw_pointer_cast(m_dev_data.data());
+				//return parallel::raw_pointer_cast(m_dev_data.data());
 				return m_dev_data.get();
 			}
 
@@ -180,7 +180,7 @@ namespace gpu_voxels {
 				return m_voxel_side_length;
 			}
 
-			//virtual void gatherVoxelsByIndex(thrust::device_ptr<unsigned int> dev_indices_begin, thrust::device_ptr<unsigned int> dev_indices_end, thrust::device_ptr<Voxel> dev_output_begin) {};
+			//virtual void gatherVoxelsByIndex(parallel::device_ptr<unsigned int> dev_indices_begin, parallel::device_ptr<unsigned int> dev_indices_end, parallel::device_ptr<Voxel> dev_output_begin) {};
 
 			std::size_t getMemoryUsage() const override
 			{
@@ -209,7 +209,7 @@ namespace gpu_voxels {
 			/*! VoxelMap data on device.
 			 *  storage format is: index = z * dim.x * dim.y + y * dim.x + x  */
 
-			thrust::device_ptr<Voxel> m_dev_data;
+			parallel::device_ptr<Voxel> m_dev_data;
 		};
 
 

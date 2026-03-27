@@ -41,7 +41,7 @@ namespace gpu_voxels {
 
 		public:
 
-			__device__ __host__
+			GVL_HOST_DEVICE
 				SensorModel()
 			{
 				update_probabilty = initial_probability = 0;
@@ -52,7 +52,7 @@ namespace gpu_voxels {
 			 * @param update_probabilty Probability applied if the same sensor reading is the same.
 			 * @param initial_probability Probability applied for the first sensor reading of this kind.
 			 */
-			__device__ __host__
+			GVL_HOST_DEVICE
 				SensorModel(const Probability update_probabilty, const Probability initial_probability)
 			{
 				this->update_probabilty = update_probabilty;
@@ -64,7 +64,7 @@ namespace gpu_voxels {
 			 * @param point
 			 * @return
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability applySensorModel(const gpu_voxels::Vector3f point) const
 			{
 				return initial_probability;
@@ -76,7 +76,7 @@ namespace gpu_voxels {
 			 * @param last
 			 * @return
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability estimateVoxelProbability(Voxel* first, Voxel* last) const
 			{
 				Probability occ = first->getOccupancy();
@@ -91,7 +91,7 @@ namespace gpu_voxels {
 			 * @param count Number of sensor points rediding inside this voxel.
 			 * @return
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability estimateVoxelProbability(const voxel_count count) const
 			{
 				// watch out for overflow: cast to int32_t
@@ -104,7 +104,7 @@ namespace gpu_voxels {
 			 * @param observedProb
 			 * @return
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability estimateProbability(const Probability lastProbEstimation, const Probability observedProb) const
 			{
 				// TODO it's just a stub
@@ -115,7 +115,7 @@ namespace gpu_voxels {
 			 * @brief getInitialProbability
 			 * @return Probability applied for the first sensor reading of this kind.
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability getInitialProbability() const
 			{
 				return initial_probability;
@@ -125,7 +125,7 @@ namespace gpu_voxels {
 			 * @brief getUpdateProbability
 			 * @return Probability applied if the same sensor reading is the same.
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				Probability getUpdateProbability() const
 			{
 				return update_probabilty;
@@ -135,7 +135,7 @@ namespace gpu_voxels {
 			 * @brief setInitialProbability
 			 * @param initial_probability Probability applied for the first sensor reading of this kind.
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				void setInitialProbability(const Probability initial_probability)
 			{
 				this->initial_probability = initial_probability;
@@ -145,7 +145,7 @@ namespace gpu_voxels {
 			 * @brief setUpdateProbability
 			 * @param update_probabilty Probability applied if the same sensor reading is the same.
 			 */
-			__device__ __host__ __forceinline__
+			GVL_HOST_DEVICE __forceinline__
 				void setUpdateProbability(const Probability update_probabilty)
 			{
 				this->update_probabilty = update_probabilty;

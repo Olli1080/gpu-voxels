@@ -40,55 +40,55 @@ namespace gpu_voxels {
 	namespace NTree {
 
 		OctreeVoxelID transformKinectPointCloud(gpu_voxels::Vector3f* point_cloud, voxel_count num_points,
-			thrust::device_vector<Voxel>& voxel, Sensor& sensor,
+			parallel::device_vector<Voxel>& voxel, Sensor& sensor,
 			gpu_voxels::Vector3f voxel_dimension)
 		{
 			timespec time = getCPUTime();
 
-			thrust::device_vector<Voxel> d_tmp_voxel(num_points);
+			parallel::device_vector<Voxel> d_tmp_voxel(num_points);
 
 			// copy to GPU
-			thrust::device_vector<gpu_voxels::Vector3f> d_point_cloud = thrust::host_vector<gpu_voxels::Vector3f>(
+			parallel::device_vector<gpu_voxels::Vector3f> d_point_cloud = parallel::host_vector<gpu_voxels::Vector3f>(
 				point_cloud, point_cloud + num_points);
-			thrust::host_vector<Sensor> h_sensor(1);
+			parallel::host_vector<Sensor> h_sensor(1);
 			h_sensor[0] = sensor;
-			thrust::device_vector<Sensor> d_sensor = h_sensor;
+			parallel::device_vector<Sensor> d_sensor = h_sensor;
 
 			LOGGING_INFO(OctreeLog, "copy to gpu: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
 			kernel_transformKinectPoints<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_point_cloud), num_points, D_PTR(d_tmp_voxel), D_PTR(d_sensor), voxel_dimension);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			LOGGING_INFO(OctreeLog, "kernel_transformKinectPoints: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
-			thrust::sort(d_tmp_voxel.begin(), d_tmp_voxel.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			LOGGING_INFO(OctreeLog, "thrust::sort: " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			parallel::sort(d_tmp_voxel.begin(), d_tmp_voxel.end());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			LOGGING_INFO(OctreeLog, "parallel::sort: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
-			thrust::device_vector<OctreeVoxelID> count_voxel(NUM_BLOCKS * NUM_THREADS_PER_BLOCK);
+			parallel::device_vector<OctreeVoxelID> count_voxel(NUM_BLOCKS * NUM_THREADS_PER_BLOCK);
 			kernel_countVoxel<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_tmp_voxel), num_points, D_PTR(count_voxel));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			LOGGING_INFO(OctreeLog, "kernel_countVoxel: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
-			thrust::inclusive_scan(count_voxel.begin(), count_voxel.end(), count_voxel.begin());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::inclusive_scan(count_voxel.begin(), count_voxel.end(), count_voxel.begin());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			LOGGING_INFO(OctreeLog, "thrust::inclusive_scan: " << timeDiff(time, getCPUTime()) << " ms" << endl);
+			LOGGING_INFO(OctreeLog, "parallel::inclusive_scan: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
 			OctreeVoxelID num_voxel = count_voxel.back();
 			voxel.resize(num_voxel);
 
 			kernel_combineEqualVoxel<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_tmp_voxel), num_voxel, D_PTR(count_voxel), D_PTR(voxel), D_PTR(d_sensor));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			LOGGING_INFO(OctreeLog, "kernel_combineEqualVoxel: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
@@ -98,7 +98,7 @@ namespace gpu_voxels {
 
 		voxel_count transformKinectPointCloud_simple(gpu_voxels::Vector3f* d_point_cloud,
 			const voxel_count num_points,
-			thrust::device_vector<Voxel>& d_voxel, Sensor* d_sensor,
+			parallel::device_vector<Voxel>& d_voxel, Sensor* d_sensor,
 			const uint32_t resolution)
 		{
 #define SORT_ON_GPU true
@@ -113,13 +113,13 @@ namespace gpu_voxels {
 			uint32_t num_blocks = num_points / num_threads + 1;
 
 			// transform point cloud from sensor coordinates to world coordinates and return these as morton code
-			thrust::device_vector<OctreeVoxelID> d_tmp_voxel_id(num_points);
+			parallel::device_vector<OctreeVoxelID> d_tmp_voxel_id(num_points);
 			kernel_transformKinectPoints_simple<<<num_blocks, num_threads>>>(d_point_cloud, num_points,
 				D_PTR(d_tmp_voxel_id),
 				d_sensor,
 				resolution);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "ToWorldCoordinates", prefix);
 
@@ -133,7 +133,7 @@ namespace gpu_voxels {
 					if (num_points != 0)
 					{
 						// use CUB since it's nearly twice as fast as thrust
-						thrust::device_vector<OctreeVoxelID> d_tmp_voxel_id2(num_points);
+						parallel::device_vector<OctreeVoxelID> d_tmp_voxel_id2(num_points);
 						const int num_items = static_cast<int>(num_points);
 						OctreeVoxelID* d_key_buf = D_PTR(d_tmp_voxel_id);
 						OctreeVoxelID* d_key_alt_buf = D_PTR(d_tmp_voxel_id2);
@@ -143,48 +143,48 @@ namespace gpu_voxels {
 						size_t temp_storage_bytes = 0;
 						cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
 						// Allocate temporary storage
-						HANDLE_CUDA_ERROR(cudaMalloc(&d_temp_storage, temp_storage_bytes));
+						GVL_HANDLE_ERROR(GVL_MALLOC(&d_temp_storage, temp_storage_bytes));
 						// Run sorting operation
 						cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
-						HANDLE_CUDA_ERROR(cudaFree(d_temp_storage));
+						GVL_HANDLE_ERROR(GVL_FREE(d_temp_storage));
 						if (d_keys.Current() != d_key_buf)
 							d_tmp_voxel_id2.swap(d_tmp_voxel_id);
 					}
 				}
 				else
-					thrust::sort(d_tmp_voxel_id.begin(), d_tmp_voxel_id.end());
+					parallel::sort(d_tmp_voxel_id.begin(), d_tmp_voxel_id.end());
 			}
 			else
 			{
-				thrust::host_vector<OctreeVoxelID> h_tmp_voxel_id = d_tmp_voxel_id;
-				thrust::sort(h_tmp_voxel_id.begin(), h_tmp_voxel_id.end());
+				parallel::host_vector<OctreeVoxelID> h_tmp_voxel_id = d_tmp_voxel_id;
+				parallel::sort(h_tmp_voxel_id.begin(), h_tmp_voxel_id.end());
 				d_tmp_voxel_id = h_tmp_voxel_id;
 			}
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			PERF_MON_PRINT_AND_RESET_INFO_P(temp_timer, "SortByMorton", prefix);
 
 			num_threads = 32; //have to use max. 32 threads for kernel_voxelize()
 			num_blocks = num_points / num_threads + 1;
 
-			thrust::device_vector<voxel_count> count_voxel(num_blocks + 1, 0);
+			parallel::device_vector<voxel_count> count_voxel(num_blocks + 1, 0);
 			kernel_voxelize<true><<<num_blocks, 32>>>(D_PTR(d_tmp_voxel_id), num_points, D_PTR(count_voxel), nullptr);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
-			thrust::exclusive_scan(count_voxel.begin(), count_voxel.end(), count_voxel.begin());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			parallel::exclusive_scan(count_voxel.begin(), count_voxel.end(), count_voxel.begin());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			voxel_count num_voxel = count_voxel.back();
 
-			//voxel = thrust::device_vector<Voxel>(num_voxel);
+			//voxel = parallel::device_vector<Voxel>(num_voxel);
 			d_voxel.resize(num_voxel);
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			//  HANDLE_CUDA_ERROR(cudaMemset(D_PTR(voxel), 0, num_voxel * sizeof(Voxel)));
-			//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
+			//  GVL_HANDLE_ERROR(cudaMemset(D_PTR(voxel), 0, num_voxel * sizeof(Voxel)));
+			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			kernel_voxelize<false><<<num_blocks, 32>>>(D_PTR(d_tmp_voxel_id), num_points, D_PTR(count_voxel), D_PTR(d_voxel));
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
 			num_threads = 128; //have to use max. 32 threads for kernel_voxelize()
 			num_blocks = num_voxel / num_threads + 1;
@@ -193,8 +193,8 @@ namespace gpu_voxels {
 				num_voxel,
 				D_PTR(d_voxel),
 				d_sensor);
-			CHECK_CUDA_ERROR();
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
+			GVL_CHECK_ERROR();
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			PERF_MON_PRINT_INFO_P(temp_timer, "Voxelize", prefix);
 			PERF_MON_ADD_DATA_NONTIME_P("NumVoxel", num_voxel, prefix);
 			PERF_MON_PRINT_INFO_P(prefix, "", prefix);
@@ -229,13 +229,13 @@ namespace gpu_voxels {
 		{
 			uint32_t x, y, z;
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				friend bool operator<(uint3comp a, uint3comp b)
 			{
 				return ((a.x < b.x) || (a.x == b.x && a.y < b.y) || (a.x == b.x && a.y == b.y && a.z < b.z));
 			}
 
-			__host__ __device__
+			GVL_HOST_DEVICE
 				friend bool operator==(uint3comp a, uint3comp b)
 			{
 				return (a.x == b.x && a.y == b.y && a.z == b.z);
@@ -282,14 +282,14 @@ namespace gpu_voxels {
 		//  transformPoints(point_cloud, transformed_points, num_points, offset, scaling);
 		//
 		//  // remove duplicates
-		//  thrust::host_vector<uint3comp> h_transformed_points_copy = thrust::host_vector<uint3comp>(
+		//  parallel::host_vector<uint3comp> h_transformed_points_copy = parallel::host_vector<uint3comp>(
 		//      transformed_points, transformed_points + num_points);
-		//  thrust::sort(h_transformed_points_copy.begin(), h_transformed_points_copy.end());
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+		//  parallel::sort(h_transformed_points_copy.begin(), h_transformed_points_copy.end());
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 		//  h_transformed_points_copy.erase(
-		//      thrust::unique(h_transformed_points_copy.begin(), h_transformed_points_copy.end()),
+		//      parallel::unique(h_transformed_points_copy.begin(), h_transformed_points_copy.end()),
 		//      h_transformed_points_copy.end());
-		//  HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+		//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 		//
 		//  uint32_t num_different_voxel = h_transformed_points_copy.size();
 		//  printf("num_different_voxel: %u\n", num_different_voxel);
@@ -317,21 +317,21 @@ namespace gpu_voxels {
 			transformPoints(point_cloud, transformed_points.data(), num_points, offset, scaling);
 
 			// remove duplicates
-			thrust::device_vector<uint3comp> d_transformed_points_copy = thrust::host_vector<uint3comp>(
+			parallel::device_vector<uint3comp> d_transformed_points_copy = parallel::host_vector<uint3comp>(
 				transformed_points.begin(), transformed_points.end());
-			thrust::sort(d_transformed_points_copy.begin(), d_transformed_points_copy.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+			parallel::sort(d_transformed_points_copy.begin(), d_transformed_points_copy.end());
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 			
 			d_transformed_points_copy.erase(
-				thrust::unique(d_transformed_points_copy.begin(), d_transformed_points_copy.end()),
+				parallel::unique(d_transformed_points_copy.begin(), d_transformed_points_copy.end()),
 				d_transformed_points_copy.end());
-			HANDLE_CUDA_ERROR(cudaDeviceSynchronize()); // sync just like for plain kernel calls
+			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE()); // sync just like for plain kernel calls
 
 			const auto num_different_voxel = d_transformed_points_copy.size();
 			LOGGING_INFO(OctreeLog, "num_different_voxel: " << num_different_voxel << endl);
 
 			// shuffle otherwise data is sorted and the octree build would have an advantage
-			thrust::host_vector<uint3comp> h_transformed_points = d_transformed_points_copy;
+			parallel::host_vector<uint3comp> h_transformed_points = d_transformed_points_copy;
 			uint3comp* ptr = h_transformed_points.data();
 			std::shuffle(ptr, ptr + num_different_voxel, g_engine);
 
@@ -431,7 +431,7 @@ namespace gpu_voxels {
 
 		struct Comp_is_valid_point
 		{
-			__host__ __device__
+			GVL_HOST_DEVICE
 			__forceinline__
 			bool operator()(gpu_voxels::Vector3f v) const
 			{
@@ -440,12 +440,12 @@ namespace gpu_voxels {
 		};
 
 		/**
-		 * Needs a cudaDeviceSynchronize() afterwards
+		 * Needs a GVL_SYNCHRONIZE() afterwards
 		 */
-		void removeInvalidPoints(thrust::device_vector<gpu_voxels::Vector3f>& d_depth_image)
+		void removeInvalidPoints(parallel::device_vector<gpu_voxels::Vector3f>& d_depth_image)
 		{
-			thrust::device_vector<gpu_voxels::Vector3f> temp(d_depth_image.size());
-			const size_t new_size = thrust::copy_if(d_depth_image.begin(), d_depth_image.end(), temp.begin(), Comp_is_valid_point()) - temp.begin();
+			parallel::device_vector<gpu_voxels::Vector3f> temp(d_depth_image.size());
+			const size_t new_size = parallel::copy_if(d_depth_image.begin(), d_depth_image.end(), temp.begin(), Comp_is_valid_point()) - temp.begin();
 			temp.resize(new_size);
 			temp.swap(d_depth_image);
 		}

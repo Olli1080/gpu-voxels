@@ -26,25 +26,25 @@
 
  // Common code of classes LeafNodeProb and InnerNodeProb to solve the diamond problem of multi-inheritance without virtual inheritance
 
-__device__ __host__ __forceinline__
+GVL_HOST_DEVICE __forceinline__
 bool isOccupied() const
 {
 	return (getOccupancy() != UNKNOWN_PROBABILITY) && (getOccupancy() >= THRESHOLD_OCCUPANCY);
 }
 
-__device__ __host__ __forceinline__
+GVL_HOST_DEVICE __forceinline__
 bool isUnknown() const
 {
 	return getOccupancy() == UNKNOWN_PROBABILITY;
 }
 
-__device__ __host__ __forceinline__
+GVL_HOST_DEVICE __forceinline__
 bool isFree() const
 {
 	return (getOccupancy() != UNKNOWN_PROBABILITY) && (getOccupancy() < THRESHOLD_OCCUPANCY);
 }
 
-__device__ __host__ __forceinline__
+GVL_HOST_DEVICE __forceinline__
 bool isInConflict(const LeafNodeProb env_LeafNode) const
 {
 	return isOccupied() & env_LeafNode.isOccupied();

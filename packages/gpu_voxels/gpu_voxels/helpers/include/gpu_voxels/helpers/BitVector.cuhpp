@@ -31,14 +31,14 @@
 namespace gpu_voxels
 {
 	template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
 	typename BitVector<num_bits>::item_type* BitVector<num_bits>::getByte(uint32_t index)
     {
         return &m_bytes[index >> 3];
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     BitVector<num_bits>::BitVector()
     {
         if (num_bits % 32 != 0)
@@ -50,14 +50,14 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::clear()
     {
         memset(m_bytes, 0, sizeof(m_bytes));
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     BitVector<num_bits> BitVector<num_bits>::operator|(const BitVector& o) const
     {
         BitVector<num_bits> res;
@@ -71,7 +71,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
 	bool BitVector<num_bits>::operator==(const BitVector& o) const
     {
 #if defined(__CUDA_ARCH__)
@@ -84,7 +84,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::operator|=(const BitVector& o)
     {
 #if defined(__CUDA_ARCH__)
@@ -95,7 +95,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     BitVector<num_bits> BitVector<num_bits>::operator~() const
     {
         BitVector res;
@@ -108,7 +108,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     BitVector<num_bits> BitVector<num_bits>::operator&(const BitVector& o) const
     {
         BitVector res;
@@ -121,7 +121,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     [[nodiscard]] bool BitVector<num_bits>::isZero() const
     {
         bool result = true;
@@ -134,7 +134,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     [[nodiscard]] bool BitVector<num_bits>::noneButEmpty() const
     {
         // Get the first byte which includes eBVM_FREE (Bit 0)
@@ -151,7 +151,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     [[nodiscard]] bool BitVector<num_bits>::anyNotEmpty() const
     {
         // Get the first byte which includes eBVM_FREE (Bit 0)
@@ -173,14 +173,14 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     [[nodiscard]] bool BitVector<num_bits>::getBit(const uint32_t index) const
     {
         return getByte(index) & (1 << (index & 7));
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::clearBit(const uint32_t index)
     {
         item_type* selected_byte = getByte(index);
@@ -188,7 +188,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::setBit(const uint32_t index)
     {
         item_type* selected_byte = getByte(index);
@@ -196,14 +196,14 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     [[nodiscard]] typename BitVector<num_bits>::item_type BitVector<num_bits>::getByte(const uint32_t index, const uint8_t dummy) const
     {
         return m_bytes[index >> 3];
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::setByte(const uint32_t index, const item_type data)
     {
         item_type* selected_byte = getByte(index);
@@ -211,7 +211,7 @@ namespace gpu_voxels
     }
 
     template<size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void BitVector<num_bits>::dump()
     {
         constexpr size_t byte_size = sizeof(item_type);
@@ -224,20 +224,20 @@ namespace gpu_voxels
 
     // This CUDA Code was taken from Florians BitVoxelFlags that got replaced by BitVectors
     template<size_t num_bits>
-    __device__
+    GVL_DEVICE
     void BitVector<num_bits>::reduce(BitVector& flags, const int thread_id, const int num_threads,
         BitVector* shared_mem)
     {
         shared_mem[thread_id] = flags;
-        __syncthreads();
+        GVL_SYNCTHREADS();
         REDUCE(shared_mem, thread_id, num_threads, | )
             if (thread_id == 0)
                 flags = shared_mem[0];
-        __syncthreads();
+        GVL_SYNCTHREADS();
     }
 
     template<size_t num_bits>
-    __device__
+    GVL_DEVICE
     void BitVector<num_bits>::reduceAtomic(BitVector& flags, BitVector& global_flags)
     {
 # pragma unroll
@@ -251,7 +251,7 @@ namespace gpu_voxels
     }
 
     template<std::size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     void performLeftShift(BitVector<num_bits>& bit_vector, const uint8_t shift_size)
     {
         // This function uses a 64 Bit buffer to shift Bytes of the input bit_vector
@@ -305,7 +305,7 @@ namespace gpu_voxels
      * @return
      */
     template<std::size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     bool bitMarginCollisionCheck(const BitVector<num_bits>& v1, const BitVector<num_bits>& v2,
         BitVector<num_bits>* collisions, const uint8_t margin, const uint32_t sv_offset)
     {
@@ -364,7 +364,7 @@ namespace gpu_voxels
     }
 
     template<std::size_t num_bits>
-    __host__ __device__
+    GVL_HOST_DEVICE
     BitVector<num_bits> BitvectorOr<num_bits>::operator()(const BitVector<num_bits>& lhs, const BitVector<num_bits>& rhs) const
     {
         return lhs | rhs;
