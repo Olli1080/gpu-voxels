@@ -403,7 +403,7 @@ namespace gpu_voxels
 			//  GVL_HANDLE_ERROR(cudaEventRecord(m_start, 0));
 			//  printf("TemplateVoxelMap<Voxel>::collisionCheck\n");
 
-			kernelCollideVoxelMaps<<<m_blocks, m_threads>>>(m_dev_data.data().get(), m_dev_data.size(), other->getDeviceDataPtr(),
+			GVL_LAUNCH_KERNEL(kernelCollideVoxelMaps, m_blocks, m_threads, 0, 0, m_dev_data.data().get(), m_dev_data.size(), other->getDeviceDataPtr(),
 				collider, m_dev_collision_check_results);
 			GVL_CHECK_ERROR();
 
@@ -561,7 +561,7 @@ namespace gpu_voxels
 				dev_data_with_offset = m_dev_data.data().get();
 			}
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelCollideVoxelMapsDebug<<<m_blocks, m_threads>>>(dev_data_with_offset, m_dev_data.size(), other->getConstDeviceDataPtr(),
+			GVL_LAUNCH_KERNEL(kernelCollideVoxelMapsDebug, m_blocks, m_threads,dev_data_with_offset, m_dev_data.size(), other->getConstDeviceDataPtr(),
 				collider, m_dev_collision_check_results_counter.data().get());
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
@@ -589,7 +589,7 @@ namespace gpu_voxels
 		//  destination->computeLinearLoad(destination->m_dev_data.size(), &blocks, &threads);
 		//  if (with_bitvector)
 		//  {
-		//    kernelShrinkCopyVoxelMapBitvector<<<blocks, threads>>>(destination->m_dev_data,
+		GVL_LAUNCH_KERNEL(//    kernelShrinkCopyVoxelMapBitvector, blocks, threads,destination->m_dev_data,
 		//                                                           destination->m_dev_data.size(),
 		//                                                           destination->m_dim, source->m_dev_data,
 		//                                                           source->m_dev_data.size(), source->m_dim,
@@ -598,7 +598,7 @@ namespace gpu_voxels
 		//  }
 		//  else
 		//  {
-		//    kernelShrinkCopyVoxelMap<<<blocks, threads>>>(destination->m_dev_data, destination->m_dev_data.size(),
+		GVL_LAUNCH_KERNEL(//    kernelShrinkCopyVoxelMap, blocks, threads,destination->m_dev_data, destination->m_dev_data.size(),
 		//                                                  destination->m_dim, source->m_dev_data,
 		//                                                  source->m_dev_data.size(), source->m_dim, factor);
 		//    GVL_CHECK_ERROR();
@@ -645,7 +645,7 @@ namespace gpu_voxels
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_points.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelInsertGlobalPointCloud<<<num_blocks, threads_per_block>>>(m_dev_data.data().get(), m_dim, m_voxel_side_length,
+			GVL_LAUNCH_KERNEL(kernelInsertGlobalPointCloud, num_blocks, threads_per_block,m_dev_data.data().get(), m_dim, m_voxel_side_length,
 				d_points.data().get(), d_points.size(), voxel_meaning, m_dev_points_outside_map);
 			GVL_CHECK_ERROR();
 
@@ -674,7 +674,7 @@ namespace gpu_voxels
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_coordinates.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelInsertCoordinateTuples<<<num_blocks, threads_per_block>>>(m_dev_data.data().get(), m_dim, m_voxel_side_length,
+			GVL_LAUNCH_KERNEL(kernelInsertCoordinateTuples, num_blocks, threads_per_block,m_dev_data.data().get(), m_dim, m_voxel_side_length,
 				d_coordinates.data().get(), d_coordinates.size(), voxel_meaning, m_dev_points_outside_map);
 			GVL_CHECK_ERROR();
 
@@ -694,7 +694,7 @@ namespace gpu_voxels
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_src_coordinates.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelInsertDilatedCoordinateTuples<<<num_blocks, threads_per_block>>>(d_dest_data, m_dim, d_src_coordinates.data().get(), d_src_coordinates.size(), voxel_meaning, m_dev_points_outside_map);
+			GVL_LAUNCH_KERNEL(kernelInsertDilatedCoordinateTuples, num_blocks, threads_per_block, d_dest_data, m_dim, d_src_coordinates.data().get(), d_src_coordinates.size(), voxel_meaning, m_dev_points_outside_map);
 			GVL_CHECK_ERROR();
 
 			GVL_HANDLE_ERROR(GVL_MEMCPY(&points_outside_map, m_dev_points_outside_map, sizeof(bool), GVL_MEMCPY_DEVICE_TO_HOST));
@@ -766,7 +766,7 @@ namespace gpu_voxels
 			num_blocks.z = (m_dim.z() + threads_per_block.z - 1) / threads_per_block.z;
 
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelErode<<<num_blocks, threads_per_block>>>(dest_data, src_data, this->m_dim, erode_threshold, occupied_threshold);
+			GVL_LAUNCH_KERNEL(kernelErode, num_blocks, threads_per_block, dest_data, src_data, this->m_dim, erode_threshold, occupied_threshold);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			GVL_CHECK_ERROR();
 		}
@@ -795,7 +795,7 @@ namespace gpu_voxels
 			bool points_outside_map;
 
 			computeLinearLoad(meta_point_cloud.getAccumulatedPointcloudSize(), m_blocks, m_threads);
-			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(
+			GVL_LAUNCH_KERNEL(kernelInsertMetaPointCloud, m_blocks, m_threads,
 				m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meaning, m_dim, m_voxel_side_length,
 				m_dev_points_outside_map);
 			GVL_CHECK_ERROR();
@@ -823,7 +823,7 @@ namespace gpu_voxels
 			GVL_HANDLE_ERROR(GVL_MALLOC(&voxel_meanings_d, size));
 			GVL_HANDLE_ERROR(GVL_MEMCPY(voxel_meanings_d, voxel_meanings.data(), size, GVL_MEMCPY_HOST_TO_DEVICE));
 
-			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(
+			GVL_LAUNCH_KERNEL(kernelInsertMetaPointCloud, m_blocks, m_threads,
 				m_dev_data.data().get(), meta_point_cloud.getDeviceConstPointer().get(), voxel_meanings_d, m_dim, m_voxel_side_length,
 				m_dev_points_outside_map);
 			GVL_CHECK_ERROR();

@@ -97,7 +97,7 @@ namespace gpu_voxels {
 			{
 				parallel::device_vector<Vector3ui> d_voxels(pointcloud.getPointCloudSize());
 
-				kernel_toVoxels<<<this->numBlocks, this->numThreadsPerBlock>>>(pointcloud.getPointsDevice().data().get(), pointcloud.getPointCloudSize(), D_PTR(d_voxels), static_cast<float>(this->m_resolution) / 1000.0f);
+				GVL_LAUNCH_KERNEL(kernel_toVoxels, this->numBlocks, this->numThreadsPerBlock, pointcloud.getPointsDevice().data().get(), pointcloud.getPointCloudSize(), D_PTR(d_voxels), static_cast<float>(this->m_resolution) / 1000.0f);
 				GVL_CHECK_ERROR();
 				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -398,7 +398,7 @@ namespace gpu_voxels {
 
 			const size_t num_points = meta_point_cloud.getAccumulatedPointcloudSize();
 			parallel::device_vector<Vector3ui> d_voxels(num_points);
-			kernel_toVoxels<<<this->numBlocks, this->numThreadsPerBlock>>>(d_points, num_points, D_PTR(d_voxels), this->m_resolution / 1000.0f);
+			GVL_LAUNCH_KERNEL(kernel_toVoxels, this->numBlocks, this->numThreadsPerBlock, d_points, num_points, D_PTR(d_voxels), this->m_resolution / 1000.0f);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -530,7 +530,7 @@ namespace gpu_voxels {
 				// Have to insert voxels and adjust occupancy since there are already some voxels in the NTree
 				// Transform voxel coordinates to morton code
 				parallel::device_vector<OctreeVoxelID> d_voxels_morton(num_points);
-				kernel_toMortonCode<<<this->numBlocks, this->numThreadsPerBlock>>>(D_PTR(d_voxels), num_points, D_PTR(d_voxels_morton));
+				GVL_LAUNCH_KERNEL(kernel_toMortonCode, this->numBlocks, this->numThreadsPerBlock, D_PTR(d_voxels), num_points, D_PTR(d_voxels_morton));
 				GVL_CHECK_ERROR();
 				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 

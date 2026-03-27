@@ -134,7 +134,7 @@ namespace gpu_voxels
 			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
-			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			GVL_LAUNCH_KERNEL(kernelCollideWithVoxelMap, num_blocks, threads_per_block, dynamic_shared_mem_size,dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
 				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
 			GVL_CHECK_ERROR();
@@ -178,7 +178,7 @@ namespace gpu_voxels
 			computeLinearLoad(this->m_dev_list.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			size_t dynamic_shared_mem_size = sizeof(BitVoxel<length>) * cMAX_THREADS_PER_BLOCK;
-			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			GVL_LAUNCH_KERNEL(kernelCollideWithVoxelMap, num_blocks, threads_per_block, dynamic_shared_mem_size,dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
 				other->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
 				offset, this->m_dev_collision_check_results_counter.data().get(), m_dev_colliding_bits_result_list_ptr);
 			GVL_CHECK_ERROR();
@@ -223,7 +223,7 @@ namespace gpu_voxels
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			size_t dynamic_shared_mem_size = sizeof(uint16_t) * cMAX_THREADS_PER_BLOCK;
 
-			kernelCollideWithVoxelMapBitMask<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
+			GVL_LAUNCH_KERNEL(kernelCollideWithVoxelMapBitMask, num_blocks, threads_per_block, dynamic_shared_mem_size,dev_id_list_ptr, dev_voxel_list_ptr, static_cast<uint32_t>(this->m_dev_list.size()),
 				map->getConstDeviceDataPtr(), this->m_ref_map_dim, coll_threshold,
 				offset, m_dev_bitmask, this->m_dev_collision_check_results_counter.data().get());
 			GVL_CHECK_ERROR();

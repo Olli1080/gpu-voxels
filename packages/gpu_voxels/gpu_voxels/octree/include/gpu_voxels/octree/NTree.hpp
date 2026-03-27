@@ -379,7 +379,7 @@ namespace gpu_voxels {
 			const size_t num_points = h_points.size();
 			d_voxels.resize(num_points);
 			parallel::device_vector<Vector3f> d_points = h_points;
-			kernel_toVoxels<<<numBlocks, numThreadsPerBlock>>>(D_PTR(d_points), num_points, D_PTR(d_voxels), m_resolution / 1000.0f);
+			GVL_LAUNCH_KERNEL(kernel_toVoxels, numBlocks, numThreadsPerBlock, D_PTR(d_points), num_points, D_PTR(d_voxels), m_resolution / 1000.0f);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
@@ -424,7 +424,7 @@ namespace gpu_voxels {
 			// throughput ~ 3.8 GB/s
 			PERF_MON_START(temp_timer);
 			parallel::device_vector<OctreeVoxelID> d_voxels(num_points);
-			kernel_toMortonCode<<<num_blocks, num_threads_per_block>>>(D_PTR(d_points), num_points, D_PTR(d_voxels));
+			GVL_LAUNCH_KERNEL(kernel_toMortonCode, num_blocks, num_threads_per_block, D_PTR(d_points), num_points, D_PTR(d_voxels));
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -710,7 +710,7 @@ namespace gpu_voxels {
 			//  parallel::device_vector<voxel_count> d_num_collisions(numBlocks);
 			//  parallel::sort(voxel.begin(), voxel.end());
 			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			//  kernel_intersect<<<numBlocks, numThreadsPerBlock>>>(m_root, D_PTR(voxel), h_voxel.size(), D_PTR(d_num_collisions));
+			//  GVL_LAUNCH_KERNEL(kernel_intersect, numBlocks, numThreadsPerBlock, m_root, D_PTR(voxel), h_voxel.size(), D_PTR(d_num_collisions));
 			//  GVL_CHECK_ERROR();
 			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 			//  voxel_count collisions = parallel::reduce(d_num_collisions.begin(), d_num_collisions.end());
@@ -2328,7 +2328,7 @@ namespace gpu_voxels {
 			//      level_count, parallel::make_pair<voxel_id*, voxel_count>(nullptr, 0));
 			//  computeFreeSpaceViaRayCast(d_voxel_vector, sensor_origin, h_packed_levels2);
 
-			//  kernel_checkBlub<<<1,1>>>(h_packed_levels[0].first, h_packed_levels2[0].second, h_packed_levels2[0].first);
+			//  GVL_LAUNCH_KERNEL(kernel_checkBlub, 1,1, h_packed_levels[0].first, h_packed_levels2[0].second, h_packed_levels2[0].first);
 			//  GVL_CHECK_ERROR();
 			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -3118,7 +3118,7 @@ namespace gpu_voxels {
 				parallel::device_vector<uint32_t> d_z(num_voxel);
 				uint32_t num_threads = 128;
 				uint32_t num_blocks = num_voxel / num_threads + 1;
-				kernel_splitCoordinates<<<num_blocks, num_threads>>>(D_PTR(d_points), num_voxel, D_PTR(d_x), D_PTR(d_y), D_PTR(d_z));
+				GVL_LAUNCH_KERNEL(kernel_splitCoordinates, num_blocks, num_threads, D_PTR(d_points), num_voxel, D_PTR(d_x), D_PTR(d_y), D_PTR(d_z));
 				GVL_CHECK_ERROR();
 				GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 

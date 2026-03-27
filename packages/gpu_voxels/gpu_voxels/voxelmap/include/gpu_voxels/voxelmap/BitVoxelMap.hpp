@@ -72,7 +72,7 @@ namespace gpu_voxels {
 		template<std::size_t length>
 		void BitVoxelMap<length>::clearVoxelMapRemoteLock(const uint32_t bit_index)
 		{
-			kernelClearVoxelMap<<<this->m_blocks, this->m_threads>>>(this->m_dev_data.data().get(), this->m_dev_data.size(), bit_index);
+			GVL_LAUNCH_KERNEL(kernelClearVoxelMap, this->m_blocks, this->m_threads, this->m_dev_data.data().get(), this->m_dev_data.size(), bit_index);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
@@ -82,7 +82,7 @@ namespace gpu_voxels {
 		{
 			std::lock_guard guard(this->m_mutex);
 
-			kernelClearVoxelMap<<<this->m_blocks, this->m_threads>>>(this->m_dev_data.data().get(), this->m_dev_data.size(), bits);
+			GVL_LAUNCH_KERNEL(kernelClearVoxelMap, this->m_blocks, this->m_threads, this->m_dev_data.data().get(), this->m_dev_data.size(), bits);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}
@@ -307,7 +307,7 @@ namespace gpu_voxels {
 			{
 				computeLinearLoad(meta_point_cloud->getPointCloudSize(sub_cloud), this->m_blocks, this->m_threads);
 
-				kernelInsertMetaPointCloudSelfCollCheck<<<this->m_blocks, this->m_threads>>>(
+				GVL_LAUNCH_KERNEL(kernelInsertMetaPointCloudSelfCollCheck, this->m_blocks, this->m_threads, 
 					this->m_dev_data.data().get(), meta_point_cloud->getDeviceConstPointer().get(), m_subcloud_meanings_dev, this->m_dim, sub_cloud, this->m_voxel_side_length,
 					m_collisions_masks_dev, this->m_dev_points_outside_map, m_selfcolliding_subclouds_dev);
 				GVL_CHECK_ERROR();
@@ -351,7 +351,7 @@ namespace gpu_voxels {
 				return;
 			}
 			std::lock_guard guard(this->m_mutex);
-			kernelShiftBitVector<<<this->m_blocks, this->m_threads>>>(this->m_dev_data.data().get(), this->m_dev_data.size(), shift_size);
+			GVL_LAUNCH_KERNEL(kernelShiftBitVector, this->m_blocks, this->m_threads, this->m_dev_data.data().get(), this->m_dev_data.size(), shift_size);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 		}

@@ -179,7 +179,7 @@ namespace gpu_voxels
             //  uint32_t num_blocks, threads_per_block;
             //  computeLinearLoad(num_matching_voxels, &num_blocks, &threads_per_block);
             //  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-            //  kernelConvertToBitVectorVoxellist<<<num_blocks, threads_per_block>>>(parallel::raw_pointer_cast(matching_distances_dists.data()),
+            //  GVL_LAUNCH_KERNEL(kernelConvertToBitVectorVoxellist, num_blocks, threads_per_block,parallel::raw_pointer_cast(matching_distances_dists.data()),
             //                                                                       parallel::raw_pointer_cast(matching_distances_ids.data()),
             //                                                                       num_matching_voxels, dist_map.getDimensions(),
             //                                                                       result.getDeviceIdPtr(), result.getDeviceCoordPtr(), result.getDeviceDataPtr());

@@ -356,7 +356,7 @@ namespace gpu_voxels
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_points.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelInsertGlobalPointCloud<<<num_blocks, threads_per_block>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
+			GVL_LAUNCH_KERNEL(kernelInsertGlobalPointCloud, num_blocks, threads_per_block,dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				d_points.data().get(), d_points.size(), offset_new_entries, voxel_meaning);
 			GVL_CHECK_ERROR();
@@ -396,7 +396,7 @@ namespace gpu_voxels
 			uint32_t num_blocks, threads_per_block;
 			computeLinearLoad(d_coordinates.size(), num_blocks, threads_per_block);
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelInsertCoordinateTuples<<<num_blocks, threads_per_block>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
+			GVL_LAUNCH_KERNEL(kernelInsertCoordinateTuples, num_blocks, threads_per_block,dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, d_coordinates.data().get(), d_coordinates.size(), offset_new_entries, voxel_meaning);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
@@ -427,7 +427,7 @@ namespace gpu_voxels
 			VoxelIDType* dev_id_list_ptr = parallel::raw_pointer_cast(m_dev_id_list.data());
 
 			computeLinearLoad(total_points, m_blocks, m_threads);
-			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
+			GVL_LAUNCH_KERNEL(kernelInsertMetaPointCloud, m_blocks, m_threads,dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				meta_point_cloud.getDeviceConstPointer().get(),
 				offset_new_entries, voxel_meaning);
@@ -467,7 +467,7 @@ namespace gpu_voxels
 			GVL_HANDLE_ERROR(GVL_MEMCPY(dev_voxel_meanings, voxel_meanings.data(), size, GVL_MEMCPY_HOST_TO_DEVICE));
 
 			computeLinearLoad(total_points, m_blocks, m_threads);
-			kernelInsertMetaPointCloud<<<m_blocks, m_threads>>>(dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
+			GVL_LAUNCH_KERNEL(kernelInsertMetaPointCloud, m_blocks, m_threads,dev_id_list_ptr, dev_coord_list_ptr, dev_voxel_list_ptr,
 				m_ref_map_dim, m_voxel_side_length,
 				meta_point_cloud.getDeviceConstPointer().get(),
 				offset_new_entries, dev_voxel_meanings);
@@ -913,7 +913,7 @@ namespace gpu_voxels
 			size_t dynamic_shared_mem_size = sizeof(BitVectorVoxel) * cMAX_THREADS_PER_BLOCK;
 
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
-			kernelCollideWithVoxelMap<<<num_blocks, threads_per_block, dynamic_shared_mem_size>>>(dev_id_list_ptr, dev_voxel_list_ptr, getDimensions().x(),
+			GVL_LAUNCH_KERNEL(kernelCollideWithVoxelMap, num_blocks, threads_per_block, dynamic_shared_mem_size,dev_id_list_ptr, dev_voxel_list_ptr, getDimensions().x(),
 				other->getConstDeviceDataPtr(), m_ref_map_dim, collider, offset,
 				m_dev_collision_check_results_counter.data().get());
 			GVL_CHECK_ERROR();

@@ -57,7 +57,7 @@ namespace gpu_voxels {
 			LOGGING_INFO(OctreeLog, "copy to gpu: " << timeDiff(time, getCPUTime()) << " ms" << endl);
 			time = getCPUTime();
 
-			kernel_transformKinectPoints<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_point_cloud), num_points, D_PTR(d_tmp_voxel), D_PTR(d_sensor), voxel_dimension);
+			GVL_LAUNCH_KERNEL(kernel_transformKinectPoints, NUM_BLOCKS, NUM_THREADS_PER_BLOCK, D_PTR(d_point_cloud), num_points, D_PTR(d_tmp_voxel), D_PTR(d_sensor), voxel_dimension);
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -70,7 +70,7 @@ namespace gpu_voxels {
 			time = getCPUTime();
 
 			parallel::device_vector<OctreeVoxelID> count_voxel(NUM_BLOCKS * NUM_THREADS_PER_BLOCK);
-			kernel_countVoxel<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_tmp_voxel), num_points, D_PTR(count_voxel));
+			GVL_LAUNCH_KERNEL(kernel_countVoxel, NUM_BLOCKS, NUM_THREADS_PER_BLOCK, D_PTR(d_tmp_voxel), num_points, D_PTR(count_voxel));
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -86,7 +86,7 @@ namespace gpu_voxels {
 			OctreeVoxelID num_voxel = count_voxel.back();
 			voxel.resize(num_voxel);
 
-			kernel_combineEqualVoxel<<<NUM_BLOCKS, NUM_THREADS_PER_BLOCK>>>(D_PTR(d_tmp_voxel), num_voxel, D_PTR(count_voxel), D_PTR(voxel), D_PTR(d_sensor));
+			GVL_LAUNCH_KERNEL(kernel_combineEqualVoxel, NUM_BLOCKS, NUM_THREADS_PER_BLOCK, D_PTR(d_tmp_voxel), num_voxel, D_PTR(count_voxel), D_PTR(voxel), D_PTR(d_sensor));
 			GVL_CHECK_ERROR();
 			GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());
 
@@ -114,7 +114,7 @@ namespace gpu_voxels {
 
 			// transform point cloud from sensor coordinates to world coordinates and return these as morton code
 			parallel::device_vector<OctreeVoxelID> d_tmp_voxel_id(num_points);
-			kernel_transformKinectPoints_simple<<<num_blocks, num_threads>>>(d_point_cloud, num_points,
+			GVL_LAUNCH_KERNEL(kernel_transformKinectPoints_simple, num_blocks, num_threads,d_point_cloud, num_points,
 				D_PTR(d_tmp_voxel_id),
 				d_sensor,
 				resolution);
@@ -188,7 +188,7 @@ namespace gpu_voxels {
 
 			num_threads = 128; //have to use max. 32 threads for kernel_voxelize()
 			num_blocks = num_voxel / num_threads + 1;
-			kernel_voxelize_finalStep<<<num_blocks, num_threads>>>(D_PTR(d_tmp_voxel_id),
+			GVL_LAUNCH_KERNEL(kernel_voxelize_finalStep, num_blocks, num_threads,D_PTR(d_tmp_voxel_id),
 				num_points,
 				num_voxel,
 				D_PTR(d_voxel),

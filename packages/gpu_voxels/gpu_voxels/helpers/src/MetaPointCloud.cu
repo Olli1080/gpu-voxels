@@ -578,7 +578,7 @@ namespace gpu_voxels
 
         printf("================== END hostDebugMetaPointCloud DBG ================== \n");
 
-        kernelDebugMetaPointCloud<<<1, 1>>>(m_dev_ptr_to_point_clouds_struct.get());
+        GVL_LAUNCH_KERNEL(kernelDebugMetaPointCloud, 1, 1, m_dev_ptr_to_point_clouds_struct.get());
         GVL_CHECK_ERROR();
     }
 

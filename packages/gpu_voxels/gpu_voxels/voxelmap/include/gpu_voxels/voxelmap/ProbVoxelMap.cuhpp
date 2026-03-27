@@ -45,14 +45,14 @@ namespace gpu_voxels
 
             if (enable_raycasting)
             {
-                kernelInsertSensorData<<<m_blocks, m_threads>>>(
+                GVL_LAUNCH_KERNEL(kernelInsertSensorData, m_blocks, m_threads,
                     m_dev_data.data().get(), m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
                     global_points.getPointsDevice().data().get(), global_points.getPointCloudSize(), cut_real_robot, robot_map, robot_voxel_meaning, RayCaster());
                 GVL_CHECK_ERROR();
             }
             else
             {
-                kernelInsertSensorData<<<m_blocks, m_threads>>>(
+                GVL_LAUNCH_KERNEL(kernelInsertSensorData, m_blocks, m_threads,
                     m_dev_data.data().get(), m_dev_data.size(), m_dim, m_voxel_side_length, sensor_pose,
                     global_points.getPointsDevice().data().get(), global_points.getPointCloudSize(), cut_real_robot, robot_map, robot_voxel_meaning, DummyRayCaster());
                 GVL_CHECK_ERROR();

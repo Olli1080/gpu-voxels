@@ -14,7 +14,7 @@ namespace gpu_voxels
 			parallel::device_vector<uint32_t> num_voxels_per_type(context.voxel_types(), 0);
 			//parallel::fill(context.m_d_num_voxels_per_type.begin(), context.m_d_num_voxels_per_type.end(), 0);
 			// Launch kernel to copy data into the OpenGL buffer. <<<context.getNumberOfCubes(),1>>><<<num_threads_per_block,num_blocks>>>
-			calculate_cubes_per_type_list<<<context.num_blocks(), context.threads_per_block()>>>(
+			GVL_LAUNCH_KERNEL(calculate_cubes_per_type_list, context.num_blocks(), context.threads_per_block(),
 				context.getCubesDevicePointer(),/**/
 				context.getNumberOfCubes(),/**/
 				parallel::raw_pointer_cast(num_voxels_per_type.data()),
@@ -37,7 +37,7 @@ namespace gpu_voxels
 			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&vbo_ptr), &num_bytes, *context.cuda_ressource()));
 
 			// Launch kernel to copy data into the OpenGL buffer.
-			// fill_vbo_without_precounting<<< dim3(1,1,1), dim3(1,1,1)>>>(/**/
+			GVL_LAUNCH_KERNEL(// fill_vbo_without_precounting,  dim3(1,1,1), dim3(1,1,1),/**/
 			// GVL_CHECK_ERROR();
 			switch (context.m_voxelMap->getMapType())
 			{
@@ -47,7 +47,7 @@ namespace gpu_voxels
 					LOGGING_ERROR_C(Visualization, Visualizer,
 						"Only " << MAX_DRAW_TYPES << " different draw types supported. But bit vector has " << BIT_VECTOR_LENGTH << " different types." << endl);
 
-				fill_vbo_without_precounting<<<context.num_blocks(), context.threads_per_block()>>>(
+				GVL_LAUNCH_KERNEL(fill_vbo_without_precounting, context.num_blocks(), context.threads_per_block(),
 					/**/
 					static_cast<BitVectorVoxel*>(context.m_voxelMap->getVoidDeviceDataPtr()),/**/
 					context.m_voxelMap->getDimensions(),/**/
@@ -66,7 +66,7 @@ namespace gpu_voxels
 			}
 			case MT_PROBAB_VOXELMAP:
 			{
-				fill_vbo_without_precounting<<<context.num_blocks(), context.threads_per_block()>>>(
+				GVL_LAUNCH_KERNEL(fill_vbo_without_precounting, context.num_blocks(), context.threads_per_block(),
 					/**/
 					static_cast<ProbabilisticVoxel*>(context.m_voxelMap->getVoidDeviceDataPtr()),/**/
 					context.m_voxelMap->getDimensions(),/**/
@@ -85,7 +85,7 @@ namespace gpu_voxels
 			}
 			case MT_DISTANCE_VOXELMAP:
 			{
-				fill_vbo_without_precounting<<<context.num_blocks(), context.threads_per_block()>>>(
+				GVL_LAUNCH_KERNEL(fill_vbo_without_precounting, context.num_blocks(), context.threads_per_block(),
 					/**/
 					static_cast<DistanceVoxel*>(context.m_voxelMap->getVoidDeviceDataPtr()),/**/
 					context.m_voxelMap->getDimensions(),/**/

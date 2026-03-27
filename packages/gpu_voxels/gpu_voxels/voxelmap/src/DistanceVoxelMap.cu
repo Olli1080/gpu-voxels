@@ -161,7 +161,7 @@ namespace gpu_voxels {
 			const int32_t starting_step = ((std::max)(this->m_dim.x(), (std::max)(this->m_dim.y(), this->m_dim.z())) + 1) / 2;
 			for (int32_t step_width = starting_step; step_width > 0; step_width /= 2) 
 			{
-				kernelJumpFlood3D<<<grid_size, block_size>>>(buffers[1 - output_buffer_idx]->data().get(), buffers[output_buffer_idx]->data().get(), this->m_dim, step_width);
+				GVL_LAUNCH_KERNEL(kernelJumpFlood3D, grid_size, block_size, buffers[1 - output_buffer_idx]->data().get(), buffers[output_buffer_idx]->data().get(), this->m_dim, step_width);
 				GVL_CHECK_ERROR();
 
 				output_buffer_idx = 1 - output_buffer_idx;
@@ -209,7 +209,7 @@ namespace gpu_voxels {
 			LOGGING_INFO(VoxelmapLog, "grid: " << blocks.x << "x" << blocks.y << ", cMAX_NR_OF_BLOCKS: " << cMAX_NR_OF_BLOCKS << " threads: " << this->m_threads << endl);
 
 			size_t dynamic_shared_mem_size = sizeof(Vector3ui) * cMAX_THREADS_PER_BLOCK;
-			kernelExactDistances3D<<<blocks, this->m_threads, dynamic_shared_mem_size>>>(
+			GVL_LAUNCH_KERNEL(kernelExactDistances3D, blocks, this->m_threads, dynamic_shared_mem_size, 
 					this->m_dev_data.data().get(), this->m_dim,
 					this->m_voxel_side_length, d_points.data().get(), points.size()
 					);
@@ -340,7 +340,7 @@ namespace gpu_voxels {
 			//flood forward and backward within bands
 			//there are m1 vertical bands
 			//TODO optimize: could work in-place
-			kernelPBAphase1FloodZ<<<m1_grid_size, m1_block_size>>>(this->m_dev_data.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //distance_map is output
+			GVL_LAUNCH_KERNEL(kernelPBAphase1FloodZ, m1_grid_size, m1_block_size, this->m_dev_data.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //distance_map is output
 			GVL_CHECK_ERROR();
 			// -> blöcke enthalten gelbe vertikale balken, solange min 1 obstacle enthalten
 
@@ -353,7 +353,7 @@ namespace gpu_voxels {
 			//optimize: propagate and update could be in same kernel
 			if (m1 > 1) 
 			{
-				kernelPBAphase1PropagateInterband<<<m1_grid_size, m1_block_size>>>(this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.z() / m1); //buffer b to a
+				GVL_LAUNCH_KERNEL(kernelPBAphase1PropagateInterband, m1_grid_size, m1_block_size, this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.z() / m1); //buffer b to a
 				GVL_CHECK_ERROR();
 				// -> initial_map enthält obstacle infos und interband head/tail infos
 			}
@@ -368,7 +368,7 @@ namespace gpu_voxels {
 
 			if (m1 > 1) 
 			{
-				kernelPBAphase1Update<<<m1_grid_size, m1_block_size>>>(initial_map.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //buffer to b; a is Links (top,bottom), b is Color (voxel)
+				GVL_LAUNCH_KERNEL(kernelPBAphase1Update, m1_grid_size, m1_block_size, initial_map.begin(), this->m_dev_data.begin(), this->m_dim, this->m_dim.z() / m1); //buffer to b; a is Links (top,bottom), b is Color (voxel)
 				GVL_CHECK_ERROR();
 			}
 			// end of phase 1: distance_map contains the S_ij obstacle information
@@ -391,7 +391,7 @@ namespace gpu_voxels {
 				LOGGING_ERROR_C(VoxelmapLog, DistanceVoxelMap, "ERROR: PBA requires dimensions.x and .y >= arg_m2_blocksize (" << arg_m2_blocksize << ")" << endl);
 			}
 
-			kernelPBAphase2ProximateBackpointers<<<m2_grid_size, m2_block_size>>>(this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
+			GVL_LAUNCH_KERNEL(kernelPBAphase2ProximateBackpointers, m2_grid_size, m2_block_size, this->m_dev_data.begin(), initial_map.begin(), this->m_dim, this->m_dim.y() / m2); //output stack/singly linked list with backpointers; some elements are skipped
 			GVL_CHECK_ERROR();
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -405,7 +405,7 @@ namespace gpu_voxels {
 
 			if (m2 > 1) 
 			{
-				kernelPBAphase2CreateForwardPointers<<<m2_grid_size, m2_block_size>>>(initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / m2); //read stack, write forward pointers
+				GVL_LAUNCH_KERNEL(kernelPBAphase2CreateForwardPointers, m2_grid_size, m2_block_size, initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / m2); //read stack, write forward pointers
 				GVL_CHECK_ERROR();
 			}
 
@@ -473,7 +473,7 @@ namespace gpu_voxels {
 				LOGGING_ERROR_C(VoxelmapLog, DistanceVoxelMap, "ERROR: PBA requires dimensions.x and .y >= arg_m2_blocksize (" << arg_m2_blocksize << ")" << endl);
 			}
 			//distance map is write-only during phase3
-			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->m_dev_data.begin(), this->m_dim);
+			GVL_LAUNCH_KERNEL(kernelPBAphase3Distances, m3_grid_size, m3_block_size, initialTexObj, this->m_dev_data.begin(), this->m_dim);
 			GVL_CHECK_ERROR();
 			//  (initial_map.begin(), distance_map_begin, this->m_dim);
 		// phase 3 done: distance_map contains final result
@@ -489,7 +489,7 @@ namespace gpu_voxels {
 			//TODO: ensure m_dim x/y divisible by PBA_TILE_DIM
 			dim3 transpose_block(PBA_TILE_DIM, PBA_TILE_DIM);
 			dim3 transpose_grid(this->m_dim.x() / transpose_block.x, this->m_dim.y() / transpose_block.y, this->m_dim.z()); //maximum blockDim.y/z is 64K
-			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->m_dev_data.begin()); //optimize: remove thrust wrapper?
+			GVL_LAUNCH_KERNEL(kernelPBA3DTransposeXY, transpose_grid, transpose_block, this->m_dev_data.begin()); //optimize: remove thrust wrapper?
 			GVL_CHECK_ERROR();
 
 #ifdef IC_PERFORMANCE_MONITOR
@@ -513,7 +513,7 @@ namespace gpu_voxels {
 
 			if (m2 > 1) 
 			{
-				kernelPBAphase2CreateForwardPointers<<<m2_grid_size, m2_block_size>>>(initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / m2); //read stack, write forward pointers
+				GVL_LAUNCH_KERNEL(kernelPBAphase2CreateForwardPointers, m2_grid_size, m2_block_size, initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / m2); //read stack, write forward pointers
 				GVL_CHECK_ERROR();
 			}
 
@@ -528,7 +528,7 @@ namespace gpu_voxels {
 			// repeatedly merge two bands into one
 			for (int band_count = m2; band_count > 1; band_count /= 2) {
 				dim3 m2_merge_grid_size = dim3(this->m_dim.x() / m2_block_size.x, band_count / 2, this->m_dim.z());
-				kernelPBAphase2MergeBands<<<m2_merge_grid_size, m2_block_size>>>(initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / band_count); //update both stack and forward_ptrs
+				GVL_LAUNCH_KERNEL(kernelPBAphase2MergeBands, m2_merge_grid_size, m2_block_size, initial_map.begin(), forward_ptrs_begin, this->m_dim, this->m_dim.y() / band_count); //update both stack and forward_ptrs
 				GVL_CHECK_ERROR();
 
 				if (detailtimer) LOGGING_INFO(VoxelmapLog, "kernelPBAphase2MergeBands finished merging with band_size " << (this->m_dim.y() / band_count) << endl);
@@ -544,7 +544,7 @@ namespace gpu_voxels {
 			// end of phase 2: initial_ contains P_i information; y coordinates were replaced by back-pointers; y coordinate is implicitly equal to voxel position.y
 			// phase 3: read from input_, write to distance_map
 			//optimise: scale PBA_M3_BLOCKX to m3; PBA_M3_BLOCKX*m3 should not be too small
-			kernelPBAphase3Distances<<<m3_grid_size, m3_block_size>>>(initialTexObj, this->m_dev_data.begin(), this->m_dim);
+			GVL_LAUNCH_KERNEL(kernelPBAphase3Distances, m3_grid_size, m3_block_size, initialTexObj, this->m_dev_data.begin(), this->m_dim);
 			GVL_CHECK_ERROR();
 			// phase 3 done: distance_map contains final result
 
@@ -555,7 +555,7 @@ namespace gpu_voxels {
 			if (detailtimer) PERF_MON_PRINT_AND_RESET_INFO("detailtimer", "parallelBanding3D second phase3 done");
 #endif
 
-			kernelPBA3DTransposeXY<<<transpose_grid, transpose_block>>>(this->m_dev_data.begin());
+			GVL_LAUNCH_KERNEL(kernelPBA3DTransposeXY, transpose_grid, transpose_block, this->m_dev_data.begin());
 			GVL_CHECK_ERROR();
 
 			//  GVL_HANDLE_ERROR(GVL_SYNCHRONIZE());

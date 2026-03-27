@@ -627,7 +627,7 @@ namespace gpu_voxels {
 			GVL_HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer(&vbo_ptr, &num_bytes, context.m_cuda_ressources));
 
 			// Launch kernel to copy data into the OpenGL buffer.
-			// fill_vbo_without_precounting<<< dim3(1,1,1), dim3(1,1,1)>>>(/**/
+			// GVL_LAUNCH_KERNEL(fill_vbo_without_precounting,  dim3(1,1,1), dim3(1,1,1),/**/
 			// GVL_CHECK_ERROR();
 			/*
 			if (context.m_voxelMap->getMapType() == MT_BITVECTOR_VOXELMAP)
