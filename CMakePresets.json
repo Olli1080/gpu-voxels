@@ -1,15 +1,69 @@
 {
-    "version": 2,
-  
+    "version": 7,
+    "cmakeMinimumRequired": { "major": 3, "minor": 27, "patch": 0 },
+
     "configurePresets": [
       {
-        "name": "debug",
+        "name": "base",
+        "hidden": true,
         "generator": "Visual Studio 17 2022",
-        "binaryDir": "${sourceDir}/build/default",
+        "binaryDir": "${sourceDir}/build/${presetName}",
         "cacheVariables": {
           "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
-          "CMAKE_TOOLCHAIN_FILE": "./vcpkg/scripts/buildsystems/vcpkg.cmake"
+          "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
         }
+      },
+      {
+        "name": "cuda",
+        "displayName": "CUDA backend",
+        "inherits": "base",
+        "cacheVariables": {
+          "GVL_BACKEND_CUDA": "ON",
+          "GVL_BACKEND_VULKAN": "OFF"
+        }
+      },
+      {
+        "name": "vulkan",
+        "displayName": "Vulkan dependencies only (no CUDA needed)",
+        "inherits": "base",
+        "generator": "Visual Studio 18 2026",
+        "cacheVariables": {
+          "GVL_BACKEND_CUDA": "OFF",
+          "GVL_BACKEND_VULKAN": "ON"
+        }
+      },
+      {
+        "name": "both",
+        "displayName": "CUDA and Vulkan backends",
+        "inherits": "base",
+        "cacheVariables": {
+          "GVL_BACKEND_CUDA": "ON",
+          "GVL_BACKEND_VULKAN": "ON"
+        }
+      },
+      {
+        "name": "debug",
+        "displayName": "Legacy alias of 'cuda' (binary dir build/default)",
+        "inherits": "cuda",
+        "binaryDir": "${sourceDir}/build/default"
       }
+    ],
+
+    "buildPresets": [
+      { "name": "cuda-debug", "configurePreset": "cuda", "configuration": "Debug" },
+      { "name": "cuda-release", "configurePreset": "cuda", "configuration": "Release" },
+      { "name": "vulkan-debug", "configurePreset": "vulkan", "configuration": "Debug" },
+      { "name": "vulkan-release", "configurePreset": "vulkan", "configuration": "Release" }
+    ],
+
+    "testPresets": [
+      {
+        "name": "default",
+        "hidden": true,
+        "output": { "outputOnFailure": true },
+        "filter": { "exclude": { "label": "performance" } }
+      },
+      { "name": "cuda-debug", "inherits": "default", "configurePreset": "cuda", "configuration": "Debug" },
+      { "name": "vulkan-debug", "inherits": "default", "configurePreset": "vulkan", "configuration": "Debug" }
     ]
-  }
+}

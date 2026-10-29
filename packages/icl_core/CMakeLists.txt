@@ -31,7 +31,9 @@ generate_export_header(icl_core_logging
 
 add_subdirectory(icl_core_config)
 add_subdirectory(icl_core_logging)
-add_subdirectory(icl_core_testsuite)
+if(NOT DEFINED BUILD_TESTS OR BUILD_TESTS) # BUILD_TESTS comes from the gpu_voxels root project
+  add_subdirectory(icl_core_testsuite)
+endif()
 add_subdirectory(icl_core_performance_monitor)
 
 include(CMakePackageConfigHelpers)

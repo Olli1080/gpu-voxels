@@ -11,7 +11,7 @@ set(INCLUDE_DIR include/gpu_voxels/helpers)
 #  EXPORT_FILE_NAME
 #    "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}/ImportExport.h"
 #)
-find_package(CUDAToolkit REQUIRED)
+# CUDAToolkit, Stb and PCL are located centrally in cmake/FindDependencies.cmake
 target_include_directories(${PROJECT_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -77,11 +77,9 @@ target_link_libraries(${PROJECT_NAME}
     gpu_voxels_logging 
 )
 
-find_package(Stb REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 
-if(ON) #TODO:: replace with pcl question
-  find_package(PCL REQUIRED COMPONENTS io)
+if(GVL_WITH_PCL)
   target_include_directories(${PROJECT_NAME} PRIVATE ${PCL_INCLUDE_DIRS})
   target_link_directories(${PROJECT_NAME} PRIVATE ${PCL_LIBRARY_DIRS})
   target_compile_definitions(${PROJECT_NAME} INTERFACE ${PCL_DEFINITIONS} PUBLIC _BUILD_GVL_WITH_PCL_SUPPORT_)
@@ -95,7 +93,7 @@ if(ON) #TODO:: replace with pcl question
     ${INCLUDE_DIR}/PcdFileReader.h
   )
 
-  if (ON) #TODO:: check for openni2
+  if (GVL_WITH_KINECT) # needs the openni2 feature of the vcpkg pcl port
 
     target_compile_definitions(${PROJECT_NAME} PUBLIC _BUILD_GVL_WITH_KINECT_SUPPORT_)
 

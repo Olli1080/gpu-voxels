@@ -1,19 +1,55 @@
 {
+    "name": "gpu-voxels",
+    "description": "GPU-Voxels: volumetric collision detection on the GPU (CUDA backend; Vulkan backend in preparation)",
     "dependencies": [
-        { 
-            "name": "pcl",
-            "features": ["openni2"]
-        },
-	    "boost-interprocess",
-        "boost-test",
+        "boost-interprocess",
         "tinyxml2",
-        "cppunit",
-        "cuda",
-        "glew",
-        "glm",
-        "freeglut",
-        "zlib",
-        "stb",
-        "eigen3"
-    ]
+        "zlib"
+    ],
+    "default-features": [],
+    "features": {
+        "cuda": {
+            "description": "CUDA backend (GVL_BACKEND_CUDA); needs the CUDA toolkit installed",
+            "dependencies": [
+                "cuda",
+                "eigen3",
+                "glm",
+                "stb"
+            ]
+        },
+        "pcl": {
+            "description": "PCL point cloud support and OpenNI2 Kinect input in gpu_voxels_helpers (GVL_WITH_PCL / GVL_WITH_KINECT)",
+            "dependencies": [
+                {
+                    "name": "pcl",
+                    "features": [
+                        "openni2"
+                    ]
+                }
+            ]
+        },
+        "vulkan": {
+            "description": "Vulkan backend headers and allocator (GVL_BACKEND_VULKAN). The Vulkan SDK (VULKAN_SDK: loader, validation layer, glslang) is a separate prerequisite.",
+            "dependencies": [
+                "vulkan-headers",
+                "vulkan-memory-allocator"
+            ]
+        },
+        "tests": {
+            "description": "Unit tests (BUILD_TESTS): GoogleTest for gpu_voxels, Boost.Test and CppUnit for icl_core",
+            "dependencies": [
+                "boost-test",
+                "cppunit",
+                "gtest"
+            ]
+        },
+        "viewer": {
+            "description": "Legacy OpenGL viewer (packages/gpu_visualization) - currently not part of the CMake build",
+            "dependencies": [
+                "freeglut",
+                "glew",
+                "glm"
+            ]
+        }
+    }
 }

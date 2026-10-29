@@ -83,4 +83,6 @@ install(
 
 #TODO:: add tests
 #add_subdirectory(tests)
-add_subdirectory(ts)
+if(NOT DEFINED BUILD_TESTS OR BUILD_TESTS) # BUILD_TESTS comes from the gpu_voxels root project
+  add_subdirectory(ts)
+endif()
