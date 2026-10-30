@@ -33,7 +33,7 @@ Library targets only (`gpu_voxels_*`, `icl_core*`). Viewer, examples, tests, vis
 
 ## Next steps
 1. **S6d** dynamic octree updates (`insert`, `propagate`, `rebuild`) on the faithful route, wavefront style without the balancer (decision Q24, 2026-10-30; [checkpoint report](../Analysis/2026-10-30_octree_checkpoint/summary.md)); then S6e (façade, `OctreeStorage`), S7 (façade completeness, URDF robot); S6f (sensor pipeline) only on request (Q6). Plan: [vulkan_migration_plan_DRAFT.md](../plans_wip/vulkan_migration_plan_DRAFT.md), slices: [slice_plan.md](../Analysis/2026-10-29_octree_design_review/slice_plan.md).
-2. **Machine change** to an i9-14900K: before it, carry over the local branch (9 unpushed commits) and the two archive folders; after it, run the baseline and re-validate the timing-based decisions: [machine_change_14900k.md](machine_change_14900k.md) (open question Q25).
+2. **Machine change** to an i9-14900K: before it, carry over the local branch (all commits are unpushed; `git rev-list --count master..vulkan-migration`) and the two archive folders; after it, run the baseline and re-validate the timing-based decisions: [machine_change_14900k.md](machine_change_14900k.md) (open question Q25).
 3. Open questions for the user: Q12 (cleanup candidates), Q25 (new machine / GPU); Q5 (CUDA parity) stays "later" unless the new machine has an NVIDIA GPU. 64-bit voxel list ids for the Morton list are still open (S6 prerequisite).
 4. Done so far: P1, P2, S1-S5, S6a-S6c (collisions with the wavefront and the load balancer), the octree checkpoint and K34 (see the status log below and the step log of the plan).
 
