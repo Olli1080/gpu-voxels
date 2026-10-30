@@ -31,7 +31,7 @@ namespace gpu_voxels::vulkan
 		struct HeadsPush { uint32_t n, shift; };
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
-		struct ExtractPush { uint32_t item_count, level, min_level, write_mode, out_capacity, next_capacity; };
+		struct ExtractPush { uint32_t item_count, level, min_level, out_capacity, next_capacity; };
 		struct CollidePush
 		{
 			uint64_t root;
@@ -43,6 +43,11 @@ namespace gpu_voxels::vulkan
 		};
 		static_assert(sizeof(CollidePush) == 56);
 		struct ClearPush { uint32_t count, stride, mask; };
+		struct BalancePush { uint32_t stack_size, tasks; };
+		constexpr uint32_t kBalanceLevels = 15;
+		constexpr uint32_t kBalanceThreads = 64;
+		constexpr uint32_t kBalanceItems = 8;
+		constexpr uint32_t kBalanceWords = 6;
 		struct TreePush { uint32_t item_count, level, min_level, mark; int32_t threshold; uint32_t next_capacity; };
 
 		/// Group counts for a 1D problem of `items` invocations (2D grid when the x limit is exceeded, see octree_gid.glsl).
@@ -82,10 +87,14 @@ namespace gpu_voxels::vulkan
 				  extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_extract_prob_comp) : GVL_SHADER_SPAN(octree_extract_det_comp), 5, sizeof(ExtractPush)),
 				  collide(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_collide_prob_comp) : GVL_SHADER_SPAN(octree_collide_det_comp), 3, sizeof(CollidePush)),
 				  clear_collision(c, GVL_SHADER_SPAN(octree_clear_collision_comp), 1, sizeof(ClearPush)),
-				  collide_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_collide_trees_prob_comp) : GVL_SHADER_SPAN(octree_collide_trees_det_comp), 3, sizeof(TreePush))
+				  collide_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_collide_trees_prob_comp) : GVL_SHADER_SPAN(octree_collide_trees_det_comp), 3, sizeof(TreePush)),
+				  lb_count(c, GVL_SHADER_SPAN(octree_lb_count_comp), 4, sizeof(BalancePush)),
+				  lb_move(c, GVL_SHADER_SPAN(octree_lb_move_comp), 6, sizeof(BalancePush)),
+				  lb_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_trees_prob_comp) : GVL_SHADER_SPAN(octree_lb_trees_det_comp), 4, 6 * sizeof(uint32_t)),
+				  lb_extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_extract_prob_comp) : GVL_SHADER_SPAN(octree_lb_extract_det_comp), 6, 5 * sizeof(uint32_t))
 			{
 			}
-			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees;
+			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), chunks(kLevelCount)
@@ -104,11 +113,13 @@ namespace gpu_voxels::vulkan
 		Context& context;
 		OctreeKind kind;
 		uint32_t max_groups_x = 65535;
-		Primitives primitives;
+		mutable Primitives primitives; // recording scans does not change the tree
 		Kernels kernels;
 		std::vector<std::optional<Chunk>> chunks; ///< index = level
 		uint32_t voxels = 0;
 		uint64_t dropped = 0;
+		OctreeBalancerConfig balancer;
+		mutable OctreeBalancerStats balancer_stats; // statistics of the last traversal, written by const traversals
 
 		// ------------------------------------------------------------------------------------------------ building
 
@@ -436,6 +447,68 @@ namespace gpu_voxels::vulkan
 			return result;
 		}
 
+		// ------------------------------------------------------------------------------------------------ load balancer
+
+		/// Runs a balanced traversal (port of AbstractLoadBalancer::run): `work` is one of the lb_* kernels with the bindings
+		/// stacks, stack counts, idle counter, `extra`; `params` are its remaining push constants (the first three are the stack size,
+		/// the stack threshold and the idle threshold). The traversal starts with one work item.
+		void run_balanced(const ComputePipeline& work, const std::vector<const DeviceBuffer*>& extra, const std::array<uint32_t, 6>& first_item,
+			const std::vector<uint32_t>& params) const
+		{
+			const uint32_t tasks = balancer.tasks, stack = balancer.stack_size;
+			const uint32_t stack_threshold = stack + kBalanceItems - kBalanceThreads;
+			const uint32_t idle_threshold = std::max<uint32_t>(1, static_cast<uint32_t>(balancer.idle_fraction * float(tasks)));
+			const uint64_t stack_bytes = uint64_t(tasks) * stack * kBalanceWords * 4;
+			DeviceBuffer stacks_a(context, stack_bytes), stacks_b(context, stack_bytes), counts(context, uint64_t(tasks) * 4), idle(context, 4);
+			DeviceBuffer item_sums(context, (uint64_t(tasks) * kBalanceLevels + 1) * 4), scanned(context, (uint64_t(tasks) * kBalanceLevels + 1) * 4);
+			DeviceBuffer inter_offsets(context, uint64_t(tasks) * kBalanceLevels * 4), balance_result(context, 4);
+			DeviceBuffer* current = &stacks_a;
+			DeviceBuffer* other = &stacks_b;
+
+			std::vector<uint32_t> zero_counts(tasks, 0u);
+			zero_counts[0] = 1;
+			counts.upload<uint32_t>(zero_counts);
+			current->upload(first_item.data(), sizeof(uint32_t) * first_item.size());
+			balancer_stats = {};
+
+			uint64_t total = 1;
+			while (total > 0)
+			{
+				const uint32_t zero = 0;
+				idle.upload(&zero, 4, 0);
+				{
+					std::vector<const DeviceBuffer*> buffers = { current, &counts, &idle };
+					buffers.insert(buffers.end(), extra.begin(), extra.end());
+					std::vector<uint32_t> push = { stack, stack_threshold, idle_threshold };
+					push.insert(push.end(), params.begin(), params.end());
+					CommandBatch batch(context);
+					batch.dispatch(work, std::span<const DeviceBuffer* const>(buffers.data(), buffers.size()), tasks, 1, 1, push.data(), push.size() * 4);
+					batch.submit_and_wait();
+					++balancer_stats.kernel_launches;
+				}
+
+				// redistribute the items: count per level and stack, scan, deal out round robin
+				balance_result.upload(&zero, 4);
+				item_sums.upload(&zero, 4, uint64_t(tasks) * kBalanceLevels * 4); // the entry behind the sums receives the total of the scan
+				{
+					KeepAlive keep_alive;
+					CommandBatch batch(context);
+					const BalancePush push{ stack, tasks };
+					batch.dispatch(kernels.lb_count, { current, &counts, &item_sums, &inter_offsets }, tasks, 1, 1, &push, sizeof(push));
+					batch.barrier();
+					primitives.record_exclusive_scan(batch, item_sums, scanned, tasks * kBalanceLevels + 1, keep_alive);
+					batch.barrier();
+					batch.dispatch(kernels.lb_move, { current, other, &counts, &scanned, &inter_offsets, &balance_result }, tasks, 1, 1, &push, sizeof(push));
+					batch.submit_and_wait();
+				}
+				++balancer_stats.balance_steps;
+				total = read_word(balance_result, 0);
+				std::swap(current, other);
+				if (total > 0 && (total + tasks - 1) / tasks >= stack_threshold)
+					throw VulkanError("Octree load balancer: the work stacks cannot hold the work items (increase tasks or stack_size)");
+			}
+		}
+
 		/// Tree vs tree by a level-synchronous wavefront (see octree_collide_trees.glsl). Returns the volume in voxels.
 		uint64_t collide_trees_with(Impl& other, const OctreeTreeCollisionOptions& options)
 		{
@@ -474,6 +547,22 @@ namespace gpu_voxels::vulkan
 					chunks[kRootLevel]->buffer.upload(block.data(), block.size());
 				}
 				return box;
+			}
+
+			if (options.use_load_balancer)
+			{
+				const uint64_t a_first = a_part ? root_a.child : root_address();
+				const uint64_t b_first = b_part ? root_b.child : other.root_address();
+				DeviceBuffer counters(context, 16 * 4);
+				counters.upload<uint32_t>(std::vector<uint32_t>(16, 0u));
+				const std::array<uint32_t, 6> first = { uint32_t(a_first), uint32_t(a_first >> 32), uint32_t(b_first), uint32_t(b_first >> 32),
+					(a_part ? 1u : 0u) | (b_part ? 2u : 0u) | ((kRootLevel - 1) << 8), 0u };
+				run_balanced(kernels.lb_trees, { &counters }, first, { options.min_level, options.mark_collisions ? 1u : 0u, uint32_t(options.occupancy_threshold) });
+				const auto counts = counters.download_vector<uint32_t>(16);
+				uint64_t volume = 0, weight = 1;
+				for (uint32_t level = 0; level < kLevelCount; ++level, weight *= 8)
+					volume += uint64_t(counts[1 + level]) * weight;
+				return volume;
 			}
 
 			uint64_t max_items = 1;
@@ -561,8 +650,16 @@ namespace gpu_voxels::vulkan
 				if (chunks[level])
 					max_blocks = std::max(max_blocks, chunks[level]->blocks);
 
-			auto traverse = [&](uint32_t write_mode, DeviceBuffer& out, uint32_t capacity) -> uint32_t
+			auto traverse = [&](DeviceBuffer& out, uint32_t capacity) -> uint32_t
 			{
+				if (options.use_load_balancer)
+				{
+					DeviceBuffer counters(context, 8);
+					counters.upload<uint32_t>(std::vector<uint32_t>{ 0u, 0u });
+					const std::array<uint32_t, 6> first = { uint32_t(root.child), uint32_t(root.child >> 32), 0u, 0u, (kRootLevel - 1) << 8, 0u };
+					run_balanced(kernels.lb_extract, { &out, &counters, &selection_buffer }, first, { options.min_level, capacity });
+					return read_word(counters, 1);
+				}
 				DeviceBuffer items_a(context, max_blocks * 16), items_b(context, max_blocks * 16), counters(context, 8);
 				DeviceBuffer* current = &items_a;
 				DeviceBuffer* next = &items_b;
@@ -577,7 +674,7 @@ namespace gpu_voxels::vulkan
 					const uint64_t next_capacity = level >= 1 && chunks[level - 1] ? chunks[level - 1]->blocks : 0;
 					CommandBatch batch(context);
 					dispatch(batch, kernels.extract, { current, next, &out, &counters, &selection_buffer }, uint64_t(item_count) * 8,
-						ExtractPush{ item_count, uint32_t(level), options.min_level, write_mode, capacity, uint32_t(next_capacity) });
+						ExtractPush{ item_count, uint32_t(level), options.min_level, capacity, uint32_t(next_capacity) });
 					batch.submit_and_wait();
 					const uint32_t produced = read_word(counters, 0);
 					if (produced > next_capacity)
@@ -589,11 +686,11 @@ namespace gpu_voxels::vulkan
 			};
 
 			DeviceBuffer dummy(context, 16);
-			const uint32_t total = traverse(0, dummy, 0);
+			const uint32_t total = traverse(dummy, 0);
 			if (total == 0)
 				return {};
 			DeviceBuffer out(context, uint64_t(total) * 16);
-			const uint32_t written = traverse(1, out, total);
+			const uint32_t written = traverse(out, total);
 			if (written != total)
 				throw VulkanError("Octree::extract: the second pass found a different number of nodes");
 			const auto raw = out.download_vector<uint32_t>(uint64_t(total) * 4);
@@ -628,6 +725,16 @@ namespace gpu_voxels::vulkan
 	}
 
 	void Octree::set_max_groups_x(uint32_t groups) { impl_->max_groups_x = groups; }
+
+	void Octree::set_balancer_config(const OctreeBalancerConfig& config)
+	{
+		if (config.tasks == 0 || config.tasks > 65535 || config.stack_size < kBalanceThreads || config.stack_size > (1u << 20) ||
+			!(config.idle_fraction > 0.0f && config.idle_fraction <= 1.0f))
+			throw VulkanError("Octree::set_balancer_config: tasks must be 1..65535, stack_size 64..2^20 and idle_fraction in (0, 1]");
+		impl_->balancer = config;
+	}
+
+	OctreeBalancerStats Octree::balancer_stats() const { return impl_->balancer_stats; }
 
 	OctreeKind Octree::kind() const { return impl_->kind; }
 	Context& Octree::context() const { return impl_->context; }

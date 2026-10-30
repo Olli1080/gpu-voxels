@@ -1,0 +1,45 @@
+#version 450
+// First step of balancing the work stacks (kernelCountElements): one work group per stack counts its items per level.
+// item_sums[(LEVELS - 1 - level) * tasks + task] = items of that level (level-major, highest level first, so that one exclusive
+// scan over the whole array orders the items by level and stack), inter_offsets[task * LEVELS + level] = number of items of
+// higher levels on this stack, i.e. the index of the first item of that level (the stack is sorted by level, deepest on top).
+// Work items store their level in bits 8..15 of word 4.
+layout(local_size_x = 64) in;
+const uint LEVELS = 15u;
+const uint WORDS = 6u;
+layout(std430, set = 0, binding = 0) readonly buffer Stacks { uint stacks[]; };
+layout(std430, set = 0, binding = 1) readonly buffer StackCounts { uint stack_counts[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer ItemSums { uint item_sums[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer InterOffsets { uint inter_offsets[]; };
+layout(push_constant) uniform Push { uint stack_size; uint tasks; } pc;
+
+shared uint level_sums[LEVELS];
+
+void main()
+{
+    const uint tid = gl_LocalInvocationID.x;
+    const uint task = gl_WorkGroupID.x;
+    const uint count = stack_counts[task];
+    for (uint l = tid; l < LEVELS; l += 64u)
+        level_sums[l] = 0u;
+    barrier();
+    for (uint i = tid; i < count && count <= pc.stack_size; i += 64u)
+        atomicAdd(level_sums[(stacks[(task * pc.stack_size + i) * WORDS + 4u] >> 8u) & 255u], 1u);
+    barrier();
+    for (uint l = tid; l < LEVELS; l += 64u)
+        item_sums[pc.tasks * (LEVELS - 1u - l) + task] = level_sums[l];
+    barrier();
+    if (tid == 0u)
+    {
+        uint sum = 0u;
+        for (int l = int(LEVELS) - 1; l >= 0; --l)
+        {
+            const uint here = level_sums[l];
+            level_sums[l] = sum;
+            sum += here;
+        }
+    }
+    barrier();
+    for (uint l = tid; l < LEVELS; l += 64u)
+        inter_offsets[task * LEVELS + l] = level_sums[l];
+}

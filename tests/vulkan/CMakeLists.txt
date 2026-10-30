@@ -15,6 +15,7 @@ gvl_add_test(test_vulkan
     test_kinematic_chain.cpp
     test_meta_point_cloud.cpp
     test_octree_build.cpp
+    test_octree_balancer.cpp
     test_octree_collision.cpp
     test_octree_tree_collision.cpp
     test_morton.cpp

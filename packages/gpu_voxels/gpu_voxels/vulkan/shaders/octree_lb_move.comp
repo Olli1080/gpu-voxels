@@ -1,0 +1,52 @@
+#version 450
+// Second step of balancing the work stacks (kernelMoveElements): the items of all stacks are dealt out round robin, highest level
+// first, so every stack gets about the same number of items of every level. `sums` is the exclusive scan of the item sums of
+// octree_lb_count.comp (its last entry is the total number of items). An item whose target stack position lies beyond the stack is
+// dropped instead of written out of bounds (the host then sees a total that exceeds the capacity of the stacks and throws).
+// result[0] = total number of items.
+layout(local_size_x = 64) in;
+const uint LEVELS = 15u;
+const uint WORDS = 6u;
+layout(std430, set = 0, binding = 0) readonly buffer StacksIn { uint stacks_in[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer StacksOut { uint stacks_out[]; };
+layout(std430, set = 0, binding = 2) buffer StackCounts { uint stack_counts[]; };
+layout(std430, set = 0, binding = 3) readonly buffer Sums { uint sums[]; };
+layout(std430, set = 0, binding = 4) readonly buffer InterOffsets { uint inter_offsets[]; };
+layout(std430, set = 0, binding = 5) buffer Result { uint result[]; };
+layout(push_constant) uniform Push { uint stack_size; uint tasks; } pc;
+
+shared uint level_offsets[2u * LEVELS];
+
+void main()
+{
+    const uint tid = gl_LocalInvocationID.x;
+    const uint task = gl_WorkGroupID.x;
+    const uint count = stack_counts[task];
+    for (uint l = tid; l < LEVELS; l += 64u)
+    {
+        level_offsets[l] = sums[(LEVELS - 1u - l) * pc.tasks + task];
+        level_offsets[LEVELS + l] = inter_offsets[task * LEVELS + l];
+    }
+    barrier();
+    for (uint i = tid; i < count; i += 64u)
+    {
+        const uint base = (task * pc.stack_size + i) * WORDS;
+        const uint level = (stacks_in[base + 4u] >> 8u) & 255u;
+        const uint offset = level_offsets[level] + (i - level_offsets[LEVELS + level]);
+        const uint target = offset % pc.tasks;
+        const uint position = offset / pc.tasks;
+        if (position >= pc.stack_size)
+            continue;
+        const uint out_base = (target * pc.stack_size + position) * WORDS;
+        for (uint w = 0u; w < WORDS; ++w)
+            stacks_out[out_base + w] = stacks_in[base + w];
+    }
+    barrier(); // every thread of this group has read the count; only now the count may be replaced
+    if (tid == 0u)
+    {
+        const uint total = sums[pc.tasks * LEVELS];
+        stack_counts[task] = total / pc.tasks + ((total % pc.tasks) >= (task + 1u) ? 1u : 0u);
+        if (task == 0u)
+            result[0] = total;
+    }
+}

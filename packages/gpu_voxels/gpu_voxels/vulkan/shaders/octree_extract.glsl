@@ -5,7 +5,7 @@
 //    selected leaf children instead;
 //  * `selection` is the 256 entry table indexed by the full status byte (non zero = extract).
 // counters[0] = number of items written to next_items, counters[1] = number of emitted nodes (counted always, written only when
-// write_mode != 0 and the index is below capacity).
+// the index is below capacity: the counting pass has capacity 0).
 #include "octree_nodes.glsl"
 
 layout(local_size_x = 64) in;
@@ -20,7 +20,6 @@ layout(push_constant) uniform Push
     uint item_count;
     uint level;
     uint min_level;
-    uint write_mode;
     uint out_capacity;
     uint next_capacity;
 } pc;
@@ -28,7 +27,7 @@ layout(push_constant) uniform Push
 void emit(uint64_t id, uint level, uint status, int occupancy)
 {
     const uint index = atomicAdd(counters[1], 1u);
-    if (pc.write_mode != 0u && index < pc.out_capacity)
+    if (index < pc.out_capacity)
     {
         out_nodes[4u * index] = uint(id & 0xFFFFFFFFul);
         out_nodes[4u * index + 1u] = uint(id >> 32);

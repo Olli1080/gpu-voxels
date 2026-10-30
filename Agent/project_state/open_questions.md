@@ -5,7 +5,6 @@ Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary
 ## Open
 | # | Question | Why it matters | Agent's default if unanswered |
 |---|---|---|---|
-| Q23 | **Octree load balancer (checkpoint):** port the CUDA persistent-block load balancer (faithful to Q19) or keep the plain kernels / wavefront used for build, find, extract and all collisions? Measured on the Intel UHD (Debug build): tree 1 M voxels vs 2 M voxel map ~30 ms, two trees of 1 M voxels ~52 ms; there are no CUDA numbers | Effort of S6c-balancer (the largest piece of CUDA octree code, warp-tuned for one GPU) vs. a possible speed gain; the slice plan names "balancer port not competitive with a plain wavefront" as a trigger to drop it | Keep the wavefront until a measurement on a larger workload shows a problem |
 | Q12 | **Cleanup candidates** ([cleanup_candidates.md](cleanup_candidates.md)): approve deletions? | Less confusion | Leave untouched |
 
 ## Answered
@@ -34,4 +33,5 @@ Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary
 | Q7 | **"ja"** (2026-10-29) - interpreted as: public signatures that expose `thrust::device_vector` MAY change, source compatibility is not required (not confirmed, the question had two parts) | The S7 façade may use Vulkan-native types instead of an alias layer |
 | Q11 | **"natürlich!!!"** (2026-10-29): the agent may create a work branch and commit locally; pushing / PRs still only on request | Branch `vulkan-migration`, commits grouped by area, messages state what is verified |
 | Q10 | **Yes - bump the vcpkg submodule** (2026-10-29: "ja, ja und nochmal JA"; the old pin 984f9232b2 of 2025-06-06 came from the upstream repository) | Done 2026-10-30: submodule at `d4c0a46cb8` (2026-10-28), vcpkg-tool re-bootstrapped, `build/verify-vk` reconfigured and rebuilt clean, `test_vulkan` 155/155 and ctest 184/185 (only the pre-existing `ts_icl_core`); K17 and K7 resolved, K30 records the stale-build pitfalls |
+| Q23 | **Octree load balancer: keep both** (2026-10-30: "warum nicht beides haben?"): the wavefront kernels stay the default, the CUDA persistent-block load balancer is ported as a second, selectable implementation (tree vs tree, extract, then the map queries) | Done 2026-10-30: both exist and give identical results (tested against the same reference); measured on the Intel UHD the wavefront is faster (tree vs tree 40-47 ms vs 82-110 ms, extract 690-750 ms vs 770-880 ms), so it stays the default; the balancer stays selectable for GPUs / workloads where it may pay off |
 | Q14 | Agent folder naming — `Agent` as requested (no objection raised) | — |

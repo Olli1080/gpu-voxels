@@ -78,6 +78,9 @@ namespace gpu_voxels::vulkan
 		uint32_t min_level = 0;
 		/// 256 flags indexed by the full status byte; empty = extract every node.
 		std::vector<uint8_t> status_selection;
+		/// Use the load balancing framework (persistent work groups with their own stacks) instead of the level-synchronous wavefront.
+		/// Same result, different work distribution.
+		bool use_load_balancer = false;
 	};
 
 	/// Options of the collision queries (CUDA intersect_sparse / intersect_morton).
@@ -116,6 +119,23 @@ namespace gpu_voxels::vulkan
 		bool mark_collisions = true;
 		/// Probabilistic trees: a node is occupied when its occupancy is known and >= this.
 		int32_t occupancy_threshold = 10;
+		/// Use the load balancing framework instead of the level-synchronous wavefront (same result).
+		bool use_load_balancer = false;
+	};
+
+	/// Parameters of the load balancing framework (CUDA AbstractLoadBalancer: 2688 tasks, stacks of 700 items, idle threshold 2/3).
+	struct OctreeBalancerConfig
+	{
+		uint32_t tasks = 128;       ///< work groups, each with its own stack
+		uint32_t stack_size = 700;  ///< work items per stack, at least 64
+		float idle_fraction = 2.0f / 3.0f; ///< the kernel ends when this fraction of the work groups is idle; then the stacks are rebalanced
+	};
+
+	/// What the last balanced traversal did.
+	struct OctreeBalancerStats
+	{
+		uint32_t kernel_launches = 0; ///< work kernels
+		uint32_t balance_steps = 0;   ///< redistributions of the stacks
 	};
 
 	struct OctreeStats
@@ -187,6 +207,9 @@ namespace gpu_voxels::vulkan
 		/// Raw access to the chunk of a level (blocks of 8 nodes, formats in OctreeFormat.h) for tests and tools; writing to it can
 		/// corrupt the tree (check_tree() finds that). 	hrows VulkanError if the level has no chunk.
 		[[nodiscard]] DeviceBuffer& chunk(uint32_t level);
+		/// Configures the load balancing framework (used by traversals with use_load_balancer). \throws VulkanError for invalid values.
+		void set_balancer_config(const OctreeBalancerConfig& config);
+		[[nodiscard]] OctreeBalancerStats balancer_stats() const;
 		/// Test hook: caps the x group count of every dispatch (default 65535) so that the 2D dispatch path is exercised with small trees.
 		void set_max_groups_x(uint32_t groups);
 
