@@ -1,0 +1,13 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_EXT_buffer_reference : require
+// Reads one word through a device address (used by the fault experiments, see test_device_address_faults.cpp).
+layout(local_size_x = 1) in;
+layout(buffer_reference, std430, buffer_reference_align = 4) buffer Word { uint v; };
+layout(std430, set = 0, binding = 0) buffer Out { uint value; };
+layout(push_constant) uniform Push { uint64_t address; } pc;
+
+void main()
+{
+    value = Word(pc.address).v;
+}
