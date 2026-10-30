@@ -46,6 +46,7 @@ Per level one sorted array of Morton prefixes (`uint64`) with status (and occupa
 Option 2, in read-only-first order, with Option 3 as the fallback if the dynamic operations of Option 2 turn out disproportionately hard. Both need the same prerequisite work (64-bit sort keys, Morton encode/decode, a CPU reference of the node semantics), so starting with the common slices S6a-S6c ([slice_plan.md](slice_plan.md)) does not commit to either beyond S6b.
 
 ## Measurements to take before S6d (dynamic updates)
+Done 2026-10-30, results in [../2026-10-30_octree_checkpoint/measurements.md](../2026-10-30_octree_checkpoint/measurements.md) (the list below is the original request; the frontier was measured with the CPU recursion at 150-283 k voxels).
 - Intel UHD: time of the existing sort/scan at 4-16 M elements with 64-bit keys (expected: 2x the 32-bit radix cost per pass, 6 passes for 42 bit).
 - Frontier sizes of tree-vs-tree intersect on random trees (decides queue chunking).
 - Node counts and bytes per voxel for dense and sparse inputs under Option 2 vs 3 (decides whether Option 3 stays a fallback).

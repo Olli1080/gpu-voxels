@@ -5,6 +5,7 @@ Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary
 ## Open
 | # | Question | Why it matters | Agent's default if unanswered |
 |---|---|---|---|
+| Q24 | **S6d route after the checkpoint** ([checkpoint report](../Analysis/2026-10-30_octree_checkpoint/summary.md)): (a) continue the faithful route, wavefront style, Option 3 stays the documented fallback for sparse data, (b) the same but fix K34 first, (c) switch S6d to Option 2 or 3 | The faithful layout costs 5-8x more memory per voxel than sorted levels for sparse data (396 vs 72 B/voxel at 1 M random voxels) and 4.8x less for dense data; no revisit trigger is met except the balancer, which Q23 resolved | (b): continue faithful and fix K34, S6d is not started before you answer |
 | Q12 | **Cleanup candidates** ([cleanup_candidates.md](cleanup_candidates.md)): approve deletions? | Less confusion | Leave untouched |
 
 ## Answered

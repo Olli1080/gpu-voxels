@@ -245,6 +245,9 @@ namespace gvl_reference::octree
 		struct TreeCollisionResult
 		{
 			uint64_t voxels = 0;
+			/// Work items of a level-synchronous traversal: block_pairs[l] = pairs of blocks (8 sibling nodes each) of level l that
+			/// are refined, i.e. the size of the frontier at level l (levels 13 .. 1; level 13 holds the first item, the children of the roots).
+			std::array<uint64_t, 15> block_pairs{};
 			std::set<std::pair<uint32_t, uint64_t>> flagged_this;
 			std::set<std::pair<uint32_t, uint64_t>> flagged_other;
 		};
@@ -287,7 +290,10 @@ namespace gvl_reference::octree
 						if (mark)
 							(a_active ? r.flagged_this : r.flagged_other).insert(a_active ? std::make_pair(a.level, a.id) : std::make_pair(b.level, b.id));
 					}
-					if (!is_last && (a_part || b_part) && !end_here)
+					const bool refine = !is_last && (a_part || b_part) && !end_here;
+					if (refine)
+						++r.block_pairs[level - 1];
+					if (refine)
 						for (uint64_t c = 0; c < 8; ++c)
 						{
 							// a uniform node (no PART flag) is its own stand-in, a PART node always owns a block
@@ -334,6 +340,7 @@ namespace gvl_reference::octree
 			const Node& ra = root();
 			const Node& rb = other.root();
 			const bool a_part = (ra.status & status::PART) && ra.has_children, b_part = (rb.status & status::PART) && rb.has_children;
+			++r.block_pairs[kRootLevel - 1]; // the first work item: the children of the two roots
 			for (uint64_t c = 0; c < 8; ++c)
 				rec.visit(a_part ? rec.child(*this, ra, c) : ra, b_part ? rec.child(other, rb, c) : rb, kRootLevel - 1, a_part, b_part);
 			return r;

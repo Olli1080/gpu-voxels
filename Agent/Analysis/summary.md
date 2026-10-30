@@ -5,6 +5,7 @@ Home for **investigation tasks**: one file per investigation, named `<YYYY-MM-DD
 | File | Content |
 |---|---|
 | [_template.md](_template.md) | Template for a new analysis (question, method, evidence, findings, confidence, follow-ups) |
+| [2026-10-30_octree_checkpoint/](2026-10-30_octree_checkpoint/summary.md) | **Octree checkpoint (after S6c):** 64-bit sort, bytes per voxel (faithful vs index pool vs sorted levels), frontier sizes, balancer vs wavefront, pointer-fault experience, revisit triggers; recommendation for S6d (decision Q24) |
 | [2026-10-29_octree_design_review/](2026-10-29_octree_design_review/summary.md) | **Octree design review (S6):** CUDA design facts, porting hazards, three candidate designs, recommendation (index pool + wavefront), slice plan and the decisions Q19-Q22 |
 | [2026-10-22_workspace_survey.md](2026-10-22_workspace_survey.md) | Initial survey of the three workspaces and the failed migration attempts: method, what was and was not verified, pointers to resulting knowledge |
 

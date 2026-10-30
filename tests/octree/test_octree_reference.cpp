@@ -621,3 +621,32 @@ TEST(OctreeFormat, FillerAndBlockSizes)
 	EXPECT_EQ(fmt::block_bytes(OctreeKind::Probabilistic, 0), 16u);
 	EXPECT_EQ(fmt::block_bytes(OctreeKind::Probabilistic, 14), 96u);
 }
+
+TEST(OctreeReference, TreeCollisionCountsTheBlockPairsOfEveryLevel)
+{
+	// one voxel against itself: a single path, one block pair per level 13 .. 1
+	const std::vector<ref::Voxel> one = { { 0, 0, 0 } };
+	const ref::OctreeReference single(ref::Kind::Deterministic, one);
+	const auto path = single.collide_tree(single, 0).block_pairs;
+	for (uint32_t level = 0; level < 15; ++level)
+		EXPECT_EQ(path[level], level >= 1 && level <= 13 ? 1u : 0u) << "level " << level;
+
+	// two voxels that split at level 4 (ids 0 and 512): one block pair down to level 3, two block pairs at levels 2 and 1
+	const std::vector<ref::Voxel> two = { { 0, 0, 0 }, { 8, 0, 0 } };
+	const ref::OctreeReference pair(ref::Kind::Deterministic, two);
+	const auto forked = pair.collide_tree(pair, 0).block_pairs;
+	for (uint32_t level = 0; level < 15; ++level)
+		EXPECT_EQ(forked[level], level >= 3 && level <= 13 ? 1u : (level == 1 || level == 2 ? 2u : 0u)) << "level " << level;
+
+	// min_level 3 ends the traversal there: nothing below the level 3 nodes is refined
+	const auto cut = pair.collide_tree(pair, 3).block_pairs;
+	for (uint32_t level = 0; level < 15; ++level)
+		EXPECT_EQ(cut[level], level >= 3 && level <= 13 ? 1u : 0u) << "level " << level;
+
+	// trees that diverge at the root: the roots are refined (one item at level 13), none of its children collide
+	const std::vector<ref::Voxel> far = { { 9000, 9000, 9000 } };
+	const ref::OctreeReference apart(ref::Kind::Deterministic, far);
+	const auto none = single.collide_tree(apart, 0).block_pairs;
+	for (uint32_t level = 0; level < 15; ++level)
+		EXPECT_EQ(none[level], level == 13 ? 1u : 0u) << "level " << level;
+}
