@@ -6,7 +6,7 @@ This page lists what is bound to the current machine, how to rebuild the environ
 ## 1. What exists only on this machine (carry it over, or it is lost)
 | Item | Where | Risk | Action |
 |---|---|---|---|
-| Branch `vulkan-migration`: **local commits, never pushed** (11 on 2026-10-31, `git rev-list --count master..vulkan-migration` gives the current number; last `aa0812a` at that time; `origin/master` = `dd47249`) | `.git` of `C:\Code\2026-10-22_gpu-voxels` | the work exists only in this clone | the user decides how to move it: copy the whole folder including `.git`, or `git bundle create`, or push (agents never push unasked, [working_rules.md](../agent_policies/working_rules.md)) |
+| Branch `vulkan-migration`: **pushed by the user to `origin/vulkan-migration` on 2026-10-31** (head `124250f`, 12 commits ahead of `origin/master` = `dd47249`). Commits made after that are local until the user pushes again (`git status -sb` shows \"ahead\") | `.git` of `C:\Code\2026-10-22_gpu-voxels` | nothing to carry as long as `git status -sb` shows no \"ahead\" and no uncommitted files; agents never push ([working_rules.md](../agent_policies/working_rules.md)) | on the new machine: clone and switch to the branch (section 2) |
 | **Uncommitted** changes and shaders of the failed attempts | `C:\Code\gpu-voxels` (303 changed entries; 49 uncommitted `.comp` shaders exist nowhere else), `C:\Code\gpu-voxels__` | read-only reference material the docs link to; **no other copy** | copy both folders completely (with `.git`) before the old machine is wiped |
 | Reference project for CMake / package conventions | `C:\Code\REACH` ([reach_reference.md](../knowledge_base/reach_reference.md)) | outside the repository | copy if it is still wanted |
 | Build products and dependencies | `build/verify-vk`, `build/verify-cpu`, vcpkg installed trees and `vcpkg.exe` (all git-ignored) | rebuilt in about 10-20 min | recreate (section 2), do not copy |
@@ -16,8 +16,8 @@ This page lists what is bound to the current machine, how to rebuild the environ
 
 ## 2. Setting up the new machine
 ```
-git clone <wherever the branch was moved to> C:\Code\2026-10-22_gpu-voxels      (or copy the folder)
-git switch vulkan-migration
+git clone https://github.com/Olli1080/gpu-voxels.git C:\Code\2026-10-22_gpu-voxels
+git switch vulkan-migration                                 (creates the local branch from origin/vulkan-migration)
 git submodule update --init vcpkg                         (pointer d4c0a46cb8, 2026-10-28; do not change it unasked)
 vcpkg\bootstrap-vcpkg.bat
 ```
