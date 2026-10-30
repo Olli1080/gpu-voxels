@@ -3,7 +3,7 @@
 ## Do not modify
 | Path | Why |
 |---|---|
-| `vcpkg/` (git submodule, pinned `984f9232b2` = commit of 2025-06-06; `git describe` tag text "2022.02.02-…" is stale) | Third-party; bumping it is a user decision (see [build_system.md](../knowledge_base/architecture/build_system.md)) |
+| `vcpkg/` (git submodule, pinned `d4c0a46cb8` = commit of 2026-10-28 since the user-approved bump of 2026-10-30; the old upstream pin was `984f9232b2` of 2025-06-06) | Third-party; changing the pin again is a user decision (see [build_system.md](../knowledge_base/architecture/build_system.md)) |
 | `LICENSE*.txt` (CDDL, BSD, PBA, stb) | Licensing; per-file license headers must be preserved when moving/porting code |
 | `packages/icl_core/**` | Vendored FZI logging/config library; change only for a concrete build/port reason, minimal diff |
 | `packages/gpu_voxels/models/**` | Binary assets (135 `.binvox`, `.stl`, `.urdf`, `.pcd`); `franka model/**` is git-ignored on purpose |

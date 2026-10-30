@@ -10,7 +10,7 @@
 - `vcpkg-configuration.json`: `overlay-ports: ["./overlay-ports"]`.
 - `overlay-ports/eigen3` — Eigen 3.4.0 port-version 3 with `fix-vectorized-reductions-half.patch` and `remove_configure_checks.patch` (nvcc compatibility; README: "NVCC issue but patch available and fixed in Eigen 3.5").
 - `overlay-ports/cudnn` — cuDNN 7.6.5 port (reason not documented; possibly pulled by the PCL/`cuda` dependency chain).
-- `vcpkg/` submodule pinned at `984f9232b2` = commit dated **2025-06-06** (its `git describe` string "2022.02.02-10017" is misleading; vcpkg-tool release 2025-06-02). Bootstrapped on 2026-10-22 (`vcpkg/vcpkg.exe`, git-ignored). No `builtin-baseline` in the manifest ⇒ versions are those of that registry snapshot. Bumping is a user decision.
+- `vcpkg/` submodule: bumped on 2026-10-30 (user decision Q10) from `984f9232b2` (2025-06-06, the pin of the upstream repository) to `d4c0a46cb8` = commit of 2026-10-28; `vcpkg/vcpkg.exe` re-bootstrapped (vcpkg-tool 2026-09-26, git-ignored). No `builtin-baseline` in the manifest ⇒ versions are those of that registry snapshot (Boost 1.92, zlib 1.3.2, gtest 1.18). After a bump see [K30](../known_issues.md): drop the stale zlib cache entries and rebuild with `--clean-first`.
 - Missing from the manifest but used: `urdfdom`, `orocos-kdl` (URDF robot, disabled), `octomap`/OMPL/ROS (examples, `gvl_ompl_planning`).
 
 ## Legacy: ICMAKER
@@ -39,8 +39,6 @@ Plan: [package_layout_proposal.md](../../plans_wip/package_layout_proposal.md). 
 
 ### Reproduce the verified configuration (this machine, no CUDA)
 ```
-set PKG_CONFIG=<path to a pkg-config stub>      & rem workaround for K17
-set VCPKG_KEEP_ENV_VARS=PKG_CONFIG
 cmake -S . -B build/verify-cpu -G "Visual Studio 18 2026" -A x64 -DCMAKE_TOOLCHAIN_FILE=%CD%/vcpkg/scripts/buildsystems/vcpkg.cmake -DGVL_BACKEND_CUDA=OFF -DBUILD_TESTS=ON
 cmake --build build/verify-cpu --config Debug --parallel
 ctest --test-dir build/verify-cpu -C Debug -LE performance

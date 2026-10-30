@@ -8,7 +8,6 @@
 | K4 | URDF robot support disabled (`if(OFF)` in `robot/CMakeLists.txt`); `GpuVoxels::addRobot(urdf)` has no backing target | feature | Old attempt shows a ROS-free route (urdfdom + orocos-kdl) | `reusable_assets.md` |
 | K5 | Circular link dependency voxelmap ⇄ voxellist ⇄ octree (CMake comments "REMOVE THIS LATER") | build/design | Works with CUDA static libs; break it with shared interface headers in any new backend | `library_modules.md` |
 | K6 | Eigen + nvcc incompatibilities (README: "patch available and fixed in Eigen 3.5") | CUDA build | Overlay port `overlay-ports/eigen3` (3.4.0 + 2 patches). Don't delete it while CUDA builds exist | README, `build_system.md` |
-| K7 | vcpkg submodule pinned to a 2025-06-06 snapshot; manifest has no `builtin-baseline` | build | Bump only with user approval; expect port-version changes (PCL, Boost) | `build_system.md` |
 | K8 | Preset hard-codes generator "Visual Studio 17 2022"; VS 2026 ("18") is also installed here | build | Use `-G "Visual Studio 18 2026"` or Ninja explicitly; don't edit the preset without a reason | measured |
 | K9 | `README.md` has mojibake (UTF-8 read as CP1252: `JÃ¼lg`, `â€œ`) and says "ROS (Robot Operation System)" etc.; build instructions say only "Compile with cmake preset" | docs | Fix on request; the README does not describe the Vulkan work | read |
 | K10 | Stale files: `packages/gpu_voxels/CMakeLists_old.txt`, `packages/examples/RobotVsEnvironment - Kopie.cpp` (duplicate of `RobotVsEnvironment.cpp`), `Dependencies.conf`, `pom.xml`, `package.xml` | repo hygiene | Candidates for cleanup — see [cleanup_candidates.md](../project_state/cleanup_candidates.md); delete only with approval | measured |
@@ -18,7 +17,6 @@
 | K14 | `DistanceVoxel` packing documented inconsistently (9-bit in header comment vs 10-bit in the Vulkan port) | correctness | Resolve before porting `DistanceVoxelMap` | `data_model.md` |
 | K15 | Vulkan validation layer was not installed on the machine when the old tests ran | tooling | Install LunarG Vulkan SDK or `vulkan-validationlayers` and re-check with `vulkaninfo` | `kompute_and_glsl_gotchas.md`; **re-measured 2026-10-22: still absent** |
 | K16 | Shells started before the SDK install lack `VULKAN_SDK`; the SDK `Bin` dir is not on PATH; the SDK's vulkaninfo is named `vulkaninfoSDK.exe` | tooling | Use `C:\VulkanSDK.4.363.0\Bin\…` explicitly or restart the shell | measured 2026-10-22 |
-| K17 | The pinned vcpkg (2025-06-06) cannot fetch `msys2-runtime-3.5.4-2` (HTTP 404 on all mirrors); every port that calls `vcpkg_fixup_pkgconfig` fails (observed: `eigen3` overlay, `tinyxml2`) | build | Workaround for local verification: env `PKG_CONFIG` pointing to a stub `pkg-config.cmd` (prints `2.3.0` for `--version`, exits 0) **and** `VCPKG_KEEP_ENV_VARS=PKG_CONFIG`. Real fix: bump the vcpkg submodule (Q10) | measured 2026-10-22 |
 | K18 | `ts_icl_core` (Boost.Test, `packages/icl_core/icl_core/tests/ts_main.cpp`) always fails: "test tree is empty" — the file only defines `BOOST_TEST_MAIN` | tests | Pre-existing, not touched. Options: delete the target, add a real test, or run with a filter; user decision | measured |
 | K19 | The Vulkan SDK 1.4.363 does not contain `vk_mem_alloc.h` (VMA), although its description lists it | tooling | Get VMA from the vcpkg `vulkan-memory-allocator` port (feature `vulkan`) | measured |
 | K20 | Synchronization validation did not report a deliberately missing barrier (RAW between two dispatches) on Intel UHD with layer 1.4.363, although enabled via `VK_EXT_layer_settings` (`validate_sync`), the legacy `VK_LAYER_ENABLES` and `VK_LAYER_VALIDATE_SYNC=1`; the dependent-dispatch test also passes without the barrier | tests/tooling | Missing barriers are only caught when the race changes results (the 200-dispatch read-modify-write test does). Strengthen later (larger or slower kernels, another GPU, check with `vkconfig`) | measured 2026-10-22 |
@@ -34,11 +32,15 @@
 
 | K29 | Device addresses (`bufferDeviceAddress`) on the Intel UHD driver are canonical 48-bit addresses with the **upper 16 bits set** (e.g. 0xFFFF8...); a node pointer that stores only 48 bits and zero-extends them dereferences a wrong address | Vulkan driver (Intel) | Child pointers are sign extended from bit 47 when read (GLSL and host); every chunk is checked to be 16-byte aligned and canonical at creation - see [vulkan_octree_build.md](architecture/vulkan_octree_build.md) | found by the first build test 2026-10-29 |
 
+| K30 | After the vcpkg bump an existing build directory fails in two ways: cached `find_library` results still name the old files (`ZLIB_LIBRARY_DEBUG` = `zlibd.lib`, the new zlib installs `zd.lib`: LNK1104), and object files compiled against the previous Vulkan headers make the vulkan.hpp debug assertion `d.getVkHeaderVersion() == VK_HEADER_VERSION` abort every test (cause assumed from the fix: a clean rebuild removed it) | build | `cmake -UZLIB_LIBRARY_DEBUG -UZLIB_LIBRARY_RELEASE -UZLIB_INCLUDE_DIR -S . -B <dir>` and `cmake --build <dir> --clean-first` after changing the vcpkg submodule | found 2026-10-30 |
+
 Add new rows at the end with the next number; move a row to "Resolved" in a section below when fixed (keep the history).
 
 
 ## Resolved
 | # | Resolution |
 |---|---|
+| K7 | 2026-10-30: the submodule was bumped to `d4c0a46cb8` (2026-10-28) with the user's approval (Q10); the manifest still has no `builtin-baseline`, versions are those of that registry snapshot |
+| K17 | 2026-10-30: resolved by the bump, msys2 packages download again; the `PKG_CONFIG` stub and `VCPKG_KEEP_ENV_VARS` are no longer needed |
 | K14 | 2026-10-23: the code packs 3 x 10 bit (mask 0x3ff, uninitialised 1023); only the header comment says 9 bit. The Vulkan `DistanceVoxelMap` keeps 3 x 10 bit (user decision) |
 | K15 | 2026-10-22: Vulkan SDK 1.4.363.0 installed; `VK_LAYER_KHRONOS_validation` present (see K16 for shell caveats) |

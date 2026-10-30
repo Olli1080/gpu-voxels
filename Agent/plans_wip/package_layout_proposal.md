@@ -42,7 +42,7 @@ Module CMake follows the schema already used in the repo (FILE_SET HEADERS) plus
 | ID | Question | Default |
 |---|---|---|
 | D1 | Move to REACH-style `include/`+`src/` trees? Large rename diff, breaks downstream include paths? (public include path `gpu_voxels/...` can stay identical either way) | **Don't move** now; keep module-local layout |
-| D2 | vcpkg source: current submodule (2025-06-06, bootstrapped), REACH's newer vcpkg checkout, or system SDK + selective vcpkg? (REACH's vcpkg uses private overlays) | Keep submodule untouched for CUDA path; for Vulkan use the installed Vulkan SDK + minimal vcpkg ports until decided |
+| D2 | (decided 2026-10-29: bump the submodule, done 2026-10-30) vcpkg source: current submodule (2025-06-06, bootstrapped), REACH's newer vcpkg checkout, or system SDK + selective vcpkg? (REACH's vcpkg uses private overlays) | Keep submodule untouched for CUDA path; for Vulkan use the installed Vulkan SDK + minimal vcpkg ports until decided |
 | D3 | Shader compilation at **build time** (offline SPIR-V, shipped next to binary) or runtime (REACH: glslang library at runtime)? | Build time (`glslangValidator`/`glslc`/`slangc` from the SDK), no runtime compiler dependency |
 | D4 | Adopt REACH's `.clang-format`, `.clang-tidy`, `.clangd`? | Ask; don't reformat existing files |
 | D5 | Compiler cache / PCH | Optional later |

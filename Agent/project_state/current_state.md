@@ -29,10 +29,10 @@ Library targets only (`gpu_voxels_*`, `icl_core*`). Viewer, examples, tests, vis
 - Other implicit layers: `VK_LAYER_OBS_HOOK`, `VK_LAYER_VALVE_steam_fossilize`, `VK_LAYER_VALVE_steam_overlay` (may add noise).
 - Tools on PATH: CMake, Ninja, Git, Python 3.13, `winget`. Not found: `nvcc`, `cl` (needs a VS developer prompt), `CUDA_PATH`.
 - Device limits (measured): see "Device facts" in [kompute_and_glsl_gotchas.md](../knowledge_base/vulkan_migration/kompute_and_glsl_gotchas.md).
-- Visual Studio 2022 and "18" (2026) installed. `C:\Code\2026-10-22_gpu-voxels\vcpkg` (submodule, commit of 2025-06-06) was **bootstrapped on 2026-10-22** with the user's approval (`vcpkg.exe` from vcpkg-tool 2025-06-02, git-ignored).
+- Visual Studio 2022 and "18" (2026) installed. `C:\Code\2026-10-22_gpu-voxels\vcpkg` (submodule) was bootstrapped on 2026-10-22 and **bumped on 2026-10-30** with the user's approval (Q10) to commit `d4c0a46cb8` of 2026-10-28 (`vcpkg.exe` from vcpkg-tool 2026-09-26, git-ignored).
 
 ## Next steps (proposed, none started)
-1. User: remaining [open_questions.md](open_questions.md) — Q3 (shader language), Q6 (scope), Q7 (API), Q10 (vcpkg bump, see K17), Q11 (branch/commit), Q12.
+1. User: the only open question left in [open_questions.md](open_questions.md) is Q12 (cleanup candidates); Q3, Q6, Q7, Q10 and Q11 were answered on 2026-10-29.
 2. User/CUDA machine: verify the CUDA configuration (`cmake --preset cuda`).
 3. *P1 Foundation*, *P2 primitives*, *S1*, *S2*, *S3 ProbVoxelMap*, *S4 lists* and *S5 DistanceVoxelMap* are implemented (see below). Next per [vulkan_migration_plan_DRAFT.md](../plans_wip/vulkan_migration_plan_DRAFT.md): S6 octree (**design review done 2026-10-29**, see [Analysis](../Analysis/2026-10-29_octree_design_review/summary.md); decisions Q19-Q22 taken: pointer-faithful first; **S6a and S6b done**, next S6c), then the abstract backend interface; before wiring anything into `GpuVoxels`, design the abstract buffer/dispatch interface shared with CUDA. Open questions: Q6 (URDF robot scope), Q7 (API), Q10 (vcpkg bump).
 
