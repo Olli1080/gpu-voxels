@@ -1,0 +1,16 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+// words[i * stride] &= ~mask for i < count: removes the COLLISION bit from every node of a chunk. Inner nodes: stride =
+// words per node (2 / 3), mask = 32 (status is the low byte of the first word); leaf blocks: stride 1, mask = the bit in every
+// packed leaf (deterministic 0x20202020, probabilistic 0x00200020).
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) buffer Words { uint words[]; };
+layout(push_constant) uniform Push { uint count; uint stride; uint mask; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i < pc.count)
+        words[i * pc.stride] &= ~pc.mask;
+}

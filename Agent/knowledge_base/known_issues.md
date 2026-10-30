@@ -34,6 +34,10 @@
 
 | K30 | After the vcpkg bump an existing build directory fails in two ways: cached `find_library` results still name the old files (`ZLIB_LIBRARY_DEBUG` = `zlibd.lib`, the new zlib installs `zd.lib`: LNK1104), and object files compiled against the previous Vulkan headers make the vulkan.hpp debug assertion `d.getVkHeaderVersion() == VK_HEADER_VERSION` abort every test (cause assumed from the fix: a clean rebuild removed it) | build | `cmake -UZLIB_LIBRARY_DEBUG -UZLIB_LIBRARY_RELEASE -UZLIB_INCLUDE_DIR -S . -B <dir>` and `cmake --build <dir> --clean-first` after changing the vcpkg submodule | found 2026-10-30 |
 
+| K31 | CUDA octree collisions (`kernel_intersect_VoxelMap/_VoxelList`): `coordinate + offset` is computed in `int64_t` and cast to `uint32_t` before `morton_code60`; a negative or too large result wraps around and the lookup hits some far voxel | CUDA semantics (read, not run) | Port: probes outside the 2^14 grid are ignored - see [vulkan_octree_collision.md](architecture/vulkan_octree_collision.md) | read 2026-10-30 |
+| K32 | CUDA `TRAVES_MACRO` declares `bool collision_w_unknown` without initialising it and increments the shared counter when it is true, also when `compute_collsWithUnknown` is false | CUDA semantics (read, not run) | Port: the unknown counter is only used when requested | read 2026-10-30 |
+| K33 | CUDA tree-vs-tree (`Intersect::doPreparations`, `IntersectVMap`) starts with `root.getChildPtr()` of every tree without checking PART: an empty tree (or any root without children) gives a null pointer | CUDA semantics (read, not run) | Port: a root without children is a uniform node that stands for its children | read 2026-10-30 |
+
 Add new rows at the end with the next number; move a row to "Resolved" in a section below when fixed (keep the history).
 
 

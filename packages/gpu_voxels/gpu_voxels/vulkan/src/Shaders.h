@@ -30,6 +30,16 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t scan_add_comp_words;
 	extern const uint32_t fill_iota_comp[];
 	extern const std::size_t fill_iota_comp_words;
+	extern const uint32_t octree_clear_collision_comp[];
+	extern const std::size_t octree_clear_collision_comp_words;
+	extern const uint32_t octree_collide_det_comp[];
+	extern const std::size_t octree_collide_det_comp_words;
+	extern const uint32_t octree_collide_prob_comp[];
+	extern const std::size_t octree_collide_prob_comp_words;
+	extern const uint32_t octree_collide_trees_det_comp[];
+	extern const std::size_t octree_collide_trees_det_comp_words;
+	extern const uint32_t octree_collide_trees_prob_comp[];
+	extern const std::size_t octree_collide_trees_prob_comp_words;
 	extern const uint32_t octree_build_det_comp[];
 	extern const std::size_t octree_build_det_comp_words;
 	extern const uint32_t octree_build_prob_comp[];

@@ -25,9 +25,11 @@
 #define GVL_TEST_OCTREE_REFERENCE_H_INCLUDED
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <map>
 #include <ostream>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -188,6 +190,163 @@ namespace gvl_reference::octree
 			while (node->has_children && (node->status & status::PART))
 				node = &nodes_.at({ node->level - 1, id >> (3 * (node->level - 1)) });
 			return *node;
+		}
+
+		/// Result of collide(): counts, OR of the 256 bit flags of the colliding probes and the nodes that received the COLLISION bit.
+		struct CollisionResult
+		{
+			uint32_t collisions = 0;
+			uint32_t with_unknown = 0;
+			std::array<uint32_t, 8> flags{};
+			std::set<std::pair<uint32_t, uint64_t>> flagged; ///< (level, id) of the nodes that would get status::COLLISION
+		};
+
+		/// The node where a collision lookup stops: the walk from the root descends into PART nodes while the node is above
+		/// `min_level` (CUDA TRAVES_MACRO); at min_level the node itself is tested, PART or not.
+		[[nodiscard]] const Node& stop_node(uint64_t id, uint32_t min_level) const
+		{
+			const Node* node = &root();
+			while (node->has_children && (node->status & status::PART) && node->level > min_level)
+				node = &nodes_.at({ node->level - 1, id >> (3 * (node->level - 1)) });
+			return *node;
+		}
+
+		/// Collision of probe voxels (Morton ids of occupied voxels, already offset; ids >= 2^42 are outside and ignored) with the
+		/// tree, CUDA kernel_intersect_*: a probe collides when the node where its lookup stops is occupied (deterministic: OCCUPIED
+		/// bit, probabilistic: occupancy != -128 and >= tree_threshold); a probe hits unknown space when that node is UNKNOWN
+		/// (deterministic: UNKNOWN bit, probabilistic: occupancy == -128), independent of the collision. `flags` (optional, one
+		/// entry per probe) are OR-ed over the colliding probes.
+		[[nodiscard]] CollisionResult collide(const std::vector<uint64_t>& ids, const std::vector<std::array<uint32_t, 8>>* flags,
+			uint32_t min_level, int tree_threshold = 10) const
+		{
+			CollisionResult result;
+			for (size_t i = 0; i < ids.size(); ++i)
+			{
+				if (ids[i] >= (uint64_t(1) << 42))
+					continue;
+				const Node& n = stop_node(ids[i], min_level);
+				const bool det = kind_ == Kind::Deterministic;
+				const bool occupied = det ? (n.status & status::OCCUPIED) != 0 : (n.occupancy != kUnknownOccupancy && n.occupancy >= tree_threshold);
+				const bool unknown = det ? (n.status & status::UNKNOWN) != 0 : n.occupancy == kUnknownOccupancy;
+				if (unknown)
+					++result.with_unknown;
+				if (!occupied)
+					continue;
+				++result.collisions;
+				result.flagged.insert({ n.level, n.id });
+				if (flags)
+					for (size_t w = 0; w < 8; ++w)
+						result.flags[w] |= (*flags)[i][w];
+			}
+			return result;
+		}
+
+		/// Result of collide_tree().
+		struct TreeCollisionResult
+		{
+			uint64_t voxels = 0;
+			std::set<std::pair<uint32_t, uint64_t>> flagged_this;
+			std::set<std::pair<uint32_t, uint64_t>> flagged_other;
+		};
+
+		/// Tree vs tree after load_balancer/kernel_config/Intersect.cuh, written as a plain recursion. A pair of nodes of one level
+		/// collides when both are occupied; it counts as its whole box (8^level voxels) when both are uniform (no PART) or level <=
+		/// min_level; otherwise it is refined, a uniform side standing for its own children; at level 1 the leaves are compared
+		/// (min_level 0). Marks: the real node of this tree, else of the other tree; at level 0 the leaf of this tree (else of the other).
+		[[nodiscard]] TreeCollisionResult collide_tree(const OctreeReference& other, uint32_t min_level, int threshold = 10, bool mark = true) const
+		{
+			TreeCollisionResult r;
+			struct Rec
+			{
+				const OctreeReference& a_tree;
+				const OctreeReference& b_tree;
+				uint32_t min_level;
+				int threshold;
+				bool mark;
+				TreeCollisionResult& r;
+
+				bool occupied(const OctreeReference& t, const Node& n) const
+				{
+					return t.kind_ == Kind::Deterministic ? (n.status & status::OCCUPIED) != 0 : (n.occupancy != kUnknownOccupancy && n.occupancy >= threshold);
+				}
+				const Node& child(const OctreeReference& t, const Node& n, uint64_t c) const { return t.nodes_.at({ n.level - 1, n.id * 8 + c }); }
+
+				void visit(const Node& a, const Node& b, uint32_t level, bool a_active, bool b_active)
+				{
+					if (!(occupied(a_tree, a) && occupied(b_tree, b)))
+						return;
+					const bool end_here = min_level >= level;
+					const bool a_part = a.status & status::PART, b_part = b.status & status::PART;
+					const bool is_last = ((a.status | b.status) & status::LAST_LEVEL) && !end_here;
+					if ((!a_part && !b_part) || end_here)
+					{
+						uint64_t box = 1;
+						for (uint32_t i = 0; i < level; ++i)
+							box *= 8;
+						r.voxels += box;
+						if (mark)
+							(a_active ? r.flagged_this : r.flagged_other).insert(a_active ? std::make_pair(a.level, a.id) : std::make_pair(b.level, b.id));
+					}
+					if (!is_last && (a_part || b_part) && !end_here)
+						for (uint64_t c = 0; c < 8; ++c)
+						{
+							// a uniform node (no PART flag) is its own stand-in, a PART node always owns a block
+							visit(a_part ? child(a_tree, a, c) : a, b_part ? child(b_tree, b, c) : b, level - 1, a_part, b_part);
+						}
+					if (level == 1 && min_level == 0 && (a_part || b_part))
+						for (uint64_t j = 0; j < 8; ++j)
+						{
+							if (a_part && b_part)
+							{
+								const Node& la = child(a_tree, a, j);
+								const Node& lb = child(b_tree, b, j);
+								if (occupied(a_tree, la) && occupied(b_tree, lb))
+								{
+									++r.voxels;
+									if (mark)
+										r.flagged_this.insert({ la.level, la.id });
+								}
+							}
+							else if (a_part)
+							{
+								const Node& la = child(a_tree, a, j);
+								if (occupied(b_tree, b) && occupied(a_tree, la))
+								{
+									++r.voxels;
+									if (mark)
+										r.flagged_this.insert({ la.level, la.id });
+								}
+							}
+							else
+							{
+								const Node& lb = child(b_tree, b, j);
+								if (occupied(a_tree, a) && occupied(b_tree, lb))
+								{
+									++r.voxels;
+									if (mark)
+										r.flagged_other.insert({ lb.level, lb.id });
+								}
+							}
+						}
+				}
+			};
+			Rec rec{ *this, other, min_level, threshold, mark, r };
+			const Node& ra = root();
+			const Node& rb = other.root();
+			const bool a_part = (ra.status & status::PART) && ra.has_children, b_part = (rb.status & status::PART) && rb.has_children;
+			for (uint64_t c = 0; c < 8; ++c)
+				rec.visit(a_part ? rec.child(*this, ra, c) : ra, b_part ? rec.child(other, rb, c) : rb, kRootLevel - 1, a_part, b_part);
+			return r;
+		}
+
+		/// dump() with the COLLISION bit set on the given nodes.
+		[[nodiscard]] std::vector<Node> dump_with_collisions(const std::set<std::pair<uint32_t, uint64_t>>& flagged) const
+		{
+			std::vector<Node> result = dump();
+			for (Node& n : result)
+				if (flagged.count({ n.level, n.id }))
+					n.status |= status::COLLISION;
+			return result;
 		}
 
 		/// Cubes of the extract kernel (octree/load_balancer/kernel_config/Extract.cuh): starting below the root, a selected node is

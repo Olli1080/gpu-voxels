@@ -9,9 +9,12 @@
 #include <optional>
 #include <sstream>
 
+#include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
 #include <gpu_voxels/vulkan/Primitives.h>
+#include <gpu_voxels/vulkan/ProbVoxelMap.h>
+#include <gpu_voxels/vulkan/VoxelList.h>
 
 #include "Shaders.h"
 
@@ -29,6 +32,18 @@ namespace gpu_voxels::vulkan
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
 		struct ExtractPush { uint32_t item_count, level, min_level, write_mode, out_capacity, next_capacity; };
+		struct CollidePush
+		{
+			uint64_t root;
+			uint32_t n, mode, min_level, options;
+			int32_t offset_x, offset_y, offset_z;
+			uint32_t dim_x, dim_y;
+			int32_t map_threshold, tree_threshold;
+			uint32_t pad;
+		};
+		static_assert(sizeof(CollidePush) == 56);
+		struct ClearPush { uint32_t count, stride, mask; };
+		struct TreePush { uint32_t item_count, level, min_level, mark; int32_t threshold; uint32_t next_capacity; };
 
 		/// Group counts for a 1D problem of `items` invocations (2D grid when the x limit is exceeded, see octree_gid.glsl).
 		struct Grid { uint32_t x, y; };
@@ -64,10 +79,13 @@ namespace gpu_voxels::vulkan
 				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
 				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
 				  find(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_find_prob_comp) : GVL_SHADER_SPAN(octree_find_det_comp), 2, sizeof(FindPush)),
-				  extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_extract_prob_comp) : GVL_SHADER_SPAN(octree_extract_det_comp), 5, sizeof(ExtractPush))
+				  extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_extract_prob_comp) : GVL_SHADER_SPAN(octree_extract_det_comp), 5, sizeof(ExtractPush)),
+				  collide(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_collide_prob_comp) : GVL_SHADER_SPAN(octree_collide_det_comp), 3, sizeof(CollidePush)),
+				  clear_collision(c, GVL_SHADER_SPAN(octree_clear_collision_comp), 1, sizeof(ClearPush)),
+				  collide_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_collide_trees_prob_comp) : GVL_SHADER_SPAN(octree_collide_trees_det_comp), 3, sizeof(TreePush))
 			{
 			}
-			ComputePipeline morton_ids, heads, compact, build, find, extract;
+			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), chunks(kLevelCount)
@@ -347,7 +365,7 @@ namespace gpu_voxels::vulkan
 					for (uint32_t s = 0; s < 8; ++s)
 						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
 					const HostNode expected = parent_of(self.kind, kids, level);
-					if (expected.status != node.status || expected.occupancy != node.occupancy)
+					if (expected.status != (node.status & ~kCollision) || expected.occupancy != node.occupancy)
 						report(where() + "status " + std::to_string(node.status) + " / occupancy " + std::to_string(node.occupancy) +
 							" differ from the rule applied to its children (" + std::to_string(expected.status) + " / " + std::to_string(expected.occupancy) + ")");
 					for (uint32_t s = 0; s < 8; ++s)
@@ -386,6 +404,136 @@ namespace gpu_voxels::vulkan
 			for (uint32_t i = 0; i < n; ++i)
 				out[i] = OctreeLookup{ raw[4 * i], static_cast<uint8_t>(raw[4 * i + 1]), static_cast<int8_t>(raw[4 * i + 2]) };
 			return out;
+		}
+
+		// ------------------------------------------------------------------------------------------------ collisions
+
+		/// mode: 0 bit map, 1 probabilistic map, 2 bit list, 3 Morton ids (see octree_collide.glsl).
+		OctreeCollisionResult collide(uint32_t mode, const DeviceBuffer* payload, const DeviceBuffer* positions, uint64_t n, Dim3ui dims,
+			bool ids_have_flags, const OctreeCollisionOptions& options)
+		{
+			if (n > UINT32_MAX)
+				throw VulkanError("Octree::collide_with: too many probes");
+			if (options.compute_voxel_flags && mode == 1)
+				throw VulkanError("Octree::collide_with: compute_voxel_flags needs bit vectors, a ProbVoxelMap has none");
+			OctreeCollisionResult result;
+			if (n == 0)
+				return result;
+			DeviceBuffer dummy(context, 16), results(context, 10 * 4);
+			results.upload<uint32_t>(std::vector<uint32_t>(10, 0u));
+			const uint32_t flags = (options.set_collision_flags ? 1u : 0u) | (options.compute_voxel_flags ? 2u : 0u) |
+				(options.count_unknown ? 4u : 0u) | (ids_have_flags ? 8u : 0u);
+			CommandBatch batch(context);
+			dispatch(batch, kernels.collide, { payload ? payload : &dummy, positions ? positions : &dummy, &results }, n,
+				CollidePush{ root_address(), static_cast<uint32_t>(n), mode, options.min_level, flags, options.offset_x, options.offset_y,
+					options.offset_z, dims.x, dims.y, options.map_occupancy_threshold, options.tree_occupancy_threshold, 0 });
+			batch.submit_and_wait();
+			const auto raw = results.download_vector<uint32_t>(10);
+			result.collisions = raw[0];
+			result.collisions_with_unknown = raw[1];
+			for (size_t w = 0; w < 8; ++w)
+				result.voxel_flags[w] = raw[2 + w];
+			return result;
+		}
+
+		/// Tree vs tree by a level-synchronous wavefront (see octree_collide_trees.glsl). Returns the volume in voxels.
+		uint64_t collide_trees_with(Impl& other, const OctreeTreeCollisionOptions& options)
+		{
+			if (other.kind != kind)
+				throw VulkanError("Octree::collide_with: both trees must be of the same kind");
+			if (&other == this)
+				throw VulkanError("Octree::collide_with: a tree cannot collide with itself");
+
+			auto root_of = [](const Impl& t)
+			{
+				std::vector<uint8_t> block(inner_block_bytes(t.kind));
+				t.chunks[kRootLevel]->buffer.download(block.data(), block.size());
+				return decode_inner(t.kind, block.data(), 0);
+			};
+			auto occupied = [&](const HostNode& n)
+			{
+				return kind == OctreeKind::Probabilistic ? (n.occupancy != kProbUnknown && n.occupancy >= options.occupancy_threshold)
+					: (n.status & kOccupied) != 0;
+			};
+			const HostNode root_a = root_of(*this), root_b = root_of(other);
+			const bool a_part = (root_a.status & kPart) && root_a.child != 0, b_part = (root_b.status & kPart) && root_b.child != 0;
+			uint64_t box = 1;
+			for (uint32_t i = 0; i < kRootLevel; ++i)
+				box *= 8;
+			if (!a_part && !b_part)
+			{
+				if (!(occupied(root_a) && occupied(root_b)))
+					return 0;
+				if (options.mark_collisions)
+				{
+					std::vector<uint8_t> block(inner_block_bytes(kind));
+					chunks[kRootLevel]->buffer.download(block.data(), block.size());
+					HostNode marked = root_a;
+					marked.status |= kCollision;
+					encode_inner(kind, block.data(), 0, marked);
+					chunks[kRootLevel]->buffer.upload(block.data(), block.size());
+				}
+				return box;
+			}
+
+			uint64_t max_items = 1;
+			for (uint32_t level = 1; level < kRootLevel; ++level)
+				max_items = std::max(max_items, (chunks[level] ? chunks[level]->blocks : 0) + (other.chunks[level] ? other.chunks[level]->blocks : 0));
+			DeviceBuffer items_a(context, max_items * 24), items_b(context, max_items * 24), counters(context, 16 * 4);
+			DeviceBuffer* current = &items_a;
+			DeviceBuffer* next = &items_b;
+			const uint64_t a_start = a_part ? root_a.child : root_address();
+			const uint64_t b_start = b_part ? root_b.child : other.root_address();
+			const uint32_t first[6] = { uint32_t(a_start), uint32_t(a_start >> 32), uint32_t(b_start), uint32_t(b_start >> 32),
+				(a_part ? 1u : 0u) | (b_part ? 2u : 0u), 0u };
+			current->upload(first, sizeof(first));
+			counters.upload<uint32_t>(std::vector<uint32_t>(16, 0u));
+			uint32_t item_count = 1;
+			for (int level = int(kRootLevel) - 1; level >= 1 && item_count > 0; --level)
+			{
+				const uint32_t zero = 0;
+				counters.upload(&zero, 4, 0);
+				const uint64_t capacity = level >= 2 ? (chunks[level - 1] ? chunks[level - 1]->blocks : 0) + (other.chunks[level - 1] ? other.chunks[level - 1]->blocks : 0) : 0;
+				CommandBatch batch(context);
+				dispatch(batch, kernels.collide_trees, { current, next, &counters }, uint64_t(item_count) * 8,
+					TreePush{ item_count, uint32_t(level), options.min_level, options.mark_collisions ? 1u : 0u, options.occupancy_threshold, uint32_t(capacity) });
+				batch.submit_and_wait();
+				const uint32_t produced = read_word(counters, 0);
+				if (produced > capacity)
+					throw VulkanError("Octree::collide_with: more work items than blocks (corrupt tree)");
+				std::swap(current, next);
+				item_count = produced;
+			}
+			const auto counts = counters.download_vector<uint32_t>(16);
+			uint64_t volume = 0, weight = 1;
+			for (uint32_t level = 0; level < kLevelCount; ++level, weight *= 8)
+				volume += uint64_t(counts[1 + level]) * weight;
+			return volume;
+		}
+
+		void clear_collision_flags()
+		{
+			CommandBatch batch(context);
+			bool any = false;
+			for (uint32_t level = 0; level < kLevelCount; ++level)
+			{
+				if (!chunks[level])
+					continue;
+				any = true;
+				DeviceBuffer& buffer = chunks[level]->buffer;
+				const uint64_t blocks = chunks[level]->blocks;
+				ClearPush push{};
+				if (level > 0)
+				{
+					push = { static_cast<uint32_t>(blocks * 8), uint32_t(inner_block_bytes(kind) / 32), uint32_t(kCollision) };
+				}
+				else
+					push = { static_cast<uint32_t>(blocks * leaf_block_bytes(kind) / 4), 1u,
+						kind == OctreeKind::Probabilistic ? 0x00200020u : 0x20202020u };
+				dispatch(batch, kernels.clear_collision, { &buffer }, push.count, push);
+			}
+			if (any)
+				batch.submit_and_wait();
 		}
 
 		std::vector<OctreeCube> extract(const OctreeExtractOptions& options) const
@@ -500,6 +648,41 @@ namespace gpu_voxels::vulkan
 			}
 		return stats;
 	}
+
+	OctreeCollisionResult Octree::collide_with(const BitVoxelMap& map, const OctreeCollisionOptions& options)
+	{
+		return impl_->collide(0, &map.voxel_buffer(), nullptr, map.dimensions().voxel_count(), map.dimensions(), false, options);
+	}
+
+	OctreeCollisionResult Octree::collide_with(const ProbVoxelMap& map, const OctreeCollisionOptions& options)
+	{
+		return impl_->collide(1, &map.voxel_buffer(), nullptr, map.dimensions().voxel_count(), map.dimensions(), false, options);
+	}
+
+	OctreeCollisionResult Octree::collide_with(const BitVoxelList& list, const OctreeCollisionOptions& options)
+	{
+		return impl_->collide(2, &list.voxel_buffer(), &list.coordinates_buffer(), list.size(), Dim3ui{ 1, 1, 1 }, false, options);
+	}
+
+	OctreeCollisionResult Octree::collide_with_ids(std::span<const uint64_t> morton_ids, std::span<const BitVector256> flags,
+		const OctreeCollisionOptions& options)
+	{
+		if (!flags.empty() && flags.size() != morton_ids.size())
+			throw VulkanError("Octree::collide_with_ids: flags and ids differ in size");
+		if (morton_ids.empty())
+			return {};
+		DeviceBuffer ids(impl_->context, morton_ids.size() * 8);
+		ids.upload(morton_ids.data(), morton_ids.size() * 8);
+		if (flags.empty())
+			return impl_->collide(3, nullptr, &ids, morton_ids.size(), Dim3ui{ 1, 1, 1 }, false, options);
+		DeviceBuffer flag_buffer(impl_->context, flags.size() * 32);
+		flag_buffer.upload(flags.data(), flags.size() * 32);
+		return impl_->collide(3, &flag_buffer, &ids, morton_ids.size(), Dim3ui{ 1, 1, 1 }, true, options);
+	}
+
+	uint64_t Octree::collide_with(Octree& other, const OctreeTreeCollisionOptions& options) { return impl_->collide_trees_with(*other.impl_, options); }
+
+	void Octree::clear_collision_flags() { impl_->clear_collision_flags(); }
 
 	std::vector<OctreeLookup> Octree::find(std::span<const uint64_t> morton_ids) const { return impl_->find(morton_ids); }
 	std::vector<OctreeCube> Octree::extract(const OctreeExtractOptions& options) const { return impl_->extract(options); }

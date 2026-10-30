@@ -1,0 +1,6 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_GOOGLE_include_directive : require
+#define OCT_PROB 1
+#include "octree_collide_trees.glsl"

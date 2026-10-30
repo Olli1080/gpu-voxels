@@ -571,6 +571,25 @@ TEST_F(VulkanTest, FindStopsAtANodeWhoseChildPointerIsMissing)
 	}
 }
 
+TEST_F(VulkanTest, OctreeCollisionStopsAtANodeWhoseChildPointerIsMissing)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		SCOPED_TRACE(name(kind));
+		// same corruption as in FindStopsAtANodeWhoseChildPointerIsMissing: the walk must stop at the node instead of following a null pointer
+		Octree tree = corruptible_tree(ctx(), kind);
+		auto at = nth_with_children(tree, kind, 5, 0);
+		at.node.child = 0;
+		modify_inner(tree, kind, 5, at, at.node);
+		OctreeCollisionOptions options;
+		options.set_collision_flags = false;
+		const auto result = tree.collide_with_ids(std::vector<uint64_t>{ 0 }, {}, options);
+		EXPECT_EQ(result.collisions, 1u); // the node on level 5 is occupied
+	}
+}
+
 TEST_F(VulkanTest, CheckTreeFindsCorruptedPointersAndStatus)
 {
 	if (!ctx().info().buffer_device_address)

@@ -91,6 +91,11 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/list_unique_merge.comp
     shaders/meta_transform.comp
     shaders/meta_transform_inplace.comp
+    shaders/octree_clear_collision.comp
+    shaders/octree_collide_det.comp
+    shaders/octree_collide_prob.comp
+    shaders/octree_collide_trees_det.comp
+    shaders/octree_collide_trees_prob.comp
     shaders/octree_build_det.comp
     shaders/octree_build_prob.comp
     shaders/octree_compact_ids.comp

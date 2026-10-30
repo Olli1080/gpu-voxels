@@ -5,6 +5,7 @@ Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary
 ## Open
 | # | Question | Why it matters | Agent's default if unanswered |
 |---|---|---|---|
+| Q23 | **Octree load balancer (checkpoint):** port the CUDA persistent-block load balancer (faithful to Q19) or keep the plain kernels / wavefront used for build, find, extract and all collisions? Measured on the Intel UHD (Debug build): tree 1 M voxels vs 2 M voxel map ~30 ms, two trees of 1 M voxels ~52 ms; there are no CUDA numbers | Effort of S6c-balancer (the largest piece of CUDA octree code, warp-tuned for one GPU) vs. a possible speed gain; the slice plan names "balancer port not competitive with a plain wavefront" as a trigger to drop it | Keep the wavefront until a measurement on a larger workload shows a problem |
 | Q12 | **Cleanup candidates** ([cleanup_candidates.md](cleanup_candidates.md)): approve deletions? | Less confusion | Leave untouched |
 
 ## Answered
