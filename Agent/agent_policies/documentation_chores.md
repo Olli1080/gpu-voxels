@@ -3,7 +3,7 @@
 ## Index rule
 - Every folder under `Agent/` has `summary.md`. In a folder with subfolders it links to each subfolder's `summary.md`; in a leaf folder it links to each file with a one-line description.
 - Adding, renaming, splitting or deleting a file ⇒ update the folder's `summary.md` **in the same change**. Also update the parent index if a folder is added/removed.
-- Links are relative. After edits, verify that no link is dead (a link-check one-liner is in [plans_done/2026-10-22_agent_folder_bootstrap.md](../plans_done/2026-10-22_agent_folder_bootstrap.md)).
+- Links are relative. After edits run `python tools/check_docs.py` (dead links, folders without `summary.md`, files not listed in their folder's `summary.md`, files over 400 lines; exit code 1 on problems; [tools/README.md](../../tools/README.md)).
 
 ## Size rule
 - Target ≤ 400 lines per file; treat anything larger as a split candidate (warn at 300).

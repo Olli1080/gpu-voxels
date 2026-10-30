@@ -29,6 +29,7 @@
 - Do not redirect native-program output with PowerShell `>` into files that will be read later; it writes UTF-16 and wraps stderr lines in `NativeCommandError` records. Use `cmd /c "... > file 2>&1"` or Bash.
 
 ## Tooling notes for this machine
+_(The machine changes in the next phase: [machine_change_14900k.md](../project_state/machine_change_14900k.md).)_
 - Windows 11, PowerShell + Git Bash. CMake and Ninja present; Visual Studio 2022 and 2026 (folder "18") installed.
 - No `nvcc`, no `cl` on PATH. Vulkan SDK 1.4.363.0 is installed (`VULKAN_SDK=C:\VulkanSDK\1.4.363.0`; tools incl. glslang/glslc/dxc/slangc and the validation layer in `%VULKAN_SDK%\Bin`, not on PATH). Details: [current_state.md](../project_state/current_state.md).
 - Downloads/installs need the user's go-ahead (state source and purpose first). Reference project for CMake/package conventions: `C:\Code\REACH` ([reach_reference.md](../knowledge_base/reach_reference.md)).

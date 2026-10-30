@@ -23,3 +23,4 @@ Entry point from the repo root: [../AGENTS.md](../AGENTS.md).
 2. [agent_policies/migration_guardrails.md](agent_policies/migration_guardrails.md) and [knowledge_base/vulkan_migration/mistakes_to_avoid.md](knowledge_base/vulkan_migration/mistakes_to_avoid.md).
 3. [knowledge_base/architecture/summary.md](knowledge_base/architecture/summary.md) — how the CUDA library is built.
 4. [plans_wip/summary.md](plans_wip/summary.md) — what is planned next.
+5. [../tools/README.md](../tools/README.md) — verification scripts (mutation runners, `check_docs.py`); [project_state/machine_change_14900k.md](project_state/machine_change_14900k.md) — the planned machine change.

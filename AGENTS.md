@@ -5,7 +5,7 @@ voxel maps on the GPU. Today it is **CUDA + Thrust**. The goal of this workspace
 
 **Read first:** [Agent/summary.md](Agent/summary.md) — index of everything agents need to know.
 
-## Must-know in 10 lines
+## Must-know
 1. All agent knowledge lives in `Agent/`. Every folder there has a `summary.md` index; keep them current.
 2. Rules you must follow: [Agent/agent_policies/summary.md](Agent/agent_policies/summary.md).
 3. Two earlier Vulkan/SYCL migration attempts failed (`C:\Code\gpu-voxels`, `C:\Code\gpu-voxels__`).
@@ -17,6 +17,8 @@ voxel maps on the GPU. Today it is **CUDA + Thrust**. The goal of this workspace
 8. Branch `vulkan-migration` and local commits are allowed (user decision Q11, 2026-10-29); never push, open PRs or touch the `vcpkg` submodule pointer unless the user asks.
 9. Keep documents ≤ 400 lines; split by aspect, update the indexes.
 10. Open decisions for the user: [Agent/project_state/open_questions.md](Agent/project_state/open_questions.md).
+11. Verification tooling (mutation runners, doc checker `python tools/check_docs.py`): [tools/README.md](tools/README.md), method in [Agent/knowledge_base/mutation_testing.md](Agent/knowledge_base/mutation_testing.md).
+12. The user will move to another machine (i9-14900K) in the next phase: [Agent/project_state/machine_change_14900k.md](Agent/project_state/machine_change_14900k.md) lists what only exists here (local commits, the two archive folders) and what to re-measure.
 
 ## Current state
 See [Agent/project_state/summary.md](Agent/project_state/summary.md).

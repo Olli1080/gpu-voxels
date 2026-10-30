@@ -3,7 +3,7 @@
 - **Date:** 2026-10-30
 - **Question:** The read-only core of the faithful octree (build, find, extract, collisions, two traversal implementations) exists. Do the measurements and the fault experience justify continuing the pointer-faithful route (Q19) for S6d (dynamic insert / propagate / rebuild), or should S6d switch to Option 2 (index pool) or Option 3 (sorted level arrays) of [design_options.md](../2026-10-29_octree_design_review/design_options.md)?
 - **Scope / non-goals:** the measurements listed under "Measurements to take before S6d" in `design_options.md`, the balancer-vs-wavefront comparison of Q23, the pointer-fault experience, and the revisit triggers of [slice_plan.md](../2026-10-29_octree_design_review/slice_plan.md). Not measured: CUDA (no toolkit here), any other GPU, Release builds.
-- **Status:** final; one decision for the user (Q24 in [open_questions.md](../../project_state/open_questions.md)).
+- **Status:** final; decision Q24 taken 2026-10-30 (user: "Faithful + K34 fixen"), see [Recommendation](#recommendation--decision-needed).
 
 | File | Content |
 |---|---|
@@ -14,7 +14,7 @@ All numbers come from `tests/vulkan/test_octree_checkpoint.cpp` (new, prints `[v
 
 ## Findings
 1. **64-bit sort costs 1.7-1.95x the 32-bit sort** (measured, high): 4 M pairs 492 ms vs 252 ms, 15.9998 M pairs (the limit) 1 262 ms vs 759 ms, including transfers. The design review expected about 2x per pass with 6 passes against 4. The octree build of 1 M voxels takes 0.3-0.9 s in total (the share of the sort was not measured separately).
-2. **The sort limit is 65 535 x 256 = 16 776 960 elements, not 2^24** (measured, high): `Octree::kMaxVoxels`, `VoxelListBase::kMaxEntries` and `Primitives::kMaxElements` say 2^24 (16 777 216). A build or list insert of 16 776 961 .. 16 777 216 elements passes the class check and then throws `Primitives::record_sort_pairs: too many elements`. A clean error, but the constants are 256 too high: [K34](../../knowledge_base/known_issues.md).
+2. **The sort limit is 65 535 x 256 = 16 776 960 elements, not 2^24** (measured, high): `Octree::kMaxVoxels`, `VoxelListBase::kMaxEntries` and `Primitives::kMaxElements` say 2^24 (16 777 216). A build or list insert of 16 776 961 .. 16 777 216 elements passed the class check and then threw `Primitives::record_sort_pairs: too many elements`. A clean error, but the constants were 256 too high: [K34](../../knowledge_base/known_issues.md), **fixed 2026-10-30** (one constant `Primitives::kMaxSortElements`, tested at the limit and one above).
 3. **Memory per voxel of the faithful layout depends on the density** (measured nodes, computed alternatives, high for the nodes, medium for the alternatives):
 
    | Workload (deterministic tree) | faithful B/voxel | index pool | sorted levels |
@@ -44,7 +44,7 @@ All numbers come from `tests/vulkan/test_octree_checkpoint.cpp` (new, prints `[v
 2. Keep Option 3 documented as the fallback **for sparse data** (finding 3); decide again if a real workload of sparse, memory-bound trees appears. Option 2 does not help there (it keeps the blocks).
 3. Fix or document K34 (lower the three constants to 16 776 960, or lift the sort limit with a 2-D dispatch) before S6d adds more callers.
 
-The decision is the user's: **Q24** (continue faithful / switch to Option 2 or 3 / continue faithful but fix K34 first). Until answered nothing in S6d is started.
+**Decision Q24 (user, 2026-10-30: "Faithful + K34 fixen"):** option (b), continue the faithful route and fix K34 first; K34 is fixed, S6d is next.
 
 ## What was NOT verified
 CUDA behaviour and CUDA timings (no toolkit), any GPU other than the Intel UHD (the balancer ranking may differ on a GPU with many compute units), Release-build timings, repetition and variance of the timings, a real sparse-tree workload, the cost of dynamic updates (that is S6d), Option 2 / Option 3 as implementations (their bytes are computed from node counts), the frontier at 1 M voxels (only 150-283 k voxels, CPU recursion).
