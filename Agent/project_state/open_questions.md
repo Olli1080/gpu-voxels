@@ -1,0 +1,36 @@
+# Open Questions for the User
+
+Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary.md). Answer inline or tell the agent; answered items move to *Answered* with the date.
+
+## Open
+| # | Question | Why it matters | Agent's default if unanswered |
+|---|---|---|---|
+| Q12 | **Cleanup candidates** ([cleanup_candidates.md](cleanup_candidates.md)): approve deletions? | Less confusion | Leave untouched |
+
+## Answered
+| # | Answer (2026-10-22) | Consequence |
+|---|---|---|
+| Q1 | **Yes, CUDA stays for now** — needed for comparison | Backend interface + options (`GVL_BACKEND_CUDA`/`VULKAN`); no deletion of `.cu`; guardrail 9 is now a user decision |
+| Q4 | "All [GPUs] — it's Vulkan?" Interpretation: target all vendors. Clarification: Vulkan is vendor-neutral, but *optional features differ per GPU* (this Intel UHD has `shaderBufferInt64Atomics=false`, no float atomic add) | Policy: required = Vulkan 1.3 core + `shaderInt64`, `bufferDeviceAddress`-free design; anything beyond (64-bit atomics, float atomics, subgroup ops, BDA) only with a fallback path; query features/limits at runtime; record in [kompute_and_glsl_gotchas.md](../knowledge_base/vulkan_migration/kompute_and_glsl_gotchas.md) |
+| Q5 | Later | Until then claim *Tested* (independent CPU reference), not *Parity* |
+| Q8 | "Just leave it there" — the archive stays untouched. (My concern was only that 14 shaders exist solely as uncommitted files in `C:\Code\gpu-voxels`; leaving it is fine as long as nobody cleans it.) | Archive is read-only reference; no backup action |
+| Q9 | Yes — **Vulkan SDK 1.4.363.0 installed** via winget (official LunarG installer, hash verified, admin prompt). Validation layer, glslang 16.6, glslc, dxc 1.9, slangc 2026.17 present. vcpkg bootstrap: not done (see Q10) | New shells get `VULKAN_SDK=C:\VulkanSDK\1.4.363.0`; a shell started before the install needs a restart |
+| – | REACH (`C:\Code\REACH`) may be used as reference for package organisation and CMake | [reach_reference.md](../knowledge_base/reach_reference.md), [package_layout_proposal.md](../plans_wip/package_layout_proposal.md) |
+| – | Kompute should be re-evaluated | [kompute_reevaluation.md](../knowledge_base/vulkan_migration/kompute_reevaluation.md) |
+| Q2 | **Raw Vulkan** (`vulkan.hpp` + VMA) — user decision after the Kompute re-evaluation | Own thin compute runtime behind a buffer/dispatch interface; Kompute spike (P0.5) dropped |
+| Q13 | **GoogleTest** | Implemented in `cmake/Tests.cmake` |
+| Q15 | **Yes — L1–L4 of the package-layout proposal, D1 default (module-local layout)** | Implemented 2026-10-22, see [package_layout_proposal.md](../plans_wip/package_layout_proposal.md) |
+| – | "With your own vcpkg.exe": installs for verification must use the repo's own vcpkg, not REACH's | In-repo vcpkg bootstrapped; used. (An earlier `--dry-run` with REACH's vcpkg had already downloaded its PowerShell tool into `C:\Code\REACH\externalscpkg\downloads` — disclosed, nothing else touched) |
+| Q16 | **Defaults accepted:** negative / too-large / NaN points are outside; 32-bit collision count; no offset collision until its semantics are defined | Implemented as in [vulkan_bit_voxel_map.md](../knowledge_base/architecture/vulkan_bit_voxel_map.md); deviations stay documented |
+| Q17 | **ProbVoxelMap update semantics** (2026-10-23): selectable like `std::atomic` orders -> `UpdateMode` Atomic / Accumulate / Sequential; sensor model as a struct with the CUDA defaults (-10 / +72); replicate the CUDA ray walk; drop measurements with hit or sensor outside the map but process all points | Implemented in [vulkan_prob_voxel_map.md](../knowledge_base/architecture/vulkan_prob_voxel_map.md); default mode Accumulate |
+| Q18 | **DistanceVoxelMap** (2026-10-23): implement both algorithms (exact separable + PBA port); keep the 3 x 10 bit voxel format (max 1023 per axis); include `extract_distances`; `exactDistances3D`, `jumpFlood3D`, `differences3D`, floodfill init later | Implemented in [vulkan_distance_map.md](../knowledge_base/architecture/vulkan_distance_map.md) |
+| Q19 | **Octree representation: pointer-faithful port first** (index pool + wavefront and sorted level arrays documented as later alternatives) - user: "why not try faithful first and document the other options for later" | [Analysis](../Analysis/2026-10-29_octree_design_review/summary.md); needs `bufferDeviceAddress` as an optional runtime feature, host-side pointer validation, revisit triggers in the slice plan |
+| Q20 | **First octree milestone: read-only core** (build, find, extract, collisions) | dynamic insert/propagate/rebuild after a checkpoint |
+| Q21 | **Octree variants: all** (deterministic, probabilistic, Morton voxel list) | lists get 64-bit ids; sort gets 64-bit keys |
+| Q22 | **Octree I/O: no promise of CUDA-format compatibility, but put an interface where formats may split** | `OctreeStorage` interface, native format first |
+| Q3 | **GLSL** (2026-10-29: "glsl") | All shaders stay GLSL compiled offline to SPIR-V |
+| Q6 | **Later** (2026-10-29) | Viewer, examples, ROS/tf, Kinect/OpenNI, OMPL and the URDF robot are out of scope until the user asks; core first (S6c-S7) |
+| Q7 | **"ja"** (2026-10-29) - interpreted as: public signatures that expose `thrust::device_vector` MAY change, source compatibility is not required (not confirmed, the question had two parts) | The S7 façade may use Vulkan-native types instead of an alias layer |
+| Q11 | **"natürlich!!!"** (2026-10-29): the agent may create a work branch and commit locally; pushing / PRs still only on request | Branch `vulkan-migration`, commits grouped by area, messages state what is verified |
+| Q10 | **Yes - bump the vcpkg submodule** (2026-10-29: "ja, ja und nochmal JA"; the old pin 984f9232b2 of 2025-06-06 came from the upstream repository) | Fetched `origin/master` d4c0a46cb8 (2026-10-28) on 2026-10-29; checkout, bootstrap and re-verification happen after the current mutation run, as its own commit; K17 should disappear |
+| Q14 | Agent folder naming — `Agent` as requested (no objection raised) | — |

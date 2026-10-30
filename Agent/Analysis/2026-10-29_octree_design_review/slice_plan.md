@@ -1,0 +1,36 @@
+# Octree: slices, prerequisites and tests (decided route: pointer-faithful first)
+
+Route chosen by the user on 2026-10-29 (Q19-Q22, see [summary.md](summary.md#decisions-2026-10-29)): **pointer-faithful port first** (Option 1 of [design_options.md](design_options.md)), read-only core first, all three variants (deterministic tree, probabilistic tree, Morton voxel list), I/O behind an interface. Every slice ends at *Tested* in the sense of [definition_of_done.md](../../agent_policies/definition_of_done.md): independent CPU reference, validation layer clean, mutation-tested, documented; *Parity* with CUDA stays open (Q5).
+
+## Prerequisites in existing modules
+| Need | Why | Work |
+|---|---|---|
+| **Buffer device addresses** in the runtime | nodes hold 48-bit pointers; `GL_EXT_buffer_reference` | `Context`: enable `bufferDeviceAddress` as an *optional* feature and expose `DeviceInfo::buffer_device_address`; VMA allocator flag `BUFFER_DEVICE_ADDRESS`; `DeviceBuffer` usage flag `eShaderDeviceAddress` and `device_address()`; the octree throws a clear error if the device lacks the feature (policy Q4 stays: nothing else new is required) |
+| Radix sort of **64-bit keys** with 32-bit values | Morton ids need 42 bit (6 passes of 8 bit) in build and insert | extend `Primitives` (keys as `uint64`/two 32-bit halves); keep the 2^24 element limit for now |
+| **64-bit ids in voxel lists** | the Morton list (`BitVoxelList<..., OctreeVoxelID>`) is a collision partner; Q21 = all variants | list id type as a template/kind parameter of `VoxelListBase` (sort, membership, compaction, `make_unique` on `uint64`); existing 32-bit lists must keep working unchanged |
+| Host-side **pointer validation** | the main risk of Option 1 (a bad address is a GPU fault) | every pool chunk is registered on the host (address, size, level); `check_tree` downloads the tree and verifies on the CPU that every child pointer lies inside a registered chunk with correct alignment/level, used after every mutation in tests |
+| An **I/O interface** | Q22: "write an interface if you need to split" | `OctreeStorage` interface (serialize/deserialize/extract feed) with the Vulkan-native format as the first implementation; a CUDA-format reader can be added behind it later without touching the tree |
+
+## Slices
+| Slice | Content | Tests (all against `tests/reference/octree_reference.h`, written first, independent of the implementation) | Size vs earlier slices |
+|---|---|---|---|
+| **S6a** Runtime, Morton, reference - **done 2026-10-29 (Tested, not Parity)**, see [vulkan_octree_foundation.md](../../knowledge_base/architecture/vulkan_octree_foundation.md) | BDA support in `Context`/`DeviceBuffer` (with a test that dereferences an address in a shader and that validation stays clean, incl. an attempt to find out whether GPU-assisted validation checks such accesses); GLSL Morton encode/decode (`uint64`); the CPU reference of the node semantics built **recursively from a voxel set** (status rule `getNewStatus`, uniform pruning, probabilistic = max, PART rules), canonical dump `(level, id, status, occupancy)` | BDA round trip and out-of-range behaviour of this driver (documented), Morton round trips incl. boundaries (0, 16383), the reference vs hand-built trees; the reference itself mutation-tested | small |
+| **S6b** Chunks, build, find, extract - **done 2026-10-29 (Tested, not Parity)**, see [vulkan_octree_build.md](../../knowledge_base/architecture/vulkan_octree_build.md); the 64-bit sort prerequisite is done, 64-bit list ids are still open | node chunk registry, `build(points / coordinates)` bottom-up as in CUDA (sort, per-level counts, one chunk per level, pointer linking), Det and Prob nodes, `find`, `extract_cubes` (status selection; first with a plain traversal, load balancer in S6c), `check_tree`, `clear`, `memory_usage`; inputs outside 2^14 per axis counted and dropped (CUDA: assert) | random sets of 1 .. 1 M voxels, boundary voxels, duplicates, full cubes (uniform pruning), sparse lines; canonical dump equals the reference; `find` hits/misses; extraction at every `min_level` | medium (≈ S4) |
+| **S6c** Load balancer and collisions | port of the load-balancer framework (work stacks per workgroup, count/move kernels, idle counter) with the warp parts rewritten as shared-memory code; tree-vs-`BitVoxelMap`/`ProbVoxelMap`/`BitVoxelList`/Morton list lookups, tree-vs-tree and `IntersectVMap` traversals, `Extract` on the balancer, collision flags, type OR, unknown counting, offset, resolution; `clear_collision_flags` | brute force on voxel sets, every `min_level`, offsets, empty/full operands, balancer forced to rebalance often (tiny stacks / low idle threshold), stack overflow handling | large |
+| **Checkpoint** | measurements from [design_options.md](design_options.md) (timings, node counts, pointer-fault experience); decide whether S6d continues the faithful route or switches to Option 2/3 | | |
+| **S6d** Dynamic updates (after the checkpoint) | `insert` (set/reset data variants, free-space bounding box), `propagate` (needs-update flags, `UPDATE_SUBTREE`, balancer), `rebuild`, `needs_rebuild` | sequences of random inserts vs the reference built from the union set, insertion into pruned uniform regions, propagate after partial updates, rebuild equals fresh build, `check_tree` after every step | large (hardest) |
+| **S6e** Façade and I/O | `insert_point_cloud`/`insert_meta_point_cloud` with meanings, `merge` where CUDA has it, `OctreeStorage` interface + native format | round trips, fresh vs restored equality; behaviour of the CUDA stubs documented | small-medium |
+| **S6f** Sensor pipeline | Kinect depth preprocessing, free-space ray casting (`computeFreeSpaceViaRayCast`), sensor model | only on request (Q6) | medium, optional |
+
+## Risks and mitigations
+| Risk | Mitigation |
+|---|---|
+| Wrong child address = GPU fault / device lost, no validation help | host-side `check_tree` after each mutation in tests; small trees first; test with several allocation orders; try GPU-assisted validation for buffer references; keep debug builds writing a per-chunk guard region |
+| Subtle status/flag semantics | semantic reference written first and mutation-tested; canonical dump comparison instead of spot checks |
+| Load balancer port: hidden warp assumptions, stack overflow, termination | rewrite warp reductions as workgroup-shared reductions per group of 8 threads (no subgroup assumptions); tests with tiny stacks; compare against the plain traversal results |
+| Optional feature missing on a target GPU | octree reports "unsupported" instead of failing; Options 2/3 stay the documented fallback |
+| No CUDA reference available | semantics derived from code reading are recorded as *inferred*; golden data from a CUDA machine later (Q5) |
+| Hidden CUDA bugs copied | the [hazard list](../../knowledge_base/vulkan_migration/octree_porting_hazards.md) is part of the review checklist; deviations are documented as in S3-S5 |
+
+## Revisit triggers (switch to Option 2 or 3 instead of continuing)
+Two or more unexplainable device faults in S6b/S6c; a target GPU without `bufferDeviceAddress`; checkpoint measurements showing the balancer port is not competitive with a plain wavefront; a requirement for trees above what the faithful allocation scheme can provide.
