@@ -21,6 +21,7 @@ gvl_add_test(test_vulkan
     test_octree_tree_collision.cpp
     test_morton.cpp
     test_primitives.cpp
+    test_size_limits.cpp
     test_prob_sensor.cpp
     test_prob_voxel_map.cpp
     test_voxel_list.cpp

@@ -25,6 +25,7 @@
 #include <gpu_voxels/vulkan/Context.h>
 #include <gpu_voxels/vulkan/DeviceBuffer.h>
 #include <gpu_voxels/vulkan/MetaPointCloud.h>
+#include <gpu_voxels/vulkan/Primitives.h>
 #include <gpu_voxels/vulkan/vulkan_types.h>
 
 namespace gpu_voxels::vulkan
@@ -42,8 +43,8 @@ namespace gpu_voxels::vulkan
 			Counting = 1  ///< CountingVoxel: one int8 count (stored sign extended in one word)
 		};
 
-		/// Maximum number of entries (limit of the scan / sort primitives). Insertions that would exceed it throw.
-		static constexpr uint32_t kMaxEntries = 1u << 24;
+		/// Maximum number of entries (limit of the sort primitive, Primitives::kMaxSortElements). Insertions that would exceed it throw.
+		static constexpr uint32_t kMaxEntries = Primitives::kMaxSortElements;
 
 		~VoxelListBase();
 		VoxelListBase(const VoxelListBase&) = delete;

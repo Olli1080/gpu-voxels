@@ -29,8 +29,11 @@ namespace gpu_voxels::vulkan
 	class Primitives
 	{
 	public:
-		/// Maximum number of elements of one scan / sort (limited by the 65535 work groups of the second scan level).
+		/// Maximum number of elements of one scan (limited by the 65535 work groups of the second scan level).
 		static constexpr uint32_t kMaxElements = 1u << 24;
+		/// Maximum number of elements of one sort: one work group per tile of 256 elements, at most 65535 work groups (a little below
+		/// kMaxElements). Everything that sorts its input (octree build, voxel lists) is bound by this one.
+		static constexpr uint32_t kMaxSortElements = 65535u * 256u;
 
 		explicit Primitives(Context& context);
 

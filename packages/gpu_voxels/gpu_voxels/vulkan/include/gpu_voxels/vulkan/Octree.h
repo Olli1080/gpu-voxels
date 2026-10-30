@@ -28,6 +28,7 @@
 #include <gpu_voxels/vulkan/Context.h>
 #include <gpu_voxels/vulkan/DeviceBuffer.h>
 #include <gpu_voxels/vulkan/OctreeFormat.h>
+#include <gpu_voxels/vulkan/Primitives.h>
 #include <gpu_voxels/vulkan/vulkan_types.h>
 
 namespace gpu_voxels::vulkan
@@ -150,8 +151,8 @@ namespace gpu_voxels::vulkan
 	public:
 		static constexpr uint32_t kLevels = octree_format::kLevelCount;
 		static constexpr uint32_t kCoordinateLimit = 1u << 14;
-		/// Maximum number of input voxels of one build (limit of the scan / sort primitives).
-		static constexpr uint32_t kMaxVoxels = 1u << 24;
+		/// Maximum number of input voxels of one build (limit of the sort primitive, Primitives::kMaxSortElements).
+		static constexpr uint32_t kMaxVoxels = Primitives::kMaxSortElements;
 
 		/// \throws VulkanError if the device lacks bufferDeviceAddress. Starts as an empty tree (the root only).
 		Octree(Context& context, OctreeKind kind);

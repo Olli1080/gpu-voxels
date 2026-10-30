@@ -115,8 +115,9 @@ namespace gpu_voxels::vulkan
 	{
 		if (n <= 1)
 			return;
+		static_assert(kMaxSortElements == kMaxSortGroups * kSortTile);
 		const uint32_t groups = (n + kSortTile - 1) / kSortTile;
-		if (groups > kMaxSortGroups)
+		if (n > kMaxSortElements)
 			throw VulkanError("Primitives::record_sort_pairs: too many elements");
 		const uint64_t key_words = wide ? 2ull * n : n;
 		const uint64_t key_bytes = key_words * sizeof(uint32_t);

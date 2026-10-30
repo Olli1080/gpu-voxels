@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <bit>
 #include <functional>
+#include <string>
 
 #include <gpu_voxels/logging/logging_vulkan.h>
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
@@ -133,7 +134,7 @@ namespace gpu_voxels::vulkan
 		{
 			const uint64_t total = static_cast<uint64_t>(entries.count) + new_count;
 			if (total > kMaxEntries)
-				throw VulkanError("VoxelList: more than 2^24 entries are not supported");
+				throw VulkanError("VoxelList: more than " + std::to_string(kMaxEntries) + " entries are not supported");
 			Entries combined(context, static_cast<uint32_t>(total), words);
 			CommandBatch batch(context);
 			if (entries.count > 0)
@@ -193,8 +194,6 @@ namespace gpu_voxels::vulkan
 		{
 			if (n == 0)
 				return 0;
-			if (n > kMaxEntries)
-				throw VulkanError("VoxelList: more than 2^24 entries are not supported");
 			Entries fresh(context, n, words);
 			DeviceBuffer flags = make_words(context, n);
 			DeviceBuffer pos = make_words(context, n);
@@ -472,7 +471,7 @@ namespace gpu_voxels::vulkan
 			throw VulkanError("VoxelList: only bit lists can take voxels from bit maps");
 		if (!(map.dimensions() == dimensions_))
 			throw VulkanError("VoxelList: the reference dimensions do not match the map dimensions");
-		if (map.voxel_count() > kMaxEntries)
+		if (map.voxel_count() > Primitives::kMaxElements)
 			throw VulkanError("VoxelList: maps with more than 2^24 voxels are not supported yet");
 		const uint32_t voxel_count = static_cast<uint32_t>(map.voxel_count());
 
