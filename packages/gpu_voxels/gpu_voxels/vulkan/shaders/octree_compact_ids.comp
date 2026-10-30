@@ -1,0 +1,19 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+// out_ids[offsets[i]] = ids[i] for every i with heads[i] != 0 (offsets = exclusive scan of heads).
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Heads { uint heads[]; };
+layout(std430, set = 0, binding = 2) readonly buffer Offsets { uint offsets[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer OutIds { uint out_ids[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n || heads[i] == 0u)
+        return;
+    out_ids[2u * offsets[i]] = ids[2u * i];
+    out_ids[2u * offsets[i] + 1u] = ids[2u * i + 1u];
+}

@@ -1,0 +1,120 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA phase 2 (CUDA kernelPBAphase2MergeBands): one invocation per (x, pair of neighbouring bands, z). Merges band 2 (the
+// following, higher y) into band 1: obstacles of band 1 that are dominated by band 1 predecessors and band 2 obstacles are
+// dropped from the stack and the stack / forward pointers are relinked. Done as soon as two obstacles of band 2 are kept.
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) buffer Stack { uint stack_voxels[]; };
+layout(std430, set = 0, binding = 1) buffer Forward { int forward_ptrs[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint band_size; uint count; uint pairs; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const int nx = int(pc.nx), ny = int(pc.ny);
+    const int band_size = int(pc.band_size);
+    const int row = nx;
+    const int layer = nx * ny;
+    for (uint t = gl_GlobalInvocationID.x; t < pc.count; t += stride)
+    {
+        const int tx = int(t % pc.nx);
+        const int band1_idx = int((t / pc.nx) % pc.pairs) * 2;
+        const int band2_idx = band1_idx + 1;
+        const int tz = int(t / (pc.nx * pc.pairs));
+
+        int y_next_band2 = band2_idx * band_size;   // head of band 2 / tail of band 1
+        int y_last_band1 = y_next_band2 - 1;
+
+        ivec3 stack_second = ivec3(0, PBA_U, 0);
+        ivec3 voxel_next_band2 = ivec3(0);
+
+        // band 1: the last two stack entries
+        ivec3 stack_top = pba_load(stack_voxels[tz * layer + y_last_band1 * row + tx]);
+        if (stack_top.x == PBA_U) // tail pointer or empty band 1
+        {
+            y_last_band1 = stack_top.y;
+            if (y_last_band1 != PBA_U)
+                stack_top = pba_load(stack_voxels[tz * layer + y_last_band1 * row + tx]);
+        }
+        if (stack_top.y != PBA_U)
+            stack_second = pba_load(stack_voxels[tz * layer + stack_top.y * row + tx]);
+
+        // band 2: the first entry
+        int id_next_band2 = tz * layer + y_next_band2 * row + tx;
+        {
+            const int head_y_band2 = forward_ptrs[id_next_band2];
+            if (head_y_band2 < 0) // head pointer
+            {
+                y_next_band2 = -head_y_band2;
+                id_next_band2 = tz * layer + y_next_band2 * row + tx;
+            }
+        }
+        if (y_next_band2 != PBA_U)
+            voxel_next_band2 = pba_load(stack_voxels[id_next_band2]);
+
+        int band2_kept = 0;
+        while (band2_kept < 2 && y_next_band2 != PBA_U)
+        {
+            while (stack_top.y != PBA_U)
+            {
+                const float intersection1 = pba_intersection(stack_second.x, stack_top.y, stack_second.z, stack_top.x, y_last_band1, stack_top.z, tx, tz);
+                const float intersection2 = pba_intersection(stack_top.x, y_last_band1, stack_top.z, voxel_next_band2.x, y_next_band2, voxel_next_band2.z, tx, tz);
+                if (intersection1 < intersection2)
+                    break;
+                y_last_band1 = stack_top.y;
+                stack_top = stack_second;
+                --band2_kept;
+                if (stack_top.y != PBA_U)
+                    stack_second = pba_load(stack_voxels[tz * layer + stack_top.y * row + tx]);
+            }
+
+            // link the band 2 voxel to the end of the band 1 stack
+            stack_voxels[id_next_band2] = pba_store(ivec3(voxel_next_band2.x, y_last_band1, voxel_next_band2.z));
+            if (y_last_band1 != PBA_U)
+                forward_ptrs[tz * layer + y_last_band1 * row + tx] = y_next_band2;
+
+            band2_kept = max(1, band2_kept + 1);
+
+            stack_second = stack_top;
+            stack_top = ivec3(voxel_next_band2.x, y_last_band1, voxel_next_band2.z);
+            y_last_band1 = y_next_band2;
+            y_next_band2 = forward_ptrs[id_next_band2];
+            if (y_next_band2 < 0)
+                y_next_band2 = -y_next_band2;
+
+            if (y_next_band2 != PBA_U)
+            {
+                id_next_band2 = tz * layer + y_next_band2 * row + tx;
+                voxel_next_band2 = pba_load(stack_voxels[id_next_band2]);
+            }
+        }
+
+        // head pointer
+        const int ty_start_band1 = band1_idx * band_size;
+        const int ty_start_band2 = band2_idx * band_size;
+        if (forward_ptrs[tz * layer + ty_start_band1 * row + tx] == -PBA_U) // band 1 empty
+        {
+            const int dist_start_band2 = forward_ptrs[tz * layer + ty_start_band2 * row + tx];
+            if (dist_start_band2 < 0)
+                forward_ptrs[tz * layer + ty_start_band1 * row + tx] = dist_start_band2;
+            else
+                forward_ptrs[tz * layer + ty_start_band1 * row + tx] = -ty_start_band2;
+        }
+
+        // tail pointer
+        const int ty_end_band1 = ty_start_band1 + band_size - 1;
+        const int ty_end_band2 = ty_start_band2 + band_size - 1;
+        const int id_end_band2 = tz * layer + ty_end_band2 * row + tx;
+        ivec3 voxel_end_band2 = pba_load(stack_voxels[id_end_band2]);
+        if (voxel_end_band2.x == PBA_U && voxel_end_band2.y == PBA_U) // band 2 empty
+        {
+            stack_second = pba_load(stack_voxels[tz * layer + ty_end_band1 * row + tx]);
+            if (stack_second.x == PBA_U)
+                voxel_end_band2.y = stack_second.y;
+            else
+                voxel_end_band2.y = ty_end_band1;
+            stack_voxels[id_end_band2] = pba_store(voxel_end_band2);
+        }
+    }
+}

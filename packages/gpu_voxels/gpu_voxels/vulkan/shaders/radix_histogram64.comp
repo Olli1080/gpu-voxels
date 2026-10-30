@@ -1,0 +1,27 @@
+#version 450
+// One pass of the LSD radix sort for 64-bit keys, step 1: per work group (tile of 256 keys) histogram of the 8-bit digit
+// (key >> shift) & mask, stored digit-major: hist[digit * groups + group]. A key occupies two words (low word first,
+// the memory layout of a little-endian uint64); shift is a multiple of 8, so a digit never straddles the two words.
+layout(local_size_x = 256) in;
+layout(std430, set = 0, binding = 0) readonly buffer Keys { uint keys[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Hist { uint hist[]; };
+layout(push_constant) uniform Push { uint n; uint shift; uint groups; uint mask; } pc;
+
+shared uint local_hist[256];
+
+uint digit_of(uint i)
+{
+    return pc.shift < 32u ? (keys[2u * i] >> pc.shift) & pc.mask : (keys[2u * i + 1u] >> (pc.shift - 32u)) & pc.mask;
+}
+
+void main()
+{
+    const uint t = gl_LocalInvocationID.x;
+    local_hist[t] = 0u;
+    barrier();
+    const uint i = gl_WorkGroupID.x * 256u + t;
+    if (i < pc.n)
+        atomicAdd(local_hist[digit_of(i)], 1u);
+    barrier();
+    hist[t * pc.groups + gl_WorkGroupID.x] = local_hist[t];
+}

@@ -1,0 +1,29 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Collision of a BitVoxelMap with a ProbVoxelMap (CUDA DefaultCollider::collide(BitVoxel, ProbabilisticVoxel)): the bit
+// voxel has a bit except FREE and the probabilistic voxel is >= threshold. Colliding bit voxels get eBVM_COLLISION.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) buffer This { uint voxels[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Other { uint other[]; };
+layout(std430, set = 0, binding = 2) buffer Counter { uint counter; };
+layout(push_constant) uniform Push { uint voxel_count; int threshold; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.voxel_count; i += stride)
+    {
+        if (int(other[i]) < pc.threshold)
+            continue;
+        const uint base = i * WORDS_PER_VOXEL;
+        uint bits = voxels[base] & 0xFFFFFFFEu;
+        for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+            bits |= voxels[base + w];
+        if (bits != 0u)
+        {
+            voxels[base + meaning_word(BVM_COLLISION)] |= meaning_mask(BVM_COLLISION);
+            atomicAdd(counter, 1u);
+        }
+    }
+}

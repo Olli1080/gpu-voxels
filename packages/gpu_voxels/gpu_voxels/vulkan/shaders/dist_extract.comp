@@ -1,0 +1,42 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// CUDA DistanceVoxel::extract_byte_distance: free-space distance in voxels per voxel as one int8 value (stored in a
+// word): border rules first (x, y, z towards the upper border, then towards the lower border), otherwise the truncated
+// distance to the nearest obstacle, capped at 127.
+layout(local_size_x = 64) in;
+#include "dist_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Voxels { uint voxels[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Out { uint out_words[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint voxel_count; int radius; } pc;
+
+int isqrt(int n) // floor(sqrt(n)) without relying on the precision of sqrt()
+{
+    int r = int(sqrt(float(n)));
+    while (r * r > n) --r;
+    while ((r + 1) * (r + 1) <= n) ++r;
+    return r;
+}
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    const ivec3 dims = ivec3(dim);
+    for (uint i = gl_GlobalInvocationID.x; i < pc.voxel_count; i += stride)
+    {
+        const ivec3 pos = ivec3(coords_of_id(i, dim));
+        int result;
+        if (pos.x > dims.x - pc.radius) result = max(dims.x - pos.x, 0);
+        else if (pos.y > dims.y - pc.radius) result = max(dims.y - pos.y, 0);
+        else if (pos.z > dims.z - pc.radius) result = max(dims.z - pos.z, 0);
+        else if (pos.x < pc.radius) result = max(pos.x, 0);
+        else if (pos.y < pc.radius) result = max(pos.y, 0);
+        else if (pos.z < pc.radius) result = max(pos.z, 0);
+        else
+        {
+            const int squared = dist_squared_distance(voxels[i], uvec3(pos));
+            result = squared >= 128 * 128 ? 127 : isqrt(squared); // 128^2 and more truncates to >= 128, capped at 127
+        }
+        out_words[i] = uint(result);
+    }
+}

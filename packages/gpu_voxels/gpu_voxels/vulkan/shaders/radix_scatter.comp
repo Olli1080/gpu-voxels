@@ -1,0 +1,31 @@
+#version 450
+// One pass of the LSD radix sort, step 3: stable scatter. offsets holds the exclusive scan of the histogram;
+// the rank of an element inside its tile is the number of earlier elements of the tile with the same digit.
+layout(local_size_x = 256) in;
+layout(std430, set = 0, binding = 0) readonly buffer KeysIn { uint keys_in[]; };
+layout(std430, set = 0, binding = 1) readonly buffer ValsIn { uint vals_in[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer KeysOut { uint keys_out[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer ValsOut { uint vals_out[]; };
+layout(std430, set = 0, binding = 4) readonly buffer Offsets { uint offsets[]; };
+layout(push_constant) uniform Push { uint n; uint shift; uint groups; uint mask; } pc;
+
+shared uint digits[256];
+
+void main()
+{
+    const uint t = gl_LocalInvocationID.x;
+    const uint i = gl_WorkGroupID.x * 256u + t;
+    const uint digit = i < pc.n ? ((keys_in[i] >> pc.shift) & pc.mask) : 256u; // 256 never matches a real digit
+    digits[t] = digit;
+    barrier();
+    if (i < pc.n)
+    {
+        uint rank = 0u;
+        for (uint j = 0u; j < t; ++j)
+            if (digits[j] == digit)
+                ++rank;
+        const uint position = offsets[digit * pc.groups + gl_WorkGroupID.x] + rank;
+        keys_out[position] = keys_in[i];
+        vals_out[position] = vals_in[i];
+    }
+}

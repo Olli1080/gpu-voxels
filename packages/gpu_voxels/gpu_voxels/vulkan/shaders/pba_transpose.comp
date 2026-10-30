@@ -1,0 +1,22 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA transpose (CUDA kernelPBA3DTransposeXY, out of place): swaps the x and y axes of every z layer, including the x / y
+// coordinates stored in the voxels so that they stay valid. in: nx * ny * nz, out: ny * nx * nz.
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer In { uint in_voxels[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Out { uint out_voxels[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        const uint x = i % pc.nx;
+        const uint y = (i / pc.nx) % pc.ny;
+        const uint z = i / (pc.nx * pc.ny);
+        const uvec3 o = dist_unpack(in_voxels[i]);
+        out_voxels[(z * pc.nx + x) * pc.ny + y] = dist_pack(uvec3(o.y, o.x, o.z));
+    }
+}

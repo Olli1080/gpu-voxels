@@ -1,0 +1,27 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "morton.glsl"
+// coords (3 words per voxel: x, y, z) -> Morton ids (2 words, low first). A coordinate >= 2^14 cannot be stored in the
+// 15-level tree: the voxel gets the sentinel id 2^42 (sorts behind every valid id) and is counted in dropped[0].
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Coords { uint coords[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 2) buffer Dropped { uint dropped[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    const uvec3 c = uvec3(coords[3u * i], coords[3u * i + 1u], coords[3u * i + 2u]);
+    uint64_t id = 1ul << 42;
+    if (all(lessThan(c, uvec3(16384u))))
+        id = morton_code60(c);
+    else
+        atomicAdd(dropped[0], 1u);
+    ids[2u * i] = uint(id & 0xFFFFFFFFul);
+    ids[2u * i + 1u] = uint(id >> 32);
+}

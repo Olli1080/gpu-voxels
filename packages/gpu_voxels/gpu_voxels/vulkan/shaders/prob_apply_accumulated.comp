@@ -1,0 +1,27 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Accumulate mode, step 2: voxels touched by the batch get clamp(old + sum), unknown counts as 0; the accumulators are
+// reset so that they are zero again for the next batch.
+layout(local_size_x = 64) in;
+#include "prob_common.glsl"
+layout(std430, set = 0, binding = 0) buffer Voxels { uint voxels[]; };
+layout(std430, set = 0, binding = 1) buffer Acc { int acc[]; };
+layout(std430, set = 0, binding = 2) buffer Touched { uint touched[]; };
+layout(push_constant) uniform Push { uint voxel_count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.voxel_count; i += stride)
+    {
+        const uint word = i >> 5u;
+        const uint bit = 1u << (i & 31u);
+        if ((atomicOr(touched[word], 0u) & bit) == 0u)
+            continue;
+        const int old_value = int(voxels[i]);
+        const int base = old_value == PROB_UNKNOWN ? 0 : old_value;
+        voxels[i] = uint(clamp(base + acc[i], PROB_MIN, PROB_MAX));
+        acc[i] = 0;
+        atomicAnd(touched[word], ~bit);
+    }
+}

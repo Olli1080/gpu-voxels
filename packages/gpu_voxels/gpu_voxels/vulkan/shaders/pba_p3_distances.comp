@@ -1,0 +1,98 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA phase 3 (CUDA kernelPBAphase3Distances): computes the Voronoi diagram along y from the stacks of phase 2. A work group
+// handles 16 neighbouring x positions of one z layer; for every x, `band_count` (m3) invocations (rows of the work group,
+// at most 16) share one stack walk: row r handles y = ny - 1 - r, ny - 1 - r - m3, ... and the invocation of the last row
+// publishes the stack state (shared memory) for the next round. Columns beyond nx and rows beyond m3 idle but take part in
+// every barrier.
+layout(local_size_x = 16, local_size_y = 16) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Stack { uint stack_voxels[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Out { uint out_voxels[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint band_count; } pc;
+
+shared ivec3 s_stack_second[16];
+shared ivec3 s_stack_top[16];
+shared int s_last_y[16];
+shared float s_intersection[16];
+
+void main()
+{
+    const int band_id = int(gl_LocalInvocationID.y);
+    const int band_count = int(pc.band_count);
+    const int nx = int(pc.nx), ny = int(pc.ny);
+    const int row = nx;
+    const int layer = nx * ny;
+    const int tx = int(gl_WorkGroupID.x) * 16 + int(gl_LocalInvocationID.x);
+    const int tz = int(gl_WorkGroupID.z);
+    const bool active_column = tx < nx;
+    const bool active_row = band_id < band_count;
+    const int lane = int(gl_LocalInvocationID.x);
+
+    ivec3 stack_second = ivec3(0, PBA_U, 0);
+    ivec3 stack_top = ivec3(0, PBA_U, 0);
+    int last_y = PBA_U;
+    float intersection = 0.0;
+
+    if (active_column && band_id == band_count - 1)
+    {
+        last_y = ny - 1;
+        stack_top = pba_load(stack_voxels[tz * layer + last_y * row + tx]);
+        if (stack_top.x == PBA_U) // tail pointer
+        {
+            last_y = stack_top.y;
+            if (last_y != PBA_U) // else: no obstacle in this line
+                stack_top = pba_load(stack_voxels[tz * layer + last_y * row + tx]);
+        }
+        if (stack_top.y != PBA_U)
+        {
+            stack_second = pba_load(stack_voxels[tz * layer + stack_top.y * row + tx]);
+            intersection = pba_intersection(stack_second.x, stack_top.y, stack_second.z, stack_top.x, last_y, stack_top.z, tx, tz);
+        }
+        s_stack_second[lane] = stack_second;
+        s_stack_top[lane] = stack_top;
+        s_last_y[lane] = last_y;
+        s_intersection[lane] = intersection;
+    }
+    barrier();
+
+    const int rounds = ny / band_count; // band_count divides ny
+    for (int k = 0; k < rounds; ++k)
+    {
+        const int ty = ny - 1 - band_id - k * band_count;
+        if (active_column && active_row)
+        {
+            stack_second = s_stack_second[lane];
+            stack_top = s_stack_top[lane];
+            last_y = s_last_y[lane];
+            intersection = s_intersection[lane];
+
+            while (stack_top.y != PBA_U)
+            {
+                if (float(ty) > intersection)
+                    break;
+                last_y = stack_top.y;
+                stack_top = stack_second;
+                if (stack_top.y != PBA_U)
+                {
+                    stack_second = pba_load(stack_voxels[tz * layer + stack_top.y * row + tx]);
+                    intersection = pba_intersection(stack_second.x, stack_top.y, stack_second.z, stack_top.x, last_y, stack_top.z, tx, tz);
+                }
+            }
+        }
+        barrier(); // everybody has read the shared state of this round
+
+        if (active_column && active_row)
+        {
+            out_voxels[tz * layer + ty * row + tx] = pba_store(ivec3(stack_top.x, last_y, stack_top.z));
+            if (band_id == band_count - 1) // smallest y of the round: the most advanced state
+            {
+                s_stack_second[lane] = stack_second;
+                s_stack_top[lane] = stack_top;
+                s_last_y[lane] = last_y;
+                s_intersection[lane] = intersection;
+            }
+        }
+        barrier();
+    }
+}

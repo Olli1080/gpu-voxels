@@ -1,0 +1,50 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA phase 1 (CUDA kernelPBAphase1FloodZ): one invocation per (x, y, band). Floods the nearest obstacle of the column
+// forward and backward along z inside the band (bands are consecutive z ranges of band_size layers); on equal distance
+// the lower z wins. Deviation from CUDA: the running (uninitialised) obstacle has an infinite distance (CUDA uses |1023 - z|,
+// which wipes out valid obstacles for voxels with z + distance > 1023, i.e. in tall maps).
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) buffer Data { uint data[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint band_size; uint count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const int nx = int(pc.nx), ny = int(pc.ny);
+    const int band_size = int(pc.band_size);
+    const int layer = nx * ny;
+    for (uint t = gl_GlobalInvocationID.x; t < pc.count; t += stride)
+    {
+        const int tx = int(t % pc.nx);
+        const int ty = int((t / pc.nx) % pc.ny);
+        const int band = int(t / (pc.nx * pc.ny));
+        const int tz_bottom = band * band_size;
+        const int base = tz_bottom * layer + ty * nx + tx;
+
+        ivec3 obstacle = ivec3(PBA_U);
+        for (int i = 0; i < band_size; ++i)
+        {
+            const int id = base + i * layer;
+            const ivec3 current = pba_load(data[id]);
+            if (current.z != PBA_U)
+                obstacle = current;
+            data[id] = pba_store(obstacle);
+        }
+
+        obstacle = ivec3(PBA_U);
+        const int tz_top = tz_bottom + band_size - 1;
+        const int top_id = base + (band_size - 1) * layer;
+        for (int i = 0; i < band_size; ++i)
+        {
+            const int id = top_id - i * layer;
+            const int dist_prev = obstacle.z == PBA_U ? 0x7FFFFFFF : abs(obstacle.z - (tz_top - i));
+            const ivec3 next_obstacle = pba_load(data[id]); // result of the forward flood
+            const int dist_next = abs((tz_top - i) - next_obstacle.z); // an uninitialised forward result never beats a valid one
+            if (dist_next <= dist_prev) // prefer the lower coordinate on equal distance
+                obstacle = next_obstacle;
+            data[id] = pba_store(obstacle);
+        }
+    }
+}

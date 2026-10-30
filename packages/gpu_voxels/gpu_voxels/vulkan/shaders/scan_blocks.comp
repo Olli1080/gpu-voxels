@@ -1,0 +1,37 @@
+#version 450
+// Exclusive scan of blocks of 512 elements (256 threads x 2 elements). out[i] is the sum of the elements before i
+// inside the block of i; sums[block] receives the total of the block.
+layout(local_size_x = 256) in;
+layout(std430, set = 0, binding = 0) readonly buffer In { uint in_data[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Out { uint out_data[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer Sums { uint sums[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+shared uint temp[256];
+
+void main()
+{
+    const uint t = gl_LocalInvocationID.x;
+    const uint i0 = gl_WorkGroupID.x * 512u + 2u * t;
+    const uint i1 = i0 + 1u;
+    const uint a = i0 < pc.n ? in_data[i0] : 0u;
+    const uint b = i1 < pc.n ? in_data[i1] : 0u;
+    const uint pair = a + b;
+
+    temp[t] = pair;
+    barrier();
+    for (uint offset = 1u; offset < 256u; offset <<= 1u)
+    {
+        const uint v = t >= offset ? temp[t - offset] : 0u;
+        barrier();
+        temp[t] += v;
+        barrier();
+    }
+    const uint exclusive = temp[t] - pair;
+    if (i0 < pc.n)
+        out_data[i0] = exclusive;
+    if (i1 < pc.n)
+        out_data[i1] = exclusive + a;
+    if (t == 255u)
+        sums[gl_WorkGroupID.x] = temp[255];
+}

@@ -1,0 +1,20 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#extension GL_ARB_gpu_shader_int64 : require
+// heads[i] = 1 when element i starts a new group of equal (id >> shift), i.e. i == 0 or the shifted id differs from the
+// one of element i - 1. shift = 0 finds the distinct ids, shift = 3 * (level + 1) the distinct parents of `level`.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Heads { uint heads[]; };
+layout(push_constant) uniform Push { uint n; uint shift; } pc;
+
+uint64_t id_at(uint i) { return packUint2x32(uvec2(ids[2u * i], ids[2u * i + 1u])); }
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    heads[i] = (i == 0u || (id_at(i) >> pc.shift) != (id_at(i - 1u) >> pc.shift)) ? 1u : 0u;
+}

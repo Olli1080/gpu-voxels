@@ -1,0 +1,44 @@
+#version 450
+// Transforms the points of the sub clouds listed in the table: dst = R * src + t. Sub clouds with enabled == 0 are skipped
+// (their destination points stay untouched). The table holds ALL sub clouds sorted by begin.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Src { float src[]; };   // packed x, y, z
+layout(std430, set = 0, binding = 1) writeonly buffer Dst { float dst[]; };
+struct Entry
+{
+    uint begin;
+    uint end;
+    uint enabled;
+    uint pad;
+    float m[12]; // first three rows of the matrix, row-major
+};
+layout(std430, set = 0, binding = 2) readonly buffer Table { Entry entries[]; };
+layout(push_constant) uniform Push { uint point_count; uint entry_count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.point_count; i += stride)
+    {
+        // last entry with begin <= i
+        uint lo = 0u;
+        uint hi = pc.entry_count;
+        while (hi - lo > 1u)
+        {
+            const uint mid = (lo + hi) >> 1u;
+            if (entries[mid].begin <= i)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        if (entries[lo].enabled == 0u || i >= entries[lo].end)
+            continue;
+
+        const float x = src[3u * i];
+        const float y = src[3u * i + 1u];
+        const float z = src[3u * i + 2u];
+        dst[3u * i]      = entries[lo].m[0] * x + entries[lo].m[1] * y + entries[lo].m[2]  * z + entries[lo].m[3];
+        dst[3u * i + 1u] = entries[lo].m[4] * x + entries[lo].m[5] * y + entries[lo].m[6]  * z + entries[lo].m[7];
+        dst[3u * i + 2u] = entries[lo].m[8] * x + entries[lo].m[9] * y + entries[lo].m[10] * z + entries[lo].m[11];
+    }
+}

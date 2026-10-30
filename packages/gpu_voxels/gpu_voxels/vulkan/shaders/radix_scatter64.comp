@@ -1,0 +1,33 @@
+#version 450
+// One pass of the LSD radix sort for 64-bit keys, step 3: stable scatter (see radix_histogram64.comp for the key layout).
+layout(local_size_x = 256) in;
+layout(std430, set = 0, binding = 0) readonly buffer KeysIn { uint keys_in[]; };
+layout(std430, set = 0, binding = 1) readonly buffer ValsIn { uint vals_in[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer KeysOut { uint keys_out[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer ValsOut { uint vals_out[]; };
+layout(std430, set = 0, binding = 4) readonly buffer Offsets { uint offsets[]; };
+layout(push_constant) uniform Push { uint n; uint shift; uint groups; uint mask; } pc;
+
+shared uint digits[256];
+
+void main()
+{
+    const uint t = gl_LocalInvocationID.x;
+    const uint i = gl_WorkGroupID.x * 256u + t;
+    uint digit = 256u; // 256 never matches a real digit
+    if (i < pc.n)
+        digit = pc.shift < 32u ? (keys_in[2u * i] >> pc.shift) & pc.mask : (keys_in[2u * i + 1u] >> (pc.shift - 32u)) & pc.mask;
+    digits[t] = digit;
+    barrier();
+    if (i < pc.n)
+    {
+        uint rank = 0u;
+        for (uint j = 0u; j < t; ++j)
+            if (digits[j] == digit)
+                ++rank;
+        const uint position = offsets[digit * pc.groups + gl_WorkGroupID.x] + rank;
+        keys_out[2u * position] = keys_in[2u * i];
+        keys_out[2u * position + 1u] = keys_in[2u * i + 1u];
+        vals_out[position] = vals_in[i];
+    }
+}

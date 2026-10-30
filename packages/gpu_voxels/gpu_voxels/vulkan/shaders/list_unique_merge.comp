@@ -1,0 +1,45 @@
+#version 450
+// Merge step of make_unique: entries are visited in sorted key order; entry i goes to the group of its run. The head of a group
+// writes id and coordinates, every entry reduces its voxel into the voxel of the group (mode 0: bitwise OR, mode 1: add).
+// out_vox must be zero-initialised.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer SortedKeys { uint sorted_keys[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Order { uint order[]; };      // original index of sorted entry i
+layout(std430, set = 0, binding = 2) readonly buffer Pos { uint pos[]; };
+layout(std430, set = 0, binding = 3) readonly buffer SrcCoords { uint src_coords[]; };
+layout(std430, set = 0, binding = 4) readonly buffer SrcVox { uint src_vox[]; };
+layout(std430, set = 0, binding = 5) writeonly buffer OutIds { uint out_ids[]; };
+layout(std430, set = 0, binding = 6) writeonly buffer OutCoords { uint out_coords[]; };
+layout(std430, set = 0, binding = 7) buffer OutVox { uint out_vox[]; };
+layout(push_constant) uniform Push { uint n; uint words; uint mode; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+    {
+        const uint src = order[i];
+        const bool head = i == 0u || sorted_keys[i] != sorted_keys[i - 1u];
+        // pos is the exclusive scan of the head flags: a head starts group pos[i], the other entries of a run belong to
+        // the group of the head before them (pos[i] already counts that head).
+        const uint g = head ? pos[i] : pos[i] - 1u;
+        if (head)
+        {
+            out_ids[g] = sorted_keys[i];
+            out_coords[3u * g] = src_coords[3u * src];
+            out_coords[3u * g + 1u] = src_coords[3u * src + 1u];
+            out_coords[3u * g + 2u] = src_coords[3u * src + 2u];
+        }
+        for (uint w = 0u; w < pc.words; ++w)
+        {
+            const uint v = src_vox[src * pc.words + w];
+            if (v != 0u)
+            {
+                if (pc.mode == 0u)
+                    atomicOr(out_vox[g * pc.words + w], v);
+                else
+                    atomicAdd(out_vox[g * pc.words + w], v);
+            }
+        }
+    }
+}

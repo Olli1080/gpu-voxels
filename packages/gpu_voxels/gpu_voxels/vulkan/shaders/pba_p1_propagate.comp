@@ -1,0 +1,55 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA phase 1, inter-band step (CUDA kernelPBAphase1PropagateInterband): one invocation per (x, y, band). Looks for a
+// closer obstacle for the bottom voxel of the band in the bands below and for the top voxel in the bands above (the first
+// initialised voxel found is the closest one) and records it in `initial`. Deviation from CUDA: an uninitialised voxel has
+// an infinite distance (CUDA uses |1023 - z|, which loses obstacles in tall maps).
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Data { uint data[]; };
+layout(std430, set = 0, binding = 1) buffer Initial { uint initial[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint band_size; uint count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const int nx = int(pc.nx), ny = int(pc.ny), nz = int(pc.nz);
+    const int band_size = int(pc.band_size);
+    const int layer = nx * ny;
+    for (uint t = gl_GlobalInvocationID.x; t < pc.count; t += stride)
+    {
+        const int tx = int(t % pc.nx);
+        const int ty = int((t / pc.nx) % pc.ny);
+        const int band = int(t / (pc.nx * pc.ny));
+        const int tz_bottom = band * band_size;
+        const int tz_top = tz_bottom + band_size - 1;
+        const int bottom_id = tz_bottom * layer + ty * nx + tx;
+        const int top_id = bottom_id + (band_size - 1) * layer;
+
+        ivec3 current = pba_load(data[bottom_id]);
+        int current_dist = current.z == PBA_U ? 0x7FFFFFFF : abs(current.z - tz_bottom);
+        for (int offset = band_size; offset <= tz_top; offset += band_size)
+        {
+            current = pba_load(data[top_id - offset * layer]); // last voxel of an earlier band
+            if (current.z != PBA_U)
+            {
+                if (abs(current.z - tz_bottom) < current_dist)
+                    initial[bottom_id] = pba_store(current);
+                break; // obstacles further away cannot be closer
+            }
+        }
+
+        current = pba_load(data[top_id]);
+        current_dist = current.z == PBA_U ? 0x7FFFFFFF : abs(current.z - tz_top);
+        for (int offset = band_size; tz_top + offset < nz; offset += band_size)
+        {
+            current = pba_load(data[bottom_id + offset * layer]); // first voxel of a later band
+            if (current.z != PBA_U)
+            {
+                if (abs(current.z - tz_top) < current_dist)
+                    initial[top_id] = pba_store(current);
+                break;
+            }
+        }
+    }
+}

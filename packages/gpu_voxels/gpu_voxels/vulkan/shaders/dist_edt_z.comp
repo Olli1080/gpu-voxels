@@ -1,0 +1,44 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Exact distance transform, pass 1 (along z): one invocation per (x, y) column. A voxel is an obstacle iff it stores its
+// own position (everything else is treated as unknown, so the transform can be repeated after inserting more obstacles).
+// Output: cost = squared z distance to the nearest obstacle of the column (DIST_INF if none) and that obstacle position;
+// on equal distance the smaller z wins.
+layout(local_size_x = 64) in;
+#include "dist_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Map { uint map_voxels[]; };
+layout(std430, set = 0, binding = 1) buffer OutCost { int out_cost[]; };
+layout(std430, set = 0, binding = 2) buffer OutSite { uint out_site[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint lines; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    for (uint line = gl_GlobalInvocationID.x; line < pc.lines; line += stride)
+    {
+        const uint x = line % dim.x;
+        const uint y = line / dim.x;
+        int last = -1;
+        for (uint z = 0u; z < dim.z; ++z)
+        {
+            const uint id = voxel_id(uvec3(x, y, z), dim);
+            if (map_voxels[id] == dist_pack(uvec3(x, y, z)))
+                last = int(z);
+            out_cost[id] = last < 0 ? DIST_INF : (int(z) - last) * (int(z) - last);
+            out_site[id] = last < 0 ? DIST_UNINIT : dist_pack(uvec3(x, y, uint(last)));
+        }
+        int next = -1;
+        for (int z = int(dim.z) - 1; z >= 0; --z)
+        {
+            const uint id = voxel_id(uvec3(x, y, uint(z)), dim);
+            if (map_voxels[id] == dist_pack(uvec3(x, y, uint(z))))
+                next = z;
+            if (next >= 0 && (next - z) * (next - z) < out_cost[id])
+            {
+                out_cost[id] = (next - z) * (next - z);
+                out_site[id] = dist_pack(uvec3(x, y, uint(next)));
+            }
+        }
+    }
+}

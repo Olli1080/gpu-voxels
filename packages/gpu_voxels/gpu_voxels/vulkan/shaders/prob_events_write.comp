@@ -1,0 +1,33 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Sequential mode, step 2: writes the voxel updates (key = voxel id, value = increment) of the measurements
+// [first, first + count) in measurement order; offsets = exclusive scan of the counts, relative to batch_first.
+layout(local_size_x = 64) in;
+#include "prob_push.glsl"
+layout(std430, set = 0, binding = 2) readonly buffer Offsets { uint offsets[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer Keys { uint keys[]; };
+layout(std430, set = 0, binding = 4) writeonly buffer Vals { uint vals[]; };
+
+uint g_position;
+
+void prob_emit(uint id, int increment)
+{
+    keys[g_position] = id;
+    vals[g_position] = uint(increment);
+    ++g_position;
+}
+void prob_skip_outside() {}
+void prob_skip_cut() {}
+
+#include "prob_ray.glsl"
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint k = gl_GlobalInvocationID.x; k < pc.count; k += stride)
+    {
+        const uint i = pc.first + k;
+        g_position = offsets[i - pc.batch_first] - pc.base;
+        prob_process_point(i);
+    }
+}

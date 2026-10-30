@@ -1,0 +1,53 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Collide two maps of identical size voxel by voxel. A voxel is occupied when any bit except
+// eBVM_FREE (bit 0) is set; two voxels collide when both are occupied. Colliding voxels of the first map get
+// the eBVM_COLLISION bit (like the CUDA kernelCollideVoxelMapsDebug). The number of collisions is added to total.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) buffer Mine { uint mine[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Other { uint other[]; };
+layout(std430, set = 0, binding = 2) buffer Total { uint total; };
+layout(push_constant) uniform Push { uint voxel_count; } pc;
+
+shared uint group_count;
+
+bool occupied_mine(uint base)
+{
+    uint bits = mine[base] & 0xFFFFFFFEu;
+    for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+        bits |= mine[base + w];
+    return bits != 0u;
+}
+
+bool occupied_other(uint base)
+{
+    uint bits = other[base] & 0xFFFFFFFEu;
+    for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+        bits |= other[base + w];
+    return bits != 0u;
+}
+
+void main()
+{
+    if (gl_LocalInvocationIndex == 0u)
+        group_count = 0u;
+    barrier();
+
+    uint local_count = 0u;
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.voxel_count; i += stride)
+    {
+        const uint base = i * WORDS_PER_VOXEL;
+        if (occupied_mine(base) && occupied_other(base))
+        {
+            mine[base + meaning_word(BVM_COLLISION)] |= meaning_mask(BVM_COLLISION);
+            ++local_count;
+        }
+    }
+
+    atomicAdd(group_count, local_count);
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && group_count != 0u)
+        atomicAdd(total, group_count);
+}

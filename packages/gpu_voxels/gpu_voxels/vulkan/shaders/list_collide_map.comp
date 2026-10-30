@@ -1,0 +1,30 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Collision of a BitVoxelList with a BitVoxelMap of the same dimensions (CUDA kernelCollideWithVoxelMap with the
+// DefaultCollider): entry i collides if the map voxel with index ids[i] has a bit besides FREE; the list voxel itself
+// is not inspected (as in CUDA). Colliding list voxels get the eBVM_COLLISION bit; counter += number of collisions.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) buffer ListVox { uint list_vox[]; };
+layout(std430, set = 0, binding = 2) readonly buffer MapVox { uint map_vox[]; };
+layout(std430, set = 0, binding = 3) buffer Counter { uint counter; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+    {
+        const uint lb = i * WORDS_PER_VOXEL;
+        const uint mb = ids[i] * WORDS_PER_VOXEL;
+        uint map_bits = map_vox[mb] & 0xFFFFFFFEu;
+        for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+            map_bits |= map_vox[mb + w];
+        if (map_bits != 0u)
+        {
+            list_vox[lb + meaning_word(BVM_COLLISION)] |= meaning_mask(BVM_COLLISION);
+            atomicAdd(counter, 1u);
+        }
+    }
+}

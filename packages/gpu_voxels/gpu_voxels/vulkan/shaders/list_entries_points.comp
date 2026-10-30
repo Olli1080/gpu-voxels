@@ -1,0 +1,33 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Creates one list entry per input point (id, coordinates, voxel with the meaning / count 1) and a validity flag.
+// Points outside the reference map get flag 0 (their entry content is unspecified).
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Points { float points[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer OutIds { uint out_ids[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer OutCoords { uint out_coords[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer OutVox { uint out_vox[]; };
+layout(std430, set = 0, binding = 4) writeonly buffer Flags { uint flags[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint count; uint meaning; uint kind; float side; } pc;
+#include "list_entry.glsl"
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    const uint words = words_of_kind(pc.kind);
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        uvec3 c;
+        const bool inside = voxel_of_point(vec3(points[3u * i], points[3u * i + 1u], points[3u * i + 2u]), pc.side, dim, c);
+        flags[i] = inside ? 1u : 0u;
+        out_ids[i] = voxel_id(c, dim);
+        out_coords[3u * i] = c.x; out_coords[3u * i + 1u] = c.y; out_coords[3u * i + 2u] = c.z;
+        for (uint w = 0u; w < words; ++w)
+            out_vox[i * words + w] = 0u;
+        if (pc.kind == LIST_KIND_BIT)
+            out_vox[i * words + meaning_word(pc.meaning)] = meaning_mask(pc.meaning);
+        else
+            out_vox[i] = 1u;
+    }
+}

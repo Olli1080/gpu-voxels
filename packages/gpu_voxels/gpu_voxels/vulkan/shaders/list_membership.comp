@@ -1,0 +1,36 @@
+#version 450
+// For every entry of this list: is its id contained in the (sorted) id list of the other list?
+// found[i] = 1/0, keep[i] = 1 - found[i] (for subtraction). counter += number of entries that are found and, if
+// use_threshold != 0, whose counting voxel is >= threshold (CUDA: CountingVoxelList::collideWith).
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer ThisIds { uint this_ids[]; };
+layout(std430, set = 0, binding = 1) readonly buffer OtherIds { uint other_ids[]; };
+layout(std430, set = 0, binding = 2) readonly buffer ThisVox { uint this_vox[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer Found { uint found[]; };
+layout(std430, set = 0, binding = 4) writeonly buffer Keep { uint keep[]; };
+layout(std430, set = 0, binding = 5) buffer Counter { uint counter; };
+layout(push_constant) uniform Push { uint n; uint other_n; uint use_threshold; int threshold; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+    {
+        const uint id = this_ids[i];
+        uint lo = 0u;
+        uint hi = pc.other_n;
+        while (lo < hi) // lower bound
+        {
+            const uint mid = (lo + hi) >> 1u;
+            if (other_ids[mid] < id)
+                lo = mid + 1u;
+            else
+                hi = mid;
+        }
+        const bool is_found = lo < pc.other_n && other_ids[lo] == id;
+        found[i] = is_found ? 1u : 0u;
+        keep[i] = is_found ? 0u : 1u;
+        if (is_found && (pc.use_threshold == 0u || int(this_vox[i]) >= pc.threshold))
+            atomicAdd(counter, 1u);
+    }
+}

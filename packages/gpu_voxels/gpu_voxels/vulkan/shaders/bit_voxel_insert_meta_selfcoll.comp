@@ -1,0 +1,65 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Insert ONE sub cloud (dispatched once per sub cloud, in order, with a barrier in between) and detect self collisions
+// (CUDA kernelInsertMetaPointCloudSelfCollCheck): for each point the voxel bits are ANDed with the mask of the sub cloud;
+// if anything but the FREE bit remains, the masked bits and the own meaning are added to colliding, the voxel is marked
+// eBVM_COLLISION, and finally the own meaning is inserted. Order-independent as long as the masks exclude the own bit
+// and the collision bit (the default masks do).
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) buffer Map { uint words[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Points { float points[]; };  // packed x, y, z
+layout(std430, set = 0, binding = 2) readonly buffer Masks { uint masks[]; };     // 8 words per sub cloud
+layout(std430, set = 0, binding = 3) buffer Colliding { uint colliding[8]; };
+layout(std430, set = 0, binding = 4) buffer Outside { uint outside_count; };
+layout(push_constant) uniform Push
+{
+    uint dim_x;
+    uint dim_y;
+    uint dim_z;
+    uint first_point;
+    uint point_count;
+    uint sub_cloud;
+    uint meaning;
+    float voxel_side_length;
+} pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint n = gl_GlobalInvocationID.x; n < pc.point_count; n += stride)
+    {
+        const uint i = pc.first_point + n;
+        const vec3 p = vec3(points[3u * i], points[3u * i + 1u], points[3u * i + 2u]);
+        const vec3 f = floor(p / pc.voxel_side_length);
+        const bool inside = f.x >= 0.0 && f.x < float(pc.dim_x) &&
+                            f.y >= 0.0 && f.y < float(pc.dim_y) &&
+                            f.z >= 0.0 && f.z < float(pc.dim_z);
+        if (!inside)
+        {
+            atomicAdd(outside_count, 1u);
+            continue;
+        }
+
+        const uvec3 c = uvec3(f);
+        const uint base = ((c.z * pc.dim_y + c.y) * pc.dim_x + c.x) * WORDS_PER_VOXEL;
+
+        uint masked[WORDS_PER_VOXEL];
+        uint any_bit = 0u;
+        for (uint w = 0u; w < WORDS_PER_VOXEL; ++w)
+        {
+            // atomic read: other points of this sub cloud may set bits in the same word concurrently
+            masked[w] = atomicOr(words[base + w], 0u) & masks[pc.sub_cloud * WORDS_PER_VOXEL + w];
+            any_bit |= (w == 0u) ? (masked[w] & 0xFFFFFFFEu) : masked[w];
+        }
+        if (any_bit != 0u)
+        {
+            for (uint w = 0u; w < WORDS_PER_VOXEL; ++w)
+                if (masked[w] != 0u)
+                    atomicOr(colliding[w], masked[w]);
+            atomicOr(colliding[meaning_word(pc.meaning)], meaning_mask(pc.meaning));
+            atomicOr(words[base + meaning_word(BVM_COLLISION)], meaning_mask(BVM_COLLISION));
+        }
+        atomicOr(words[base + meaning_word(pc.meaning)], meaning_mask(pc.meaning));
+    }
+}

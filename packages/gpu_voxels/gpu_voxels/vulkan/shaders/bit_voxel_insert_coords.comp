@@ -1,0 +1,34 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Insert voxel coordinates. Coordinates outside the map are counted in outside_count and not inserted.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) buffer Map { uint words[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Coords { uint coords[]; }; // x, y, z packed (stride 3)
+layout(std430, set = 0, binding = 2) buffer Outside { uint outside_count; };
+layout(push_constant) uniform Push
+{
+    uint dim_x;
+    uint dim_y;
+    uint dim_z;
+    uint count;
+    uint meaning;
+} pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        const uvec3 c = uvec3(coords[3u * i], coords[3u * i + 1u], coords[3u * i + 2u]);
+        if (c.x < pc.dim_x && c.y < pc.dim_y && c.z < pc.dim_z)
+        {
+            const uint voxel = (c.z * pc.dim_y + c.y) * pc.dim_x + c.x;
+            atomicOr(words[voxel * WORDS_PER_VOXEL + meaning_word(pc.meaning)], meaning_mask(pc.meaning));
+        }
+        else
+        {
+            atomicAdd(outside_count, 1u);
+        }
+    }
+}

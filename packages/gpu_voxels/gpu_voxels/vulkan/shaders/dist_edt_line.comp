@@ -1,0 +1,86 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Exact distance transform, passes 2 and 3: along y (axis 1, one invocation per (x, z) line) and along x (axis 0, one
+// invocation per (y, z) line). For every position q of a line: min over the line positions p of
+// cost(p) + (q - p)^2 and the obstacle position stored at the minimising p. Lower envelope of parabolas with integer
+// arithmetic (Meijster, Roerdink, Hesselink 2000); equal candidates keep the smaller p, so the result is deterministic.
+// Positions without any obstacle in the line keep the uninitialised site of their (INF cost) candidates.
+layout(local_size_x = 64) in;
+#include "dist_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer InCost { int in_cost[]; };
+layout(std430, set = 0, binding = 1) readonly buffer InSite { uint in_site[]; };
+layout(std430, set = 0, binding = 2) buffer OutCost { int out_cost[]; };
+layout(std430, set = 0, binding = 3) buffer OutSite { uint out_site[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint lines; uint axis; } pc;
+
+const int MAX_LINE = 1024;
+int env_source[MAX_LINE]; // positions of the parabolas of the lower envelope
+int env_start[MAX_LINE];  // first position at which each of them is minimal
+
+uint g_base;
+uint g_step;
+
+int cost_at(int i) { return in_cost[g_base + uint(i) * g_step]; }
+int eval(int x, int i) { return (x - i) * (x - i) + cost_at(i); }
+
+// last position at which parabola i is not worse than parabola u (i < u); only called when u does not beat i at the start
+// position of i, so the numerator is not negative and the integer division is a floor division
+int separation(int i, int u)
+{
+    return (u * u - i * i + cost_at(u) - cost_at(i)) / (2 * (u - i));
+}
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    const int m = int(pc.axis == 0u ? dim.x : dim.y);
+    for (uint line = gl_GlobalInvocationID.x; line < pc.lines; line += stride)
+    {
+        if (pc.axis == 1u)
+        {
+            g_base = voxel_id(uvec3(line % dim.x, 0u, line / dim.x), dim);
+            g_step = dim.x;
+        }
+        else
+        {
+            g_base = voxel_id(uvec3(0u, line % dim.y, line / dim.y), dim);
+            g_step = 1u;
+        }
+
+        int q = 0;
+        env_source[0] = 0;
+        env_start[0] = 0;
+        for (int u = 1; u < m; ++u)
+        {
+            while (q >= 0 && eval(env_start[q], env_source[q]) > eval(env_start[q], u))
+                --q;
+            if (q < 0)
+            {
+                q = 0;
+                env_source[0] = u;
+            }
+            else
+            {
+                const int w = 1 + separation(env_source[q], u);
+                if (w < m)
+                {
+                    ++q;
+                    env_source[q] = u;
+                    env_start[q] = w;
+                }
+            }
+        }
+        for (int u = m - 1; u >= 0; --u)
+        {
+            const int source = env_source[q];
+            const uint target = g_base + uint(u) * g_step;
+            const int cost = eval(u, source);
+            const uint site = in_site[g_base + uint(source) * g_step];
+            out_cost[target] = cost;
+            out_site[target] = site;
+            if (u == env_start[q])
+                --q;
+        }
+    }
+}

@@ -1,0 +1,13 @@
+#version 450
+// heads[i] = 1 if i is the first entry of a run of equal (sorted) keys.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Keys { uint keys[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Heads { uint heads[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+        heads[i] = (i == 0u || keys[i] != keys[i - 1u]) ? 1u : 0u;
+}

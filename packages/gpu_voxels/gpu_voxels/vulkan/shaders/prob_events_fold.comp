@@ -1,0 +1,25 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Sequential mode, step 3: the updates are sorted by voxel (stable, so in measurement order). The first entry of every
+// run of equal ids replays the whole run on its voxel with the CUDA saturating update rule.
+layout(local_size_x = 64) in;
+#include "prob_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Keys { uint keys[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Vals { uint vals[]; };
+layout(std430, set = 0, binding = 2) buffer Voxels { uint voxels[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+    {
+        if (i != 0u && keys[i] == keys[i - 1u])
+            continue;
+        const uint id = keys[i];
+        int value = int(voxels[id]);
+        for (uint j = i; j < pc.n && keys[j] == id; ++j)
+            value = prob_apply(value, int(vals[j]));
+        voxels[id] = uint(value);
+    }
+}

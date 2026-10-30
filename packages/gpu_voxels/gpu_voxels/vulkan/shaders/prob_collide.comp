@@ -1,0 +1,37 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Collision of a ProbVoxelMap with a map of the same dimensions (CUDA kernelCollideVoxelMapsDebug + DefaultCollider):
+// this voxel must be >= threshold_this and the other one occupied (bit map: any bit except FREE, probabilistic map:
+// >= threshold_other). Colliding voxels receive the CUDA insert(eBVM_COLLISION): one update with mark_increment.
+layout(local_size_x = 64) in;
+#include "prob_common.glsl"
+layout(std430, set = 0, binding = 0) buffer This { uint voxels[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Other { uint other[]; };
+layout(std430, set = 0, binding = 2) buffer Counter { uint counter; };
+layout(push_constant) uniform Push { uint voxel_count; uint other_is_bit; int threshold_this; int threshold_other; int mark_increment; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.voxel_count; i += stride)
+    {
+        const int value = int(voxels[i]);
+        if (value < pc.threshold_this)
+            continue;
+        bool other_occupied;
+        if (pc.other_is_bit != 0u)
+        {
+            uint bits = other[i * WORDS_PER_VOXEL] & 0xFFFFFFFEu;
+            for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+                bits |= other[i * WORDS_PER_VOXEL + w];
+            other_occupied = bits != 0u;
+        }
+        else
+            other_occupied = int(other[i]) >= pc.threshold_other;
+        if (other_occupied)
+        {
+            voxels[i] = uint(prob_apply(value, pc.mark_increment));
+            atomicAdd(counter, 1u);
+        }
+    }
+}

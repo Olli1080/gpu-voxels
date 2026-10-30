@@ -1,0 +1,26 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Sequential mode, step 1: number of voxel updates per measurement (counts[i - first]); skipped measurements are counted.
+layout(local_size_x = 64) in;
+#include "prob_push.glsl"
+layout(std430, set = 0, binding = 2) writeonly buffer Counts { uint counts[]; };
+layout(std430, set = 0, binding = 3) buffer Counters { uint counters[]; }; // [0] outside, [1] cut by the robot
+
+uint g_events;
+
+void prob_emit(uint id, int increment) { ++g_events; }
+void prob_skip_outside() { atomicAdd(counters[0], 1u); }
+void prob_skip_cut() { atomicAdd(counters[1], 1u); }
+
+#include "prob_ray.glsl"
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint k = gl_GlobalInvocationID.x; k < pc.count; k += stride)
+    {
+        g_events = 0u;
+        prob_process_point(pc.first + k);
+        counts[k] = g_events;
+    }
+}

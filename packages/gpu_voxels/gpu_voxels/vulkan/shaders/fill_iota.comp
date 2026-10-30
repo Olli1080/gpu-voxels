@@ -1,0 +1,12 @@
+#version 450
+// out[i] = i
+layout(local_size_x = 256) in;
+layout(std430, set = 0, binding = 0) writeonly buffer Out { uint out_data[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+        out_data[i] = i;
+}

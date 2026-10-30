@@ -1,0 +1,529 @@
+// -- BEGIN LICENSE BLOCK ----------------------------------------------
+// This file is part of the GPU Voxels Software Library.
+// Licensed under the CDDL (see LICENSE.txt in the top directory).
+// -- END LICENSE BLOCK ------------------------------------------------
+
+#include <gpu_voxels/vulkan/Octree.h>
+
+#include <algorithm>
+#include <optional>
+#include <sstream>
+
+#include <gpu_voxels/vulkan/CommandBatch.h>
+#include <gpu_voxels/vulkan/ComputePipeline.h>
+#include <gpu_voxels/vulkan/Primitives.h>
+
+#include "Shaders.h"
+
+namespace gpu_voxels::vulkan
+{
+	using namespace octree_format;
+
+	namespace
+	{
+		constexpr uint32_t kLocalSize = 64;
+		constexpr uint64_t kSentinelId = uint64_t(1) << 42; ///< sorts behind every valid id
+
+		struct CountPush { uint32_t n; };
+		struct HeadsPush { uint32_t n, shift; };
+		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
+		struct FindPush { uint32_t n, pad; uint64_t root; };
+		struct ExtractPush { uint32_t item_count, level, min_level, write_mode, out_capacity, next_capacity; };
+
+		/// Group counts for a 1D problem of `items` invocations (2D grid when the x limit is exceeded, see octree_gid.glsl).
+		struct Grid { uint32_t x, y; };
+		Grid grid_for(const Context& context, uint64_t items, uint32_t max_groups_x)
+		{
+			const uint64_t groups = std::max<uint64_t>((items + kLocalSize - 1) / kLocalSize, 1);
+			const uint64_t limit = std::max<uint64_t>(1, std::min<uint64_t>(context.limits().maxComputeWorkGroupCount[0], max_groups_x));
+			const uint64_t x = std::min(groups, limit);
+			return { static_cast<uint32_t>(x), static_cast<uint32_t>((groups + x - 1) / x) };
+		}
+
+		uint32_t read_word(const DeviceBuffer& buffer, uint64_t index)
+		{
+			uint32_t w = 0;
+			buffer.download(&w, 4, index * 4);
+			return w;
+		}
+	}
+
+	struct Octree::Impl
+	{
+		struct Chunk
+		{
+			uint64_t blocks = 0;
+			DeviceBuffer buffer;
+		};
+
+		struct Kernels
+		{
+			Kernels(Context& c, OctreeKind kind)
+				: morton_ids(c, GVL_SHADER_SPAN(octree_morton_ids_comp), 3, sizeof(CountPush)),
+				  heads(c, GVL_SHADER_SPAN(octree_heads_comp), 2, sizeof(HeadsPush)),
+				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
+				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
+				  find(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_find_prob_comp) : GVL_SHADER_SPAN(octree_find_det_comp), 2, sizeof(FindPush)),
+				  extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_extract_prob_comp) : GVL_SHADER_SPAN(octree_extract_det_comp), 5, sizeof(ExtractPush))
+			{
+			}
+			ComputePipeline morton_ids, heads, compact, build, find, extract;
+		};
+
+		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), chunks(kLevelCount)
+		{
+			make_empty();
+		}
+
+		template<typename Push>
+		void dispatch(CommandBatch& batch, const ComputePipeline& pipeline, std::initializer_list<const DeviceBuffer*> buffers,
+			uint64_t items, const Push& push) const
+		{
+			const Grid g = grid_for(context, items, max_groups_x);
+			batch.dispatch(pipeline, buffers, g.x, g.y, 1, &push, static_cast<uint32_t>(sizeof(Push)));
+		}
+
+		Context& context;
+		OctreeKind kind;
+		uint32_t max_groups_x = 65535;
+		Primitives primitives;
+		Kernels kernels;
+		std::vector<std::optional<Chunk>> chunks; ///< index = level
+		uint32_t voxels = 0;
+		uint64_t dropped = 0;
+
+		// ------------------------------------------------------------------------------------------------ building
+
+		void reset_chunks()
+		{
+			for (auto& c : chunks)
+				c.reset();
+			voxels = 0;
+			dropped = 0;
+		}
+
+		void make_empty()
+		{
+			reset_chunks();
+			std::vector<uint8_t> block(inner_block_bytes(kind), 0);
+			HostNode root = filler(kind, kRootLevel);
+			root.status = kUnknown; // an empty tree: nothing was built, nothing is static
+			encode_inner(kind, block.data(), 0, root);
+			for (uint32_t s = 1; s < 8; ++s)
+				encode_inner(kind, block.data(), s, filler(kind, kRootLevel));
+			add_chunk(kRootLevel, 1, DeviceBuffer(context, block.size()));
+			chunks[kRootLevel]->buffer.upload(block.data(), block.size());
+		}
+
+		void add_chunk(uint32_t level, uint64_t blocks, DeviceBuffer buffer)
+		{
+			const uint64_t address = buffer.device_address();
+			if (address % 16 != 0 || !addressable(address, buffer.size()))
+				throw VulkanError("Octree: a chunk lies outside the 48 bit / 16 byte aligned address range the nodes can hold (address " + std::to_string(address) + ", size " + std::to_string(buffer.size()) + ")");
+			chunks[level] = Chunk{ blocks, std::move(buffer) };
+		}
+
+		/// Sorts the ids of `ids` (n entries, 43 bit keys) and builds the tree from the valid prefix of `n_valid` entries.
+		void sort_and_build(DeviceBuffer& ids, uint32_t n, uint32_t n_valid, uint32_t key_bits)
+		{
+			if (n > 1)
+			{
+				DeviceBuffer values(context, uint64_t(n) * 4);
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				primitives.record_sort_pairs64(batch, ids, values, n, key_bits, keep_alive);
+				batch.submit_and_wait();
+			}
+			if (n_valid == 0)
+			{
+				make_empty();
+				return;
+			}
+			build_sorted(ids, n_valid);
+		}
+
+		/// `ids`: sorted ids, the first n of them valid (< 2^42). Replaces the tree.
+		void build_sorted(DeviceBuffer& ids, uint32_t n)
+		{
+			// distinct ids
+			DeviceBuffer heads(context, uint64_t(n) * 4), offsets(context, uint64_t(n) * 4), unique_ids(context, uint64_t(n) * 8);
+			{
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				dispatch(batch, kernels.heads, { &ids, &heads }, n, HeadsPush{ n, 0 });
+				batch.barrier();
+				primitives.record_exclusive_scan(batch, heads, offsets, n, keep_alive);
+				batch.barrier();
+				dispatch(batch, kernels.compact, { &ids, &heads, &offsets, &unique_ids }, n, CountPush{ n });
+				batch.submit_and_wait();
+			}
+			const uint32_t distinct = read_word(offsets, n - 1) + read_word(heads, n - 1);
+
+			std::vector<std::optional<Chunk>> built(kLevelCount);
+			DeviceBuffer current = std::move(unique_ids);
+			uint32_t count = distinct;
+			uint64_t previous_address = 0;
+			for (uint32_t level = 0; level < kLevelCount; ++level)
+			{
+				DeviceBuffer level_heads(context, uint64_t(count) * 4), level_offsets(context, uint64_t(count) * 4);
+				{
+					KeepAlive keep_alive;
+					CommandBatch batch(context);
+					dispatch(batch, kernels.heads, { &current, &level_heads }, count, HeadsPush{ count, 3 * (level + 1) });
+					batch.barrier();
+					primitives.record_exclusive_scan(batch, level_heads, level_offsets, count, keep_alive);
+					batch.submit_and_wait();
+				}
+				const uint64_t blocks = uint64_t(read_word(level_offsets, count - 1)) + read_word(level_heads, count - 1);
+				if (level == kRootLevel && blocks != 1)
+					throw VulkanError("Octree::build: more than one root block (internal error)");
+
+				DeviceBuffer chunk(context, blocks * block_bytes(kind, level));
+				DeviceBuffer next_ids(context, blocks * 8);
+				const uint64_t address = chunk.device_address();
+				if (address % 16 != 0 || !addressable(address, chunk.size()))
+					throw VulkanError("Octree::build: a chunk lies outside the 48 bit / 16 byte aligned address range the nodes can hold (address " + std::to_string(address) + ", size " + std::to_string(chunk.size()) + ")");
+				{
+					CommandBatch batch(context);
+					dispatch(batch, kernels.build, { &current, &level_heads, &level_offsets, &next_ids }, count,
+						BuildPush{ count, level, address, previous_address });
+					batch.submit_and_wait();
+				}
+				built[level] = Chunk{ blocks, std::move(chunk) };
+				previous_address = address;
+				current = std::move(next_ids);
+				count = static_cast<uint32_t>(blocks);
+			}
+			chunks = std::move(built);
+			voxels = distinct;
+		}
+
+		void build_coordinates(std::span<const OctreeVoxel> input)
+		{
+			reset_chunks();
+			if (input.size() > kMaxVoxels)
+				throw VulkanError("Octree::build: too many voxels in one build");
+			if (input.empty())
+			{
+				make_empty();
+				return;
+			}
+			const uint32_t n = static_cast<uint32_t>(input.size());
+			static_assert(sizeof(OctreeVoxel) == 12);
+			DeviceBuffer coords(context, uint64_t(n) * 12), ids(context, uint64_t(n) * 8), dropped_buffer(context, 4);
+			coords.upload(input.data(), uint64_t(n) * 12);
+			dropped_buffer.upload<uint32_t>(std::vector<uint32_t>{ 0u });
+			{
+				DeviceBuffer values(context, uint64_t(n) * 4);
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				dispatch(batch, kernels.morton_ids, { &coords, &ids, &dropped_buffer }, n, CountPush{ n });
+				batch.barrier();
+				if (n > 1)
+					primitives.record_sort_pairs64(batch, ids, values, n, 43, keep_alive); // sentinel 2^42 needs 43 bits
+				batch.submit_and_wait();
+			}
+			const uint32_t dropped_now = read_word(dropped_buffer, 0);
+			if (n == dropped_now)
+				make_empty();
+			else
+				build_sorted(ids, n - dropped_now);
+			dropped = dropped_now;
+		}
+
+		void build_ids(std::span<const uint64_t> input)
+		{
+			reset_chunks();
+			std::vector<uint64_t> valid;
+			valid.reserve(input.size());
+			for (uint64_t id : input)
+				if (id < kSentinelId)
+					valid.push_back(id);
+			if (valid.size() > kMaxVoxels)
+				throw VulkanError("Octree::build_from_ids: too many voxels in one build");
+			const uint64_t dropped_now = input.size() - valid.size();
+			if (valid.empty())
+				make_empty();
+			else
+			{
+				const uint32_t n = static_cast<uint32_t>(valid.size());
+				DeviceBuffer ids(context, uint64_t(n) * 8);
+				ids.upload<uint64_t>(valid);
+				sort_and_build(ids, n, n, 42);
+			}
+			dropped = dropped_now;
+		}
+
+		// ------------------------------------------------------------------------------------------------ inspection
+
+		struct Snapshot
+		{
+			std::vector<std::vector<uint8_t>> bytes; ///< per level
+		};
+
+		Snapshot snapshot() const
+		{
+			Snapshot s;
+			s.bytes.resize(kLevelCount);
+			for (uint32_t level = 0; level < kLevelCount; ++level)
+				if (chunks[level])
+				{
+					s.bytes[level].resize(chunks[level]->buffer.size());
+					chunks[level]->buffer.download(s.bytes[level].data(), s.bytes[level].size());
+				}
+			return s;
+		}
+
+		/// Walks the memory tree from the root on the host. Collects the reachable nodes and the problems found.
+		void analyze(const Snapshot& snap, std::vector<OctreeNode>* nodes, std::vector<std::string>& problems) const
+		{
+			auto problem = [&](const std::string& text) { if (problems.size() < 64) problems.push_back(text); };
+			if (!chunks[kRootLevel] || chunks[kRootLevel]->blocks != 1)
+			{
+				problem("the root chunk is missing or does not hold exactly one block");
+				return;
+			}
+			std::vector<std::vector<uint8_t>> visited(kLevelCount);
+			for (uint32_t level = 0; level < kLevelCount; ++level)
+				if (chunks[level])
+					visited[level].assign(chunks[level]->blocks, 0);
+			visited[kRootLevel][0] = 1;
+
+			struct Walker
+			{
+				const Impl& self;
+				const Snapshot& snap;
+				std::vector<OctreeNode>* nodes;
+				std::vector<std::vector<uint8_t>>& visited;
+				decltype(problem)& report;
+
+				void visit(uint32_t level, uint64_t id, const HostNode& node)
+				{
+					const auto where = [&]() { return "node (level " + std::to_string(level) + ", id " + std::to_string(id) + "): "; };
+					if (nodes)
+						nodes->push_back(OctreeNode{ level, id, node.status, node.occupancy, level > 0 && node.child != 0 });
+					if (level == 0)
+					{
+						if (node.status & (kPart | kLastLevel))
+							report(where() + "a leaf has the PART or LAST_LEVEL bit");
+						return;
+					}
+					if (((node.status & kLastLevel) != 0) != (level == 1))
+						report(where() + "LAST_LEVEL bit does not match the level");
+					if ((node.status & kPart) && node.child == 0)
+						report(where() + "PART without a child block");
+					if (node.child == 0)
+						return;
+
+					const auto& chunk = self.chunks[level - 1];
+					if (!chunk)
+					{
+						report(where() + "points to a level without a chunk");
+						return;
+					}
+					const uint64_t base = chunk->buffer.device_address();
+					const uint64_t block_size = block_bytes(self.kind, level - 1);
+					if (node.child < base || node.child >= base + chunk->buffer.size())
+					{
+						report(where() + "child pointer lies outside the chunk of level " + std::to_string(level - 1));
+						return;
+					}
+					const uint64_t offset = node.child - base;
+					if (offset % block_size != 0)
+					{
+						report(where() + "child pointer is not aligned to a block");
+						return;
+					}
+					const uint64_t block = offset / block_size;
+					if (visited[level - 1][block])
+					{
+						report(where() + "its child block is referenced a second time");
+						return;
+					}
+					visited[level - 1][block] = 1;
+
+					const uint8_t* data = snap.bytes[level - 1].data() + offset;
+					HostNode kids[8];
+					for (uint32_t s = 0; s < 8; ++s)
+						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
+					const HostNode expected = parent_of(self.kind, kids, level);
+					if (expected.status != node.status || expected.occupancy != node.occupancy)
+						report(where() + "status " + std::to_string(node.status) + " / occupancy " + std::to_string(node.occupancy) +
+							" differ from the rule applied to its children (" + std::to_string(expected.status) + " / " + std::to_string(expected.occupancy) + ")");
+					for (uint32_t s = 0; s < 8; ++s)
+						visit(level - 1, id * 8 + s, kids[s]);
+				}
+			};
+			Walker walker{ *this, snap, nodes, visited, problem };
+			walker.visit(kRootLevel, 0, decode_inner(kind, snap.bytes[kRootLevel].data(), 0));
+
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				if (chunks[level])
+				{
+					const uint64_t seen = static_cast<uint64_t>(std::count(visited[level].begin(), visited[level].end(), uint8_t(1)));
+					if (seen != chunks[level]->blocks)
+						problem("level " + std::to_string(level) + ": " + std::to_string(chunks[level]->blocks - seen) + " of " +
+							std::to_string(chunks[level]->blocks) + " blocks are not reachable from the root");
+				}
+		}
+
+		// ------------------------------------------------------------------------------------------------ GPU queries
+
+		uint64_t root_address() const { return chunks[kRootLevel]->buffer.device_address(); }
+
+		std::vector<OctreeLookup> find(std::span<const uint64_t> ids) const
+		{
+			if (ids.empty())
+				return {};
+			const uint32_t n = static_cast<uint32_t>(ids.size());
+			DeviceBuffer id_buffer(context, uint64_t(n) * 8), result(context, uint64_t(n) * 16);
+			id_buffer.upload(ids.data(), uint64_t(n) * 8);
+			CommandBatch batch(context);
+			dispatch(batch, kernels.find, { &id_buffer, &result }, n, FindPush{ n, 0, root_address() });
+			batch.submit_and_wait();
+			const auto raw = result.download_vector<uint32_t>(uint64_t(n) * 4);
+			std::vector<OctreeLookup> out(n);
+			for (uint32_t i = 0; i < n; ++i)
+				out[i] = OctreeLookup{ raw[4 * i], static_cast<uint8_t>(raw[4 * i + 1]), static_cast<int8_t>(raw[4 * i + 2]) };
+			return out;
+		}
+
+		std::vector<OctreeCube> extract(const OctreeExtractOptions& options) const
+		{
+			if (options.min_level >= kRootLevel)
+				throw VulkanError("Octree::extract: min_level must be in 0..13");
+			if (!options.status_selection.empty() && options.status_selection.size() != 256)
+				throw VulkanError("Octree::extract: status_selection needs 256 entries");
+
+			// the root is never emitted; its children are the first work item
+			std::vector<uint8_t> root_block(inner_block_bytes(kind));
+			chunks[kRootLevel]->buffer.download(root_block.data(), root_block.size());
+			const HostNode root = decode_inner(kind, root_block.data(), 0);
+			if (!(root.status & kPart) || root.child == 0)
+				return {};
+
+			std::vector<uint32_t> selection(256, 1u);
+			for (size_t i = 0; i < options.status_selection.size(); ++i)
+				selection[i] = options.status_selection[i] ? 1u : 0u;
+			DeviceBuffer selection_buffer(context, 256 * 4);
+			selection_buffer.upload<uint32_t>(selection);
+
+			uint64_t max_blocks = 1;
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				if (chunks[level])
+					max_blocks = std::max(max_blocks, chunks[level]->blocks);
+
+			auto traverse = [&](uint32_t write_mode, DeviceBuffer& out, uint32_t capacity) -> uint32_t
+			{
+				DeviceBuffer items_a(context, max_blocks * 16), items_b(context, max_blocks * 16), counters(context, 8);
+				DeviceBuffer* current = &items_a;
+				DeviceBuffer* next = &items_b;
+				const uint32_t first[4] = { uint32_t(root.child), uint32_t(root.child >> 32), 0, 0 };
+				current->upload(first, sizeof(first));
+				counters.upload<uint32_t>(std::vector<uint32_t>{ 0u, 0u });
+				uint32_t item_count = 1;
+				for (int level = int(kRootLevel) - 1; level >= int(std::max(options.min_level, 1u)) && item_count > 0; --level)
+				{
+					const uint32_t zero = 0;
+					counters.upload(&zero, 4, 0);
+					const uint64_t next_capacity = level >= 1 && chunks[level - 1] ? chunks[level - 1]->blocks : 0;
+					CommandBatch batch(context);
+					dispatch(batch, kernels.extract, { current, next, &out, &counters, &selection_buffer }, uint64_t(item_count) * 8,
+						ExtractPush{ item_count, uint32_t(level), options.min_level, write_mode, capacity, uint32_t(next_capacity) });
+					batch.submit_and_wait();
+					const uint32_t produced = read_word(counters, 0);
+					if (produced > next_capacity)
+						throw VulkanError("Octree::extract: more work items than blocks (corrupt tree)");
+					std::swap(current, next);
+					item_count = produced;
+				}
+				return read_word(counters, 1);
+			};
+
+			DeviceBuffer dummy(context, 16);
+			const uint32_t total = traverse(0, dummy, 0);
+			if (total == 0)
+				return {};
+			DeviceBuffer out(context, uint64_t(total) * 16);
+			const uint32_t written = traverse(1, out, total);
+			if (written != total)
+				throw VulkanError("Octree::extract: the second pass found a different number of nodes");
+			const auto raw = out.download_vector<uint32_t>(uint64_t(total) * 4);
+			std::vector<OctreeCube> cubes(total);
+			for (uint32_t i = 0; i < total; ++i)
+			{
+				const uint32_t w = raw[4 * i + 2];
+				cubes[i] = OctreeCube{ w & 255u, (uint64_t(raw[4 * i + 1]) << 32) | raw[4 * i], static_cast<uint8_t>(w >> 8), static_cast<int8_t>(w >> 16) };
+			}
+			return cubes;
+		}
+	};
+
+	// ---------------------------------------------------------------------------------------------------------- public
+
+	Octree::Octree(Context& context, OctreeKind kind)
+	{
+		if (!context.info().buffer_device_address)
+			throw VulkanError("Octree: the device does not support bufferDeviceAddress, which the pointer-based nodes need");
+		impl_ = std::make_unique<Impl>(context, kind);
+	}
+
+	Octree::~Octree() = default;
+	Octree::Octree(Octree&&) noexcept = default;
+	Octree& Octree::operator=(Octree&&) noexcept = default;
+
+	DeviceBuffer& Octree::chunk(uint32_t level)
+	{
+		if (level >= kLevels || !impl_->chunks[level])
+			throw VulkanError("Octree::chunk: no chunk on this level");
+		return impl_->chunks[level]->buffer;
+	}
+
+	void Octree::set_max_groups_x(uint32_t groups) { impl_->max_groups_x = groups; }
+
+	OctreeKind Octree::kind() const { return impl_->kind; }
+	Context& Octree::context() const { return impl_->context; }
+	void Octree::build(std::span<const OctreeVoxel> voxels) { impl_->build_coordinates(voxels); }
+	void Octree::build_from_ids(std::span<const uint64_t> morton_ids) { impl_->build_ids(morton_ids); }
+	void Octree::clear() { impl_->make_empty(); }
+	uint32_t Octree::voxel_count() const { return impl_->voxels; }
+	uint64_t Octree::dropped_count() const { return impl_->dropped; }
+
+	OctreeStats Octree::memory_usage() const
+	{
+		OctreeStats stats;
+		for (uint32_t level = 0; level < kLevels; ++level)
+			if (impl_->chunks[level])
+			{
+				stats.bytes += impl_->chunks[level]->buffer.size();
+				stats.blocks[level] = impl_->chunks[level]->blocks;
+			}
+		return stats;
+	}
+
+	std::vector<OctreeLookup> Octree::find(std::span<const uint64_t> morton_ids) const { return impl_->find(morton_ids); }
+	std::vector<OctreeCube> Octree::extract(const OctreeExtractOptions& options) const { return impl_->extract(options); }
+
+	std::vector<OctreeNode> Octree::dump() const
+	{
+		std::vector<OctreeNode> nodes;
+		std::vector<std::string> problems;
+		impl_->analyze(impl_->snapshot(), &nodes, problems);
+		std::sort(nodes.begin(), nodes.end(), [](const OctreeNode& a, const OctreeNode& b) { return a.level != b.level ? a.level < b.level : a.id < b.id; });
+		return nodes;
+	}
+
+	void Octree::check_tree() const
+	{
+		std::vector<std::string> problems;
+		impl_->analyze(impl_->snapshot(), nullptr, problems);
+		if (!problems.empty())
+		{
+			std::ostringstream message;
+			message << "Octree::check_tree: " << problems.size() << " problem(s):";
+			for (size_t i = 0; i < problems.size() && i < 10; ++i)
+				message << "\n  " << problems[i];
+			throw VulkanError(message.str());
+		}
+	}
+}

@@ -1,0 +1,17 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA preparation: only voxels that store their own position are obstacles (see dist_edt_z.comp); every other voxel is
+// reset to uninitialised, so that a map that already went through a distance computation can be computed again.
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) buffer Map { uint map_voxels[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint count; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+        if (map_voxels[i] != dist_pack(coords_of_id(i, dim)))
+            map_voxels[i] = DIST_UNINIT;
+}

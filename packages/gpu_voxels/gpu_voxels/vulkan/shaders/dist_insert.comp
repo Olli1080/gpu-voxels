@@ -1,0 +1,32 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Marks the voxels of points / voxel coordinates as obstacles: the voxel stores its own position (CUDA
+// DistanceVoxel::insert(position, eBVM_OCCUPIED)). Points outside the map are counted.
+layout(local_size_x = 64) in;
+#include "dist_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Raw { uint raw[]; };
+layout(std430, set = 0, binding = 1) buffer Voxels { uint voxels[]; };
+layout(std430, set = 0, binding = 2) buffer Counter { uint counter; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint count; uint input_kind; float side; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const uvec3 dim = uvec3(pc.dim_x, pc.dim_y, pc.dim_z);
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        uvec3 c;
+        bool inside;
+        if (pc.input_kind == 0u)
+            inside = voxel_of_point(vec3(uintBitsToFloat(raw[3u * i]), uintBitsToFloat(raw[3u * i + 1u]), uintBitsToFloat(raw[3u * i + 2u])), pc.side, dim, c);
+        else
+        {
+            c = uvec3(raw[3u * i], raw[3u * i + 1u], raw[3u * i + 2u]);
+            inside = c.x < dim.x && c.y < dim.y && c.z < dim.z;
+        }
+        if (inside)
+            voxels[voxel_id(c, dim)] = dist_pack(c); // every writer of a voxel stores the same value
+        else
+            atomicAdd(counter, 1u);
+    }
+}

@@ -1,0 +1,56 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Insert the accumulated points of a MetaPointCloud; sub cloud k uses meanings[k]. Points outside the map
+// (negative, too large, NaN, inf) are counted in outside_count and not inserted.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) buffer Map { uint words[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Points { float points[]; };  // packed x, y, z
+layout(std430, set = 0, binding = 2) readonly buffer Offsets { uint offsets[]; }; // sub_cloud_count + 1 ascending entries
+layout(std430, set = 0, binding = 3) readonly buffer Meanings { uint meanings[]; }; // one per sub cloud
+layout(std430, set = 0, binding = 4) buffer Outside { uint outside_count; };
+layout(push_constant) uniform Push
+{
+    uint dim_x;
+    uint dim_y;
+    uint dim_z;
+    uint point_count;
+    uint sub_cloud_count;
+    float voxel_side_length;
+} pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.point_count; i += stride)
+    {
+        // sub cloud of point i: last k with offsets[k] <= i (k < sub_cloud_count)
+        uint lo = 0u;
+        uint hi = pc.sub_cloud_count;
+        while (hi - lo > 1u)
+        {
+            const uint mid = (lo + hi) >> 1u;
+            if (offsets[mid] <= i)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        const uint meaning = meanings[lo];
+
+        const vec3 p = vec3(points[3u * i], points[3u * i + 1u], points[3u * i + 2u]);
+        const vec3 f = floor(p / pc.voxel_side_length);
+        const bool inside = f.x >= 0.0 && f.x < float(pc.dim_x) &&
+                            f.y >= 0.0 && f.y < float(pc.dim_y) &&
+                            f.z >= 0.0 && f.z < float(pc.dim_z);
+        if (inside)
+        {
+            const uvec3 c = uvec3(f);
+            const uint voxel = (c.z * pc.dim_y + c.y) * pc.dim_x + c.x;
+            atomicOr(words[voxel * WORDS_PER_VOXEL + meaning_word(meaning)], meaning_mask(meaning));
+        }
+        else
+        {
+            atomicAdd(outside_count, 1u);
+        }
+    }
+}

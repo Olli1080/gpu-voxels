@@ -1,0 +1,49 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// Applies the voxel updates of a batch of points / coordinates / sensor measurements to a ProbVoxelMap.
+//   mode 0 (atomic):     every update is one compare-and-swap loop with the CUDA saturating update rule;
+//                        the interleaving of concurrent updates is unspecified.
+//   mode 1 (accumulate): updates are summed per voxel (acc, touched); prob_apply_accumulated.comp applies the sums.
+//   assign_unknown:      sets the voxels to unknown instead (the eBVM_UNKNOWN / eBVM_UNDEFINED meanings).
+layout(local_size_x = 64) in;
+#include "prob_push.glsl"
+layout(std430, set = 0, binding = 2) buffer Voxels { uint voxels[]; };
+layout(std430, set = 0, binding = 3) buffer Acc { int acc[]; };
+layout(std430, set = 0, binding = 4) buffer Touched { uint touched[]; };
+layout(std430, set = 0, binding = 5) buffer Counters { uint counters[]; }; // [0] outside, [1] cut by the robot
+
+void prob_emit(uint id, int increment)
+{
+    if (pc.assign_unknown != 0u)
+    {
+        atomicExchange(voxels[id], PROB_UNKNOWN_WORD);
+        return;
+    }
+    if (pc.mode == 1u)
+    {
+        atomicAdd(acc[id], increment);
+        atomicOr(touched[id >> 5u], 1u << (id & 31u));
+        return;
+    }
+    uint old_word = voxels[id];
+    for (;;)
+    {
+        const uint new_word = uint(prob_apply(int(old_word), increment));
+        const uint seen = atomicCompSwap(voxels[id], old_word, new_word);
+        if (seen == old_word)
+            break;
+        old_word = seen;
+    }
+}
+
+void prob_skip_outside() { atomicAdd(counters[0], 1u); }
+void prob_skip_cut() { atomicAdd(counters[1], 1u); }
+
+#include "prob_ray.glsl"
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint k = gl_GlobalInvocationID.x; k < pc.count; k += stride)
+        prob_process_point(pc.first + k);
+}

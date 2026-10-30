@@ -1,0 +1,53 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+// PBA phase 2 (CUDA kernelPBAphase2CreateForwardPointers): one invocation per (x, band, z). Walks the stack of the band from
+// its top and writes for every stack entry the y of the NEXT entry (towards higher y; U for the last one) into `forward`.
+// A negative value at the first voxel of the band marks the head pointer (-y of the first stack entry).
+layout(local_size_x = 64) in;
+#include "pba_common.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Stack { uint stack_voxels[]; };
+layout(std430, set = 0, binding = 1) buffer Forward { int forward_ptrs[]; };
+layout(push_constant) uniform Push { uint nx; uint ny; uint nz; uint band_size; uint count; uint bands; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    const int nx = int(pc.nx), ny = int(pc.ny);
+    const int band_size = int(pc.band_size);
+    const int row = nx;
+    const int layer = nx * ny;
+    for (uint t = gl_GlobalInvocationID.x; t < pc.count; t += stride)
+    {
+        const int tx = int(t % pc.nx);
+        const int band = int((t / pc.nx) % pc.bands);
+        const int tz = int(t / (pc.nx * pc.bands));
+        const int ty_top = (band + 1) * band_size - 1;
+        const int top_id = tz * layer + ty_top * row + tx;
+
+        int last_y = PBA_U;
+        int next_y;
+        {
+            const ivec3 current = pba_load(stack_voxels[top_id]);
+            if (current.x == PBA_U)
+                next_y = current.y; // tail pointer: location of the next obstacle towards lower y, or U
+            else
+                next_y = ty_top;    // the last voxel of the band holds an obstacle itself
+        }
+
+        for (int i = 0; i < band_size; ++i)
+        {
+            const int ty = ty_top - i;
+            const int id = top_id - i * row;
+            if (ty == next_y)
+            {
+                forward_ptrs[id] = last_y;
+                next_y = pba_load(stack_voxels[id]).y;
+                last_y = ty;
+            }
+        }
+
+        // head pointer at the first voxel of the band (-U if the band is empty)
+        if (last_y != ty_top - (band_size - 1))
+            forward_ptrs[top_id - (band_size - 1) * row] = -last_y;
+    }
+}
