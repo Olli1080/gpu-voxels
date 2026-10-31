@@ -1,0 +1,22 @@
+S2 scan writes past the capacity (not observable: the guard only protects memory) : KILLED
+CP6 occupancy dropped : KILLED
+CP7 child index off by one : KILLED
+CP8 all leaf blocks land in block 0 : KILLED
+CP9 flags dropped (equivalent after propagate: live nodes carry none) : SURVIVED
+H1 capacity not bounded by the allocated blocks : KILLED
+H2 pending updates not propagated : KILLED
+H3 old chunks of the levels kept : KILLED
+H4 root level not rewritten : KILLED
+H5 child base of the wrong level : KILLED
+H6 garbage flag kept (equivalent: the walk then counts 0 garbage) : SURVIVED
+H7 address range of the new chunks not checked (the device never hands out such an address) : SURVIVED
+H8 duplicate blocks not detected : KILLED
+N1 limit reached only above the memory in use : KILLED
+N2 limit 0 means always : KILLED
+N3 garbage bytes with one block size : KILLED
+N4 garbage fraction evaluated without garbage (equivalent: the walk counts 0) : SURVIVED
+N5 fraction compared with the garbage count not bytes : KILLED
+P1 fraction above 1 accepted : KILLED
+P2 NaN accepted : KILLED
+P3 policy not stored : KILLED
+restored

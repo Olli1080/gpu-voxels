@@ -1,0 +1,4 @@
+S4 high word of the block address lost : KILLED
+S5 root address high word lost : KILLED
+CP5 collision bit dropped : KILLED
+restored

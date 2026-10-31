@@ -14,7 +14,7 @@
  * in tests.
  *
  * build() computes the final node states directly (bottom-up while the level blocks are created); this is the tree CUDA's
- * build + propagate leaves behind. Insertion, propagation and rebuild of an existing tree come with slice S6d.
+ * build + propagate leaves behind. Insertion, propagation and rebuild of an existing tree are slice S6d (insert / propagate / rebuild below).
  */
 #ifndef GPU_VOXELS_VULKAN_OCTREE_H_INCLUDED
 #define GPU_VOXELS_VULKAN_OCTREE_H_INCLUDED
@@ -156,6 +156,15 @@ namespace gpu_voxels::vulkan
 		uint64_t nodes() const { uint64_t n = 0; for (auto b : blocks) n += 8 * b; return n; }
 	};
 
+	/// When needs_rebuild() asks for a rebuild (slice S6d-4). CUDA: the allocated node memory reaches `max_bytes` (NTree::needsRebuild, default 200 MB,
+	/// 0 = never). The garbage fraction is an addition of this port: inserts leave cut subtrees allocated, so a tree can be mostly garbage long
+	/// before it is big. Evaluating it reads the tree back (only while garbage can exist).
+	struct OctreeRebuildPolicy
+	{
+		uint64_t max_bytes = uint64_t(200) * 1024 * 1024; ///< rebuild when all chunks together take at least this much (0 = no limit)
+		double max_garbage_fraction = 0.0;                ///< rebuild when this fraction of the bytes is garbage blocks (0 = off, at most 1)
+	};
+
 	class Octree
 	{
 	public:
@@ -210,6 +219,19 @@ namespace gpu_voxels::vulkan
 		/// Nodes that still carry NEEDS_UPDATE and are reachable through PART nodes (0 after propagate(); stale subtrees below a cut node
 		/// keep their flags, nothing visits them); read back and walked on the host.
 		[[nodiscard]] uint64_t pending_update_count() const;
+
+		/// Slice S6d-4 (CUDA rebuild: extract every cube, build a fresh tree): propagates pending updates, then copies the nodes reachable through
+		/// PART nodes into new chunks, one per level and compacted, and releases the old chunks, so cut subtrees (garbage) and the chunks of
+		/// many inserts disappear. Nodes keep status, occupancy and collision bits, flags are clear; a node without PART loses the child block it
+		/// may still point to (dead data: lookups, extraction and collisions stop at it). voxel_count() and dropped_count() are kept. Done on the
+		/// GPU level by level (two kernels per level, peak memory = old tree + live part); if it throws the tree is unchanged.
+		/// \throws VulkanError for a corrupt tree (a block referenced twice) or an allocation failure.
+		void rebuild();
+		/// CUDA needsRebuild: true when the tree reached the limits of rebuild_policy(). Cheap unless max_garbage_fraction is set.
+		[[nodiscard]] bool needs_rebuild() const;
+		/// \throws VulkanError if max_garbage_fraction is outside 0 .. 1.
+		void set_rebuild_policy(const OctreeRebuildPolicy& policy);
+		[[nodiscard]] OctreeRebuildPolicy rebuild_policy() const;
 
 		/// Distinct voxels of the last build.
 		[[nodiscard]] uint32_t voxel_count() const;

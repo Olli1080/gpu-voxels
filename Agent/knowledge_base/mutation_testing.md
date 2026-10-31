@@ -43,9 +43,13 @@ The logs in `tools/mutation/logs/` are the first runs; the survivors they list w
 | `mutate15.py` | block-pair counter of the reference (`tests/reference/octree_reference.h`, checkpoint) | 6 | all killed |
 | `mutate_s6d1_reference.py` | S6d-1 / S6d-3 dynamic reference (`tests/reference/octree_dynamic_reference.h`) | 39 | 38 killed, 1 equivalent for consistent trees |
 | `mutate_s6d2_insert.py` | S6d-2 / S6d-3 insert and propagate, shaders and host ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 77 | 71 killed, 6 explained survivors |
+| `mutate_s6d4_rebuild.py` | S6d-4 rebuild compaction: scan / copy shaders, host code, `needs_rebuild` policy ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 30 | 26 killed, 4 explained survivors (CP9 flags: live nodes carry none; H6 / N4: only speed; H7: the address range check cannot fail on this device) |
 | `mutate16.py` | K34 size limits ([known_issues.md](known_issues.md)) | 12 | see the K34 row |
 
 The older runners (`mutate.py` .. `mutate8.py`) are kept as they were written; they have their own small harness (shaders only) and may need adjusted test filters if the tests were renamed since. `mutate9.py` and later share the table format described above.
+
+## Mutants that follow wrong device addresses
+A mutant of pointer code makes later kernels read or write through wrong addresses; on the GPU that is a page fault (Windows event `nvlddmkm` 153, no TDR) and stresses the driver. `mutate_s6d4_rebuild.py` therefore runs the tests with **GPU assisted validation in safe mode** (`VK_KHRONOS_VALIDATION_GPUAV_ENABLE=true`, `..._GPUAV_SAFE_MODE=true`, sync and core validation off): the instrumented shader skips the invalid access and the layer reports it, which the fixture counts as a failure. Measured 2026-10-31: no new event 153 over 25 mutants, tests about ten times slower. Earlier runners do not do this; copy the `test_env` lines when a runner mutates pointers. A mutant killed this way is killed by the validation, not by a value comparison (S2).
 
 ## Open ideas (not done)
 - Run several runners in parallel from separate checkouts / build trees on a machine with many cores (not tried; the current runners must not share a tree).

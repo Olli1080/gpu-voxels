@@ -174,6 +174,14 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t octree_propagate_up_det_comp_words;
 	extern const uint32_t octree_propagate_up_prob_comp[];
 	extern const std::size_t octree_propagate_up_prob_comp_words;
+	extern const uint32_t octree_compact_scan_det_comp[];
+	extern const std::size_t octree_compact_scan_det_comp_words;
+	extern const uint32_t octree_compact_scan_prob_comp[];
+	extern const std::size_t octree_compact_scan_prob_comp_words;
+	extern const uint32_t octree_compact_copy_det_comp[];
+	extern const std::size_t octree_compact_copy_det_comp_words;
+	extern const uint32_t octree_compact_copy_prob_comp[];
+	extern const std::size_t octree_compact_copy_prob_comp_words;
 	extern const uint32_t octree_insert_nodes_det_comp[];
 	extern const std::size_t octree_insert_nodes_det_comp_words;
 	extern const uint32_t octree_insert_nodes_prob_comp[];

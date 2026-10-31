@@ -59,6 +59,8 @@ namespace gpu_voxels::vulkan
 		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
 		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
 		struct PropagatePush { uint32_t count, level; };
+		struct CompactScanPush { uint32_t count, capacity; };
+		struct CompactCopyPush { uint32_t count, level; uint64_t base, child_base; uint32_t child_block_bytes, pad; };
 		constexpr uint8_t kNeedsUpdate = 128; ///< node flag: the node or something below it changed (CUDA nf_NEEDS_UPDATE)
 
 		/// Group counts for a 1D problem of `items` invocations (2D grid when the x limit is exceeded, see octree_gid.glsl).
@@ -131,11 +133,13 @@ namespace gpu_voxels::vulkan
 				  prop_down(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_down_prob_comp) : GVL_SHADER_SPAN(octree_propagate_down_det_comp), 3, sizeof(PropagatePush)),
 				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 1, sizeof(uint32_t)),
 				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 4, sizeof(InsertNodePush)),
-				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 1, sizeof(uint32_t))
+				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 1, sizeof(uint32_t)),
+				  compact_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_scan_prob_comp) : GVL_SHADER_SPAN(octree_compact_scan_det_comp), 4, sizeof(CompactScanPush)),
+				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
-			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up;
+			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, compact_scan, compact_copy;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
@@ -160,6 +164,7 @@ namespace gpu_voxels::vulkan
 		bool may_have_garbage = false; ///< an insert replaced a child pointer: blocks may be allocated but unreachable (counted by a walk)
 		uint32_t voxels = 0;
 		uint64_t dropped = 0;
+		OctreeRebuildPolicy policy;
 		OctreeBalancerConfig balancer;
 		mutable OctreeBalancerStats balancer_stats; // statistics of the last traversal, written by const traversals
 
@@ -187,11 +192,16 @@ namespace gpu_voxels::vulkan
 			levels[kRootLevel].chunks.front().buffer.upload(block.data(), block.size());
 		}
 
-		void add_chunk(uint32_t level, uint64_t blocks, DeviceBuffer buffer)
+		static void check_chunk(const DeviceBuffer& buffer)
 		{
 			const uint64_t address = buffer.device_address();
 			if (address % 16 != 0 || !addressable(address, buffer.size()))
 				throw VulkanError("Octree: a chunk lies outside the 48 bit / 16 byte aligned address range the nodes can hold (address " + std::to_string(address) + ", size " + std::to_string(buffer.size()) + ")");
+		}
+
+		void add_chunk(uint32_t level, uint64_t blocks, DeviceBuffer buffer)
+		{
+			check_chunk(buffer);
 			levels[level].chunks.push_back(Chunk{ blocks, std::move(buffer) });
 		}
 
@@ -607,6 +617,75 @@ namespace gpu_voxels::vulkan
 				}
 			if (any)
 				batch.submit_and_wait();
+		}
+
+		// ------------------------------------------------------------------------------------------------ rebuild
+
+		/// Compacts the tree (see Octree::rebuild): step 1 walks the live blocks level by level from the root and collects their old addresses
+		/// (14 small dispatches with a read back of the counter each), step 2 allocates the new chunks with the exact sizes and copies every level
+		/// in one batch, fixing the child pointers. The old chunks are released only when everything succeeded.
+		void rebuild()
+		{
+			propagate();
+			std::vector<std::optional<DeviceBuffer>> blocks(kLevelCount), links(kLevelCount);
+			std::vector<uint64_t> count(kLevelCount, 0);
+			{
+				const uint64_t root = root_address();
+				DeviceBuffer first(context, 8);
+				first.upload<uint32_t>(std::vector<uint32_t>{ uint32_t(root), uint32_t(root >> 32) });
+				blocks[kRootLevel] = std::move(first);
+				count[kRootLevel] = 1;
+			}
+			for (int level = int(kRootLevel); level >= 1 && count[level] > 0; --level)
+			{
+				// the live blocks of the level below cannot outnumber its allocated blocks (every block has one parent), nor 8 per block here
+				const uint64_t capacity = std::min<uint64_t>(count[level] * 8, levels[level - 1].blocks());
+				if (count[level] > UINT32_MAX / 8 || capacity > UINT32_MAX)
+					throw VulkanError("Octree::rebuild: too many blocks on level " + std::to_string(level));
+				DeviceBuffer next(context, std::max<uint64_t>(8, capacity * 8)), link(context, count[level] * 8 * 4), counter(context, 16);
+				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+				CommandBatch batch(context);
+				dispatch(batch, kernels.compact_scan, { &*blocks[level], &next, &link, &counter }, count[level] * 8,
+					CompactScanPush{ uint32_t(count[level]), uint32_t(capacity) });
+				batch.submit_and_wait();
+				const uint32_t found = read_word(counter, 0);
+				if (found > capacity)
+					throw VulkanError("Octree::rebuild: more live blocks on level " + std::to_string(level - 1) + " than were allocated (a block is referenced twice)");
+				count[level - 1] = found;
+				blocks[level - 1] = std::move(next);
+				links[level] = std::move(link);
+			}
+
+			// the new chunks: one per level with live blocks (the root keeps its chunk and is rewritten in place)
+			std::vector<std::optional<DeviceBuffer>> fresh(kLevelCount);
+			uint64_t base[kLevelCount] = {};
+			base[kRootLevel] = root_address();
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				if (count[level] > 0)
+				{
+					fresh[level] = DeviceBuffer(context, count[level] * block_bytes(kind, level));
+					check_chunk(*fresh[level]);
+					base[level] = fresh[level]->device_address();
+				}
+			DeviceBuffer no_links(context, 16);
+			CommandBatch batch(context);
+			for (uint32_t level = 0; level <= kRootLevel; ++level)
+				if (count[level] > 0)
+				{
+					const uint32_t child_bytes = level > 0 ? static_cast<uint32_t>(block_bytes(kind, level - 1)) : 0u;
+					dispatch(batch, kernels.compact_copy, { &*blocks[level], level > 0 ? &*links[level] : &no_links },
+						level > 0 ? count[level] * 8 : count[level],
+						CompactCopyPush{ uint32_t(count[level]), level, base[level], level > 0 ? base[level - 1] : 0, child_bytes, 0 });
+				}
+			batch.submit_and_wait();
+
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+			{
+				levels[level].chunks.clear();
+				if (fresh[level])
+					levels[level].chunks.push_back(Chunk{ count[level], std::move(*fresh[level]) });
+			}
+			may_have_garbage = false;
 		}
 
 		// ------------------------------------------------------------------------------------------------ inspection
@@ -1128,6 +1207,35 @@ namespace gpu_voxels::vulkan
 	}
 
 	void Octree::propagate() { impl_->propagate(); }
+	void Octree::rebuild() { impl_->rebuild(); }
+
+	bool Octree::needs_rebuild() const
+	{
+		const OctreeRebuildPolicy& policy = impl_->policy;
+		uint64_t bytes = 0;
+		for (const auto& level : impl_->levels)
+			bytes += level.bytes();
+		if (policy.max_bytes != 0 && bytes >= policy.max_bytes)
+			return true;
+		if (policy.max_garbage_fraction > 0.0 && impl_->may_have_garbage)
+		{
+			const OctreeStats stats = memory_usage();
+			uint64_t garbage = 0;
+			for (uint32_t level = 0; level < kLevels; ++level)
+				garbage += stats.garbage_blocks[level] * octree_format::block_bytes(impl_->kind, level);
+			return stats.bytes > 0 && double(garbage) >= policy.max_garbage_fraction * double(stats.bytes);
+		}
+		return false;
+	}
+
+	void Octree::set_rebuild_policy(const OctreeRebuildPolicy& policy)
+	{
+		if (!(policy.max_garbage_fraction >= 0.0 && policy.max_garbage_fraction <= 1.0))
+			throw VulkanError("Octree::set_rebuild_policy: max_garbage_fraction must be in 0 .. 1");
+		impl_->policy = policy;
+	}
+
+	OctreeRebuildPolicy Octree::rebuild_policy() const { return impl_->policy; }
 
 	uint64_t Octree::pending_update_count() const
 	{

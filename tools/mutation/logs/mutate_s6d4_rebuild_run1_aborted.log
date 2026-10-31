@@ -1,0 +1,10 @@
+S1 scan follows stale child pointers of nodes without PART : KILLED
+S2 scan writes past the capacity (not observable: the guard only protects memory) : SURVIVED
+S3 link always 0 : KILLED
+S4 high word of the block address lost : SURVIVED
+S5 root address high word lost : SURVIVED
+CP1 stale child pointer kept on nodes without PART : KILLED
+CP2 wrong child block size : KILLED
+CP3 leaf block copies one word only : KILLED
+CP4 every node lands in slot 0 : KILLED
+CP5 collision bit dropped : SURVIVED

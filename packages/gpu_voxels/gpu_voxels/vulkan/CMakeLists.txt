@@ -125,6 +125,10 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_propagate_leaves_prob.comp
     shaders/octree_propagate_up_det.comp
     shaders/octree_propagate_up_prob.comp
+    shaders/octree_compact_scan_det.comp
+    shaders/octree_compact_scan_prob.comp
+    shaders/octree_compact_copy_det.comp
+    shaders/octree_compact_copy_prob.comp
     shaders/octree_morton_ids.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp
