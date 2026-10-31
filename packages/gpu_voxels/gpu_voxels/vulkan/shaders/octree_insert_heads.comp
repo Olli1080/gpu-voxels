@@ -1,0 +1,28 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+// Insert, step 2: heads[i] = 1 when voxel i is the first voxel of a NEW block on `level`. A voxel with kind 1 whose walk ended on level L
+// creates the blocks of the levels L-1 .. 0; voxels that share the node (id >> 3 * (level + 1)) share the block on `level`.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Info { uvec4 info[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer Heads { uint heads[]; };
+layout(push_constant) uniform Push { uint n; uint level; } pc;
+
+uint64_t id_at(uint i) { return packUint2x32(uvec2(ids[2u * i], ids[2u * i + 1u])); }
+bool creates(uint i) { const uvec4 f = info[i]; return f.w == 1u && f.x > pc.level; }
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    uint head = 0u;
+    if (creates(i))
+    {
+        const uint shift = 3u * (pc.level + 1u);
+        head = (i == 0u || !creates(i - 1u) || (id_at(i) >> shift) != (id_at(i - 1u) >> shift)) ? 1u : 0u;
+    }
+    heads[i] = head;
+}

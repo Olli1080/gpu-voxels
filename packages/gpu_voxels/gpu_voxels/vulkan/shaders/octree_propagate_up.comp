@@ -1,0 +1,40 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_GOOGLE_include_directive : require
+// Propagate, bottom-up step for the nodes of one level 2 .. 14 (deterministic tree): items = addresses of the nodes with PART and
+// NEEDS_UPDATE of that level. Their children are final (lower levels run first): status = CUDA getNewStatus of the children (level 99:
+// no LAST_LEVEL above level 1), NEEDS_UPDATE is cleared.
+#define OCT_PROB 0
+#include "octree_nodes.glsl"
+
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Items { uint items[]; };
+layout(push_constant) uniform Push { uint count; } pc;
+
+layout(buffer_reference, std430, buffer_reference_align = 8) buffer OctNodeRef { uint w0; uint w1; };
+
+const uint OCT_NEEDS_UPDATE = 128u;
+
+void main()
+{
+    const uint g = oct_gid();
+    if (g >= pc.count)
+        return;
+    OctNodeRef node = OctNodeRef(packUint2x32(uvec2(items[2u * g], items[2u * g + 1u])));
+    const uint nw0 = node.w0;
+    const uint64_t block = oct_sign_extend_48(uint64_t(nw0 >> 16u) | (uint64_t(node.w1) << 16u));
+    OctNode kids[8];
+    for (uint k = 0u; k < 8u; ++k)
+    {
+        OctNodeRef child = OctNodeRef(block + uint64_t(k) * 8ul);
+        kids[k].status = child.w0 & 255u;
+        kids[k].flags = 0u;
+        kids[k].occupancy = 0;
+        kids[k].child = 0ul;
+    }
+    const OctNode parent = oct_parent(kids, 99u, 0ul);
+    const uint flags = ((nw0 >> 8u) & 255u) & ~OCT_NEEDS_UPDATE;
+    node.w0 = (nw0 & 0xFFFF0000u) | parent.status | (flags << 8u);
+}

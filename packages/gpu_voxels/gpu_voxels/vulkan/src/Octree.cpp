@@ -14,6 +14,7 @@
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
+#include <gpu_voxels/vulkan/Morton.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
 #include <gpu_voxels/vulkan/Primitives.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
@@ -52,6 +53,12 @@ namespace gpu_voxels::vulkan
 		constexpr uint32_t kBalanceItems = 8;
 		constexpr uint32_t kBalanceWords = 6;
 		struct TreePush { uint32_t item_count, level, min_level, mark; int32_t threshold; uint32_t next_capacity; };
+		struct InsertWalkPush { uint32_t n, pad; uint64_t root; };
+		struct InsertHeadsPush { uint32_t n, level; };
+		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
+		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
+		struct PropagatePush { uint32_t count, level; };
+		constexpr uint8_t kNeedsUpdate = 128; ///< node flag: the node or something below it changed (CUDA nf_NEEDS_UPDATE)
 
 		/// Group counts for a 1D problem of `items` invocations (2D grid when the x limit is exceeded, see octree_gid.glsl).
 		struct Grid { uint32_t x, y; };
@@ -115,10 +122,18 @@ namespace gpu_voxels::vulkan
 				  lb_count(c, GVL_SHADER_SPAN(octree_lb_count_comp), 4, sizeof(BalancePush)),
 				  lb_move(c, GVL_SHADER_SPAN(octree_lb_move_comp), 6, sizeof(BalancePush)),
 				  lb_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_trees_prob_comp) : GVL_SHADER_SPAN(octree_lb_trees_det_comp), 4, 6 * sizeof(uint32_t)),
-				  lb_extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_extract_prob_comp) : GVL_SHADER_SPAN(octree_lb_extract_det_comp), 6, 5 * sizeof(uint32_t))
+				  lb_extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_extract_prob_comp) : GVL_SHADER_SPAN(octree_lb_extract_det_comp), 6, 5 * sizeof(uint32_t)),
+				  insert_walk(c, GVL_SHADER_SPAN(octree_insert_walk_comp), 3, sizeof(InsertWalkPush)),
+				  insert_heads(c, GVL_SHADER_SPAN(octree_insert_heads_comp), 3, sizeof(InsertHeadsPush)),
+				  insert_link(c, GVL_SHADER_SPAN(octree_insert_link_comp), 6, sizeof(InsertLinkPush)),
+				  insert_leaves(c, GVL_SHADER_SPAN(octree_insert_leaves_comp), 4, sizeof(InsertLeafPush)),
+				  prop_down(c, GVL_SHADER_SPAN(octree_propagate_down_comp), 3, sizeof(PropagatePush)),
+				  prop_leaves(c, GVL_SHADER_SPAN(octree_propagate_leaves_comp), 1, sizeof(uint32_t)),
+				  prop_up(c, GVL_SHADER_SPAN(octree_propagate_up_comp), 1, sizeof(uint32_t))
 			{
 			}
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, prop_up;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
@@ -140,7 +155,7 @@ namespace gpu_voxels::vulkan
 		mutable Primitives primitives; // recording scans does not change the tree
 		Kernels kernels;
 		std::vector<Level> levels; ///< index = level
-		std::array<uint64_t, kLevelCount> garbage{}; ///< blocks per level that are allocated but no longer reachable (cut subtrees)
+		bool may_have_garbage = false; ///< an insert replaced a child pointer: blocks may be allocated but unreachable (counted by a walk)
 		uint32_t voxels = 0;
 		uint64_t dropped = 0;
 		OctreeBalancerConfig balancer;
@@ -152,7 +167,7 @@ namespace gpu_voxels::vulkan
 		{
 			for (auto& l : levels)
 				l.chunks.clear();
-			garbage = {};
+			may_have_garbage = false;
 			voxels = 0;
 			dropped = 0;
 		}
@@ -250,7 +265,7 @@ namespace gpu_voxels::vulkan
 				count = static_cast<uint32_t>(blocks);
 			}
 			levels = std::move(built);
-			garbage = {};
+			may_have_garbage = false;
 			voxels = distinct;
 		}
 
@@ -436,6 +451,159 @@ namespace gpu_voxels::vulkan
 			}
 		}
 
+		// ------------------------------------------------------------------------------------------------ dynamic updates
+
+		/// Morton ids -> sorted distinct valid ids (the rest is counted as dropped).
+		std::vector<uint64_t> valid_sorted_ids(std::span<const uint64_t> ids)
+		{
+			std::vector<uint64_t> valid;
+			valid.reserve(ids.size());
+			for (uint64_t id : ids)
+				if (id < kSentinelId)
+					valid.push_back(id);
+			dropped += ids.size() - valid.size();
+			std::sort(valid.begin(), valid.end());
+			valid.erase(std::unique(valid.begin(), valid.end()), valid.end());
+			if (valid.size() > kMaxVoxels)
+				throw VulkanError("Octree::insert: too many voxels in one insert");
+			return valid;
+		}
+
+		void insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now)
+		{
+			if (kind != OctreeKind::Deterministic)
+				throw VulkanError("Octree::insert: only deterministic trees can be updated so far (probabilistic: slice S6d-3)");
+			const std::vector<uint64_t> ids = valid_sorted_ids(morton_ids);
+			if (!ids.empty())
+				insert_sorted(ids, datum);
+			if (propagate_now)
+				propagate();
+		}
+
+		/// `ids`: sorted, distinct, valid. The steps are described in the insert shaders; the new blocks of every level become one new chunk.
+		void insert_sorted(const std::vector<uint64_t>& ids, OctreeDatum datum)
+		{
+			const uint32_t n = static_cast<uint32_t>(ids.size());
+			DeviceBuffer id_buffer(context, uint64_t(n) * 8), info(context, uint64_t(n) * 16), replaced(context, 16);
+			id_buffer.upload<uint64_t>(ids);
+			replaced.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+			{
+				CommandBatch batch(context);
+				dispatch(batch, kernels.insert_walk, { &id_buffer, &info, &replaced }, n, InsertWalkPush{ n, 0, root_address() });
+				batch.submit_and_wait();
+			}
+			if (read_word(replaced, 0) > 0)
+				may_have_garbage = true;
+
+			DeviceBuffer heads_a(context, uint64_t(n) * 4), excl_a(context, uint64_t(n) * 4), heads_b(context, uint64_t(n) * 4), excl_b(context, uint64_t(n) * 4);
+
+			// how many new blocks every level needs
+			uint64_t totals[kRootLevel] = {};
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+			{
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, &heads_a }, n, InsertHeadsPush{ n, level });
+				batch.barrier();
+				primitives.record_exclusive_scan(batch, heads_a, excl_a, n, keep_alive);
+				batch.submit_and_wait();
+				totals[level] = uint64_t(read_word(excl_a, n - 1)) + read_word(heads_a, n - 1);
+			}
+			uint64_t base[kRootLevel] = {};
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				if (totals[level] > 0)
+				{
+					DeviceBuffer chunk(context, totals[level] * block_bytes(kind, level));
+					base[level] = chunk.device_address();
+					add_chunk(level, totals[level], std::move(chunk));
+				}
+
+			// from the top: initialise the new blocks of a level and link them into their parents
+			DeviceBuffer* heads_cur = &heads_a;
+			DeviceBuffer* excl_cur = &excl_a;
+			DeviceBuffer* heads_up = &heads_b;
+			DeviceBuffer* excl_up = &excl_b;
+			for (int level = int(kRootLevel) - 1; level >= 0; --level)
+			{
+				if (totals[level] == 0)
+					continue;
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, heads_cur }, n, InsertHeadsPush{ n, uint32_t(level) });
+				batch.barrier();
+				primitives.record_exclusive_scan(batch, *heads_cur, *excl_cur, n, keep_alive);
+				batch.barrier();
+				dispatch(batch, kernels.insert_link, { &id_buffer, &info, heads_cur, excl_cur, heads_up, excl_up }, n,
+					InsertLinkPush{ n, uint32_t(level), base[level], level + 1 < int(kRootLevel) ? base[level + 1] : 0 });
+				batch.submit_and_wait();
+				std::swap(heads_cur, heads_up);
+				std::swap(excl_cur, excl_up);
+			}
+			// the arrays of level 0 are now in *_up (or unused when no voxel needs a new leaf block)
+			CommandBatch batch(context);
+			dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up }, n,
+				InsertLeafPush{ n, datum == OctreeDatum::Occupied ? uint32_t(kOccupied) : uint32_t(kFree), base[0] });
+			batch.submit_and_wait();
+		}
+
+		void propagate()
+		{
+			std::vector<uint8_t> root_block(inner_block_bytes(kind));
+			levels[kRootLevel].chunks.front().buffer.download(root_block.data(), root_block.size());
+			HostNode root = decode_inner(kind, root_block.data(), 0);
+			if (!(root.status & kPart) || !(root.flags & kNeedsUpdate))
+			{
+				if (root.flags & kNeedsUpdate)
+				{
+					root.flags = uint8_t(root.flags & ~kNeedsUpdate);
+					encode_inner(kind, root_block.data(), 0, root);
+					levels[kRootLevel].chunks.front().buffer.upload(root_block.data(), root_block.size());
+				}
+				return;
+			}
+			if (kind != OctreeKind::Deterministic)
+				throw VulkanError("Octree::propagate: only deterministic trees are supported so far (probabilistic: slice S6d-3)");
+
+			std::vector<std::optional<DeviceBuffer>> list(kLevelCount);
+			std::vector<uint32_t> count(kLevelCount, 0);
+			{
+				DeviceBuffer first(context, 16);
+				const uint64_t address = root_address();
+				first.upload<uint32_t>(std::vector<uint32_t>{ uint32_t(address), uint32_t(address >> 32), 0u, 0u });
+				list[kRootLevel] = std::move(first);
+				count[kRootLevel] = 1;
+			}
+			// top-down: the nodes to update of every level, expanding fresh nodes on the way
+			for (int level = int(kRootLevel); level >= 2 && count[level] > 0; --level)
+			{
+				DeviceBuffer next(context, std::max<uint64_t>(16, uint64_t(count[level]) * 8 * 8)), counter(context, 16);
+				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+				CommandBatch batch(context);
+				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, uint64_t(count[level]) * 8, PropagatePush{ count[level], uint32_t(level) });
+				batch.submit_and_wait();
+				count[level - 1] = read_word(counter, 0);
+				list[level - 1] = std::move(next);
+			}
+			// bottom-up: level 1 from its leaves, then every level from its children
+			CommandBatch batch(context);
+			bool any = false;
+			if (count[1] > 0)
+			{
+				dispatch(batch, kernels.prop_leaves, { &*list[1] }, count[1], count[1]);
+				any = true;
+			}
+			for (uint32_t level = 2; level < kLevelCount; ++level)
+				if (count[level] > 0)
+				{
+					if (any)
+						batch.barrier();
+					dispatch(batch, kernels.prop_up, { &*list[level] }, count[level], count[level]);
+					any = true;
+				}
+			if (any)
+				batch.submit_and_wait();
+		}
+
 		// ------------------------------------------------------------------------------------------------ inspection
 
 		struct Snapshot
@@ -461,8 +629,10 @@ namespace gpu_voxels::vulkan
 		}
 
 		/// Walks the memory tree from the root on the host. Collects the reachable nodes and the problems found. Blocks that are
-		/// allocated but not reachable must be exactly the ones counted in `garbage` (cut subtrees), per level.
-		void analyze(const Snapshot& snap, std::vector<OctreeNode>* nodes, std::vector<std::string>& problems) const
+		/// allocated but not reachable are a problem unless `may_have_garbage` (an insert replaced a child pointer); they are counted
+		/// per level in `unreachable_out`. `flagged_out` counts the reachable nodes with NEEDS_UPDATE.
+		void analyze(const Snapshot& snap, std::vector<OctreeNode>* nodes, std::vector<std::string>& problems,
+			std::array<uint64_t, kLevelCount>* unreachable_out = nullptr, uint64_t* flagged_out = nullptr) const
 		{
 			auto problem = [&](const std::string& text) { if (problems.size() < 64) problems.push_back(text); };
 			if (levels[kRootLevel].chunks.size() != 1 || levels[kRootLevel].blocks() != 1)
@@ -484,12 +654,15 @@ namespace gpu_voxels::vulkan
 				std::vector<OctreeNode>* nodes;
 				std::vector<std::vector<std::vector<uint8_t>>>& visited;
 				decltype(problem)& report;
+				uint64_t* flagged;
 
 				void visit(uint32_t level, uint64_t id, const HostNode& node)
 				{
 					const auto where = [&]() { return "node (level " + std::to_string(level) + ", id " + std::to_string(id) + "): "; };
 					if (nodes)
 						nodes->push_back(OctreeNode{ level, id, node.status, node.occupancy, level > 0 && node.child != 0 });
+					if (flagged && (node.flags & kNeedsUpdate))
+						++*flagged;
 					if (level == 0)
 					{
 						if (node.status & (kPart | kLastLevel))
@@ -545,14 +718,15 @@ namespace gpu_voxels::vulkan
 					for (uint32_t s = 0; s < 8; ++s)
 						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
 					const HostNode expected = parent_of(self.kind, kids, level);
-					if (expected.status != (node.status & ~kCollision) || expected.occupancy != node.occupancy)
+					// a node without PART may own stale children (uniform node, cut by an insert): its status is not derived from them
+					if ((node.status & kPart) && (expected.status != (node.status & ~kCollision) || expected.occupancy != node.occupancy))
 						report(where() + "status " + std::to_string(node.status) + " / occupancy " + std::to_string(node.occupancy) +
 							" differ from the rule applied to its children (" + std::to_string(expected.status) + " / " + std::to_string(expected.occupancy) + ")");
 					for (uint32_t s = 0; s < 8; ++s)
 						visit(level - 1, id * 8 + s, kids[s]);
 				}
 			};
-			Walker walker{ *this, snap, nodes, visited, problem };
+			Walker walker{ *this, snap, nodes, visited, problem, flagged_out };
 			walker.visit(kRootLevel, 0, decode_inner(kind, snap.bytes[kRootLevel][0].data(), 0));
 
 			for (uint32_t level = 0; level < kRootLevel; ++level)
@@ -563,9 +737,11 @@ namespace gpu_voxels::vulkan
 				for (const auto& chunk : visited[level])
 					seen += static_cast<uint64_t>(std::count(chunk.begin(), chunk.end(), uint8_t(1)));
 				const uint64_t unreachable = levels[level].blocks() - seen;
-				if (unreachable != garbage[level])
+				if (unreachable_out)
+					(*unreachable_out)[level] = unreachable;
+				if (unreachable != 0 && !may_have_garbage)
 					problem("level " + std::to_string(level) + ": " + std::to_string(unreachable) + " of " + std::to_string(levels[level].blocks()) +
-						" blocks are not reachable from the root, " + std::to_string(garbage[level]) + " are accounted as garbage");
+						" blocks are not reachable from the root");
 			}
 		}
 
@@ -923,17 +1099,45 @@ namespace gpu_voxels::vulkan
 	void Octree::build_from_ids(std::span<const uint64_t> morton_ids) { impl_->build_ids(morton_ids); }
 	void Octree::load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks_per_chunk) { impl_->load_nodes(nodes, max_blocks_per_chunk); }
 	void Octree::clear() { impl_->make_empty(); }
+
+	void Octree::insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now) { impl_->insert_ids(morton_ids, datum, propagate_now); }
+
+	void Octree::insert(std::span<const OctreeVoxel> voxels, OctreeDatum datum, bool propagate_now)
+	{
+		std::vector<uint64_t> ids;
+		ids.reserve(voxels.size());
+		for (const OctreeVoxel& v : voxels)
+			ids.push_back(v.x < (1u << 14) && v.y < (1u << 14) && v.z < (1u << 14) ? morton::code60(v.x, v.y, v.z) : kSentinelId);
+		impl_->insert_ids(ids, datum, propagate_now);
+	}
+
+	void Octree::propagate() { impl_->propagate(); }
+
+	uint64_t Octree::pending_update_count() const
+	{
+		std::vector<std::string> problems;
+		uint64_t flagged = 0;
+		impl_->analyze(impl_->snapshot(), nullptr, problems, nullptr, &flagged);
+		return flagged;
+	}
 	uint32_t Octree::voxel_count() const { return impl_->voxels; }
 	uint64_t Octree::dropped_count() const { return impl_->dropped; }
 
 	OctreeStats Octree::memory_usage() const
 	{
 		OctreeStats stats;
+		if (impl_->may_have_garbage)
+		{
+			std::vector<std::string> problems;
+			std::array<uint64_t, kLevelCount> unreachable{};
+			impl_->analyze(impl_->snapshot(), nullptr, problems, &unreachable);
+			for (uint32_t level = 0; level < kLevelCount; ++level)
+				stats.garbage_blocks[level] = unreachable[level];
+		}
 		for (uint32_t level = 0; level < kLevels; ++level)
 		{
 			stats.bytes += impl_->levels[level].bytes();
 			stats.blocks[level] = impl_->levels[level].blocks();
-			stats.garbage_blocks[level] = impl_->garbage[level];
 			stats.chunks += static_cast<uint32_t>(impl_->levels[level].chunks.size());
 		}
 		return stats;

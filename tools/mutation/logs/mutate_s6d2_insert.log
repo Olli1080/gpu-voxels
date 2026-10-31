@@ -1,0 +1,40 @@
+W1 walk does not flag : KILLED
+W2 leaf exists without PART test : KILLED
+W3 walk descends into level 1 : KILLED
+W4 replaced not counted : KILLED
+H1 creates one level too many : KILLED
+H2 head test ignores the previous voxel creating : SURVIVED
+H3 wrong shift : KILLED
+L1 no LAST_LEVEL on level 1 : KILLED
+L2 new nodes not flagged : KILLED
+L3 invalid leaves without the invalid bits : KILLED
+L4 wrong parent selection : KILLED
+L5 parent without PART : KILLED
+L6 child pointer shift : KILLED
+L7 parent index off by one : KILLED
+L8 parent slot : KILLED
+F1 new leaf without DYNAMIC : KILLED
+F2 existing leaf mask without PART (equivalent: leaves have no PART) : SURVIVED
+F3 new leaf block index : KILLED
+F4 existing leaf keeps the old occupancy : KILLED
+D1 expansion condition inverted : KILLED
+D2 expansion copies PART : KILLED
+D3 flag of non-PART child kept : KILLED
+D4 level 2 children only when flagged : SURVIVED
+D5 children pushed although not flagged : SURVIVED
+P1 invalid leaf test : KILLED
+P2 level 1 node without LAST_LEVEL : KILLED
+P3 flag of the level 1 node kept : KILLED
+U1 LAST_LEVEL above level 1 : KILLED
+U2 flag kept after the bottom-up step : KILLED
+C1 total of a level without the last head : KILLED
+C2 top-down stops one level early : KILLED
+C3 dropped not counted : KILLED
+C4 duplicates kept : SURVIVED
+C5 probabilistic insert allowed : SURVIVED
+C6 garbage flag never set : KILLED
+C7 unreachable blocks ignored : SURVIVED
+C8 stale child status rule applied to every node : SURVIVED
+restored
+C5 probabilistic insert allowed : KILLED (second run, after the test was strengthened)
+C7 unreachable blocks ignored : KILLED (second run, with the CheckTree tests in the filter)

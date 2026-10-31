@@ -1,0 +1,50 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_EXT_buffer_reference : require
+#extension GL_GOOGLE_include_directive : require
+// Propagate, top-down step for the nodes of one level (slice S6d-2, deterministic tree). items = addresses of nodes with PART and
+// NEEDS_UPDATE on `level`; one invocation per (item, child). A child without occupancy bits takes all bits except PART and LAST_LEVEL
+// from the parent (expanding a compressed node), a child without PART loses NEEDS_UPDATE, a child with PART that is flagged (on level 2:
+// every child with PART, level 1 nodes are always recomputed) goes into the work list of the next level.
+#define OCT_PROB 0
+#include "octree_nodes.glsl"
+
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Items { uint items[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Next { uint next[]; };
+layout(std430, set = 0, binding = 2) buffer Counter { uint counter[]; };
+layout(push_constant) uniform Push { uint count; uint level; } pc;
+
+layout(buffer_reference, std430, buffer_reference_align = 8) buffer OctNodeRef { uint w0; uint w1; };
+
+const uint OCT_NEEDS_UPDATE = 128u;
+
+void main()
+{
+    const uint g = oct_gid();
+    if (g >= pc.count * 8u)
+        return;
+    const uint item = g >> 3u;
+    const uint c = g & 7u;
+    OctNodeRef parent = OctNodeRef(packUint2x32(uvec2(items[2u * item], items[2u * item + 1u])));
+    const uint pw0 = parent.w0;
+    const uint parent_status = pw0 & 255u;
+    const uint64_t block = oct_sign_extend_48(uint64_t(pw0 >> 16u) | (uint64_t(parent.w1) << 16u));
+    const uint64_t address = block + uint64_t(c) * 8ul;
+    OctNodeRef child = OctNodeRef(address);
+    const uint cw0 = child.w0;
+    uint status = cw0 & 255u;
+    uint flags = (cw0 >> 8u) & 255u;
+    if ((status & OCT_OCCUPANCY_MASK) == 0u)
+        status = (status & (OCT_PART | OCT_LAST_LEVEL)) | (parent_status & ~(OCT_PART | OCT_LAST_LEVEL) & 255u);
+    if ((status & OCT_PART) == 0u)
+        flags &= ~OCT_NEEDS_UPDATE;
+    child.w0 = (cw0 & 0xFFFF0000u) | status | (flags << 8u);
+    if ((status & OCT_PART) != 0u && ((flags & OCT_NEEDS_UPDATE) != 0u || pc.level == 2u))
+    {
+        const uint index = atomicAdd(counter[0], 1u);
+        next[2u * index] = uint(address & 0xFFFFFFFFul);
+        next[2u * index + 1u] = uint(address >> 32);
+    }
+}

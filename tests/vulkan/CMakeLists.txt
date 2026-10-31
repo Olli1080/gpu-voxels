@@ -16,6 +16,7 @@ gvl_add_test(test_vulkan
     test_meta_point_cloud.cpp
     test_octree_build.cpp
     test_octree_chunks.cpp
+    test_octree_insert.cpp
     test_octree_balancer.cpp
     test_octree_checkpoint.cpp
     test_octree_collision.cpp

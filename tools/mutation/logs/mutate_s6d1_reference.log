@@ -1,0 +1,16 @@
+M1 walk does not flag the visited nodes : KILLED
+M2 end node of the walk not flagged : KILLED
+M3 new leaves without the invalid bits : KILLED
+M4 LAST_LEVEL on the wrong level : KILLED
+M5 garbage not counted : KILLED
+M6 top-down copy takes the PART bit too : KILLED
+M7 top-down only for children WITH occupancy bits : KILLED
+M8 flag of a child without PART not cleared : KILLED
+M9 unflagged level 1 nodes not recomputed : SURVIVED
+M10 invalid leaves detected with a wrong test : KILLED
+M11 LAST_LEVEL added above level 1 : KILLED
+M12 parent keeps NEEDS_UPDATE : KILLED
+M13 owner does not get PART : KILLED
+M14 stale subtree not dropped recursively : KILLED
+M15 existing leaf: datum ORed instead of replacing the occupancy bits : KILLED
+restored
