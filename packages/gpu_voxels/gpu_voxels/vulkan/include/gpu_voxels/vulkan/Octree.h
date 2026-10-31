@@ -6,8 +6,8 @@
 /*!\file
  * \brief  Octree on the Vulkan backend, pointer-faithful port of the CUDA NTree (slice S6b: build, find, extract, check_tree).
  *
- * 15 levels (0 = voxels, 14 = root), branching factor 8, Morton ids (voxel coordinates < 2^14 per axis). Every level is one
- * chunk (buffer) of blocks of 8 sibling nodes; an inner node holds the 48-bit device address of its child block, so the tree
+ * 15 levels (0 = voxels, 14 = root), branching factor 8, Morton ids (voxel coordinates < 2^14 per axis). Every level is a list of
+ * chunks (buffers) of blocks of 8 sibling nodes (build creates one chunk per level, inserts add chunks); an inner node holds the 48-bit device address of its child block, so the tree
  * needs the optional feature bufferDeviceAddress (DeviceInfo::buffer_device_address); the constructor throws without it.
  * Node formats: OctreeFormat.h. Vulkan gives no help for wrong node addresses (Agent/knowledge_base/vulkan_migration/
  * octree_porting_hazards.md): check_tree() validates every pointer on the host and is meant to be called after every mutation
@@ -142,7 +142,9 @@ namespace gpu_voxels::vulkan
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
-		uint64_t blocks[octree_format::kLevelCount] = {}; ///< allocated blocks per level (a block holds 8 nodes)
+		uint64_t blocks[octree_format::kLevelCount] = {}; ///< allocated blocks per level (a block holds 8 nodes), garbage included
+		uint64_t garbage_blocks[octree_format::kLevelCount] = {}; ///< allocated blocks that are no longer reachable (cut subtrees)
+		uint32_t chunks = 0;                 ///< all chunks of all levels
 		uint64_t nodes() const { uint64_t n = 0; for (auto b : blocks) n += 8 * b; return n; }
 	};
 
@@ -170,6 +172,11 @@ namespace gpu_voxels::vulkan
 		void build(std::span<const OctreeVoxel> voxels);
 		/// Same for Morton ids (voxel coordinates interleaved, see Morton.h); ids >= 2^42 are dropped.
 		void build_from_ids(std::span<const uint64_t> morton_ids);
+		/// Replaces the tree by the node list of dump(): the complete blocks of every reachable node (all 8 nodes of a block, the root
+		/// alone), flags are cleared. The blocks of a level are spread over chunks of at most `max_blocks_per_chunk` blocks (0 = one
+		/// chunk per level): the way to get a tree with several chunks per level before inserts exist, and the restore path of a
+		/// stored tree. voxel_count() is 0 afterwards. \throws VulkanError for an incomplete or inconsistent list (the old tree stays).
+		void load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks_per_chunk = 0);
 		/// Back to the empty tree; frees all chunks.
 		void clear();
 
@@ -205,9 +212,12 @@ namespace gpu_voxels::vulkan
 		/// Removes the COLLISION bit from every node.
 		void clear_collision_flags();
 
-		/// Raw access to the chunk of a level (blocks of 8 nodes, formats in OctreeFormat.h) for tests and tools; writing to it can
-		/// corrupt the tree (check_tree() finds that). 	hrows VulkanError if the level has no chunk.
+		/// Raw access to a chunk of a level (blocks of 8 nodes, formats in OctreeFormat.h) for tests and tools; writing to it can
+		/// corrupt the tree (check_tree() finds that). \throws VulkanError if there is no such chunk. `chunk(level)` is chunk 0.
 		[[nodiscard]] DeviceBuffer& chunk(uint32_t level);
+		[[nodiscard]] DeviceBuffer& chunk(uint32_t level, uint32_t index);
+		/// Number of chunks of a level (0 for a level that holds no block).
+		[[nodiscard]] uint32_t chunk_count(uint32_t level) const;
 		/// Configures the load balancing framework (used by traversals with use_load_balancer). \throws VulkanError for invalid values.
 		void set_balancer_config(const OctreeBalancerConfig& config);
 		[[nodiscard]] OctreeBalancerStats balancer_stats() const;

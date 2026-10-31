@@ -6,8 +6,11 @@
 #include <gpu_voxels/vulkan/Octree.h>
 
 #include <algorithm>
+#include <array>
+#include <map>
 #include <optional>
 #include <sstream>
+#include <unordered_map>
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
@@ -76,6 +79,27 @@ namespace gpu_voxels::vulkan
 			DeviceBuffer buffer;
 		};
 
+		/// All chunks of one level. Build creates one chunk per level; an insert adds chunks (slice S6d), so a level is a list.
+		struct Level
+		{
+			std::vector<Chunk> chunks;
+			bool empty() const { return chunks.empty(); }
+			uint64_t blocks() const
+			{
+				uint64_t n = 0;
+				for (const auto& c : chunks)
+					n += c.blocks;
+				return n;
+			}
+			uint64_t bytes() const
+			{
+				uint64_t n = 0;
+				for (const auto& c : chunks)
+					n += c.buffer.size();
+				return n;
+			}
+		};
+
 		struct Kernels
 		{
 			Kernels(Context& c, OctreeKind kind)
@@ -97,7 +121,7 @@ namespace gpu_voxels::vulkan
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 		};
 
-		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), chunks(kLevelCount)
+		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
 		{
 			make_empty();
 		}
@@ -115,7 +139,8 @@ namespace gpu_voxels::vulkan
 		uint32_t max_groups_x = 65535;
 		mutable Primitives primitives; // recording scans does not change the tree
 		Kernels kernels;
-		std::vector<std::optional<Chunk>> chunks; ///< index = level
+		std::vector<Level> levels; ///< index = level
+		std::array<uint64_t, kLevelCount> garbage{}; ///< blocks per level that are allocated but no longer reachable (cut subtrees)
 		uint32_t voxels = 0;
 		uint64_t dropped = 0;
 		OctreeBalancerConfig balancer;
@@ -125,8 +150,9 @@ namespace gpu_voxels::vulkan
 
 		void reset_chunks()
 		{
-			for (auto& c : chunks)
-				c.reset();
+			for (auto& l : levels)
+				l.chunks.clear();
+			garbage = {};
 			voxels = 0;
 			dropped = 0;
 		}
@@ -141,7 +167,7 @@ namespace gpu_voxels::vulkan
 			for (uint32_t s = 1; s < 8; ++s)
 				encode_inner(kind, block.data(), s, filler(kind, kRootLevel));
 			add_chunk(kRootLevel, 1, DeviceBuffer(context, block.size()));
-			chunks[kRootLevel]->buffer.upload(block.data(), block.size());
+			levels[kRootLevel].chunks.front().buffer.upload(block.data(), block.size());
 		}
 
 		void add_chunk(uint32_t level, uint64_t blocks, DeviceBuffer buffer)
@@ -149,7 +175,7 @@ namespace gpu_voxels::vulkan
 			const uint64_t address = buffer.device_address();
 			if (address % 16 != 0 || !addressable(address, buffer.size()))
 				throw VulkanError("Octree: a chunk lies outside the 48 bit / 16 byte aligned address range the nodes can hold (address " + std::to_string(address) + ", size " + std::to_string(buffer.size()) + ")");
-			chunks[level] = Chunk{ blocks, std::move(buffer) };
+			levels[level].chunks.push_back(Chunk{ blocks, std::move(buffer) });
 		}
 
 		/// Sorts the ids of `ids` (n entries, 43 bit keys) and builds the tree from the valid prefix of `n_valid` entries.
@@ -188,7 +214,7 @@ namespace gpu_voxels::vulkan
 			}
 			const uint32_t distinct = read_word(offsets, n - 1) + read_word(heads, n - 1);
 
-			std::vector<std::optional<Chunk>> built(kLevelCount);
+			std::vector<Level> built(kLevelCount);
 			DeviceBuffer current = std::move(unique_ids);
 			uint32_t count = distinct;
 			uint64_t previous_address = 0;
@@ -218,12 +244,13 @@ namespace gpu_voxels::vulkan
 						BuildPush{ count, level, address, previous_address });
 					batch.submit_and_wait();
 				}
-				built[level] = Chunk{ blocks, std::move(chunk) };
+				built[level].chunks.push_back(Chunk{ blocks, std::move(chunk) });
 				previous_address = address;
 				current = std::move(next_ids);
 				count = static_cast<uint32_t>(blocks);
 			}
-			chunks = std::move(built);
+			levels = std::move(built);
+			garbage = {};
 			voxels = distinct;
 		}
 
@@ -283,11 +310,137 @@ namespace gpu_voxels::vulkan
 			dropped = dropped_now;
 		}
 
+		/// Replaces the tree by the given node list (the format of dump()): every node of a block must be listed, a node with
+		/// children needs its child block, every block needs a parent. The blocks of a level are distributed over chunks of at
+		/// most `max_blocks` blocks (0 = one chunk per level). Everything is checked before the old tree is touched.
+		void load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks)
+		{
+			if (max_blocks == 0)
+				max_blocks = UINT64_MAX;
+			using Slots = std::array<const OctreeNode*, 8>;
+			std::vector<std::map<uint64_t, Slots>> blocks(kLevelCount); // per level: block id (= parent id) -> its 8 nodes
+			const OctreeNode* root = nullptr;
+			for (const OctreeNode& n : nodes)
+			{
+				if (n.level >= kLevelCount)
+					throw VulkanError("Octree::load_nodes: node level out of range");
+				if (n.level == kRootLevel)
+				{
+					if (n.id != 0 || root)
+						throw VulkanError("Octree::load_nodes: the root must be listed exactly once with id 0");
+					root = &n;
+					continue;
+				}
+				if ((n.id >> (3 * (kRootLevel - n.level))) != 0)
+					throw VulkanError("Octree::load_nodes: node id out of range for its level");
+				const OctreeNode*& slot = blocks[n.level][n.id >> 3][n.id & 7];
+				if (slot)
+					throw VulkanError("Octree::load_nodes: a node is listed twice");
+				slot = &n;
+			}
+			if (!root)
+				throw VulkanError("Octree::load_nodes: the root is missing");
+			if (root->has_children && blocks[kRootLevel - 1].find(0) == blocks[kRootLevel - 1].end())
+				throw VulkanError("Octree::load_nodes: the root has children but its child block is not listed");
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+			{
+				for (const auto& [block_id, slots] : blocks[level])
+				{
+					for (const OctreeNode* node : slots)
+						if (!node)
+							throw VulkanError("Octree::load_nodes: an incomplete block on level " + std::to_string(level));
+					if (level == 0)
+						for (const OctreeNode* node : slots)
+							if (node->has_children)
+								throw VulkanError("Octree::load_nodes: a leaf with children");
+				}
+				// children of this level's nodes must be exactly the blocks of the level below, the parents are the nodes above
+				if (level > 0)
+				{
+					uint64_t children = 0;
+					for (const auto& [block_id, slots] : blocks[level])
+						for (const OctreeNode* node : slots)
+							if (node->has_children)
+							{
+								++children;
+								if (blocks[level - 1].find(node->id) == blocks[level - 1].end())
+									throw VulkanError("Octree::load_nodes: a node has children but its child block is not listed");
+							}
+					if (children != blocks[level - 1].size())
+						throw VulkanError("Octree::load_nodes: a block on level " + std::to_string(level - 1) + " has no parent node");
+				}
+			}
+			{
+				// the top level: the blocks of level 13 are the children of the root node only
+				const uint64_t expected = root->has_children ? 1 : 0;
+				if (blocks[kRootLevel - 1].size() != expected)
+					throw VulkanError("Octree::load_nodes: a block on level 13 has no parent node");
+			}
+
+			reset_chunks();
+			try
+			{
+				std::vector<std::unordered_map<uint64_t, uint64_t>> address(kLevelCount); // block id -> device address
+				for (uint32_t level = 0; level < kRootLevel; ++level)
+				{
+					const uint64_t block_size = block_bytes(kind, level);
+					std::vector<const std::pair<const uint64_t, Slots>*> ordered;
+					for (const auto& entry : blocks[level])
+						ordered.push_back(&entry);
+					for (size_t first = 0; first < ordered.size(); first += max_blocks)
+					{
+						const size_t count = static_cast<size_t>(std::min<uint64_t>(max_blocks, ordered.size() - first));
+						DeviceBuffer buffer(context, count * block_size);
+						const uint64_t base = buffer.device_address();
+						std::vector<uint8_t> bytes(count * block_size, 0);
+						for (size_t b = 0; b < count; ++b)
+						{
+							const auto& [block_id, slots] = *ordered[first + b];
+							address[level][block_id] = base + b * block_size;
+							uint8_t* block = bytes.data() + b * block_size;
+							for (uint32_t slot = 0; slot < 8; ++slot)
+							{
+								const OctreeNode& n = *slots[slot];
+								HostNode h;
+								h.status = n.status;
+								h.occupancy = n.occupancy;
+								if (level == 0)
+									encode_leaf(kind, block, slot, h);
+								else
+								{
+									h.child = n.has_children ? address[level - 1].at(n.id) : 0;
+									encode_inner(kind, block, slot, h);
+								}
+							}
+						}
+						buffer.upload(bytes.data(), bytes.size());
+						add_chunk(level, count, std::move(buffer));
+					}
+				}
+				std::vector<uint8_t> root_block(inner_block_bytes(kind), 0);
+				HostNode h;
+				h.status = root->status;
+				h.occupancy = root->occupancy;
+				h.child = root->has_children ? address[kRootLevel - 1].at(0) : 0;
+				encode_inner(kind, root_block.data(), 0, h);
+				for (uint32_t slot = 1; slot < 8; ++slot)
+					encode_inner(kind, root_block.data(), slot, filler(kind, kRootLevel));
+				DeviceBuffer root_buffer(context, root_block.size());
+				root_buffer.upload(root_block.data(), root_block.size());
+				add_chunk(kRootLevel, 1, std::move(root_buffer));
+			}
+			catch (...)
+			{
+				make_empty();
+				throw;
+			}
+		}
+
 		// ------------------------------------------------------------------------------------------------ inspection
 
 		struct Snapshot
 		{
-			std::vector<std::vector<uint8_t>> bytes; ///< per level
+			std::vector<std::vector<std::vector<uint8_t>>> bytes; ///< per level, per chunk
 		};
 
 		Snapshot snapshot() const
@@ -295,35 +448,41 @@ namespace gpu_voxels::vulkan
 			Snapshot s;
 			s.bytes.resize(kLevelCount);
 			for (uint32_t level = 0; level < kLevelCount; ++level)
-				if (chunks[level])
+			{
+				s.bytes[level].resize(levels[level].chunks.size());
+				for (size_t c = 0; c < levels[level].chunks.size(); ++c)
 				{
-					s.bytes[level].resize(chunks[level]->buffer.size());
-					chunks[level]->buffer.download(s.bytes[level].data(), s.bytes[level].size());
+					const auto& buffer = levels[level].chunks[c].buffer;
+					s.bytes[level][c].resize(buffer.size());
+					buffer.download(s.bytes[level][c].data(), s.bytes[level][c].size());
 				}
+			}
 			return s;
 		}
 
-		/// Walks the memory tree from the root on the host. Collects the reachable nodes and the problems found.
+		/// Walks the memory tree from the root on the host. Collects the reachable nodes and the problems found. Blocks that are
+		/// allocated but not reachable must be exactly the ones counted in `garbage` (cut subtrees), per level.
 		void analyze(const Snapshot& snap, std::vector<OctreeNode>* nodes, std::vector<std::string>& problems) const
 		{
 			auto problem = [&](const std::string& text) { if (problems.size() < 64) problems.push_back(text); };
-			if (!chunks[kRootLevel] || chunks[kRootLevel]->blocks != 1)
+			if (levels[kRootLevel].chunks.size() != 1 || levels[kRootLevel].blocks() != 1)
 			{
 				problem("the root chunk is missing or does not hold exactly one block");
 				return;
 			}
-			std::vector<std::vector<uint8_t>> visited(kLevelCount);
+			// visited[level][chunk][block]
+			std::vector<std::vector<std::vector<uint8_t>>> visited(kLevelCount);
 			for (uint32_t level = 0; level < kLevelCount; ++level)
-				if (chunks[level])
-					visited[level].assign(chunks[level]->blocks, 0);
-			visited[kRootLevel][0] = 1;
+				for (const auto& chunk : levels[level].chunks)
+					visited[level].emplace_back(chunk.blocks, uint8_t(0));
+			visited[kRootLevel][0][0] = 1;
 
 			struct Walker
 			{
 				const Impl& self;
 				const Snapshot& snap;
 				std::vector<OctreeNode>* nodes;
-				std::vector<std::vector<uint8_t>>& visited;
+				std::vector<std::vector<std::vector<uint8_t>>>& visited;
 				decltype(problem)& report;
 
 				void visit(uint32_t level, uint64_t id, const HostNode& node)
@@ -344,19 +503,29 @@ namespace gpu_voxels::vulkan
 					if (node.child == 0)
 						return;
 
-					const auto& chunk = self.chunks[level - 1];
-					if (!chunk)
+					const auto& chunks = self.levels[level - 1].chunks;
+					if (chunks.empty())
 					{
 						report(where() + "points to a level without a chunk");
 						return;
 					}
-					const uint64_t base = chunk->buffer.device_address();
-					const uint64_t block_size = block_bytes(self.kind, level - 1);
-					if (node.child < base || node.child >= base + chunk->buffer.size())
+					size_t index = chunks.size();
+					for (size_t c = 0; c < chunks.size(); ++c)
 					{
-						report(where() + "child pointer lies outside the chunk of level " + std::to_string(level - 1));
+						const uint64_t chunk_base = chunks[c].buffer.device_address();
+						if (node.child >= chunk_base && node.child < chunk_base + chunks[c].buffer.size())
+						{
+							index = c;
+							break;
+						}
+					}
+					if (index == chunks.size())
+					{
+						report(where() + "child pointer lies outside every chunk of level " + std::to_string(level - 1));
 						return;
 					}
+					const uint64_t base = chunks[index].buffer.device_address();
+					const uint64_t block_size = block_bytes(self.kind, level - 1);
 					const uint64_t offset = node.child - base;
 					if (offset % block_size != 0)
 					{
@@ -364,14 +533,14 @@ namespace gpu_voxels::vulkan
 						return;
 					}
 					const uint64_t block = offset / block_size;
-					if (visited[level - 1][block])
+					if (visited[level - 1][index][block])
 					{
 						report(where() + "its child block is referenced a second time");
 						return;
 					}
-					visited[level - 1][block] = 1;
+					visited[level - 1][index][block] = 1;
 
-					const uint8_t* data = snap.bytes[level - 1].data() + offset;
+					const uint8_t* data = snap.bytes[level - 1][index].data() + offset;
 					HostNode kids[8];
 					for (uint32_t s = 0; s < 8; ++s)
 						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
@@ -384,21 +553,25 @@ namespace gpu_voxels::vulkan
 				}
 			};
 			Walker walker{ *this, snap, nodes, visited, problem };
-			walker.visit(kRootLevel, 0, decode_inner(kind, snap.bytes[kRootLevel].data(), 0));
+			walker.visit(kRootLevel, 0, decode_inner(kind, snap.bytes[kRootLevel][0].data(), 0));
 
 			for (uint32_t level = 0; level < kRootLevel; ++level)
-				if (chunks[level])
-				{
-					const uint64_t seen = static_cast<uint64_t>(std::count(visited[level].begin(), visited[level].end(), uint8_t(1)));
-					if (seen != chunks[level]->blocks)
-						problem("level " + std::to_string(level) + ": " + std::to_string(chunks[level]->blocks - seen) + " of " +
-							std::to_string(chunks[level]->blocks) + " blocks are not reachable from the root");
-				}
+			{
+				if (levels[level].empty())
+					continue;
+				uint64_t seen = 0;
+				for (const auto& chunk : visited[level])
+					seen += static_cast<uint64_t>(std::count(chunk.begin(), chunk.end(), uint8_t(1)));
+				const uint64_t unreachable = levels[level].blocks() - seen;
+				if (unreachable != garbage[level])
+					problem("level " + std::to_string(level) + ": " + std::to_string(unreachable) + " of " + std::to_string(levels[level].blocks()) +
+						" blocks are not reachable from the root, " + std::to_string(garbage[level]) + " are accounted as garbage");
+			}
 		}
 
 		// ------------------------------------------------------------------------------------------------ GPU queries
 
-		uint64_t root_address() const { return chunks[kRootLevel]->buffer.device_address(); }
+		uint64_t root_address() const { return levels[kRootLevel].chunks.front().buffer.device_address(); }
 
 		std::vector<OctreeLookup> find(std::span<const uint64_t> ids) const
 		{
@@ -520,7 +693,7 @@ namespace gpu_voxels::vulkan
 			auto root_of = [](const Impl& t)
 			{
 				std::vector<uint8_t> block(inner_block_bytes(t.kind));
-				t.chunks[kRootLevel]->buffer.download(block.data(), block.size());
+				t.levels[kRootLevel].chunks.front().buffer.download(block.data(), block.size());
 				return decode_inner(t.kind, block.data(), 0);
 			};
 			auto occupied = [&](const HostNode& n)
@@ -540,11 +713,11 @@ namespace gpu_voxels::vulkan
 				if (options.mark_collisions)
 				{
 					std::vector<uint8_t> block(inner_block_bytes(kind));
-					chunks[kRootLevel]->buffer.download(block.data(), block.size());
+					levels[kRootLevel].chunks.front().buffer.download(block.data(), block.size());
 					HostNode marked = root_a;
 					marked.status |= kCollision;
 					encode_inner(kind, block.data(), 0, marked);
-					chunks[kRootLevel]->buffer.upload(block.data(), block.size());
+					levels[kRootLevel].chunks.front().buffer.upload(block.data(), block.size());
 				}
 				return box;
 			}
@@ -567,7 +740,7 @@ namespace gpu_voxels::vulkan
 
 			uint64_t max_items = 1;
 			for (uint32_t level = 1; level < kRootLevel; ++level)
-				max_items = std::max(max_items, (chunks[level] ? chunks[level]->blocks : 0) + (other.chunks[level] ? other.chunks[level]->blocks : 0));
+				max_items = std::max(max_items, levels[level].blocks() + other.levels[level].blocks());
 			DeviceBuffer items_a(context, max_items * 24), items_b(context, max_items * 24), counters(context, 16 * 4);
 			DeviceBuffer* current = &items_a;
 			DeviceBuffer* next = &items_b;
@@ -582,7 +755,7 @@ namespace gpu_voxels::vulkan
 			{
 				const uint32_t zero = 0;
 				counters.upload(&zero, 4, 0);
-				const uint64_t capacity = level >= 2 ? (chunks[level - 1] ? chunks[level - 1]->blocks : 0) + (other.chunks[level - 1] ? other.chunks[level - 1]->blocks : 0) : 0;
+				const uint64_t capacity = level >= 2 ? levels[level - 1].blocks() + other.levels[level - 1].blocks() : 0;
 				CommandBatch batch(context);
 				dispatch(batch, kernels.collide_trees, { current, next, &counters }, uint64_t(item_count) * 8,
 					TreePush{ item_count, uint32_t(level), options.min_level, options.mark_collisions ? 1u : 0u, options.occupancy_threshold, uint32_t(capacity) });
@@ -605,22 +778,21 @@ namespace gpu_voxels::vulkan
 			CommandBatch batch(context);
 			bool any = false;
 			for (uint32_t level = 0; level < kLevelCount; ++level)
-			{
-				if (!chunks[level])
-					continue;
-				any = true;
-				DeviceBuffer& buffer = chunks[level]->buffer;
-				const uint64_t blocks = chunks[level]->blocks;
-				ClearPush push{};
-				if (level > 0)
+				for (auto& chunk : levels[level].chunks)
 				{
-					push = { static_cast<uint32_t>(blocks * 8), uint32_t(inner_block_bytes(kind) / 32), uint32_t(kCollision) };
+					any = true;
+					DeviceBuffer& buffer = chunk.buffer;
+					const uint64_t blocks = chunk.blocks;
+					ClearPush push{};
+					if (level > 0)
+					{
+						push = { static_cast<uint32_t>(blocks * 8), uint32_t(inner_block_bytes(kind) / 32), uint32_t(kCollision) };
+					}
+					else
+						push = { static_cast<uint32_t>(blocks * leaf_block_bytes(kind) / 4), 1u,
+							kind == OctreeKind::Probabilistic ? 0x00200020u : 0x20202020u };
+					dispatch(batch, kernels.clear_collision, { &buffer }, push.count, push);
 				}
-				else
-					push = { static_cast<uint32_t>(blocks * leaf_block_bytes(kind) / 4), 1u,
-						kind == OctreeKind::Probabilistic ? 0x00200020u : 0x20202020u };
-				dispatch(batch, kernels.clear_collision, { &buffer }, push.count, push);
-			}
 			if (any)
 				batch.submit_and_wait();
 		}
@@ -634,7 +806,7 @@ namespace gpu_voxels::vulkan
 
 			// the root is never emitted; its children are the first work item
 			std::vector<uint8_t> root_block(inner_block_bytes(kind));
-			chunks[kRootLevel]->buffer.download(root_block.data(), root_block.size());
+			levels[kRootLevel].chunks.front().buffer.download(root_block.data(), root_block.size());
 			const HostNode root = decode_inner(kind, root_block.data(), 0);
 			if (!(root.status & kPart) || root.child == 0)
 				return {};
@@ -647,8 +819,7 @@ namespace gpu_voxels::vulkan
 
 			uint64_t max_blocks = 1;
 			for (uint32_t level = 0; level < kRootLevel; ++level)
-				if (chunks[level])
-					max_blocks = std::max(max_blocks, chunks[level]->blocks);
+				max_blocks = std::max(max_blocks, levels[level].blocks());
 
 			auto traverse = [&](DeviceBuffer& out, uint32_t capacity) -> uint32_t
 			{
@@ -671,7 +842,7 @@ namespace gpu_voxels::vulkan
 				{
 					const uint32_t zero = 0;
 					counters.upload(&zero, 4, 0);
-					const uint64_t next_capacity = level >= 1 && chunks[level - 1] ? chunks[level - 1]->blocks : 0;
+					const uint64_t next_capacity = level >= 1 ? levels[level - 1].blocks() : 0;
 					CommandBatch batch(context);
 					dispatch(batch, kernels.extract, { current, next, &out, &counters, &selection_buffer }, uint64_t(item_count) * 8,
 						ExtractPush{ item_count, uint32_t(level), options.min_level, capacity, uint32_t(next_capacity) });
@@ -719,9 +890,19 @@ namespace gpu_voxels::vulkan
 
 	DeviceBuffer& Octree::chunk(uint32_t level)
 	{
-		if (level >= kLevels || !impl_->chunks[level])
-			throw VulkanError("Octree::chunk: no chunk on this level");
-		return impl_->chunks[level]->buffer;
+		return chunk(level, 0);
+	}
+
+	DeviceBuffer& Octree::chunk(uint32_t level, uint32_t index)
+	{
+		if (level >= kLevels || index >= impl_->levels[level].chunks.size())
+			throw VulkanError("Octree::chunk: no such chunk");
+		return impl_->levels[level].chunks[index].buffer;
+	}
+
+	uint32_t Octree::chunk_count(uint32_t level) const
+	{
+		return level >= kLevels ? 0u : static_cast<uint32_t>(impl_->levels[level].chunks.size());
 	}
 
 	void Octree::set_max_groups_x(uint32_t groups) { impl_->max_groups_x = groups; }
@@ -740,6 +921,7 @@ namespace gpu_voxels::vulkan
 	Context& Octree::context() const { return impl_->context; }
 	void Octree::build(std::span<const OctreeVoxel> voxels) { impl_->build_coordinates(voxels); }
 	void Octree::build_from_ids(std::span<const uint64_t> morton_ids) { impl_->build_ids(morton_ids); }
+	void Octree::load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks_per_chunk) { impl_->load_nodes(nodes, max_blocks_per_chunk); }
 	void Octree::clear() { impl_->make_empty(); }
 	uint32_t Octree::voxel_count() const { return impl_->voxels; }
 	uint64_t Octree::dropped_count() const { return impl_->dropped; }
@@ -748,11 +930,12 @@ namespace gpu_voxels::vulkan
 	{
 		OctreeStats stats;
 		for (uint32_t level = 0; level < kLevels; ++level)
-			if (impl_->chunks[level])
-			{
-				stats.bytes += impl_->chunks[level]->buffer.size();
-				stats.blocks[level] = impl_->chunks[level]->blocks;
-			}
+		{
+			stats.bytes += impl_->levels[level].bytes();
+			stats.blocks[level] = impl_->levels[level].blocks();
+			stats.garbage_blocks[level] = impl_->garbage[level];
+			stats.chunks += static_cast<uint32_t>(impl_->levels[level].chunks.size());
+		}
 		return stats;
 	}
 

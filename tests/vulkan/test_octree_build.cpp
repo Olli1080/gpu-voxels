@@ -602,7 +602,7 @@ TEST_F(VulkanTest, CheckTreeFindsCorruptedPointersAndStatus)
 			auto at = nth_with_children(tree, kind, 5, 0);
 			at.node.child += uint64_t(1) << 30;
 			modify_inner(tree, kind, 5, at, at.node);
-			expect_problem(tree, "outside the chunk");
+			expect_problem(tree, "outside every chunk");
 		}
 		{ // pointer inside the chunk but not at a block boundary
 			Octree tree = corruptible_tree(ctx(), kind);
@@ -679,7 +679,7 @@ TEST_F(VulkanTest, CheckTreeFindsCorruptedPointersAndStatus)
 			auto at = nth_with_children(tree, kind, 5, 0);
 			at.node.child = tree.chunk(7).device_address(); // right range for level 7, but the node expects level 4
 			modify_inner(tree, kind, 5, at, at.node);
-			expect_problem(tree, "outside the chunk of level 4");
+			expect_problem(tree, "outside every chunk of level 4");
 		}
 	}
 }
