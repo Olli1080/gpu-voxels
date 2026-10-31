@@ -14,7 +14,7 @@ gvl_add_test(test_icl_core_enum_helper
 
 # Host Morton code and the CPU octree reference (no GPU needed; the reference is the oracle of the octree tests).
 gvl_add_test(test_octree_reference
-  SOURCES octree/test_octree_reference.cpp octree/test_octree_dynamic_reference.cpp octree/test_octree_dynamic_reference_prob.cpp)
+  SOURCES octree/test_octree_reference.cpp octree/test_octree_dynamic_reference.cpp octree/test_octree_dynamic_reference_prob.cpp octree/test_octree_dynamic_reference_levels.cpp)
 target_include_directories(test_octree_reference PRIVATE
   "${CMAKE_SOURCE_DIR}/packages/gpu_voxels/gpu_voxels/vulkan/include")
 

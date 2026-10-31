@@ -51,3 +51,30 @@ C8 stale child status rule applied to every node : SURVIVED
 C9 probabilistic rule compares STATIC / DYNAMIC too : BUILD FAILED
 restored
 C9 probabilistic rule compares STATIC / DYNAMIC too : KILLED (second run, pattern of the first run was wrong)
+GW1 walk goes down to level 1 for every target : KILLED
+GW2 existing node at the target treated as a new block : KILLED
+GH1 blocks below the target level are created : KILLED
+GN1 soft mode does not set UPDATE_SUBTREE : KILLED
+GN2 hard mode does not cut : KILLED
+GN3 free occupancy -128 : KILLED
+GN4 deterministic node keeps PART : KILLED
+GN5 slot of the new node : KILLED
+GN6 existing nodes ignored : KILLED
+GD1 node flag UPDATE_SUBTREE not looked at : KILLED
+GD2 inherited flag not looked at : KILLED
+GD3 no subtree update of the children : KILLED
+GD4 UPDATE_SUBTREE kept on children without PART : SURVIVED
+GD5 children below a subtree node only when flagged : KILLED
+GD6 flag not passed to the next level : KILLED
+GL1 leaves ignore the inherited flag : KILLED
+GL2 leaves not updated : KILLED
+GL3 leaf clamp at -128 : KILLED
+GU1 UPDATE_SUBTREE kept after the bottom-up step : KILLED
+GS1 subtree update always adds : KILLED
+CH1 node ids not shifted to level 0 ids : KILLED
+CH2 id limit of the level : KILLED
+CH3 level 14 accepted : KILLED
+CH4 mode ignored : KILLED
+CH5 live rule check for every node : KILLED
+CH6 pending counted below cut nodes : KILLED
+GD4 UPDATE_SUBTREE kept on children without PART : KILLED (second run, the runner filter lacked the subtree scenario test)

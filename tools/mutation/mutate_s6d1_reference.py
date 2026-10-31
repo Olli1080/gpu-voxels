@@ -62,6 +62,20 @@ MUT = [
     ('R8 parent always PART', "| (same ? 0 : status::PART) | status::UNKNOWN);", "| status::PART | status::UNKNOWN);"),
     ('R9 parent status without UNKNOWN', "| (same ? 0 : status::PART) | status::UNKNOWN);", "| (same ? 0 : status::PART));"),
     ('R10 new leaf not set', "leaf.occupancy = int8_t(datum_value(datum));\n\t\t\t\tleaf.status", "leaf.occupancy = 0;\n\t\t\t\tleaf.status"),
+    ('LV1 walk goes down to level 0 for a level 0 insert', "const uint32_t to_level = std::max(level_wanted, 1u);", "const uint32_t to_level = level_wanted;"),
+    ('LV2 existing node of level 1 not treated as the target', "if (level_wanted > 0 && level == level_wanted)", "if (level_wanted > 1 && level == level_wanted)"),
+    ('LV3 one block level too many is created', "for (uint32_t l = level; l > level_wanted; --l)", "for (uint32_t l = level; l >= level_wanted && l >= 1; --l)"),
+    ('LV4 hard mode does not cut', "				if (mode == Mode::Hard)\n					node.status = uint8_t(node.status & ~status::PART);\n", ""),
+    ('LV5 subtree update always adds', "child.occupancy = (child.status & status::PART) ? parent.occupancy : int8_t(clamp_occupancy(int(child.occupancy) + int(parent.occupancy)));", "child.occupancy = int8_t(clamp_occupancy(int(child.occupancy) + int(parent.occupancy)));"),
+    ('LV6 UPDATE_SUBTREE of the ancestors not inherited', "const bool subtree = inherit || parent.update_subtree;", "const bool subtree = parent.update_subtree;"),
+    ('LV7 no subtree update of the children', "				else if (subtree)\n					subtree_update(child, parent);\n", ""),
+    ('LV8 level 1 nodes do not get the subtree flag of the block', "					recompute_from_leaves(id * 8 + s, subtree);", "					recompute_from_leaves(id * 8 + s, false);"),
+    ('LV9 leaves not updated', "				if (subtree && kind_ == Kind::Probabilistic)\n					leaf.occupancy = clamp_occupancy(int(leaf.occupancy) + int(node.occupancy));\n", ""),
+    ('LV10 subtree flag kept on children without PART', "					child.needs_update = false;\n					child.update_subtree = false;\n", "					child.needs_update = false;\n"),
+    ('LV11 children below a subtree node only when flagged', "else if (kids[s]->needs_update || subtree)", "else if (kids[s]->needs_update)"),
+    ('LV12 inner node is added instead of set', "				node.occupancy = int8_t(datum_value(datum));\n			}\n			node.status", "				node.occupancy = int8_t(clamp_occupancy(int(node.occupancy) + datum_value(datum)));\n			}\n			node.status"),
+    ('LV13 soft flag set without PART', "if (existing && mode == Mode::Soft && (node.status & status::PART))", "if (existing && mode == Mode::Soft)"),
+    ('LV14 pending ignores the PART chain (counts stale nodes)', "if (level == 0 || !(m.status & status::PART) || !m.has_block)\n				return false;", "if (level == 0 || !m.has_block)\n				return false;"),
 ]
 
 only = sys.argv[1] if len(sys.argv) > 1 else ''

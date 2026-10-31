@@ -21,6 +21,18 @@
 // occupancy and none has PART, status = (status without PART and occupancy bits) | PART? | UNKNOWN (LAST_LEVEL, STATIC, DYNAMIC stay as
 // they are: they are not recomputed from the children).
 //
+// Target levels and the soft mode (S6d-3b, kernel_insert_countNeededNodes / kernel_insert_setNodes with target_level > 0, updateNode of
+// InnerNode / InnerNodeProb, topDownSubtreeUpdate): an insert at level t > 0 walks while the node has PART and the level is above t. If it
+// ends on a node of level t, that node is SET: deterministic status = (status without occupancy bits and PART) | datum, probabilistic
+// occupancy = 127 / -127 (set, not added) and status UNKNOWN; the PART bit is cleared in the HARD mode, which cuts the subtree (the child
+// block stays reachable but stale), and kept in the SOFT mode (probabilistic only: the deterministic soft mode cuts as well), which also sets
+// the flag UPDATE_SUBTREE on a node that has PART. If the walk ends above level t on a node without PART, new blocks are created down to
+// level t and the node of level t is SET as a new node. Propagate: a node with PART passes `update_subtree` (its own flag or the one of
+// the block it sits in) to its children; probabilistic children that are not fresh are then changed: a child with PART takes the parent's
+// occupancy, a child without PART is UPDATED with it (clamp(child + parent, -127, 127), no UNKNOWN special case); level 1 nodes update their
+// leaves the same way after the invalid leaves have taken over (an invalid leaf therefore gets the parent's occupancy twice). Children
+// below an update_subtree node are visited whether flagged or not. clearNeedsUpdate clears NEEDS_UPDATE and UPDATE_SUBTREE together.
+//
 // Rules (deterministic tree, hard insert of an occupied / free voxel, target level 0):
 //  * Insert, per voxel: walk from the root while the node has PART and level > 1. If the walk ends on a level 1 node with PART the
 //    leaf exists and is updated: status = (status & ~(FREE|UNKNOWN|OCCUPIED|PART)) | datum. Otherwise the node (no PART) gets a NEW
@@ -54,10 +66,12 @@ namespace gvl_reference::octree
 			uint8_t status = 0;
 			int8_t occupancy = 0; ///< probabilistic tree only
 			bool needs_update = false;
+			bool update_subtree = false;
 			bool has_block = false;
 		};
 
 		enum class Datum { Occupied, Free };
+		enum class Mode { Hard, Soft };
 
 		/// An empty tree: the root alone with status UNKNOWN (probabilistic: occupancy -128), what Octree::clear() leaves.
 		explicit DynamicOctreeReference(Kind kind = Kind::Deterministic) : kind_(kind)
@@ -79,36 +93,34 @@ namespace gvl_reference::octree
 			}
 		}
 
-		/// CUDA insertVoxel (target level 0, hard reset data) for one voxel.
-		void insert(uint64_t voxel_id, Datum datum)
+		/// CUDA insertVoxel for one voxel (a level 0 id; for level > 0 only the bits above 3 * level count): the node of `level` on its path is
+		/// set occupied / free. Hard = hard reset data, Soft = soft reset data (differs from hard in the probabilistic tree only).
+		void insert(uint64_t voxel_id, Datum datum, uint32_t level_wanted = 0, Mode mode = Mode::Hard)
 		{
-			const uint8_t set = datum == Datum::Occupied ? status::OCCUPIED : status::FREE;
+			const uint32_t to_level = std::max(level_wanted, 1u);
 			uint32_t level = kRootLevel;
 			uint64_t id = 0;
 			// the walk
-			while (level > 1 && part(level, id))
+			while (level > to_level && part(level, id))
 			{
 				nodes_.at({ level, id }).needs_update = true;
 				--level;
 				id = voxel_id >> (3 * level);
 			}
 			nodes_.at({ level, id }).needs_update = true;
-			if (level == 1 && part(1, id))
+			if (level_wanted == 0 && level == 1 && part(1, id))
 			{
-				Memory& leaf = nodes_.at({ 0, voxel_id });
-				if (kind_ == Kind::Probabilistic)
-				{
-					const int old_value = leaf.occupancy == kUnknownOccupancy ? 0 : leaf.occupancy;
-					leaf.occupancy = int8_t(std::min(std::max(old_value + datum_value(datum), -127), 127));
-					leaf.status = uint8_t((leaf.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
-				}
-				else
-					leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
+				set_target(nodes_.at({ 0, voxel_id }), 0, datum, mode, true);
 				return;
 			}
-			// new blocks below the node where the walk ended
+			if (level_wanted > 0 && level == level_wanted)
+			{
+				set_target(nodes_.at({ level, id }), level, datum, mode, true);
+				return;
+			}
+			// new blocks below the node where the walk ended, down to the wanted level
 			drop_children(level, id);
-			for (uint32_t l = level; l >= 1; --l)
+			for (uint32_t l = level; l > level_wanted; --l)
 			{
 				const uint64_t block = voxel_id >> (3 * l);
 				for (uint32_t s = 0; s < 8; ++s)
@@ -127,14 +139,7 @@ namespace gvl_reference::octree
 				owner.has_block = true;
 				owner.status |= status::PART;
 			}
-			Memory& leaf = nodes_.at({ 0, voxel_id });
-			if (kind_ == Kind::Probabilistic)
-			{
-				leaf.occupancy = int8_t(datum_value(datum));
-				leaf.status = uint8_t((leaf.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
-			}
-			else
-				leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
+			set_target(nodes_.at({ level_wanted, voxel_id >> (3 * level_wanted) }), level_wanted, datum, mode, false);
 		}
 
 		/// Propagate on the whole tree.
@@ -144,9 +149,10 @@ namespace gvl_reference::octree
 			if (!(root.status & status::PART) || !root.needs_update)
 			{
 				root.needs_update = false;
+				root.update_subtree = false;
 				return;
 			}
-			propagate_node(kRootLevel, 0);
+			propagate_node(kRootLevel, 0, false);
 		}
 
 		/// Reachable nodes ordered by (level, id), in the format of OctreeReference::dump().
@@ -160,17 +166,25 @@ namespace gvl_reference::octree
 
 		/// Blocks per level that lost their parent pointer.
 		uint64_t garbage_blocks(uint32_t level) const { return garbage_[level]; }
-		/// True if some reachable node still carries NEEDS_UPDATE.
-		bool has_pending_updates() const
-		{
-			for (const Node& n : dump())
-				if (nodes_.at({ n.level, n.id }).needs_update)
-					return true;
-			return false;
-		}
+		/// True if a node reachable through PART nodes from the root still carries NEEDS_UPDATE (stale subtrees below a cut node keep
+		/// their flags, as in CUDA: nothing visits them).
+		bool has_pending_updates() const { return pending(kRootLevel, 0); }
 
 	private:
 		bool part(uint32_t level, uint64_t id) const { return (nodes_.at({ level, id }).status & status::PART) != 0; }
+
+		bool pending(uint32_t level, uint64_t id) const
+		{
+			const Memory& m = nodes_.at({ level, id });
+			if (m.needs_update)
+				return true;
+			if (level == 0 || !(m.status & status::PART) || !m.has_block)
+				return false;
+			for (uint32_t s = 0; s < 8; ++s)
+				if (pending(level - 1, id * 8 + s))
+					return true;
+			return false;
+		}
 
 		void drop_children(uint32_t level, uint64_t id)
 		{
@@ -188,14 +202,11 @@ namespace gvl_reference::octree
 			}
 		}
 
-		void propagate_node(uint32_t level, uint64_t id)
+		/// The node (level >= 2, PART, flagged) processes its child block. `inherit`: an ancestor passes UPDATE_SUBTREE down.
+		void propagate_node(uint32_t level, uint64_t id, bool inherit)
 		{
 			Memory& parent = nodes_.at({ level, id });
-			if (level == 1)
-			{
-				recompute_from_leaves(id);
-				return;
-			}
+			const bool subtree = inherit || parent.update_subtree;
 			Memory* kids[8];
 			for (uint32_t s = 0; s < 8; ++s)
 			{
@@ -203,35 +214,42 @@ namespace gvl_reference::octree
 				kids[s] = &child;
 				if ((child.status & status::OCCUPANCY_MASK) == 0)
 					expand(child, parent);
+				else if (subtree)
+					subtree_update(child, parent);
 				if (!(child.status & status::PART))
+				{
 					child.needs_update = false;
+					child.update_subtree = false;
+				}
 			}
 			for (uint32_t s = 0; s < 8; ++s)
-				if ((kids[s]->status & status::PART) && kids[s]->needs_update)
-				{
-					propagate_node(level - 1, id * 8 + s);
-				}
-			if (level - 1 == 1)
 			{
-				// the block of level 1 nodes: every node with PART is recomputed from its leaves, flagged or not (CUDA does it; for a
-				// consistent tree it changes nothing, mutation M9 survives for that reason, later steps rely on it: soft insert, subtree updates)
-				for (uint32_t s = 0; s < 8; ++s)
-					if ((kids[s]->status & status::PART) && !kids[s]->needs_update)
-						recompute_from_leaves(id * 8 + s);
+				// level 1 nodes are recomputed from their leaves whenever they have PART, flagged or not (CUDA does it; for a consistent
+				// tree without a subtree update it changes nothing: mutation M9 survives for that reason)
+				if (!(kids[s]->status & status::PART))
+					continue;
+				if (level == 2)
+					recompute_from_leaves(id * 8 + s, subtree);
+				else if (kids[s]->needs_update || subtree)
+					propagate_node(level - 1, id * 8 + s, subtree);
 			}
 			recompute(parent, kids, 99);
 			parent.needs_update = false;
+			parent.update_subtree = false;
 		}
 
-		/// A level 1 node with PART: invalid leaves take the node's bits, the node is recomputed from its leaves.
-		void recompute_from_leaves(uint64_t id)
+		/// A level 1 node with PART: invalid leaves take over from the node, with UPDATE_SUBTREE the leaves are updated with its occupancy,
+		/// then the node is recomputed from its leaves.
+		void recompute_from_leaves(uint64_t id, bool inherit)
 		{
 			Memory& node = nodes_.at({ 1, id });
 			if (!(node.status & status::PART))
 			{
 				node.needs_update = false;
+				node.update_subtree = false;
 				return;
 			}
+			const bool subtree = inherit || node.update_subtree;
 			Memory* leaves[8];
 			for (uint32_t s = 0; s < 8; ++s)
 			{
@@ -239,9 +257,48 @@ namespace gvl_reference::octree
 				leaves[s] = &leaf;
 				if ((leaf.status & status::OCCUPANCY_MASK) == status::OCCUPANCY_MASK)
 					expand(leaf, node);
+				if (subtree && kind_ == Kind::Probabilistic)
+					leaf.occupancy = clamp_occupancy(int(leaf.occupancy) + int(node.occupancy));
 			}
 			recompute(node, leaves, 1);
 			node.needs_update = false;
+			node.update_subtree = false;
+		}
+
+		static int clamp_occupancy(int value) { return std::min(std::max(value, -127), 127); }
+
+		/// CUDA topDownSubtreeUpdate of an inner node (probabilistic; the deterministic one does nothing).
+		void subtree_update(Memory& child, const Memory& parent) const
+		{
+			if (kind_ != Kind::Probabilistic)
+				return;
+			child.occupancy = (child.status & status::PART) ? parent.occupancy : int8_t(clamp_occupancy(int(child.occupancy) + int(parent.occupancy)));
+		}
+
+		/// The datum of an insert on the node of `level`: a leaf (level 0, deterministic: set; probabilistic: a new leaf is set, an existing one
+		/// updated) or an inner node (set, PART cleared in the hard mode, UPDATE_SUBTREE in the soft probabilistic mode).
+		void set_target(Memory& node, uint32_t level, Datum datum, Mode mode, bool existing) const
+		{
+			const uint8_t set = datum == Datum::Occupied ? status::OCCUPIED : status::FREE;
+			if (kind_ == Kind::Deterministic)
+			{
+				node.status = uint8_t((node.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
+				return;
+			}
+			if (level == 0)
+			{
+				const int old_value = node.occupancy == kUnknownOccupancy ? 0 : node.occupancy;
+				node.occupancy = existing ? int8_t(clamp_occupancy(old_value + datum_value(datum))) : int8_t(datum_value(datum));
+			}
+			else
+			{
+				if (existing && mode == Mode::Soft && (node.status & status::PART))
+					node.update_subtree = true;
+				if (mode == Mode::Hard)
+					node.status = uint8_t(node.status & ~status::PART);
+				node.occupancy = int8_t(datum_value(datum));
+			}
+			node.status = uint8_t((node.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
 		}
 
 		static int datum_value(Datum datum) { return datum == Datum::Occupied ? 127 : -127; }

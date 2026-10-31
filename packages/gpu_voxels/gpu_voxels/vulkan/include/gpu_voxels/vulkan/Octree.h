@@ -142,6 +142,11 @@ namespace gpu_voxels::vulkan
 	/// The datum of a hard insert: the voxel becomes occupied or free.
 	enum class OctreeDatum : uint8_t { Occupied, Free };
 
+	/// How an insert on a node above level 0 treats the subtree below it (CUDA hard / soft reset data). Hard: the node is set and loses PART,
+	/// its subtree is cut (the block stays allocated and reachable). Soft: the node keeps PART and, in a probabilistic tree, the subtree is updated
+	/// with the occupancy of the node by the next propagate (UPDATE_SUBTREE); in a deterministic tree soft cuts as well.
+	enum class OctreeInsertMode : uint8_t { Hard, Soft };
+
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
@@ -193,10 +198,17 @@ namespace gpu_voxels::vulkan
 		/// voxel_count() is not updated.
 		void insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum = OctreeDatum::Occupied, bool propagate_now = true);
 		void insert(std::span<const OctreeVoxel> voxels, OctreeDatum datum = OctreeDatum::Occupied, bool propagate_now = true);
+		/// Slice S6d-3b: the same for whole nodes of `level` (0 .. 13) given by their ids on that level (voxel id >> 3 * level, below 8^(14 - level)),
+		/// e.g. free space as big cubes. In a deterministic tree the node is set (status = occupancy bits of the datum, PART cleared); in a
+		/// probabilistic tree its occupancy is SET to 127 / -127 (not added). If the path ends above the level on a node without PART, blocks are
+		/// created down to the level. `mode`: see OctreeInsertMode. Level 0 is `insert_ids` (and ignores the mode: a leaf has no subtree).
+		void insert_nodes(uint32_t level, std::span<const uint64_t> node_ids, OctreeDatum datum = OctreeDatum::Occupied,
+			OctreeInsertMode mode = OctreeInsertMode::Hard, bool propagate_now = true);
 		/// Recomputes the statuses of all nodes with NEEDS_UPDATE from their children, top-down expansion of fresh nodes included
 		/// (CUDA propagate), level by level on the GPU. Nothing to do on a tree without pending updates.
 		void propagate();
-		/// Reachable nodes that still carry NEEDS_UPDATE (0 after propagate()); read back and walked on the host.
+		/// Nodes that still carry NEEDS_UPDATE and are reachable through PART nodes (0 after propagate(); stale subtrees below a cut node
+		/// keep their flags, nothing visits them); read back and walked on the host.
 		[[nodiscard]] uint64_t pending_update_count() const;
 
 		/// Distinct voxels of the last build.

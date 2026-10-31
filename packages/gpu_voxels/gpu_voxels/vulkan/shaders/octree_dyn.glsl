@@ -1,6 +1,7 @@
 // Helpers of the dynamic octree kernels (insert / propagate, slice S6d). Include after octree_nodes.glsl (OCT_PROB defined by the wrapper).
 // A node is addressed by its device address: a block reference at that address with slot 0 reads or writes exactly that node.
 const uint OCT_NEEDS_UPDATE = 128u;
+const uint OCT_UPDATE_SUBTREE = 64u;     // flag: the subtree of this node is updated with its occupancy (probabilistic soft insert)
 #if OCT_PROB
 const uint OCT_NODE_WORDS = 3u;          // words of one inner node
 const uint64_t OCT_NODE_BYTES = 12ul;
@@ -39,5 +40,14 @@ void oct_recompute(inout OctNode parent, in OctNode kids[8], uint level)
 #else
     const OctNode result = oct_parent(kids, level, 0ul);
     parent.status = result.status;
+#endif
+}
+
+// CUDA topDownSubtreeUpdate of an inner node below a node with UPDATE_SUBTREE (probabilistic only; the deterministic one does nothing): a child
+// with PART takes the occupancy of the parent, a child without PART is UPDATED with it (clamped, no UNKNOWN special case).
+void oct_subtree_update(inout OctNode child, in OctNode parent)
+{
+#if OCT_PROB
+    child.occupancy = (child.status & OCT_PART) != 0u ? parent.occupancy : clamp(child.occupancy + parent.occupancy, -127, 127);
 #endif
 }

@@ -1,6 +1,8 @@
-// Propagate for the nodes of level 1: items = addresses of level 1 nodes with PART. Invalid leaves (all occupancy bits set) take over from
-// the node (oct_expand), then the node is recomputed from its 8 leaves (oct_recompute, level 1) and loses NEEDS_UPDATE. One invocation per
-// node: it owns the whole leaf block.
+// Propagate for the nodes of level 1: items = records (address low, address high, inherit, 0) of level 1 nodes with PART. Invalid leaves (all
+// occupancy bits set) take over from the node (oct_expand); below a node with UPDATE_SUBTREE (the record passes it down or the node carries the
+// flag) the probabilistic leaves are UPDATED with the occupancy of the node (clamped; an invalid leaf therefore gets it twice, as in CUDA);
+// then the node is recomputed from its 8 leaves (oct_recompute, level 1) and loses NEEDS_UPDATE and UPDATE_SUBTREE. One invocation per node:
+// it owns the whole leaf block.
 // The wrapper defines OCT_PROB and includes this file.
 #include "octree_nodes.glsl"
 #include "octree_dyn.glsl"
@@ -15,8 +17,9 @@ void main()
     const uint g = oct_gid();
     if (g >= pc.count)
         return;
-    const uint64_t address = packUint2x32(uvec2(items[2u * g], items[2u * g + 1u]));
+    const uint64_t address = packUint2x32(uvec2(items[4u * g], items[4u * g + 1u]));
     OctNode node = oct_load_node(address);
+    const bool subtree = items[4u * g + 2u] != 0u || (node.flags & OCT_UPDATE_SUBTREE) != 0u;
     OctLeafBlock leaves = OctLeafBlock(node.child);
     OctNode kids[8];
     for (uint k = 0u; k < 8u; ++k)
@@ -24,9 +27,13 @@ void main()
         kids[k] = oct_load_leaf(leaves, k);
         if ((kids[k].status & OCT_OCCUPANCY_MASK) == OCT_OCCUPANCY_MASK)
             oct_expand(kids[k], node);
+#if OCT_PROB
+        if (subtree)
+            kids[k].occupancy = clamp(kids[k].occupancy + node.occupancy, -127, 127);
+#endif
     }
     oct_store_leaf_block(leaves, kids);
     oct_recompute(node, kids, 1u);
-    node.flags &= ~OCT_NEEDS_UPDATE;
+    node.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);
     oct_store_node(address, node);
 }

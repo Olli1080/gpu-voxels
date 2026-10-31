@@ -14,3 +14,5 @@ M13 owner does not get PART : KILLED
 M14 stale subtree not dropped recursively : KILLED
 M15 existing leaf: datum ORed instead of replacing the occupancy bits : KILLED
 restored
+LV mutations of the reference (14), all KILLED after three scenario tests were added (LV6, LV10, LV13 survived the first run)
+LV mutations of the reference (14), all KILLED after three scenario tests were added (LV6, LV10, LV13 survived the first run)

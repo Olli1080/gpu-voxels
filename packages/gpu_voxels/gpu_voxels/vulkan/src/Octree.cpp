@@ -53,8 +53,9 @@ namespace gpu_voxels::vulkan
 		constexpr uint32_t kBalanceItems = 8;
 		constexpr uint32_t kBalanceWords = 6;
 		struct TreePush { uint32_t item_count, level, min_level, mark; int32_t threshold; uint32_t next_capacity; };
-		struct InsertWalkPush { uint32_t n, pad; uint64_t root; };
-		struct InsertHeadsPush { uint32_t n, level; };
+		struct InsertWalkPush { uint32_t n, target; uint64_t root; };
+		struct InsertHeadsPush { uint32_t n, level, target; };
+		struct InsertNodePush { uint32_t n, datum, soft, level; uint64_t base; };
 		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
 		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
 		struct PropagatePush { uint32_t count, level; };
@@ -129,11 +130,12 @@ namespace gpu_voxels::vulkan
 				  insert_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_leaves_prob_comp) : GVL_SHADER_SPAN(octree_insert_leaves_det_comp), 4, sizeof(InsertLeafPush)),
 				  prop_down(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_down_prob_comp) : GVL_SHADER_SPAN(octree_propagate_down_det_comp), 3, sizeof(PropagatePush)),
 				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 1, sizeof(uint32_t)),
+				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 4, sizeof(InsertNodePush)),
 				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 1, sizeof(uint32_t))
 			{
 			}
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
-			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, prop_up;
+			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
@@ -453,14 +455,15 @@ namespace gpu_voxels::vulkan
 
 		// ------------------------------------------------------------------------------------------------ dynamic updates
 
-		/// Morton ids -> sorted distinct valid ids (the rest is counted as dropped).
-		std::vector<uint64_t> valid_sorted_ids(std::span<const uint64_t> ids)
+		/// Node ids of `level` -> sorted distinct level 0 ids (the node id shifted up; ids outside the level are counted as dropped).
+		std::vector<uint64_t> valid_sorted_ids(std::span<const uint64_t> ids, uint32_t level)
 		{
+			const uint64_t limit = uint64_t(1) << (3 * (kRootLevel - level));
 			std::vector<uint64_t> valid;
 			valid.reserve(ids.size());
 			for (uint64_t id : ids)
-				if (id < kSentinelId)
-					valid.push_back(id);
+				if (id < limit)
+					valid.push_back(id << (3 * level));
 			dropped += ids.size() - valid.size();
 			std::sort(valid.begin(), valid.end());
 			valid.erase(std::unique(valid.begin(), valid.end()), valid.end());
@@ -469,17 +472,20 @@ namespace gpu_voxels::vulkan
 			return valid;
 		}
 
-		void insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now)
+		void insert_ids(std::span<const uint64_t> node_ids, uint32_t level, OctreeDatum datum, OctreeInsertMode mode, bool propagate_now)
 		{
-			const std::vector<uint64_t> ids = valid_sorted_ids(morton_ids);
+			if (level >= kRootLevel)
+				throw VulkanError("Octree::insert_nodes: the level must be in 0..13");
+			const std::vector<uint64_t> ids = valid_sorted_ids(node_ids, level);
 			if (!ids.empty())
-				insert_sorted(ids, datum);
+				insert_sorted(ids, level, datum, mode);
 			if (propagate_now)
 				propagate();
 		}
 
-		/// `ids`: sorted, distinct, valid. The steps are described in the insert shaders; the new blocks of every level become one new chunk.
-		void insert_sorted(const std::vector<uint64_t>& ids, OctreeDatum datum)
+		/// `ids`: sorted, distinct level 0 ids. The steps are described in the insert shaders; the new blocks of every level from `target` up
+		/// become one new chunk each.
+		void insert_sorted(const std::vector<uint64_t>& ids, uint32_t target, OctreeDatum datum, OctreeInsertMode mode)
 		{
 			const uint32_t n = static_cast<uint32_t>(ids.size());
 			DeviceBuffer id_buffer(context, uint64_t(n) * 8), info(context, uint64_t(n) * 16), replaced(context, 16);
@@ -487,7 +493,7 @@ namespace gpu_voxels::vulkan
 			replaced.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
 			{
 				CommandBatch batch(context);
-				dispatch(batch, kernels.insert_walk, { &id_buffer, &info, &replaced }, n, InsertWalkPush{ n, 0, root_address() });
+				dispatch(batch, kernels.insert_walk, { &id_buffer, &info, &replaced }, n, InsertWalkPush{ n, target, root_address() });
 				batch.submit_and_wait();
 			}
 			if (read_word(replaced, 0) > 0)
@@ -501,7 +507,7 @@ namespace gpu_voxels::vulkan
 			{
 				KeepAlive keep_alive;
 				CommandBatch batch(context);
-				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, &heads_a }, n, InsertHeadsPush{ n, level });
+				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, &heads_a }, n, InsertHeadsPush{ n, level, target });
 				batch.barrier();
 				primitives.record_exclusive_scan(batch, heads_a, excl_a, n, keep_alive);
 				batch.submit_and_wait();
@@ -527,7 +533,7 @@ namespace gpu_voxels::vulkan
 					continue;
 				KeepAlive keep_alive;
 				CommandBatch batch(context);
-				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, heads_cur }, n, InsertHeadsPush{ n, uint32_t(level) });
+				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, heads_cur }, n, InsertHeadsPush{ n, uint32_t(level), target });
 				batch.barrier();
 				primitives.record_exclusive_scan(batch, *heads_cur, *excl_cur, n, keep_alive);
 				batch.barrier();
@@ -537,10 +543,14 @@ namespace gpu_voxels::vulkan
 				std::swap(heads_cur, heads_up);
 				std::swap(excl_cur, excl_up);
 			}
-			// the arrays of level 0 are now in *_up (or unused when no voxel needs a new leaf block)
+			// the arrays of the target level are now in *_up (or unused when no voxel needs a new block there)
+			const uint32_t datum_bits = datum == OctreeDatum::Occupied ? uint32_t(kOccupied) : uint32_t(kFree);
 			CommandBatch batch(context);
-			dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up }, n,
-				InsertLeafPush{ n, datum == OctreeDatum::Occupied ? uint32_t(kOccupied) : uint32_t(kFree), base[0] });
+			if (target == 0)
+				dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up }, n, InsertLeafPush{ n, datum_bits, base[0] });
+			else
+				dispatch(batch, kernels.insert_nodes, { &id_buffer, &info, heads_up, excl_up }, n,
+					InsertNodePush{ n, datum_bits, mode == OctreeInsertMode::Soft ? 1u : 0u, target, base[target] });
 			batch.submit_and_wait();
 		}
 
@@ -562,7 +572,7 @@ namespace gpu_voxels::vulkan
 			std::vector<std::optional<DeviceBuffer>> list(kLevelCount);
 			std::vector<uint32_t> count(kLevelCount, 0);
 			{
-				DeviceBuffer first(context, 16);
+				DeviceBuffer first(context, 16); // a record: address low, address high, inherit UPDATE_SUBTREE, unused
 				const uint64_t address = root_address();
 				first.upload<uint32_t>(std::vector<uint32_t>{ uint32_t(address), uint32_t(address >> 32), 0u, 0u });
 				list[kRootLevel] = std::move(first);
@@ -571,7 +581,7 @@ namespace gpu_voxels::vulkan
 			// top-down: the nodes to update of every level, expanding fresh nodes on the way
 			for (int level = int(kRootLevel); level >= 2 && count[level] > 0; --level)
 			{
-				DeviceBuffer next(context, std::max<uint64_t>(16, uint64_t(count[level]) * 8 * 8)), counter(context, 16);
+				DeviceBuffer next(context, std::max<uint64_t>(16, uint64_t(count[level]) * 8 * 16)), counter(context, 16);
 				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
 				CommandBatch batch(context);
 				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, uint64_t(count[level]) * 8, PropagatePush{ count[level], uint32_t(level) });
@@ -625,7 +635,7 @@ namespace gpu_voxels::vulkan
 
 		/// Walks the memory tree from the root on the host. Collects the reachable nodes and the problems found. Blocks that are
 		/// allocated but not reachable are a problem unless `may_have_garbage` (an insert replaced a child pointer); they are counted
-		/// per level in `unreachable_out`. `flagged_out` counts the reachable nodes with NEEDS_UPDATE.
+		/// per level in `unreachable_out`. `flagged_out` counts the nodes with NEEDS_UPDATE that are reachable through PART nodes.
 		void analyze(const Snapshot& snap, std::vector<OctreeNode>* nodes, std::vector<std::string>& problems,
 			std::array<uint64_t, kLevelCount>* unreachable_out = nullptr, uint64_t* flagged_out = nullptr) const
 		{
@@ -651,13 +661,13 @@ namespace gpu_voxels::vulkan
 				decltype(problem)& report;
 				uint64_t* flagged;
 
-				void visit(uint32_t level, uint64_t id, const HostNode& node)
+				void visit(uint32_t level, uint64_t id, const HostNode& node, bool live = true)
 				{
 					const auto where = [&]() { return "node (level " + std::to_string(level) + ", id " + std::to_string(id) + "): "; };
 					if (nodes)
 						nodes->push_back(OctreeNode{ level, id, node.status, node.occupancy, level > 0 && node.child != 0 });
-					if (flagged && (node.flags & kNeedsUpdate))
-						++*flagged;
+					if (flagged && live && (node.flags & kNeedsUpdate))
+						++*flagged; // only through PART nodes: stale subtrees below a cut node keep their flags
 					if (level == 0)
 					{
 						if (node.status & (kPart | kLastLevel))
@@ -713,14 +723,15 @@ namespace gpu_voxels::vulkan
 					for (uint32_t s = 0; s < 8; ++s)
 						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
 					const HostNode expected = parent_of(self.kind, kids, level);
-					// a node without PART may own stale children (uniform node, cut by an insert): its status is not derived from them
+					// a node without PART may own stale children (uniform node, cut by an insert): its status is not derived from them; below
+					// such a node (not `live`) nothing is recomputed any more either, a subtree created and cut before a propagate stays as it is
 					// probabilistic: a dynamic update marks nodes DYNAMIC where the build says STATIC, the propagate rule does not recompute either
 					const uint8_t ignore = self.kind == OctreeKind::Probabilistic ? uint8_t(kStatic | kDynamic) : uint8_t(0);
-					if ((node.status & kPart) && (uint8_t(expected.status & ~ignore) != uint8_t(node.status & ~kCollision & ~ignore) || expected.occupancy != node.occupancy))
+					if (live && (node.status & kPart) && (uint8_t(expected.status & ~ignore) != uint8_t(node.status & ~kCollision & ~ignore) || expected.occupancy != node.occupancy))
 						report(where() + "status " + std::to_string(node.status) + " / occupancy " + std::to_string(node.occupancy) +
 							" differ from the rule applied to its children (" + std::to_string(expected.status) + " / " + std::to_string(expected.occupancy) + ")");
 					for (uint32_t s = 0; s < 8; ++s)
-						visit(level - 1, id * 8 + s, kids[s]);
+						visit(level - 1, id * 8 + s, kids[s], live && (node.status & kPart) != 0);
 				}
 			};
 			Walker walker{ *this, snap, nodes, visited, problem, flagged_out };
@@ -1097,7 +1108,15 @@ namespace gpu_voxels::vulkan
 	void Octree::load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks_per_chunk) { impl_->load_nodes(nodes, max_blocks_per_chunk); }
 	void Octree::clear() { impl_->make_empty(); }
 
-	void Octree::insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now) { impl_->insert_ids(morton_ids, datum, propagate_now); }
+	void Octree::insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now)
+	{
+		impl_->insert_ids(morton_ids, 0, datum, OctreeInsertMode::Hard, propagate_now);
+	}
+
+	void Octree::insert_nodes(uint32_t level, std::span<const uint64_t> node_ids, OctreeDatum datum, OctreeInsertMode mode, bool propagate_now)
+	{
+		impl_->insert_ids(node_ids, level, datum, mode, propagate_now);
+	}
 
 	void Octree::insert(std::span<const OctreeVoxel> voxels, OctreeDatum datum, bool propagate_now)
 	{
@@ -1105,7 +1124,7 @@ namespace gpu_voxels::vulkan
 		ids.reserve(voxels.size());
 		for (const OctreeVoxel& v : voxels)
 			ids.push_back(v.x < (1u << 14) && v.y < (1u << 14) && v.z < (1u << 14) ? morton::code60(v.x, v.y, v.z) : kSentinelId);
-		impl_->insert_ids(ids, datum, propagate_now);
+		impl_->insert_ids(ids, 0, datum, OctreeInsertMode::Hard, propagate_now);
 	}
 
 	void Octree::propagate() { impl_->propagate(); }

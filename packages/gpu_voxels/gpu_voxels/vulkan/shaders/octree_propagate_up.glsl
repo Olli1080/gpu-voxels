@@ -1,6 +1,6 @@
-// Propagate, bottom-up step for the nodes of one level 2 .. 14: items = addresses of the nodes with PART and NEEDS_UPDATE of that level.
-// Their children are final (lower levels run first): the node is recomputed from them (oct_recompute, level 99: no LAST_LEVEL above level 1)
-// and loses NEEDS_UPDATE.
+// Propagate, bottom-up step for the nodes of one level 2 .. 14: items = records (address low, address high, inherit, 0) of the nodes with PART
+// that were flagged or below an UPDATE_SUBTREE node, of that level. Their children are final (lower levels run first): the node is recomputed
+// from them (oct_recompute, level 99: no LAST_LEVEL above level 1) and loses NEEDS_UPDATE and UPDATE_SUBTREE.
 // The wrapper defines OCT_PROB and includes this file.
 #include "octree_nodes.glsl"
 #include "octree_dyn.glsl"
@@ -15,12 +15,12 @@ void main()
     const uint g = oct_gid();
     if (g >= pc.count)
         return;
-    const uint64_t address = packUint2x32(uvec2(items[2u * g], items[2u * g + 1u]));
+    const uint64_t address = packUint2x32(uvec2(items[4u * g], items[4u * g + 1u]));
     OctNode node = oct_load_node(address);
     OctNode kids[8];
     for (uint k = 0u; k < 8u; ++k)
         kids[k] = oct_load_node(node.child + uint64_t(k) * OCT_NODE_BYTES);
     oct_recompute(node, kids, 99u);
-    node.flags &= ~OCT_NEEDS_UPDATE;
+    node.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);
     oct_store_node(address, node);
 }

@@ -116,6 +116,8 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_insert_link_det.comp
     shaders/octree_insert_link_prob.comp
     shaders/octree_insert_leaves_det.comp
+    shaders/octree_insert_nodes_det.comp
+    shaders/octree_insert_nodes_prob.comp
     shaders/octree_insert_leaves_prob.comp
     shaders/octree_propagate_down_det.comp
     shaders/octree_propagate_down_prob.comp

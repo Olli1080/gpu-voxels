@@ -41,8 +41,8 @@ The logs in `tools/mutation/logs/` are the first runs; the survivors they list w
 | `mutate11.py` .. `mutate13.py` | S6c collisions: maps / lists / ids (63), tree vs tree (54), hardening round (15) ([vulkan_octree_collision.md](architecture/vulkan_octree_collision.md)) | 132 | all killed or removed as redundant, gaps closed by new tests |
 | `mutate14.py` | S6c load balancer ([vulkan_octree_collision.md](architecture/vulkan_octree_collision.md#load-balancer-second-implementation)) | 66 | 60 killed, 4 equivalent boundary mutants, 2 redundant constructs removed |
 | `mutate15.py` | block-pair counter of the reference (`tests/reference/octree_reference.h`, checkpoint) | 6 | all killed |
-| `mutate_s6d1_reference.py` | S6d-1 / S6d-3a dynamic reference (`tests/reference/octree_dynamic_reference.h`) | 25 | 24 killed, 1 equivalent for consistent trees |
-| `mutate_s6d2_insert.py` | S6d-2 / S6d-3a insert and propagate, shaders and host ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 51 | 45 killed, 6 explained survivors |
+| `mutate_s6d1_reference.py` | S6d-1 / S6d-3 dynamic reference (`tests/reference/octree_dynamic_reference.h`) | 39 | 38 killed, 1 equivalent for consistent trees |
+| `mutate_s6d2_insert.py` | S6d-2 / S6d-3 insert and propagate, shaders and host ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 77 | 71 killed, 6 explained survivors |
 | `mutate16.py` | K34 size limits ([known_issues.md](known_issues.md)) | 12 | see the K34 row |
 
 The older runners (`mutate.py` .. `mutate8.py`) are kept as they were written; they have their own small harness (shaders only) and may need adjusted test filters if the tests were renamed since. `mutate9.py` and later share the table format described above.

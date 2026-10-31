@@ -58,6 +58,32 @@ MUT = [
     ('C7 unreachable blocks ignored', CPP, "				if (unreachable != 0 && !may_have_garbage)", "				if (false)"),
     ('C8 stale child status rule applied to every node', CPP, "if ((node.status & kPart) && (uint8_t(expected.status", "if ((uint8_t(expected.status"),
     ('C9 probabilistic rule compares STATIC / DYNAMIC too', CPP, "self.kind == OctreeKind::Probabilistic ? uint8_t(kStatic | kDynamic) : uint8_t(0);", "uint8_t(0);"),
+    ('GW1 walk goes down to level 1 for every target', S + 'octree_insert_walk.glsl', "level > max(pc.target, 1u) &&", "level > 1u &&"),
+    ('GW2 existing node at the target treated as a new block', S + 'octree_insert_walk.glsl', "(at_target ? 2u : 1u)", "1u"),
+    ('GH1 blocks below the target level are created', S + 'octree_insert_heads.comp', "f.x > pc.level && pc.level >= pc.target;", "f.x > pc.level;"),
+    ('GN1 soft mode does not set UPDATE_SUBTREE', S + 'octree_insert_nodes.glsl', "        node.flags |= OCT_UPDATE_SUBTREE;\n", ""),
+    ('GN2 hard mode does not cut', S + 'octree_insert_nodes.glsl', "        node.status &= ~OCT_PART;\n", ""),
+    ('GN3 free occupancy -128', S + 'octree_insert_nodes.glsl', "pc.datum == OCT_OCCUPIED ? 127 : -127;", "pc.datum == OCT_OCCUPIED ? 127 : -128;"),
+    ('GN4 deterministic node keeps PART', S + 'octree_insert_nodes.glsl', "(node.status & ~(OCT_OCCUPANCY_MASK | OCT_PART)) | pc.datum;", "(node.status & ~OCT_OCCUPANCY_MASK) | pc.datum;"),
+    ('GN5 slot of the new node', S + 'octree_insert_nodes.glsl', "uint(id >> (3u * pc.level)) & 7u", "uint(id >> 3u) & 7u"),
+    ('GN6 existing nodes ignored', S + 'octree_insert_nodes.glsl', "    else if (f.w == 2u)\n        address", "    else if (false)\n        address"),
+    ('GD1 node flag UPDATE_SUBTREE not looked at', S + 'octree_propagate_down.glsl', "items[4u * item + 2u] != 0u || (parent.flags & OCT_UPDATE_SUBTREE) != 0u;", "items[4u * item + 2u] != 0u;"),
+    ('GD2 inherited flag not looked at', S + 'octree_propagate_down.glsl', "items[4u * item + 2u] != 0u || (parent.flags", "false || (parent.flags"),
+    ('GD3 no subtree update of the children', S + 'octree_propagate_down.glsl', "    else if (subtree)\n        oct_subtree_update(child, parent);\n", ""),
+    ('GD4 UPDATE_SUBTREE kept on children without PART', S + 'octree_propagate_down.glsl', "child.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);", "child.flags &= ~OCT_NEEDS_UPDATE;"),
+    ('GD5 children below a subtree node only when flagged', S + 'octree_propagate_down.glsl', "|| subtree || pc.level == 2u))", "|| pc.level == 2u))"),
+    ('GD6 flag not passed to the next level', S + 'octree_propagate_down.glsl', "next[4u * index + 2u] = subtree ? 1u : 0u;", "next[4u * index + 2u] = 0u;"),
+    ('GL1 leaves ignore the inherited flag', S + 'octree_propagate_leaves.glsl', "items[4u * g + 2u] != 0u || (node.flags", "false || (node.flags"),
+    ('GL2 leaves not updated', S + 'octree_propagate_leaves.glsl', "        if (subtree)\n            kids[k].occupancy = clamp(kids[k].occupancy + node.occupancy, -127, 127);\n", ""),
+    ('GL3 leaf clamp at -128', S + 'octree_propagate_leaves.glsl', "node.occupancy, -127, 127);", "node.occupancy, -128, 127);"),
+    ('GU1 UPDATE_SUBTREE kept after the bottom-up step', S + 'octree_propagate_up.glsl', "node.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);", "node.flags &= ~OCT_NEEDS_UPDATE;"),
+    ('GS1 subtree update always adds', S + 'octree_dyn.glsl', "(child.status & OCT_PART) != 0u ? parent.occupancy : clamp(child.occupancy + parent.occupancy, -127, 127);", "clamp(child.occupancy + parent.occupancy, -127, 127);"),
+    ('CH1 node ids not shifted to level 0 ids', CPP, "valid.push_back(id << (3 * level));", "valid.push_back(id);"),
+    ('CH2 id limit of the level', CPP, "uint64_t(1) << (3 * (kRootLevel - level));", "uint64_t(1) << (3 * kRootLevel);"),
+    ('CH3 level 14 accepted', CPP, "if (level >= kRootLevel)\n				throw VulkanError(\"Octree::insert_nodes", "if (level > kRootLevel)\n				throw VulkanError(\"Octree::insert_nodes"),
+    ('CH4 mode ignored', CPP, "mode == OctreeInsertMode::Soft ? 1u : 0u, target, base[target]", "0u, target, base[target]"),
+    ('CH5 live rule check for every node', CPP, "if (live && (node.status & kPart) && (uint8_t(expected.status", "if ((node.status & kPart) && (uint8_t(expected.status"),
+    ('CH6 pending counted below cut nodes', CPP, "visit(level - 1, id * 8 + s, kids[s], live && (node.status & kPart) != 0);", "visit(level - 1, id * 8 + s, kids[s], live);"),
 ]
 
 only = sys.argv[1] if len(sys.argv) > 1 else ''
@@ -90,7 +116,7 @@ try:
             continue
         try:
             r = subprocess.run([root + 'build/verify-vk/tests/vulkan/Debug/test_vulkan.exe',
-                                '--gtest_filter=VulkanTest.OctreeInsert*:VulkanTest.OctreeAfterInserts*:VulkanTest.Probabilistic*:VulkanTest.CheckTree*'],
+                                '--gtest_filter=VulkanTest.OctreeInsert*:VulkanTest.OctreeAfterInserts*:VulkanTest.Probabilistic*:VulkanTest.OctreeSoft*:VulkanTest.OctreeSubtree*:VulkanTest.CheckTree*'],
                                env=env, capture_output=True, text=True, timeout=150)
             verdict = 'SURVIVED' if r.returncode == 0 else 'KILLED'
         except subprocess.TimeoutExpired:

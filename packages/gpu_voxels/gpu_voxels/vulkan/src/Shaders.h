@@ -174,6 +174,10 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t octree_propagate_up_det_comp_words;
 	extern const uint32_t octree_propagate_up_prob_comp[];
 	extern const std::size_t octree_propagate_up_prob_comp_words;
+	extern const uint32_t octree_insert_nodes_det_comp[];
+	extern const std::size_t octree_insert_nodes_det_comp_words;
+	extern const uint32_t octree_insert_nodes_prob_comp[];
+	extern const std::size_t octree_insert_nodes_prob_comp_words;
 
 #define GVL_SHADER_SPAN(name) std::span<const uint32_t>(::gpu_voxels::vulkan::shaders::name, ::gpu_voxels::vulkan::shaders::name##_words)
 }
