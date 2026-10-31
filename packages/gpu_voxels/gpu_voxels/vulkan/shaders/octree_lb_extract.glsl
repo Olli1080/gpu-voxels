@@ -34,7 +34,10 @@ void main()
 {
     const uint tid = gl_LocalInvocationID.x;
     if (tid == 0u)
+    {
         lb_num = stack_counts[gl_WorkGroupID.x];
+        lb_pops = 0u;
+    }
     barrier();
 
     while (true)

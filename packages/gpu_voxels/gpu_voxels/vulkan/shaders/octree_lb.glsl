@@ -25,6 +25,7 @@ layout(std430, set = 0, binding = 2) buffer Idle { uint idle_count; };
 shared uint lb_num;                        // items on the stack of this work group
 shared uint lb_cache[LB_ITEMS * LB_WORDS]; // the items grabbed for the current iteration
 shared uint lb_flag;
+shared uint lb_pops;                       // iterations of this work group in this launch (EXPERIMENT: progress guarantee)
 shared uint lb_scan[LB_THREADS];
 
 uint lb_base() { return gl_WorkGroupID.x * pc.stack_size * LB_WORDS; }
@@ -41,7 +42,7 @@ bool lb_should_stop()
         return true;
     }
     if (tid == 0u)
-        lb_flag = atomicAdd(idle_count, 0u) >= pc.idle_threshold ? 1u : 0u;
+        lb_flag = (lb_pops > 0u && atomicAdd(idle_count, 0u) >= pc.idle_threshold) ? 1u : 0u;
     barrier();
     const bool stop = lb_flag != 0u;
     barrier();
@@ -58,7 +59,10 @@ uint lb_pop()
         lb_cache[w] = stacks[lb_base() + first * LB_WORDS + w];
     barrier();
     if (tid == 0u)
+    {
         lb_num -= items;
+        lb_pops += 1u;
+    }
     barrier();
     return items;
 }

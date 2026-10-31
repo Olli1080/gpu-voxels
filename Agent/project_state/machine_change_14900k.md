@@ -1,6 +1,6 @@
 # Machine change (planned): moving to an Intel Core i9-14900K machine
 
-**Status:** announced by the user on 2026-10-30 ("we will change the machine soon, at the next phase, to a 14900K"). Not done yet. What is **not known**: the GPU(s) of the new machine (the 14900K has an integrated UHD 770; whether there is a discrete GPU, and whether an NVIDIA one, is open: Q25), the OS and driver versions, whether the old machine stays available.
+**Status (2026-10-31): done.** The work continues on the new machine (RTX 4090, CUDA 12.8 installed, the old machine's availability unknown); setup and baseline: [Analysis/2026-10-31_machine_baseline.md](../Analysis/2026-10-31_machine_baseline.md). Expected test numbers held except for the load balancer livelock K35 (fixed). Original text: announced by the user on 2026-10-30 ("we will change the machine soon, at the next phase, to a 14900K"). Not done yet. What is **not known**: the GPU(s) of the new machine (the 14900K has an integrated UHD 770; whether there is a discrete GPU, and whether an NVIDIA one, is open: Q25), the OS and driver versions, whether the old machine stays available.
 This page lists what is bound to the current machine, how to rebuild the environment, and what to re-measure first. Rules that do not change with the machine: [AGENTS.md](../../AGENTS.md).
 
 ## 1. What exists only on this machine (carry it over, or it is lost)

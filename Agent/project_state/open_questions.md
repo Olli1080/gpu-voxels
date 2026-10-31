@@ -5,7 +5,7 @@ Unanswered questions block parts of the plan in [plans_wip](../plans_wip/summary
 ## Open
 | # | Question | Why it matters | Agent's default if unanswered |
 |---|---|---|---|
-| Q25 | **The new machine (i9-14900K):** which GPU(s) will it have (integrated UHD 770 only, a discrete one, an NVIDIA one?), which OS / driver, and does the old machine stay available? | An NVIDIA GPU makes CUDA parity (Q5) possible; any new GPU needs the baseline of [machine_change_14900k.md](machine_change_14900k.md); the balancer-vs-wavefront default and all timings were measured on an Intel UHD | Assume the machine is only a faster host with a possible new GPU: run the baseline there, change no default, install no CUDA toolkit |
+| Q25 | **The new machine (i9-14900K):** *answered in part 2026-10-31 by measurement:* NVIDIA GeForce RTX 4090 (driver 621.01, Vulkan sees only it), Windows 11 Pro, CUDA 12.8 installed. **Still open:** does the old machine stay available, and when should CUDA parity (Q5) start now that it is possible? | An NVIDIA GPU makes CUDA parity (Q5) possible; any new GPU needs the baseline of [machine_change_14900k.md](machine_change_14900k.md); the balancer-vs-wavefront default and all timings were measured on an Intel UHD | Assume the machine is only a faster host with a possible new GPU: run the baseline there, change no default, install no CUDA toolkit |
 | Q12 | **Cleanup candidates** ([cleanup_candidates.md](cleanup_candidates.md)): approve deletions? | Less confusion | Leave untouched |
 
 ## Answered
