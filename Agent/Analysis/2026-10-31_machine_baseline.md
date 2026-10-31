@@ -3,7 +3,7 @@
 - **Date:** 2026-10-31
 - **Question:** Does the Vulkan side (branch `vulkan-migration`, head `cd63312` plus the working-tree changes listed below) build and pass on the new machine, and which timing-based decisions made on the Intel UHD still hold? (Template of [machine_change_14900k.md](../project_state/machine_change_14900k.md), section 3.)
 - **Scope / non-goals:** Vulkan only, Debug builds, validation layer on, single runs (not benchmarks). No CUDA build (the toolkit 12.8 is installed, nothing was run with it). Driver-issue experiments K20/K25/K28/K29 and the mutation runners were not repeated.
-- **Status:** draft (the changed shaders have not been through the mutation runners yet)
+- **Status:** final for this machine (K35 checked by a hand-made mutation run, not by a runner)
 
 ## Method
 Clone at `C:\Code\gpu-voxels` (branch `vulkan-migration`), `bootstrap-vcpkg.bat`, Vulkan SDK 1.4.363.0 by winget, generator "Visual Studio 18 2026", the two configurations of the machine-change page (`build/verify-cpu`, `build/verify-vk`), first configure 228 s, second (binary cache) 23 s. `ctest --test-dir build/verify-vk -C Debug` and one `test_vulkan.exe` run in a single process; raw logs in `build/` (git-ignored): `ctest-vk-run1/2/3.log`, `test_vulkan_full_run.log`.
@@ -38,11 +38,21 @@ Bytes per voxel and frontier sizes do not depend on the GPU (lines in the log, e
 4. The GPU is 8-10x faster than the UHD on the tree work, but the extract is host- or allocation-bound (250 ms for 5.4 M nodes) (medium: only a ratio, not profiled).
 
 ## What was NOT verified
-CUDA (no CUDA configuration built or run); K20 (sync validation with the deliberately missing barrier), K25 (watchdog), K28 (the four disabled fault experiments), K29 (canonical address format); the BalancerOnLargeTrees comparison on a second GPU; mutation runs of the changed balancer shaders and of the new launch assertion (reverting the fix is caught by the tests, as timeouts and now by the assertion `kernel_launches < 60`, but the runner was not used); Release builds.
+CUDA (no CUDA configuration built or run); the balancer comparison on a second GPU; Release builds; GPU-assisted validation; why the 2.8 s ray survives a default Windows TDR; the two slow `Checkpoint*` cases. The test counts above were taken before the two new experiments below were added (`DISABLED_PrintDeviceAddressFormat`, `DISABLED_LongRayAgainstTheWatchdog`: 227 listed, 6 disabled).
+
+## Driver experiments and mutation check (measured 2026-10-31, same machine)
+| Item | RTX 4090 | Intel UHD (docs) |
+|---|---|---|
+| K28 bad device addresses (4 cases, one process each) | same four outcomes: past the end and freed buffer complete with a neighbour's value, 64 MiB past gives 0, address 0 gives `ErrorDeviceLost` after 2.9 s; validation silent | same |
+| K29 address format | upper 16 bits 0 (0x7400000, 0x9600000); sign extension of bit 47 is a no-op | upper 16 bits set |
+| K20 sync validation vs missing barrier | not reported (test passes, no message, also with the settings file) | not reported |
+| K25 long ray (2^24 x 1 x 1 map) | no device loss: 16 777 215 voxels in 2.8 s, linear (166 ns/voxel) | device lost |
+| Mutation check of K35 (`ASSERT_LT(kernel_launches, 60)` and the balancer tests) | 5 mutants: fix removed, pops never counted, pops not reset in either shader: all killed (timeouts or failing tests); check after the second iteration (`> 1u`) survives: equivalent boundary mutant (it changes only when a launch ends) | n/a |
+The mutation check was done by hand (one mutation, build, three balancer tests, restore), not with a `tools/mutation` runner; the source files were restored afterwards (`git status` clean for them).
 
 ## Recommendation / decision needed
 - Keep the K35 fix (it deviates from the order of checks in CUDA). Decision for the user.
-- Run the driver experiments (K20, K25, K28, K29) one at a time next, then S6d. Q25 is answered in part: NVIDIA RTX 4090, CUDA 12.8 installed, so CUDA parity (Q5) is now possible; the user decides when.
+- The driver experiments are done (above): nothing in them changes the code. Next: S6d. Q25 is answered in part: NVIDIA RTX 4090, CUDA 12.8 installed, so CUDA parity (Q5) is now possible; the user decides when.
 
 ## Promoted knowledge
 [known_issues.md](../knowledge_base/known_issues.md) K35; [vulkan_octree_collision.md](../knowledge_base/architecture/vulkan_octree_collision.md) (progress guarantee).

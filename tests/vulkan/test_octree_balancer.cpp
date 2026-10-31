@@ -328,7 +328,7 @@ TEST_F(VulkanTest, BalancerOnLargeTrees)
 		EXPECT_GT(balanced, 0u);
 		// Every work group with work must make progress in each launch: without that guarantee the groups that start together on a
 		// wide GPU see the idle threshold before their first iteration and the traversal needs hundreds of launches (RTX 4090: 167).
-		EXPECT_LT(stats.kernel_launches, 60u) << "the balanced traversal makes too little progress per launch";
+		ASSERT_LT(stats.kernel_launches, 60u) << "the balanced traversal makes too little progress per launch";
 
 		OctreeExtractOptions extract;
 		const auto e0 = std::chrono::steady_clock::now();
