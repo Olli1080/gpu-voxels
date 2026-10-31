@@ -1,14 +1,11 @@
-#version 450
-#extension GL_ARB_gpu_shader_int64 : require
-#extension GL_EXT_buffer_reference : require
-#extension GL_GOOGLE_include_directive : require
-// Insert, step 1 (slice S6d-2, deterministic tree, target level 0): for every voxel id (sorted, distinct) the walk of the CUDA kernel
+// Insert, step 1 (slice S6d, target level 0): for every voxel id (sorted, distinct) the walk of the CUDA kernel
 // kernel_insert_countNeededNodes: from the root while the node has PART and the level is above 1. Every node on the way and the node the
 // walk ends on get NEEDS_UPDATE (SET_UPDATE_FLAG). info[i] = (level the walk ended on, address of that node low, high, kind) with kind 0 =
 // the walk ended on a level 1 node with PART (the leaf exists and is updated) and kind 1 = the node has no PART (new blocks are needed
 // below it). replaced[0] counts kind 1 walks that end on a node which still owns a child block (that block becomes garbage).
-#define OCT_PROB 0
+// The wrapper defines OCT_PROB and includes this file.
 #include "octree_nodes.glsl"
+#include "octree_dyn.glsl"
 
 layout(local_size_x = 64) in;
 #include "octree_gid.glsl"
@@ -21,8 +18,6 @@ layout(push_constant) uniform Push
     uint pad;
     uint64_t root; // block of 8 nodes of level 14; the root is node 0
 } pc;
-
-const uint OCT_NEEDS_UPDATE = 128u;
 
 void main()
 {
@@ -37,7 +32,7 @@ void main()
     while (true)
     {
         OctInnerBlock b = OctInnerBlock(block);
-        atomicOr(b.w[2u * slot], OCT_NEEDS_UPDATE << 8u);
+        atomicOr(b.w[OCT_NODE_WORDS * slot], OCT_NEEDS_UPDATE << 8u);
         node = oct_load_inner(b, slot);
         if (level > 1u && (node.status & OCT_PART) != 0u && node.child != 0ul)
         {
@@ -51,6 +46,6 @@ void main()
     const bool leaf_exists = level == 1u && (node.status & OCT_PART) != 0u && node.child != 0ul;
     if (!leaf_exists && node.child != 0ul)
         atomicAdd(replaced[0], 1u);
-    const uint64_t address = block + uint64_t(slot) * 8ul;
+    const uint64_t address = block + uint64_t(slot) * OCT_NODE_BYTES;
     info[i] = uvec4(level, uint(address & 0xFFFFFFFFul), uint(address >> 32), leaf_exists ? 0u : 1u);
 }

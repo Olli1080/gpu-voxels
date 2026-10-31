@@ -12,6 +12,15 @@
 // a child block (a uniform node that keeps its children, or a node cut by a hard insert): the block is reachable and shown by
 // dump(), but traversals ignore it. A block that loses its parent pointer is garbage (counted per level, never listed).
 //
+// Probabilistic tree (S6d-3a, same insert / propagate structure, other node rules from kernel_common.h _updateStatus, topDownUpdate,
+// _bottomUpUpdateProb, updateNode / setNode of LeafNodeProb): occupancy values UNKNOWN -128, MIN -127, MAX 127, INITIAL 0. The occupancy bits
+// of a status are always UNKNOWN once a node is valid. New nodes start with occupancy 0 (leaves: status INVALID | DYNAMIC). A NEW leaf is
+// SET to the datum (127 occupied, -127 free), an EXISTING leaf is UPDATED: occupancy = clamp(old (UNKNOWN counts as 0) + datum, -127, 127).
+// Propagate: a child without occupancy bits (an invalid leaf: all three) copies the occupancy of its parent and gets the status
+// UNKNOWN (every other bit stays); a parent takes the MAXIMUM occupancy of its children, gets PART unless all children have exactly that
+// occupancy and none has PART, status = (status without PART and occupancy bits) | PART? | UNKNOWN (LAST_LEVEL, STATIC, DYNAMIC stay as
+// they are: they are not recomputed from the children).
+//
 // Rules (deterministic tree, hard insert of an occupied / free voxel, target level 0):
 //  * Insert, per voxel: walk from the root while the node has PART and level > 1. If the walk ends on a level 1 node with PART the
 //    leaf exists and is updated: status = (status & ~(FREE|UNKNOWN|OCCUPIED|PART)) | datum. Otherwise the node (no PART) gets a NEW
@@ -43,25 +52,29 @@ namespace gvl_reference::octree
 		struct Memory
 		{
 			uint8_t status = 0;
+			int8_t occupancy = 0; ///< probabilistic tree only
 			bool needs_update = false;
 			bool has_block = false;
 		};
 
 		enum class Datum { Occupied, Free };
 
-		/// An empty tree: the root alone with status UNKNOWN (what Octree::clear() leaves).
-		DynamicOctreeReference()
+		/// An empty tree: the root alone with status UNKNOWN (probabilistic: occupancy -128), what Octree::clear() leaves.
+		explicit DynamicOctreeReference(Kind kind = Kind::Deterministic) : kind_(kind)
 		{
-			nodes_[{ kRootLevel, 0 }].status = status::UNKNOWN;
+			Memory& root = nodes_[{ kRootLevel, 0 }];
+			root.status = status::UNKNOWN;
+			root.occupancy = kind == Kind::Probabilistic ? kUnknownOccupancy : int8_t(0);
 		}
 
 		/// Starts from the nodes of a canonical tree (OctreeReference::dump()), all flags clear.
-		explicit DynamicOctreeReference(const std::vector<Node>& dump)
+		explicit DynamicOctreeReference(const std::vector<Node>& dump, Kind kind = Kind::Deterministic) : kind_(kind)
 		{
 			for (const Node& n : dump)
 			{
 				Memory& m = nodes_[{ n.level, n.id }];
 				m.status = n.status;
+				m.occupancy = n.occupancy;
 				m.has_block = n.has_children;
 			}
 		}
@@ -83,7 +96,14 @@ namespace gvl_reference::octree
 			if (level == 1 && part(1, id))
 			{
 				Memory& leaf = nodes_.at({ 0, voxel_id });
-				leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
+				if (kind_ == Kind::Probabilistic)
+				{
+					const int old_value = leaf.occupancy == kUnknownOccupancy ? 0 : leaf.occupancy;
+					leaf.occupancy = int8_t(std::min(std::max(old_value + datum_value(datum), -127), 127));
+					leaf.status = uint8_t((leaf.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
+				}
+				else
+					leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
 				return;
 			}
 			// new blocks below the node where the walk ended
@@ -108,7 +128,13 @@ namespace gvl_reference::octree
 				owner.status |= status::PART;
 			}
 			Memory& leaf = nodes_.at({ 0, voxel_id });
-			leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
+			if (kind_ == Kind::Probabilistic)
+			{
+				leaf.occupancy = int8_t(datum_value(datum));
+				leaf.status = uint8_t((leaf.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
+			}
+			else
+				leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);
 		}
 
 		/// Propagate on the whole tree.
@@ -176,7 +202,7 @@ namespace gvl_reference::octree
 				Memory& child = nodes_.at({ level - 1, id * 8 + s });
 				kids[s] = &child;
 				if ((child.status & status::OCCUPANCY_MASK) == 0)
-					child.status = uint8_t((child.status & (status::PART | status::LAST_LEVEL)) | (parent.status & ~(status::PART | status::LAST_LEVEL)));
+					expand(child, parent);
 				if (!(child.status & status::PART))
 					child.needs_update = false;
 			}
@@ -193,13 +219,7 @@ namespace gvl_reference::octree
 					if ((kids[s]->status & status::PART) && !kids[s]->needs_update)
 						recompute_from_leaves(id * 8 + s);
 			}
-			uint8_t or_status = 0, and_status = 0xFF;
-			for (uint32_t s = 0; s < 8; ++s)
-			{
-				or_status |= kids[s]->status;
-				and_status &= kids[s]->status;
-			}
-			parent.status = new_status(or_status, and_status, 99, or_status);
+			recompute(parent, kids, 99);
 			parent.needs_update = false;
 		}
 
@@ -212,29 +232,68 @@ namespace gvl_reference::octree
 				node.needs_update = false;
 				return;
 			}
-			uint8_t or_status = 0, and_status = 0xFF;
+			Memory* leaves[8];
 			for (uint32_t s = 0; s < 8; ++s)
 			{
 				Memory& leaf = nodes_.at({ 0, id * 8 + s });
+				leaves[s] = &leaf;
 				if ((leaf.status & status::OCCUPANCY_MASK) == status::OCCUPANCY_MASK)
-					leaf.status = uint8_t((leaf.status & (status::PART | status::LAST_LEVEL)) | (node.status & ~(status::PART | status::LAST_LEVEL)));
-				or_status |= leaf.status;
-				and_status &= leaf.status;
+					expand(leaf, node);
 			}
-			node.status = new_status(or_status, and_status, 1, or_status);
+			recompute(node, leaves, 1);
 			node.needs_update = false;
+		}
+
+		static int datum_value(Datum datum) { return datum == Datum::Occupied ? 127 : -127; }
+
+		/// A fresh child takes over from its parent: deterministic every bit except PART / LAST_LEVEL, probabilistic the occupancy
+		/// (and its status becomes UNKNOWN).
+		void expand(Memory& child, const Memory& parent) const
+		{
+			if (kind_ == Kind::Probabilistic)
+			{
+				child.occupancy = parent.occupancy;
+				child.status = uint8_t((child.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
+			}
+			else
+				child.status = uint8_t((child.status & (status::PART | status::LAST_LEVEL)) | (parent.status & ~(status::PART | status::LAST_LEVEL)));
+		}
+
+		/// The parent from its 8 children (`level` 1 adds LAST_LEVEL in the deterministic rule, 99 stands for "above level 1").
+		void recompute(Memory& parent, Memory* const (&kids)[8], uint32_t level) const
+		{
+			if (kind_ == Kind::Probabilistic)
+			{
+				int8_t highest = kids[0]->occupancy;
+				for (const Memory* k : kids)
+					highest = std::max(highest, k->occupancy);
+				bool same = true;
+				for (const Memory* k : kids)
+					same = same && k->occupancy == highest && !(k->status & status::PART);
+				parent.occupancy = highest;
+				parent.status = uint8_t((parent.status & ~(status::PART | status::OCCUPANCY_MASK)) | (same ? 0 : status::PART) | status::UNKNOWN);
+				return;
+			}
+			uint8_t or_status = 0, and_status = 0xFF;
+			for (const Memory* k : kids)
+			{
+				or_status |= k->status;
+				and_status &= k->status;
+			}
+			parent.status = new_status(or_status, and_status, level, or_status);
 		}
 
 		void collect(uint32_t level, uint64_t id, std::vector<Node>& out) const
 		{
 			const Memory& m = nodes_.at({ level, id });
-			out.push_back(Node{ level, id, m.status, 0, level > 0 && m.has_block });
+			out.push_back(Node{ level, id, m.status, m.occupancy, level > 0 && m.has_block });
 			if (level == 0 || !m.has_block)
 				return;
 			for (uint32_t s = 0; s < 8; ++s)
 				collect(level - 1, id * 8 + s, out);
 		}
 
+		Kind kind_ = Kind::Deterministic;
 		std::map<std::pair<uint32_t, uint64_t>, Memory> nodes_;
 		uint64_t garbage_[kRootLevel + 1] = {};
 	};

@@ -3,25 +3,39 @@ W2 leaf exists without PART test : KILLED
 W3 walk descends into level 1 : KILLED
 W4 replaced not counted : KILLED
 H1 creates one level too many : KILLED
-H2 head test ignores the previous voxel creating : SURVIVED
+H2 head test ignores the previous voxel creating (equivalent) : SURVIVED
 H3 wrong shift : KILLED
 L1 no LAST_LEVEL on level 1 : KILLED
 L2 new nodes not flagged : KILLED
-L3 invalid leaves without the invalid bits : KILLED
+L3 deterministic invalid leaves without the invalid bits : KILLED
 L4 wrong parent selection : KILLED
 L5 parent without PART : KILLED
-L6 child pointer shift : KILLED
+L6 wrong child pointer : KILLED
 L7 parent index off by one : KILLED
 L8 parent slot : KILLED
+L9 probabilistic invalid leaves without the invalid bits : KILLED
 F1 new leaf without DYNAMIC : KILLED
 F2 existing leaf mask without PART (equivalent: leaves have no PART) : SURVIVED
 F3 new leaf block index : KILLED
 F4 existing leaf keeps the old occupancy : KILLED
+PL1 probabilistic new leaf not set : KILLED
+PL2 UNKNOWN leaf counted as -128 when updated : KILLED
+PL3 clamp at -128 : KILLED
+PL4 free delta -128 : KILLED
+PL5 leaf status without UNKNOWN : KILLED
+PL6 half word write mask : KILLED
 D1 expansion condition inverted : KILLED
 D2 expansion copies PART : KILLED
 D3 flag of non-PART child kept : KILLED
-D4 level 2 children only when flagged : SURVIVED
-D5 children pushed although not flagged : SURVIVED
+D4 level 2 children only when flagged (equivalent for consistent trees) : SURVIVED
+D5 children pushed although not flagged (equivalent for consistent trees) : SURVIVED
+DY1 probabilistic expansion does not copy the occupancy : KILLED
+DY2 probabilistic parent takes the minimum : KILLED
+DY3 same ignores PART children : KILLED
+DY4 probabilistic parent always PART : KILLED
+DY5 probabilistic parent without UNKNOWN : KILLED
+DY6 probabilistic node words : KILLED
+DY7 probabilistic node bytes : KILLED
 P1 invalid leaf test : KILLED
 P2 level 1 node without LAST_LEVEL : KILLED
 P3 flag of the level 1 node kept : KILLED
@@ -30,11 +44,10 @@ U2 flag kept after the bottom-up step : KILLED
 C1 total of a level without the last head : KILLED
 C2 top-down stops one level early : KILLED
 C3 dropped not counted : KILLED
-C4 duplicates kept : SURVIVED
-C5 probabilistic insert allowed : SURVIVED
+C4 duplicates kept (harmless on the GPU) : SURVIVED
 C6 garbage flag never set : KILLED
-C7 unreachable blocks ignored : SURVIVED
+C7 unreachable blocks ignored : KILLED
 C8 stale child status rule applied to every node : SURVIVED
+C9 probabilistic rule compares STATIC / DYNAMIC too : BUILD FAILED
 restored
-C5 probabilistic insert allowed : KILLED (second run, after the test was strengthened)
-C7 unreachable blocks ignored : KILLED (second run, with the CheckTree tests in the filter)
+C9 probabilistic rule compares STATIC / DYNAMIC too : KILLED (second run, pattern of the first run was wrong)

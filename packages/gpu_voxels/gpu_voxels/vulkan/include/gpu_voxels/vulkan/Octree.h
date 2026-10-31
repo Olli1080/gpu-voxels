@@ -183,12 +183,14 @@ namespace gpu_voxels::vulkan
 		/// Back to the empty tree; frees all chunks.
 		void clear();
 
-		/// Dynamic update of a deterministic tree (slice S6d-2, port of CUDA insertVoxel with the hard reset data at level 0): every
-		/// voxel is set occupied or free, new blocks are added as new chunks, nodes on the paths get NEEDS_UPDATE. Duplicates are merged,
+		/// Dynamic update (slices S6d-2 / S6d-3a, port of CUDA insertVoxel with the hard reset data at level 0): in a deterministic tree
+		/// every voxel is set occupied or free, in a probabilistic tree a NEW voxel is set to occupancy 127 / -127 and an EXISTING one is
+		/// updated (old occupancy + 127 / -127, clamped to -127 .. 127, UNKNOWN counts as 0). New blocks are added as new chunks, nodes on
+		/// the paths get NEEDS_UPDATE. Duplicates are merged,
 		/// ids >= 2^42 are dropped and counted in dropped_count(). With `propagate_now` the update is propagated at once, otherwise
 		/// propagate() has to follow before collisions or extraction see consistent statuses. A node without PART that owned a child block
 		/// (a uniform node) loses that block: it stays allocated as garbage (memory_usage().garbage_blocks) until the tree is rebuilt.
-		/// voxel_count() is not updated. \throws VulkanError for a probabilistic tree (S6d-3).
+		/// voxel_count() is not updated.
 		void insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum = OctreeDatum::Occupied, bool propagate_now = true);
 		void insert(std::span<const OctreeVoxel> voxels, OctreeDatum datum = OctreeDatum::Occupied, bool propagate_now = true);
 		/// Recomputes the statuses of all nodes with NEEDS_UPDATE from their children, top-down expansion of fresh nodes included

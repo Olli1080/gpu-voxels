@@ -148,20 +148,32 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t pba_transpose_comp_words;
 	extern const uint32_t bit_voxel_collide_comp[];
 	extern const std::size_t bit_voxel_collide_comp_words;
-	extern const uint32_t octree_insert_walk_comp[];
-	extern const std::size_t octree_insert_walk_comp_words;
+	extern const uint32_t octree_insert_walk_det_comp[];
+	extern const std::size_t octree_insert_walk_det_comp_words;
+	extern const uint32_t octree_insert_walk_prob_comp[];
+	extern const std::size_t octree_insert_walk_prob_comp_words;
 	extern const uint32_t octree_insert_heads_comp[];
 	extern const std::size_t octree_insert_heads_comp_words;
-	extern const uint32_t octree_insert_link_comp[];
-	extern const std::size_t octree_insert_link_comp_words;
-	extern const uint32_t octree_insert_leaves_comp[];
-	extern const std::size_t octree_insert_leaves_comp_words;
-	extern const uint32_t octree_propagate_down_comp[];
-	extern const std::size_t octree_propagate_down_comp_words;
-	extern const uint32_t octree_propagate_leaves_comp[];
-	extern const std::size_t octree_propagate_leaves_comp_words;
-	extern const uint32_t octree_propagate_up_comp[];
-	extern const std::size_t octree_propagate_up_comp_words;
+	extern const uint32_t octree_insert_link_det_comp[];
+	extern const std::size_t octree_insert_link_det_comp_words;
+	extern const uint32_t octree_insert_link_prob_comp[];
+	extern const std::size_t octree_insert_link_prob_comp_words;
+	extern const uint32_t octree_insert_leaves_det_comp[];
+	extern const std::size_t octree_insert_leaves_det_comp_words;
+	extern const uint32_t octree_insert_leaves_prob_comp[];
+	extern const std::size_t octree_insert_leaves_prob_comp_words;
+	extern const uint32_t octree_propagate_down_det_comp[];
+	extern const std::size_t octree_propagate_down_det_comp_words;
+	extern const uint32_t octree_propagate_down_prob_comp[];
+	extern const std::size_t octree_propagate_down_prob_comp_words;
+	extern const uint32_t octree_propagate_leaves_det_comp[];
+	extern const std::size_t octree_propagate_leaves_det_comp_words;
+	extern const uint32_t octree_propagate_leaves_prob_comp[];
+	extern const std::size_t octree_propagate_leaves_prob_comp_words;
+	extern const uint32_t octree_propagate_up_det_comp[];
+	extern const std::size_t octree_propagate_up_det_comp_words;
+	extern const uint32_t octree_propagate_up_prob_comp[];
+	extern const std::size_t octree_propagate_up_prob_comp_words;
 
 #define GVL_SHADER_SPAN(name) std::span<const uint32_t>(::gpu_voxels::vulkan::shaders::name, ::gpu_voxels::vulkan::shaders::name##_words)
 }

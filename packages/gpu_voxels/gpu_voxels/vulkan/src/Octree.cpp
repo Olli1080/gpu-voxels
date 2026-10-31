@@ -123,13 +123,13 @@ namespace gpu_voxels::vulkan
 				  lb_move(c, GVL_SHADER_SPAN(octree_lb_move_comp), 6, sizeof(BalancePush)),
 				  lb_trees(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_trees_prob_comp) : GVL_SHADER_SPAN(octree_lb_trees_det_comp), 4, 6 * sizeof(uint32_t)),
 				  lb_extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_extract_prob_comp) : GVL_SHADER_SPAN(octree_lb_extract_det_comp), 6, 5 * sizeof(uint32_t)),
-				  insert_walk(c, GVL_SHADER_SPAN(octree_insert_walk_comp), 3, sizeof(InsertWalkPush)),
+				  insert_walk(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_walk_prob_comp) : GVL_SHADER_SPAN(octree_insert_walk_det_comp), 3, sizeof(InsertWalkPush)),
 				  insert_heads(c, GVL_SHADER_SPAN(octree_insert_heads_comp), 3, sizeof(InsertHeadsPush)),
-				  insert_link(c, GVL_SHADER_SPAN(octree_insert_link_comp), 6, sizeof(InsertLinkPush)),
-				  insert_leaves(c, GVL_SHADER_SPAN(octree_insert_leaves_comp), 4, sizeof(InsertLeafPush)),
-				  prop_down(c, GVL_SHADER_SPAN(octree_propagate_down_comp), 3, sizeof(PropagatePush)),
-				  prop_leaves(c, GVL_SHADER_SPAN(octree_propagate_leaves_comp), 1, sizeof(uint32_t)),
-				  prop_up(c, GVL_SHADER_SPAN(octree_propagate_up_comp), 1, sizeof(uint32_t))
+				  insert_link(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_link_prob_comp) : GVL_SHADER_SPAN(octree_insert_link_det_comp), 6, sizeof(InsertLinkPush)),
+				  insert_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_leaves_prob_comp) : GVL_SHADER_SPAN(octree_insert_leaves_det_comp), 4, sizeof(InsertLeafPush)),
+				  prop_down(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_down_prob_comp) : GVL_SHADER_SPAN(octree_propagate_down_det_comp), 3, sizeof(PropagatePush)),
+				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 1, sizeof(uint32_t)),
+				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 1, sizeof(uint32_t))
 			{
 			}
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
@@ -471,8 +471,6 @@ namespace gpu_voxels::vulkan
 
 		void insert_ids(std::span<const uint64_t> morton_ids, OctreeDatum datum, bool propagate_now)
 		{
-			if (kind != OctreeKind::Deterministic)
-				throw VulkanError("Octree::insert: only deterministic trees can be updated so far (probabilistic: slice S6d-3)");
 			const std::vector<uint64_t> ids = valid_sorted_ids(morton_ids);
 			if (!ids.empty())
 				insert_sorted(ids, datum);
@@ -561,9 +559,6 @@ namespace gpu_voxels::vulkan
 				}
 				return;
 			}
-			if (kind != OctreeKind::Deterministic)
-				throw VulkanError("Octree::propagate: only deterministic trees are supported so far (probabilistic: slice S6d-3)");
-
 			std::vector<std::optional<DeviceBuffer>> list(kLevelCount);
 			std::vector<uint32_t> count(kLevelCount, 0);
 			{
@@ -719,7 +714,9 @@ namespace gpu_voxels::vulkan
 						kids[s] = level == 1 ? decode_leaf(self.kind, data, s) : decode_inner(self.kind, data, s);
 					const HostNode expected = parent_of(self.kind, kids, level);
 					// a node without PART may own stale children (uniform node, cut by an insert): its status is not derived from them
-					if ((node.status & kPart) && (expected.status != (node.status & ~kCollision) || expected.occupancy != node.occupancy))
+					// probabilistic: a dynamic update marks nodes DYNAMIC where the build says STATIC, the propagate rule does not recompute either
+					const uint8_t ignore = self.kind == OctreeKind::Probabilistic ? uint8_t(kStatic | kDynamic) : uint8_t(0);
+					if ((node.status & kPart) && (uint8_t(expected.status & ~ignore) != uint8_t(node.status & ~kCollision & ~ignore) || expected.occupancy != node.occupancy))
 						report(where() + "status " + std::to_string(node.status) + " / occupancy " + std::to_string(node.occupancy) +
 							" differ from the rule applied to its children (" + std::to_string(expected.status) + " / " + std::to_string(expected.occupancy) + ")");
 					for (uint32_t s = 0; s < 8; ++s)

@@ -110,13 +110,19 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_find_det.comp
     shaders/octree_find_prob.comp
     shaders/octree_heads.comp
-    shaders/octree_insert_walk.comp
+    shaders/octree_insert_walk_det.comp
+    shaders/octree_insert_walk_prob.comp
     shaders/octree_insert_heads.comp
-    shaders/octree_insert_link.comp
-    shaders/octree_insert_leaves.comp
-    shaders/octree_propagate_down.comp
-    shaders/octree_propagate_leaves.comp
-    shaders/octree_propagate_up.comp
+    shaders/octree_insert_link_det.comp
+    shaders/octree_insert_link_prob.comp
+    shaders/octree_insert_leaves_det.comp
+    shaders/octree_insert_leaves_prob.comp
+    shaders/octree_propagate_down_det.comp
+    shaders/octree_propagate_down_prob.comp
+    shaders/octree_propagate_leaves_det.comp
+    shaders/octree_propagate_leaves_prob.comp
+    shaders/octree_propagate_up_det.comp
+    shaders/octree_propagate_up_prob.comp
     shaders/octree_morton_ids.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp

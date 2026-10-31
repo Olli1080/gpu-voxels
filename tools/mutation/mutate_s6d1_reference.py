@@ -52,6 +52,16 @@ MUT = [
     ('M15 existing leaf: datum ORed instead of replacing the occupancy bits',
      "leaf.status = uint8_t((leaf.status & ~(status::OCCUPANCY_MASK | status::PART)) | set);\n				return;",
      "leaf.status = uint8_t(leaf.status | set);\n				return;"),
+    ('R1 UNKNOWN leaf counted as -128 when updated', "leaf.occupancy == kUnknownOccupancy ? 0 : leaf.occupancy", "leaf.occupancy"),
+    ('R2 clamp at -128', "std::max(old_value + datum_value(datum), -127)", "std::max(old_value + datum_value(datum), -128)"),
+    ('R3 existing leaf set instead of updated', "leaf.occupancy = int8_t(std::min(std::max(old_value + datum_value(datum), -127), 127));", "leaf.occupancy = int8_t(datum_value(datum));"),
+    ('R4 free datum -128', "return datum == Datum::Occupied ? 127 : -127;", "return datum == Datum::Occupied ? 127 : -128;"),
+    ('R5 expansion does not copy the occupancy', "\t\t\t\tchild.occupancy = parent.occupancy;\n", ""),
+    ('R6 parent takes the minimum', "highest = std::max(highest, k->occupancy);", "highest = std::min(highest, k->occupancy);"),
+    ('R7 same ignores PART children', "same = same && k->occupancy == highest && !(k->status & status::PART);", "same = same && k->occupancy == highest;"),
+    ('R8 parent always PART', "| (same ? 0 : status::PART) | status::UNKNOWN);", "| status::PART | status::UNKNOWN);"),
+    ('R9 parent status without UNKNOWN', "| (same ? 0 : status::PART) | status::UNKNOWN);", "| (same ? 0 : status::PART));"),
+    ('R10 new leaf not set', "leaf.occupancy = int8_t(datum_value(datum));\n\t\t\t\tleaf.status", "leaf.occupancy = 0;\n\t\t\t\tleaf.status"),
 ]
 
 only = sys.argv[1] if len(sys.argv) > 1 else ''
@@ -72,7 +82,7 @@ try:
             print(name, ': BUILD FAILED', flush=True)
             continue
         try:
-            r = subprocess.run([root + 'build/verify-cpu/tests/Debug/test_octree_reference.exe', '--gtest_filter=DynamicOctreeReference.*'],
+            r = subprocess.run([root + 'build/verify-cpu/tests/Debug/test_octree_reference.exe', '--gtest_filter=DynamicOctreeReference*'],
                                env=env, capture_output=True, text=True, timeout=120)
             verdict = 'SURVIVED' if r.returncode == 0 else 'KILLED'
         except subprocess.TimeoutExpired:
