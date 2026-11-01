@@ -309,6 +309,10 @@ namespace gpu_voxels::vulkan
 		/// propagate() throw instead of writing out of bounds).
 		void set_bounded_propagate_limit(uint64_t ids);
 		void test_set_pending_bound(uint64_t ids);
+		/// Test hook: memory_usage() counts the garbage blocks with the host walk only (default: on the GPU, with the host walk as the fallback for a corrupt tree).
+		void test_set_host_garbage_count(bool host);
+		/// Test hook: how often memory_usage() had to take the host walk because the GPU count found more blocks than were allocated (a corrupt tree).
+		[[nodiscard]] uint64_t test_garbage_host_fallbacks() const;
 
 		/// Validates the structure on the host (pointers inside registered chunks, alignment, every block referenced once,
 		/// status rules). \throws VulkanError listing the first problems.

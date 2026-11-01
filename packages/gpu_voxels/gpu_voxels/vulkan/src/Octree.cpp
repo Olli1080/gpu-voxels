@@ -66,6 +66,7 @@ namespace gpu_voxels::vulkan
 		struct PropagateLeavesPush { uint32_t count, from_counts, item_capacity; };
 		struct PropagateUpPush { uint32_t count, level, from_counts, item_capacity; };
 		struct CompactScanPush { uint32_t count, capacity; };
+		struct GarbageScanPush { uint32_t level, item_capacity, next_capacity; };
 		struct CompactCopyPush { uint32_t count, level; uint64_t base, child_base; uint32_t child_block_bytes, pad; };
 		constexpr uint8_t kNeedsUpdate = 128; ///< node flag: the node or something below it changed (CUDA nf_NEEDS_UPDATE)
 
@@ -142,12 +143,13 @@ namespace gpu_voxels::vulkan
 				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 2, sizeof(PropagateLeavesPush)),
 				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 4, sizeof(InsertNodePush)),
 				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 2, sizeof(PropagateUpPush)),
+				  garbage_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_garbage_scan_prob_comp) : GVL_SHADER_SPAN(octree_garbage_scan_det_comp), 3, sizeof(GarbageScanPush)),
 				  compact_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_scan_prob_comp) : GVL_SHADER_SPAN(octree_compact_scan_det_comp), 4, sizeof(CompactScanPush)),
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
 			ComputePipeline morton_ids, points_to_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
-			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, compact_scan, compact_copy;
+			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, garbage_scan, compact_scan, compact_copy;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
@@ -170,6 +172,8 @@ namespace gpu_voxels::vulkan
 		mutable Primitives primitives; // recording scans does not change the tree
 		Kernels kernels;
 		std::vector<Level> levels; ///< index = level
+		bool host_garbage_count = false; ///< test hook: count the garbage with the host walk only
+		mutable uint64_t garbage_fallbacks = 0; ///< test hook: how often the GPU count gave up and the host walk was used
 		bool may_have_garbage = false; ///< an insert replaced a child pointer: blocks may be allocated but unreachable (counted by a walk)
 		uint32_t voxels = 0;
 		uint64_t dropped = 0;
@@ -930,6 +934,55 @@ namespace gpu_voxels::vulkan
 			may_have_garbage = false;
 		}
 
+		// ------------------------------------------------------------------------------------------------ garbage
+
+		/// Slice S6d-6: the allocated blocks no node points to any more (cut subtrees that lost their parent pointer), per level 0 .. 13, counted on the
+		/// GPU: the reachable blocks are walked level by level from the root (every node with a child pointer, as the host walk of `analyze` does) in ONE
+		/// batch, the counts stay in a small buffer (the kernels read the count of their level from it, the lists are sized by the allocated blocks) and are
+		/// read back once. eturn false when a level holds more reachable blocks than were allocated (a block referenced twice: a corrupt tree), `garbage` is
+		/// then unchanged and the caller takes the host walk, which reports the problem.
+		bool count_garbage_on_gpu(std::array<uint64_t, kLevelCount>& garbage) const
+		{
+			if (levels[kRootLevel].chunks.size() != 1 || levels[kRootLevel].blocks() != 1)
+				return false;
+			uint64_t capacity[kLevelCount] = {};
+			capacity[kRootLevel] = 1;
+			uint64_t widest = 1;
+			for (int level = int(kRootLevel); level >= 1; --level)
+			{
+				capacity[level - 1] = std::min<uint64_t>(capacity[level] * 8, levels[level - 1].blocks());
+				if (capacity[level - 1] > UINT32_MAX / 8)
+					return false;
+				widest = std::max(widest, capacity[level - 1]);
+			}
+			const uint64_t root = root_address();
+			DeviceBuffer root_list(context, 8), list_a(context, widest * 8), list_b(context, widest * 8), counter(context, kLevelCount * 4);
+			root_list.upload<uint32_t>(std::vector<uint32_t>{ uint32_t(root), uint32_t(root >> 32) });
+			std::vector<uint32_t> start(kLevelCount, 0u);
+			start[kRootLevel] = 1;
+			counter.upload<uint32_t>(start);
+			CommandBatch batch(context);
+			for (uint32_t step = 0; step < kRootLevel; ++step)
+			{
+				const uint32_t level = kRootLevel - step;
+				const DeviceBuffer* in = step == 0 ? &root_list : (step % 2 == 1 ? &list_a : &list_b);
+				DeviceBuffer* out = step % 2 == 0 ? &list_a : &list_b;
+				if (step > 0)
+					batch.barrier();
+				dispatch(batch, kernels.garbage_scan, { in, out, &counter }, std::max<uint64_t>(capacity[level] * 8, 1),
+					GarbageScanPush{ level, uint32_t(capacity[level]), level > 1 ? uint32_t(capacity[level - 1]) : 0u });
+			}
+			batch.submit_and_wait();
+			std::vector<uint32_t> found(kLevelCount, 0u);
+			counter.download(found.data(), found.size() * 4);
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				if (found[level] > capacity[level])
+					return false;
+			for (uint32_t level = 0; level < kRootLevel; ++level)
+				garbage[level] = levels[level].blocks() - found[level];
+			return true;
+		}
+
 		// ------------------------------------------------------------------------------------------------ inspection
 
 		struct Snapshot
@@ -1422,6 +1475,8 @@ namespace gpu_voxels::vulkan
 	}
 
 	void Octree::set_max_groups_x(uint32_t groups) { impl_->max_groups_x = groups; }
+	void Octree::test_set_host_garbage_count(bool host) { impl_->host_garbage_count = host; }
+	uint64_t Octree::test_garbage_host_fallbacks() const { return impl_->garbage_fallbacks; }
 	void Octree::set_gpu_sort_limit(uint32_t ids) { impl_->gpu_sort_limit = ids; }
 	void Octree::set_bounded_propagate_limit(uint64_t ids) { impl_->bounded_propagate_limit = ids; }
 	void Octree::test_set_pending_bound(uint64_t ids) { impl_->pending_bound = ids; impl_->pending_bounded = true; }
@@ -1544,9 +1599,15 @@ namespace gpu_voxels::vulkan
 		OctreeStats stats;
 		if (impl_->may_have_garbage)
 		{
-			std::vector<std::string> problems;
 			std::array<uint64_t, kLevelCount> unreachable{};
-			impl_->analyze(impl_->snapshot(), nullptr, problems, &unreachable);
+			const bool on_host = impl_->host_garbage_count || !impl_->count_garbage_on_gpu(unreachable);
+			if (on_host && !impl_->host_garbage_count)
+				++impl_->garbage_fallbacks;
+			if (on_host)
+			{
+				std::vector<std::string> problems;
+				impl_->analyze(impl_->snapshot(), nullptr, problems, &unreachable);
+			}
 			for (uint32_t level = 0; level < kLevelCount; ++level)
 				stats.garbage_blocks[level] = unreachable[level];
 		}

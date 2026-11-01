@@ -61,10 +61,18 @@ Same workloads, device and build as above, run after the changes described in [v
 | 200 inserts of 1000 voxels with propagate, median / max | 4.6 / 18.4 -> 0.57 / 1.9 ms | 5.2 / 6.7 -> 0.61 / 1.7 ms | 5.7 / 8.1 -> 0.70 / 2.1 ms | 5.4 / 7.9 -> 0.74 / 1.6 ms |
 | dense cube: one insert of 1000 free voxels, median | 5.6 -> 0.66 ms | | 5.9 -> 0.72 ms | |
 
-Unchanged: build, `rebuild()` (3.3 / 3.7 ms for the cube trees, 2 and 4 MiB afterwards), `memory_usage()` and `needs_rebuild()` with the garbage fraction (30 - 32 ms: the host walk, finding 5 below).
+Unchanged: build, `rebuild()` (3.3 / 3.7 ms for the cube trees, 2 and 4 MiB afterwards); `memory_usage()` and `needs_rebuild()` with the garbage fraction were 30 - 32 ms (the host walk, finding 5) and are 0.24 ms after S6d-6 (section below).
 1. **Small inserts are 10 times faster** (insert 2.2 - 2.6 ms -> 0.2 - 0.3 ms, propagate 2 - 3 ms -> 0.3 ms, a series of small inserts with propagate 5 ms -> 0.6 ms): the round trips were the cost. What is left is two submits, the read back of the counters and the propagate batch.
 2. **The large batch is 7 times faster in the dense volume** (63 -> 9.3 ms): the GPU sort replaces the 52 ms of host sorting. In the sparse volume the remaining 18 - 20 ms are the many new blocks of a 1 M voxel insert (a 2048^3 volume needs about 30 M nodes), and its propagate (13 - 16 ms) takes the exact path because 1 M pending ids are above the bound of 131 072: that path still reads back a counter per level.
-3. Findings 3, 4 and 6 above are unchanged; finding 5 (garbage counting is a host walk) is open.
+3. Findings 3, 4 and 6 above are unchanged; finding 5 (garbage counting is a host walk) is closed by S6d-6, see below.
+
+## After S6d-6 (garbage counted on the GPU)
+Same workload, device and build (Release, no validation, 1 M voxel base trees, `build/timings-release-garbage.log`); 100 inserts of 1000 free voxels into the 128^3 cube leave 299 593 garbage blocks (the same count as the host walk gave).
+| Operation (before -> after) | deterministic | probabilistic |
+|---|---|---|
+| `memory_usage()` with 299 593 garbage blocks | 30.0 -> 0.24 ms | 31.1 -> 0.25 ms |
+| `needs_rebuild()` with the garbage fraction | 30.1 -> 0.23 ms | 32.1 -> 0.24 ms |
+4. **The garbage count now costs less than half of one insert (0.6 ms), 120 times less than before:** one batch and one read back replace the snapshot of the whole tree and the host walk, so the fraction policy can be evaluated after every insert. The cost now depends on the number of allocated blocks, not on the memory read back. Not measured: trees above 350 MiB.
 
 ## What was NOT measured
 CUDA (no comparison possible), the Debug build beyond the sanity run, trees larger than 1 M voxels / 350 MiB (the 200 MB default was not reached by the series; `GVL_TIMING_VOXELS` allows it), several threads inserting, GPU time alone (no timestamp queries: wall clock includes the round trips on purpose), power or clock state of the card (not controlled; the first repetition is not discarded, the minimum of 3 is shown).

@@ -1,0 +1,16 @@
+GS1 only nodes with PART count their child block : KILLED
+GS2 blocks are counted on their own level : KILLED
+GS3 next list written past its capacity : SURVIVED
+GS4 child address of the high word only : KILLED
+GS5 one slot per block only : SURVIVED
+GH1 capacity not bounded by the allocated blocks : SURVIVED
+GH2 more blocks than allocated not detected : KILLED
+GH3 root block not counted : KILLED
+GH4 no barrier between the levels : KILLED
+GH5 lists of the levels read from the wrong buffer : KILLED
+GH6 garbage = reachable blocks : KILLED
+GH7 no fallback for a corrupt tree : KILLED
+GH8 level 1 writes a list of the leaf blocks (equivalent: only counted) : SURVIVED
+GH9 counter buffer not cleared (equivalent if a fresh buffer is zero: it is uploaded) : KILLED
+GH10 only the first 13 levels dispatched : KILLED
+restored
