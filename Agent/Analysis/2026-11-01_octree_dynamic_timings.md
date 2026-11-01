@@ -3,7 +3,7 @@
 - **Date:** 2026-11-01
 - **Question:** What do insert, propagate, node insert and rebuild cost on the RTX 4090, what dominates, and does a long series of small inserts slow the queries down?
 - **Scope / non-goals:** measured, not tuned. One run set; the minimum of 3 repetitions is printed for every operation, run-to-run differences are about 10 - 20 %. No CUDA comparison (nothing runs under CUDA), no sensor pipeline (S6f). Memory use only as far as the trees report it.
-- **Status:** measured 2026-11-01; code: `tests/vulkan/test_octree_timings.cpp` (disabled case `DISABLED_OctreeDynamicTimings`)
+- **Status:** measured 2026-11-01, **updated after the fast insert (S6d-5) the same day** (section "After S6d-5"); code: `tests/vulkan/test_octree_timings.cpp` (disabled case `DISABLED_OctreeDynamicTimings`)
 
 ## Method
 Device NVIDIA GeForce RTX 4090 (driver Vulkan 1.4), **Release build, no validation layer** (`GVL_ALLOW_NO_VALIDATION=1 VK_LOADER_LAYERS_DISABLE=VK_LAYER_KHRONOS_validation`), base tree of 1 000 000 random voxels (seed 42) in a 200^3 volume ("dense", about 12 % filled) and in a 2048^3 volume ("sparse"). Times are wall clock around the blocking call (host work, uploads, readbacks included).
@@ -46,6 +46,25 @@ Garbage scenario, dense cube 128^3 (2 097 152 voxels, made of uniform nodes), th
 4. **Rebuild is cheap (high, measured):** 3 - 22 ms for 14 - 344 MiB (about 15 GB/s of copied tree), i.e. less than the 5 ms of an ordinary insert times a handful. The 200 MB default of `needs_rebuild()` therefore costs one such pause per 200 MB of growth.
 5. **Garbage is real and the fraction policy is expensive to evaluate (high, measured):** 100 inserts of free voxels into a dense cube leave 299 593 garbage blocks, the tree grows from 4 to 7 MiB and the rebuild brings it to **2 MiB, below the freshly built size** (the build keeps the redundant child blocks of its uniform nodes, the rebuild drops them). Finding the garbage is a host walk over a read-back snapshot: 32 ms for an 11 MiB tree, proportional to the tree size (a 300 MB tree would take about one second per call). `memory_usage()` and `needs_rebuild()` with `max_garbage_fraction` should not be called per frame; the byte limit alone is free. Candidate: count garbage on the GPU (the insert walk already counts the end nodes that own a child block, a lower bound for the replaced blocks).
 6. The build is 10 - 27 ms for 1 M voxels on this card (the Intel UHD Debug figures of the checkpoint were 300 - 900 ms; not comparable, different device and configuration).
+
+## After S6d-5 (fewer round trips, GPU sort, one-batch propagate)
+Same workloads, device and build as above, run after the changes described in [vulkan_octree_dynamic.md](../knowledge_base/architecture/vulkan_octree_dynamic.md): the new blocks of all levels are counted by one kernel with one read back, numbering and linking run in one batch (two submits per insert), batches above 20 000 ids are sorted on the GPU, and propagate runs all levels in one batch while at most 131 072 ids are pending.
+| Operation (before -> after) | det dense | det sparse | prob dense | prob sparse |
+|---|---|---|---|---|
+| insert 1 voxel | 2.2 -> 0.21 ms | 2.5 -> 0.23 ms | 2.6 -> 0.26 ms | 2.6 -> 0.28 ms |
+| propagate after it | 1.9 -> 0.30 ms | 2.1 -> 0.29 ms | 3.0 -> 0.33 ms | 2.2 -> 0.38 ms |
+| insert 10 000 voxels | 2.7 -> 0.67 ms | 3.4 -> 0.75 ms | 3.3 -> 0.70 ms | 3.9 -> 0.82 ms |
+| insert 100 000 voxels | 7.8 -> 1.4 ms | 8.3 -> 1.5 ms | 8.6 -> 1.5 ms | 8.7 -> 1.8 ms |
+| insert 1 000 000 voxels | 63 -> 9.3 ms | 72 -> 19.8 ms | 64 -> 9.3 ms | 73 -> 17.7 ms |
+| propagate after the 1 M insert (exact path above the bound) | 2.1 -> 2.1 ms | 13.6 -> 13.4 ms | 2.4 -> 2.1 ms | 16.0 -> 16.2 ms |
+| `insert_nodes` level 3, 10 000 nodes, incl. propagate | 5.3 -> 1.1 ms | 5.6 -> 1.0 ms | 6.4 -> 1.3 ms | 6.0 -> 1.2 ms |
+| 200 inserts of 1000 voxels with propagate, median / max | 4.6 / 18.4 -> 0.57 / 1.9 ms | 5.2 / 6.7 -> 0.61 / 1.7 ms | 5.7 / 8.1 -> 0.70 / 2.1 ms | 5.4 / 7.9 -> 0.74 / 1.6 ms |
+| dense cube: one insert of 1000 free voxels, median | 5.6 -> 0.66 ms | | 5.9 -> 0.72 ms | |
+
+Unchanged: build, `rebuild()` (3.3 / 3.7 ms for the cube trees, 2 and 4 MiB afterwards), `memory_usage()` and `needs_rebuild()` with the garbage fraction (30 - 32 ms: the host walk, finding 5 below).
+1. **Small inserts are 10 times faster** (insert 2.2 - 2.6 ms -> 0.2 - 0.3 ms, propagate 2 - 3 ms -> 0.3 ms, a series of small inserts with propagate 5 ms -> 0.6 ms): the round trips were the cost. What is left is two submits, the read back of the counters and the propagate batch.
+2. **The large batch is 7 times faster in the dense volume** (63 -> 9.3 ms): the GPU sort replaces the 52 ms of host sorting. In the sparse volume the remaining 18 - 20 ms are the many new blocks of a 1 M voxel insert (a 2048^3 volume needs about 30 M nodes), and its propagate (13 - 16 ms) takes the exact path because 1 M pending ids are above the bound of 131 072: that path still reads back a counter per level.
+3. Findings 3, 4 and 6 above are unchanged; finding 5 (garbage counting is a host walk) is open.
 
 ## What was NOT measured
 CUDA (no comparison possible), the Debug build beyond the sanity run, trees larger than 1 M voxels / 350 MiB (the 200 MB default was not reached by the series; `GVL_TIMING_VOXELS` allows it), several threads inserting, GPU time alone (no timestamp queries: wall clock includes the round trips on purpose), power or clock state of the card (not controlled; the first repetition is not discarded, the minimum of 3 is shown).

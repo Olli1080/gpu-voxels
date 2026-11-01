@@ -5,7 +5,7 @@ Home for **investigation tasks**: one file per investigation, named `<YYYY-MM-DD
 | File | Content |
 |---|---|
 | [_template.md](_template.md) | Template for a new analysis (question, method, evidence, findings, confidence, follow-ups) |
-| [2026-11-01_octree_dynamic_timings.md](2026-11-01_octree_dynamic_timings.md) | **Timings of the dynamic octree (RTX 4090, Release):** insert 2 - 4 ms from 1 to 10 000 voxels (latency bound, about 30 blocking submits), 1 M voxels 63 - 73 ms of which 52 ms host sort, rebuild 3 - 22 ms for 14 - 344 MiB, chunks do not slow queries, garbage walk 32 ms per call |
+| [2026-11-01_octree_dynamic_timings.md](2026-11-01_octree_dynamic_timings.md) | **Timings of the dynamic octree (RTX 4090, Release), before and after the fast insert (S6d-5):** insert of 1 voxel 2.2 -> 0.2 ms, 1 M voxels 63 -> 9 ms, 200 small inserts 4.6 -> 0.6 ms median; rebuild 3 - 22 ms for 14 - 344 MiB, chunks do not slow queries, garbage walk 30 ms per call |
 | [2026-10-31_s6d_design.md](2026-10-31_s6d_design.md) | **S6d design (dynamic octree updates):** what CUDA `insertVoxel` / `propagate` / `rebuild` do (read), the chunk-list prerequisite, sub-slice plan S6d-0 .. S6d-4 |
 | [2026-10-31_machine_baseline.md](2026-10-31_machine_baseline.md) | **Baseline on the new machine (i9-14900K, RTX 4090):** build and test results, device facts, timings next to the Intel UHD numbers, K35 (load balancer livelock on a wide GPU) |
 | [2026-10-30_octree_checkpoint/](2026-10-30_octree_checkpoint/summary.md) | **Octree checkpoint (after S6c):** 64-bit sort, bytes per voxel (faithful vs index pool vs sorted levels), frontier sizes, balancer vs wavefront, pointer-fault experience, revisit triggers; recommendation for S6d (decision Q24) |

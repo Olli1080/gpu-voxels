@@ -1,0 +1,11 @@
+W3 walk descends into level 1 : KILLED
+W4 replaced not counted : KILLED
+H1 creates one level too many : KILLED
+D3 flag of non-PART child kept : KILLED
+D5 children pushed although not flagged (equivalent for consistent trees) : KILLED
+P3 flag of the level 1 node kept : KILLED
+U2 flag kept after the bottom-up step : KILLED
+C4 duplicates kept on the host path (harmless on the GPU) : KILLED
+C6 garbage flag never set : KILLED
+C8 stale child status rule applied to every node : KILLED
+restored

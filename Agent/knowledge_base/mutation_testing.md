@@ -44,6 +44,7 @@ The logs in `tools/mutation/logs/` are the first runs; the survivors they list w
 | `mutate_s6d1_reference.py` | S6d-1 / S6d-3 dynamic reference (`tests/reference/octree_dynamic_reference.h`) | 39 | 38 killed, 1 equivalent for consistent trees |
 | `mutate_s6d2_insert.py` | S6d-2 / S6d-3 insert and propagate, shaders and host ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 77 | 71 killed, 6 explained survivors |
 | `mutate_s6d4_rebuild.py` | S6d-4 rebuild compaction: scan / copy shaders, host code, `needs_rebuild` policy ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)) | 30 | 26 killed, 4 explained survivors (CP9 flags: live nodes carry none; H6 / N4: only speed; H7: the address range check cannot fail on this device) |
+| `mutate_s6d5_fast_insert.py` | S6d-5 fast insert: count kernel, batches, GPU sort path, bounded propagate and its kernels ([vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md)); the S6d-2 runner got 10 repaired patterns (all killed) and now runs under GPU assisted validation too | 34 | 27 killed, 7 equivalent (K4, K5, K6, S5, P4, P6, Q6) |
 | `mutate16.py` | K34 size limits ([known_issues.md](known_issues.md)) | 12 | see the K34 row |
 
 The older runners (`mutate.py` .. `mutate8.py`) are kept as they were written; they have their own small harness (shaders only) and may need adjusted test filters if the tests were renamed since. `mutate9.py` and later share the table format described above.

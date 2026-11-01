@@ -1,0 +1,34 @@
+K1 count starts below the target level : KILLED
+K2 count one level too many : KILLED
+K3 wrong shift of the head test : KILLED
+K4 kind 2 voxels are counted : SURVIVED
+K5 previous voxel creating not tested (equivalent: implied by the equal parent id) : SURVIVED
+K6 group sum added only when not zero (equivalent) : SURVIVED
+K7 group sum added to the next level : KILLED
+K8 garbage counter shares the word of level 13 : KILLED
+H1 statistics not cleared (the fresh buffer happens to be zero) : KILLED
+H2 no barrier between walk and count : KILLED
+H3 no barrier after the link kernel : KILLED
+H4 levels without new blocks are not skipped (equivalent: no head voxel) : KILLED
+S1 sort key of 20 bits : KILLED
+S2 no sort at all : KILLED
+S3 distinct ids by node of level 1 not by id : KILLED
+S4 distinct count without the last head : KILLED
+S5 paths swapped (equivalent: both give the same tree) : SURVIVED
+P1 level 1 list bounded by the inserts not by 8 times : KILLED
+P2 soft inserts do not make the bound unknown : KILLED
+P3 bound counts batches not ids : KILLED
+P4 bound not forgotten after propagate (equivalent: still an upper bound) : SURVIVED
+P5 too few threads per level : KILLED
+P6 leaves also without a top-down chain to level 2 (equivalent: the count is 0) : SURVIVED
+P7 bound violation not detected : KILLED
+P8 bound halved : KILLED
+Q1 down kernel does not clamp the item count : KILLED
+Q2 down kernel writes past the next list : KILLED
+Q3 down kernel counts into its own level : KILLED
+Q4 down kernel takes the count from the wrong source : KILLED
+Q5 leaves kernel reads the count of level 2 : KILLED
+Q6 leaves kernel does not clamp the item count : SURVIVED
+Q7 up kernel reads the count of the level below : KILLED
+Q8 up kernel does not clamp the item count : KILLED
+restored

@@ -18,7 +18,8 @@ MUT = [
     ('K1 count starts below the target level', COUNT, "for (uint level = pc.target; level < f.x && level < 14u; ++level)", "for (uint level = 0u; level < f.x && level < 14u; ++level)"),
     ('K2 count one level too many', COUNT, "level < f.x && level < 14u", "level <= f.x && level < 14u"),
     ('K3 wrong shift of the head test', COUNT, "const uint shift = 3u * (level + 1u);", "const uint shift = 3u * level;"),
-    ('K4 kind 2 voxels are counted', COUNT, "        if (f.w == 1u)\n        {\n            const uint64_t id = id_at(i);", "        if (f.w != 0u)\n        {\n            const uint64_t id = id_at(i);"),
+    ('K4 kind 2 voxels are counted (equivalent: their loop is empty)', COUNT, "        if (f.w == 1u)\n        {\n            const uint64_t id = id_at(i);", "        if (f.w != 0u)\n        {\n            const uint64_t id = id_at(i);"),
+    ('K4b kind 0 voxels (the leaf exists) are counted', COUNT, "        if (f.w == 1u)\n        {\n            const uint64_t id = id_at(i);", "        if (f.w <= 1u)\n        {\n            const uint64_t id = id_at(i);"),
     ('K5 previous voxel creating not tested (equivalent: implied by the equal parent id)', COUNT, "i == 0u || !creates(i - 1u, level) || ", "i == 0u || "),
     ('K6 group sum added only when not zero (equivalent)', COUNT, " && group_count[gl_LocalInvocationIndex] != 0u", ""),
     ('K7 group sum added to the next level', COUNT, "atomicAdd(stats[gl_LocalInvocationIndex], group_count[gl_LocalInvocationIndex]);", "atomicAdd(stats[gl_LocalInvocationIndex + 1u], group_count[gl_LocalInvocationIndex]);"),
@@ -45,7 +46,7 @@ MUT = [
     ('Q3 down kernel counts into its own level', DOWN, "counter[pc.from_counts != 0u ? pc.level - 1u : 0u]", "counter[pc.from_counts != 0u ? pc.level : 0u]"),
     ('Q4 down kernel takes the count from the wrong source', DOWN, "pc.from_counts != 0u ? min(", "pc.from_counts == 0u ? min("),
     ('Q5 leaves kernel reads the count of level 2', LEAVES, "counts[1], pc.item_capacity", "counts[2], pc.item_capacity"),
-    ('Q6 leaves kernel does not clamp the item count', LEAVES, "min(counts[1], pc.item_capacity)", "counts[1]"),
+    ('Q6 leaves kernel does not clamp the item count (equivalent: the clamped top-down kernel of level 2 writes at most 8 times its capacity)', LEAVES, "min(counts[1], pc.item_capacity)", "counts[1]"),
     ('Q7 up kernel reads the count of the level below', UP, "counts[pc.level], pc.item_capacity", "counts[pc.level - 1u], pc.item_capacity"),
     ('Q8 up kernel does not clamp the item count', UP, "min(counts[pc.level], pc.item_capacity)", "counts[pc.level]"),
 ]

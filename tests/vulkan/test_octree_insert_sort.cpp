@@ -190,3 +190,31 @@ TEST_F(VulkanTest, OctreePropagateRefusesABoundThatIsTooSmall)
 		EXPECT_THROW(tree.propagate(), VulkanError);
 	}
 }
+
+// Inserting voxels that already exist updates leaves in place: not one block may be allocated for them.
+TEST_F(VulkanTest, OctreeInsertOfExistingVoxelsAllocatesNoBlocks)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		SCOPED_TRACE(name(kind));
+		std::mt19937_64 rng(21);
+		std::vector<OctreeVoxel> voxels;
+		for (int i = 0; i < 600; ++i)
+			voxels.push_back({ uint32_t(rng() % 40), uint32_t(rng() % 40), uint32_t(rng() % 40) });
+		Octree tree(ctx(), kind);
+		tree.build(voxels);
+		const OctreeStats before = tree.memory_usage();
+		for (const auto datum : { OctreeDatum::Occupied, OctreeDatum::Free })
+		{
+			tree.insert(voxels, datum);
+			const OctreeStats after = tree.memory_usage();
+			EXPECT_EQ(after.bytes, before.bytes);
+			EXPECT_EQ(after.chunks, before.chunks);
+			for (uint32_t level = 0; level < 15; ++level)
+				EXPECT_EQ(after.blocks[level], before.blocks[level]) << "level " << level;
+			EXPECT_NO_THROW(tree.check_tree());
+		}
+	}
+}
