@@ -113,6 +113,7 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_insert_walk_det.comp
     shaders/octree_insert_walk_prob.comp
     shaders/octree_insert_heads.comp
+    shaders/octree_insert_count.comp
     shaders/octree_insert_link_det.comp
     shaders/octree_insert_link_prob.comp
     shaders/octree_insert_leaves_det.comp

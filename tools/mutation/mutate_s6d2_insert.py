@@ -1,17 +1,20 @@
-# Hand-written mutation runner (slice S6d): one mutation at a time, build, run the tests, restore. Usage: python mutate_s6d2_insert.py [name prefix]
+# Hand-written mutation runner (slice S6d): one mutation at a time, build, run the tests, restore. Usage: python mutate_s6d2_insert.py [name prefixes, comma separated]
 # Method: Agent/knowledge_base/mutation_testing.md. Run one runner at a time on build/verify-vk or build/verify-cpu.
 import subprocess, os, sys
 root = os.environ.get('GVL_ROOT', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))).replace(chr(92), '/') + '/'
 S = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/'
 CPP = root + 'packages/gpu_voxels/gpu_voxels/vulkan/src/Octree.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
+# GPU assisted validation in safe mode keeps mutants with wrong addresses from faulting the GPU (see mutate_s6d4_rebuild.py)
+test_env = dict(env, VK_KHRONOS_VALIDATION_GPUAV_ENABLE='true', VK_KHRONOS_VALIDATION_GPUAV_SAFE_MODE='true',
+                VK_KHRONOS_VALIDATION_VALIDATE_SYNC='false', VK_KHRONOS_VALIDATION_VALIDATE_CORE='false')
 
 MUT = [
     ('W1 walk does not flag', S + 'octree_insert_walk.glsl', "        atomicOr(b.w[OCT_NODE_WORDS * slot], OCT_NEEDS_UPDATE << 8u);\n", ""),
     ('W2 leaf exists without PART test', S + 'octree_insert_walk.glsl', "level == 1u && (node.status & OCT_PART) != 0u && node.child != 0ul;", "level == 1u && node.child != 0ul;"),
-    ('W3 walk descends into level 1', S + 'octree_insert_walk.glsl', "if (level > 1u && (node.status", "if (level > 2u && (node.status"),
-    ('W4 replaced not counted', S + 'octree_insert_walk.glsl', "    if (!leaf_exists && node.child != 0ul)\n        atomicAdd(replaced[0], 1u);\n", ""),
-    ('H1 creates one level too many', S + 'octree_insert_heads.comp', "f.w == 1u && f.x > pc.level;", "f.w == 1u && f.x >= pc.level;"),
+    ('W3 walk descends into level 1', S + 'octree_insert_walk.glsl', "if (level > max(pc.target, 1u) && (node.status", "if (level > max(pc.target, 2u) && (node.status"),
+    ('W4 replaced not counted', S + 'octree_insert_walk.glsl', "    if (!leaf_exists && !at_target && node.child != 0ul)\n        atomicAdd(stats[14], 1u);\n", ""),
+    ('H1 creates one level too many', S + 'octree_insert_heads.comp', "f.w == 1u && f.x > pc.level && pc.level >= pc.target;", "f.w == 1u && f.x >= pc.level && pc.level >= pc.target;"),
     ('H2 head test ignores the previous voxel creating (equivalent)', S + 'octree_insert_heads.comp', "(i == 0u || !creates(i - 1u) || ", "(i == 0u || "),
     ('H3 wrong shift', S + 'octree_insert_heads.comp', "const uint shift = 3u * (pc.level + 1u);", "const uint shift = 3u * pc.level;"),
     ('L1 no LAST_LEVEL on level 1', S + 'octree_insert_link.glsl', "OCT_DYNAMIC | (level == 1u ? OCT_LAST_LEVEL : 0u);", "OCT_DYNAMIC;"),
@@ -35,9 +38,9 @@ MUT = [
     ('PL6 half word write mask', S + 'octree_insert_leaves.glsl', "~(0xFFFFu << shift)", "~(0xFFu << shift)"),
     ('D1 expansion condition inverted', S + 'octree_propagate_down.glsl', "if ((child.status & OCT_OCCUPANCY_MASK) == 0u)", "if ((child.status & OCT_OCCUPANCY_MASK) != 0u)"),
     ('D2 expansion copies PART', S + 'octree_dyn.glsl', "(parent.status & ~(OCT_PART | OCT_LAST_LEVEL) & 255u)", "(parent.status & ~OCT_LAST_LEVEL & 255u)"),
-    ('D3 flag of non-PART child kept', S + 'octree_propagate_down.glsl', "        child.flags &= ~OCT_NEEDS_UPDATE;\n", "        ;\n"),
+    ('D3 flag of non-PART child kept', S + 'octree_propagate_down.glsl', "        child.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);\n", "        child.flags &= ~OCT_UPDATE_SUBTREE;\n"),
     ('D4 level 2 children only when flagged (equivalent for consistent trees)', S + 'octree_propagate_down.glsl', "|| pc.level == 2u))", "|| false))"),
-    ('D5 children pushed although not flagged (equivalent for consistent trees)', S + 'octree_propagate_down.glsl', "((child.flags & OCT_NEEDS_UPDATE) != 0u || pc.level == 2u)", "true"),
+    ('D5 children pushed although not flagged (equivalent for consistent trees)', S + 'octree_propagate_down.glsl', "((child.flags & OCT_NEEDS_UPDATE) != 0u || subtree || pc.level == 2u)", "true"),
     ('DY1 probabilistic expansion does not copy the occupancy', S + 'octree_dyn.glsl', "    child.occupancy = parent.occupancy;\n", ""),
     ('DY2 probabilistic parent takes the minimum', S + 'octree_dyn.glsl', "highest = max(highest, kids[k].occupancy);", "highest = min(highest, kids[k].occupancy);"),
     ('DY3 same ignores PART children', S + 'octree_dyn.glsl', "kids[k].occupancy == highest && (kids[k].status & OCT_PART) == 0u;", "kids[k].occupancy == highest;"),
@@ -47,16 +50,15 @@ MUT = [
     ('DY7 probabilistic node bytes', S + 'octree_dyn.glsl', "const uint64_t OCT_NODE_BYTES = 12ul;", "const uint64_t OCT_NODE_BYTES = 8ul;"),
     ('P1 invalid leaf test', S + 'octree_propagate_leaves.glsl', "== OCT_OCCUPANCY_MASK)", "== 0u)"),
     ('P2 level 1 node without LAST_LEVEL', S + 'octree_propagate_leaves.glsl', "oct_recompute(node, kids, 1u);", "oct_recompute(node, kids, 99u);"),
-    ('P3 flag of the level 1 node kept', S + 'octree_propagate_leaves.glsl', "    node.flags &= ~OCT_NEEDS_UPDATE;\n", ""),
+    ('P3 flag of the level 1 node kept', S + 'octree_propagate_leaves.glsl', "    node.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);\n", "    node.flags &= ~OCT_UPDATE_SUBTREE;\n"),
     ('U1 LAST_LEVEL above level 1', S + 'octree_propagate_up.glsl', "oct_recompute(node, kids, 99u);", "oct_recompute(node, kids, 1u);"),
-    ('U2 flag kept after the bottom-up step', S + 'octree_propagate_up.glsl', "    node.flags &= ~OCT_NEEDS_UPDATE;\n", ""),
-    ('C1 total of a level without the last head', CPP, "totals[level] = uint64_t(read_word(excl_a, n - 1)) + read_word(heads_a, n - 1);", "totals[level] = uint64_t(read_word(excl_a, n - 1));"),
+    ('U2 flag kept after the bottom-up step', S + 'octree_propagate_up.glsl', "    node.flags &= ~(OCT_NEEDS_UPDATE | OCT_UPDATE_SUBTREE);\n", "    node.flags &= ~OCT_UPDATE_SUBTREE;\n"),
     ('C2 top-down stops one level early', CPP, "for (int level = int(kRootLevel); level >= 2 && count[level] > 0; --level)", "for (int level = int(kRootLevel); level >= 3 && count[level] > 0; --level)"),
     ('C3 dropped not counted', CPP, "			dropped += ids.size() - valid.size();\n", ""),
-    ('C4 duplicates kept (harmless on the GPU)', CPP, "			valid.erase(std::unique(valid.begin(), valid.end()), valid.end());\n			if (valid.size() > kMaxVoxels)\n				throw VulkanError(\"Octree::insert: too many", "			if (valid.size() > kMaxVoxels)\n				throw VulkanError(\"Octree::insert: too many"),
-    ('C6 garbage flag never set', CPP, "			if (read_word(replaced, 0) > 0)\n				may_have_garbage = true;\n", ""),
+    ('C4 duplicates kept on the host path (harmless on the GPU)', CPP, "				valid.erase(std::unique(valid.begin(), valid.end()), valid.end());\n", ""),
+    ('C6 garbage flag never set', CPP, "			if (counted[14] > 0)\n				may_have_garbage = true;\n", ""),
     ('C7 unreachable blocks ignored', CPP, "				if (unreachable != 0 && !may_have_garbage)", "				if (false)"),
-    ('C8 stale child status rule applied to every node', CPP, "if ((node.status & kPart) && (uint8_t(expected.status", "if ((uint8_t(expected.status"),
+    ('C8 stale child status rule applied to every node', CPP, "if (live && (node.status & kPart) && (uint8_t(expected.status", "if (live && (uint8_t(expected.status"),
     ('C9 probabilistic rule compares STATIC / DYNAMIC too', CPP, "self.kind == OctreeKind::Probabilistic ? uint8_t(kStatic | kDynamic) : uint8_t(0);", "uint8_t(0);"),
     ('GW1 walk goes down to level 1 for every target', S + 'octree_insert_walk.glsl', "level > max(pc.target, 1u) &&", "level > 1u &&"),
     ('GW2 existing node at the target treated as a new block', S + 'octree_insert_walk.glsl', "(at_target ? 2u : 1u)", "1u"),
@@ -86,7 +88,7 @@ MUT = [
     ('CH6 pending counted below cut nodes', CPP, "visit(level - 1, id * 8 + s, kids[s], live && (node.status & kPart) != 0);", "visit(level - 1, id * 8 + s, kids[s], live);"),
 ]
 
-only = sys.argv[1] if len(sys.argv) > 1 else ''
+only = tuple(sys.argv[1].split(',')) if len(sys.argv) > 1 and sys.argv[1] else ()
 done = set(sys.argv[2].split(',')) if len(sys.argv) > 2 else set()
 originals = {}
 
@@ -116,8 +118,8 @@ try:
             continue
         try:
             r = subprocess.run([root + 'build/verify-vk/tests/vulkan/Debug/test_vulkan.exe',
-                                '--gtest_filter=VulkanTest.OctreeInsert*:VulkanTest.OctreeAfterInserts*:VulkanTest.Probabilistic*:VulkanTest.OctreeSoft*:VulkanTest.OctreeSubtree*:VulkanTest.CheckTree*'],
-                               env=env, capture_output=True, text=True, timeout=150)
+                                '--gtest_fail_fast', '--gtest_filter=VulkanTest.OctreeInsert*:VulkanTest.OctreeAfterInserts*:VulkanTest.Probabilistic*:VulkanTest.OctreeSoft*:VulkanTest.OctreeSubtree*:VulkanTest.CheckTree*:VulkanTest.OctreePropagate*'],
+                               env=test_env, capture_output=True, text=True, timeout=1500)
             verdict = 'SURVIVED' if r.returncode == 0 else 'KILLED'
         except subprocess.TimeoutExpired:
             verdict = 'KILLED (timeout)'

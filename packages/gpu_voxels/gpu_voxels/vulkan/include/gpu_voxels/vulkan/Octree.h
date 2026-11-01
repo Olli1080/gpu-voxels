@@ -276,6 +276,13 @@ namespace gpu_voxels::vulkan
 		[[nodiscard]] OctreeBalancerStats balancer_stats() const;
 		/// Test hook: caps the x group count of every dispatch (default 65535) so that the 2D dispatch path is exercised with small trees.
 		void set_max_groups_x(uint32_t groups);
+		/// Test hook: insert batches with more than this many ids are sorted on the GPU, smaller ones on the host (default 20000).
+		void set_gpu_sort_limit(uint32_t ids);
+		/// Test hooks of propagate(): the bounded single-batch path is taken while at most this many ids were inserted since the last propagate (default
+		/// 131072, 0 = always the exact path with a read back per level); `test_set_pending_bound` overwrites the bound (a bound that is too small makes
+		/// propagate() throw instead of writing out of bounds).
+		void set_bounded_propagate_limit(uint64_t ids);
+		void test_set_pending_bound(uint64_t ids);
 
 		/// Validates the structure on the host (pointers inside registered chunks, alignment, every block referenced once,
 		/// status rules). \throws VulkanError listing the first problems.

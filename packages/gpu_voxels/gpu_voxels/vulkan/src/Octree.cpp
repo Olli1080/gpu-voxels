@@ -55,10 +55,13 @@ namespace gpu_voxels::vulkan
 		struct TreePush { uint32_t item_count, level, min_level, mark; int32_t threshold; uint32_t next_capacity; };
 		struct InsertWalkPush { uint32_t n, target; uint64_t root; };
 		struct InsertHeadsPush { uint32_t n, level, target; };
+		struct InsertCountPush { uint32_t n, target; };
 		struct InsertNodePush { uint32_t n, datum, soft, level; uint64_t base; };
 		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
 		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
-		struct PropagatePush { uint32_t count, level; };
+		struct PropagatePush { uint32_t count, level, from_counts, next_capacity, item_capacity; };
+		struct PropagateLeavesPush { uint32_t count, from_counts, item_capacity; };
+		struct PropagateUpPush { uint32_t count, level, from_counts, item_capacity; };
 		struct CompactScanPush { uint32_t count, capacity; };
 		struct CompactCopyPush { uint32_t count, level; uint64_t base, child_base; uint32_t child_block_bytes, pad; };
 		constexpr uint8_t kNeedsUpdate = 128; ///< node flag: the node or something below it changed (CUDA nf_NEEDS_UPDATE)
@@ -128,18 +131,19 @@ namespace gpu_voxels::vulkan
 				  lb_extract(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_lb_extract_prob_comp) : GVL_SHADER_SPAN(octree_lb_extract_det_comp), 6, 5 * sizeof(uint32_t)),
 				  insert_walk(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_walk_prob_comp) : GVL_SHADER_SPAN(octree_insert_walk_det_comp), 3, sizeof(InsertWalkPush)),
 				  insert_heads(c, GVL_SHADER_SPAN(octree_insert_heads_comp), 3, sizeof(InsertHeadsPush)),
+				  insert_count(c, GVL_SHADER_SPAN(octree_insert_count_comp), 3, sizeof(InsertCountPush)),
 				  insert_link(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_link_prob_comp) : GVL_SHADER_SPAN(octree_insert_link_det_comp), 6, sizeof(InsertLinkPush)),
 				  insert_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_leaves_prob_comp) : GVL_SHADER_SPAN(octree_insert_leaves_det_comp), 4, sizeof(InsertLeafPush)),
 				  prop_down(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_down_prob_comp) : GVL_SHADER_SPAN(octree_propagate_down_det_comp), 3, sizeof(PropagatePush)),
-				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 1, sizeof(uint32_t)),
+				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 2, sizeof(PropagateLeavesPush)),
 				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 4, sizeof(InsertNodePush)),
-				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 1, sizeof(uint32_t)),
+				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 2, sizeof(PropagateUpPush)),
 				  compact_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_scan_prob_comp) : GVL_SHADER_SPAN(octree_compact_scan_det_comp), 4, sizeof(CompactScanPush)),
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
 			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
-			ComputePipeline insert_walk, insert_heads, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, compact_scan, compact_copy;
+			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, compact_scan, compact_copy;
 		};
 
 		Impl(Context& c, OctreeKind k) : context(c), kind(k), primitives(c), kernels(c, k), levels(kLevelCount)
@@ -177,6 +181,8 @@ namespace gpu_voxels::vulkan
 			may_have_garbage = false;
 			voxels = 0;
 			dropped = 0;
+			pending_bound = 0;
+			pending_bounded = true;
 		}
 
 		void make_empty()
@@ -465,8 +471,13 @@ namespace gpu_voxels::vulkan
 
 		// ------------------------------------------------------------------------------------------------ dynamic updates
 
-		/// Node ids of `level` -> sorted distinct level 0 ids (the node id shifted up; ids outside the level are counted as dropped).
-		std::vector<uint64_t> valid_sorted_ids(std::span<const uint64_t> ids, uint32_t level)
+		/// Batches above this many ids are sorted and made distinct on the GPU (radix sort + the build's compaction), smaller ones on the host: a
+		/// round trip costs about as much as sorting a few thousand ids (measured, Agent/Analysis/2026-11-01_octree_dynamic_timings.md).
+		uint32_t gpu_sort_limit = 20000;
+
+		/// Node ids of `level` -> level 0 ids (the node id shifted up; ids outside the level are counted as dropped), sorted and distinct, in a device
+		/// buffer; `count` = number of ids (0 = nothing to insert).
+		DeviceBuffer sorted_ids(std::span<const uint64_t> ids, uint32_t level, uint32_t& count)
 		{
 			const uint64_t limit = uint64_t(1) << (3 * (kRootLevel - level));
 			std::vector<uint64_t> valid;
@@ -475,54 +486,80 @@ namespace gpu_voxels::vulkan
 				if (id < limit)
 					valid.push_back(id << (3 * level));
 			dropped += ids.size() - valid.size();
-			std::sort(valid.begin(), valid.end());
-			valid.erase(std::unique(valid.begin(), valid.end()), valid.end());
 			if (valid.size() > kMaxVoxels)
 				throw VulkanError("Octree::insert: too many voxels in one insert");
-			return valid;
+			count = 0;
+			if (valid.empty())
+				return DeviceBuffer(context, 8);
+			if (valid.size() <= gpu_sort_limit)
+			{
+				std::sort(valid.begin(), valid.end());
+				valid.erase(std::unique(valid.begin(), valid.end()), valid.end());
+				count = static_cast<uint32_t>(valid.size());
+				DeviceBuffer buffer(context, uint64_t(count) * 8);
+				buffer.upload<uint64_t>(valid);
+				return buffer;
+			}
+			const uint32_t n = static_cast<uint32_t>(valid.size());
+			DeviceBuffer sorted(context, uint64_t(n) * 8), heads(context, uint64_t(n) * 4), offsets(context, uint64_t(n) * 4), unique_ids(context, uint64_t(n) * 8);
+			sorted.upload<uint64_t>(valid);
+			{
+				DeviceBuffer values(context, uint64_t(n) * 4);
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				if (n > 1)
+				{
+					primitives.record_sort_pairs64(batch, sorted, values, n, 42, keep_alive);
+					batch.barrier();
+				}
+				dispatch(batch, kernels.heads, { &sorted, &heads }, n, HeadsPush{ n, 0 });
+				batch.barrier();
+				primitives.record_exclusive_scan(batch, heads, offsets, n, keep_alive);
+				batch.barrier();
+				dispatch(batch, kernels.compact, { &sorted, &heads, &offsets, &unique_ids }, n, CountPush{ n });
+				batch.submit_and_wait();
+			}
+			count = read_word(offsets, n - 1) + read_word(heads, n - 1);
+			return unique_ids;
 		}
 
 		void insert_ids(std::span<const uint64_t> node_ids, uint32_t level, OctreeDatum datum, OctreeInsertMode mode, bool propagate_now)
 		{
 			if (level >= kRootLevel)
 				throw VulkanError("Octree::insert_nodes: the level must be in 0..13");
-			const std::vector<uint64_t> ids = valid_sorted_ids(node_ids, level);
-			if (!ids.empty())
-				insert_sorted(ids, level, datum, mode);
+			uint32_t count = 0;
+			DeviceBuffer ids = sorted_ids(node_ids, level, count);
+			if (count > 0)
+			{
+				insert_sorted(ids, count, level, datum, mode);
+				note_pending(count, !(mode == OctreeInsertMode::Soft && level > 0));
+			}
 			if (propagate_now)
 				propagate();
 		}
 
-		/// `ids`: sorted, distinct level 0 ids. The steps are described in the insert shaders; the new blocks of every level from `target` up
-		/// become one new chunk each.
-		void insert_sorted(const std::vector<uint64_t>& ids, uint32_t target, OctreeDatum datum, OctreeInsertMode mode)
+		/// `ids`: `n` sorted, distinct level 0 ids. The steps are described in the insert shaders; the new blocks of every level from `target` up
+		/// become one new chunk each. Two submits and one read back: (1) walk + count of the new blocks of all levels, (2) the numbering of the
+		/// blocks (heads + scan per level), linking and the final kernel in one batch.
+		void insert_sorted(DeviceBuffer& id_buffer, uint32_t n, uint32_t target, OctreeDatum datum, OctreeInsertMode mode)
 		{
-			const uint32_t n = static_cast<uint32_t>(ids.size());
-			DeviceBuffer id_buffer(context, uint64_t(n) * 8), info(context, uint64_t(n) * 16), replaced(context, 16);
-			id_buffer.upload<uint64_t>(ids);
-			replaced.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+			DeviceBuffer info(context, uint64_t(n) * 16), stats(context, 16 * 4);
 			{
 				CommandBatch batch(context);
-				dispatch(batch, kernels.insert_walk, { &id_buffer, &info, &replaced }, n, InsertWalkPush{ n, target, root_address() });
+				batch.fill(stats, 0);
+				dispatch(batch, kernels.insert_walk, { &id_buffer, &info, &stats }, n, InsertWalkPush{ n, target, root_address() });
+				batch.barrier();
+				dispatch(batch, kernels.insert_count, { &id_buffer, &info, &stats }, n, InsertCountPush{ n, target });
 				batch.submit_and_wait();
 			}
-			if (read_word(replaced, 0) > 0)
+			uint32_t counted[16];
+			stats.download(counted, sizeof(counted));
+			if (counted[14] > 0)
 				may_have_garbage = true;
-
-			DeviceBuffer heads_a(context, uint64_t(n) * 4), excl_a(context, uint64_t(n) * 4), heads_b(context, uint64_t(n) * 4), excl_b(context, uint64_t(n) * 4);
-
-			// how many new blocks every level needs
 			uint64_t totals[kRootLevel] = {};
 			for (uint32_t level = 0; level < kRootLevel; ++level)
-			{
-				KeepAlive keep_alive;
-				CommandBatch batch(context);
-				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, &heads_a }, n, InsertHeadsPush{ n, level, target });
-				batch.barrier();
-				primitives.record_exclusive_scan(batch, heads_a, excl_a, n, keep_alive);
-				batch.submit_and_wait();
-				totals[level] = uint64_t(read_word(excl_a, n - 1)) + read_word(heads_a, n - 1);
-			}
+				totals[level] = counted[level];
+
 			uint64_t base[kRootLevel] = {};
 			for (uint32_t level = 0; level < kRootLevel; ++level)
 				if (totals[level] > 0)
@@ -532,36 +569,55 @@ namespace gpu_voxels::vulkan
 					add_chunk(level, totals[level], std::move(chunk));
 				}
 
-			// from the top: initialise the new blocks of a level and link them into their parents
+			DeviceBuffer heads_a(context, uint64_t(n) * 4), excl_a(context, uint64_t(n) * 4), heads_b(context, uint64_t(n) * 4), excl_b(context, uint64_t(n) * 4);
+			// from the top: number and initialise the new blocks of a level and link them into their parents
 			DeviceBuffer* heads_cur = &heads_a;
 			DeviceBuffer* excl_cur = &excl_a;
 			DeviceBuffer* heads_up = &heads_b;
 			DeviceBuffer* excl_up = &excl_b;
+			KeepAlive keep_alive;
+			CommandBatch batch(context);
 			for (int level = int(kRootLevel) - 1; level >= 0; --level)
 			{
 				if (totals[level] == 0)
 					continue;
-				KeepAlive keep_alive;
-				CommandBatch batch(context);
 				dispatch(batch, kernels.insert_heads, { &id_buffer, &info, heads_cur }, n, InsertHeadsPush{ n, uint32_t(level), target });
 				batch.barrier();
 				primitives.record_exclusive_scan(batch, *heads_cur, *excl_cur, n, keep_alive);
 				batch.barrier();
 				dispatch(batch, kernels.insert_link, { &id_buffer, &info, heads_cur, excl_cur, heads_up, excl_up }, n,
 					InsertLinkPush{ n, uint32_t(level), base[level], level + 1 < int(kRootLevel) ? base[level + 1] : 0 });
-				batch.submit_and_wait();
+				batch.barrier();
 				std::swap(heads_cur, heads_up);
 				std::swap(excl_cur, excl_up);
 			}
 			// the arrays of the target level are now in *_up (or unused when no voxel needs a new block there)
 			const uint32_t datum_bits = datum == OctreeDatum::Occupied ? uint32_t(kOccupied) : uint32_t(kFree);
-			CommandBatch batch(context);
 			if (target == 0)
 				dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up }, n, InsertLeafPush{ n, datum_bits, base[0] });
 			else
 				dispatch(batch, kernels.insert_nodes, { &id_buffer, &info, heads_up, excl_up }, n,
 					InsertNodePush{ n, datum_bits, mode == OctreeInsertMode::Soft ? 1u : 0u, target, base[target] });
 			batch.submit_and_wait();
+		}
+
+		/// Upper bound for the nodes of one level that carry NEEDS_UPDATE since the last propagate: an inserted id marks at most one node per level (and
+		/// only those nodes with PART are visited), so with this bound the work lists fit in buffers allocated up front and propagate needs no
+		/// read back (the counts stay on the GPU). Unknown after a soft insert (UPDATE_SUBTREE reaches whole subtrees); big bounds take the exact path.
+		uint64_t pending_bound = 0;
+		bool pending_bounded = true;
+		uint64_t bounded_propagate_limit = uint64_t(1) << 17;
+
+		void note_pending(uint64_t ids, bool bounded)
+		{
+			pending_bound += ids;
+			pending_bounded = pending_bounded && bounded;
+		}
+
+		void forget_pending()
+		{
+			pending_bound = 0;
+			pending_bounded = true;
 		}
 
 		void propagate()
@@ -577,8 +633,64 @@ namespace gpu_voxels::vulkan
 					encode_inner(kind, root_block.data(), 0, root);
 					levels[kRootLevel].chunks.front().buffer.upload(root_block.data(), root_block.size());
 				}
+				forget_pending();
 				return;
 			}
+			if (pending_bounded && pending_bound > 0 && pending_bound <= bounded_propagate_limit)
+				propagate_bounded();
+			else
+				propagate_exact();
+			forget_pending();
+		}
+
+		/// All levels in one batch: the lists are sized from `pending_bound`, the kernels read and write the counts in `counts` (one word per level).
+		void propagate_bounded()
+		{
+			uint64_t capacity[kLevelCount] = {};
+			capacity[kRootLevel] = 1;
+			for (int level = int(kRootLevel) - 1; level >= 2; --level)
+				capacity[level] = std::min<uint64_t>(pending_bound, 8 * levels[level].blocks());
+			capacity[1] = std::min<uint64_t>(8 * pending_bound, 8 * levels[1].blocks()); // every PART child of a level 2 node is recomputed
+			std::vector<std::optional<DeviceBuffer>> list(kLevelCount);
+			for (uint32_t level = 1; level < kLevelCount; ++level)
+				list[level] = DeviceBuffer(context, std::max<uint64_t>(16, capacity[level] * 16));
+			DeviceBuffer counts(context, 16 * 4);
+			std::vector<uint32_t> initial(16, 0u);
+			initial[kRootLevel] = 1;
+			counts.upload<uint32_t>(initial);
+			const uint64_t address = root_address();
+			list[kRootLevel]->upload<uint32_t>(std::vector<uint32_t>{ uint32_t(address), uint32_t(address >> 32), 0u, 0u });
+
+			CommandBatch batch(context);
+			int lowest = int(kRootLevel) + 1; // lowest level whose top-down step ran
+			for (int level = int(kRootLevel); level >= 2 && capacity[level] > 0; --level)
+			{
+				dispatch(batch, kernels.prop_down, { &*list[level], &*list[level - 1], &counts }, capacity[level] * 8, PropagatePush{ 0, uint32_t(level), 1, uint32_t(capacity[level - 1]), uint32_t(capacity[level]) });
+				batch.barrier();
+				lowest = level;
+			}
+			if (lowest == 2 && capacity[1] > 0)
+			{
+				dispatch(batch, kernels.prop_leaves, { &*list[1], &counts }, capacity[1], PropagateLeavesPush{ 0, 1, uint32_t(capacity[1]) });
+				batch.barrier();
+			}
+			for (uint32_t level = 2; level < kLevelCount; ++level)
+				if (capacity[level] > 0)
+				{
+					dispatch(batch, kernels.prop_up, { &*list[level], &counts }, capacity[level], PropagateUpPush{ 0, level, 1, uint32_t(capacity[level]) });
+					batch.barrier();
+				}
+			batch.submit_and_wait();
+			uint32_t reached[16];
+			counts.download(reached, sizeof(reached));
+			for (uint32_t level = 1; level < kRootLevel; ++level)
+				if (reached[level] > capacity[level])
+					throw VulkanError("Octree::propagate: more nodes to update on level " + std::to_string(level) + " than the bound allows (internal error)");
+		}
+
+		/// The lists are sized from the counts read back after every level (needed when the number of nodes is not bounded by the inserts).
+		void propagate_exact()
+		{
 			std::vector<std::optional<DeviceBuffer>> list(kLevelCount);
 			std::vector<uint32_t> count(kLevelCount, 0);
 			{
@@ -594,17 +706,18 @@ namespace gpu_voxels::vulkan
 				DeviceBuffer next(context, std::max<uint64_t>(16, uint64_t(count[level]) * 8 * 16)), counter(context, 16);
 				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
 				CommandBatch batch(context);
-				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, uint64_t(count[level]) * 8, PropagatePush{ count[level], uint32_t(level) });
+				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, uint64_t(count[level]) * 8, PropagatePush{ count[level], uint32_t(level), 0, UINT32_MAX, UINT32_MAX });
 				batch.submit_and_wait();
 				count[level - 1] = read_word(counter, 0);
 				list[level - 1] = std::move(next);
 			}
 			// bottom-up: level 1 from its leaves, then every level from its children
+			DeviceBuffer unused_counts(context, 16 * 4);
 			CommandBatch batch(context);
 			bool any = false;
 			if (count[1] > 0)
 			{
-				dispatch(batch, kernels.prop_leaves, { &*list[1] }, count[1], count[1]);
+				dispatch(batch, kernels.prop_leaves, { &*list[1], &unused_counts }, count[1], PropagateLeavesPush{ count[1], 0, UINT32_MAX });
 				any = true;
 			}
 			for (uint32_t level = 2; level < kLevelCount; ++level)
@@ -612,7 +725,7 @@ namespace gpu_voxels::vulkan
 				{
 					if (any)
 						batch.barrier();
-					dispatch(batch, kernels.prop_up, { &*list[level] }, count[level], count[level]);
+					dispatch(batch, kernels.prop_up, { &*list[level], &unused_counts }, count[level], PropagateUpPush{ count[level], level, 0, UINT32_MAX });
 					any = true;
 				}
 			if (any)
@@ -1169,6 +1282,9 @@ namespace gpu_voxels::vulkan
 	}
 
 	void Octree::set_max_groups_x(uint32_t groups) { impl_->max_groups_x = groups; }
+	void Octree::set_gpu_sort_limit(uint32_t ids) { impl_->gpu_sort_limit = ids; }
+	void Octree::set_bounded_propagate_limit(uint64_t ids) { impl_->bounded_propagate_limit = ids; }
+	void Octree::test_set_pending_bound(uint64_t ids) { impl_->pending_bound = ids; impl_->pending_bounded = true; }
 
 	void Octree::set_balancer_config(const OctreeBalancerConfig& config)
 	{

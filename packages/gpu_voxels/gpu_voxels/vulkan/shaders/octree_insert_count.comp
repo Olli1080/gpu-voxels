@@ -1,0 +1,43 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+// Insert, step 2: stats[level] = number of NEW blocks on `level` for every level target .. 13 in one pass (the number of voxels that are the first
+// voxel of a new block there, the same condition as the heads kernel, which the later steps still use per level to number the blocks). A voxel with
+// kind 1 whose walk ended on level L creates the blocks of the levels L-1 .. target; voxels that share the node (id >> 3 * (level + 1)) share the
+// block on `level`. The counts are summed per work group in shared memory first, so a group does 14 atomic adds at most.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Info { uvec4 info[]; };
+layout(std430, set = 0, binding = 2) buffer Stats { uint stats[]; };
+layout(push_constant) uniform Push { uint n; uint target; } pc;
+
+shared uint group_count[14];
+
+uint64_t id_at(uint i) { return packUint2x32(uvec2(ids[2u * i], ids[2u * i + 1u])); }
+bool creates(uint i, uint level) { const uvec4 f = info[i]; return f.w == 1u && f.x > level && level >= pc.target; }
+
+void main()
+{
+    if (gl_LocalInvocationIndex < 14u)
+        group_count[gl_LocalInvocationIndex] = 0u;
+    barrier();
+    const uint i = oct_gid();
+    if (i < pc.n)
+    {
+        const uvec4 f = info[i];
+        if (f.w == 1u)
+        {
+            const uint64_t id = id_at(i);
+            for (uint level = pc.target; level < f.x && level < 14u; ++level)
+            {
+                const uint shift = 3u * (level + 1u);
+                if (i == 0u || !creates(i - 1u, level) || (id >> shift) != (id_at(i - 1u) >> shift))
+                    atomicAdd(group_count[level], 1u);
+            }
+        }
+    }
+    barrier();
+    if (gl_LocalInvocationIndex < 14u && group_count[gl_LocalInvocationIndex] != 0u)
+        atomicAdd(stats[gl_LocalInvocationIndex], group_count[gl_LocalInvocationIndex]);
+}

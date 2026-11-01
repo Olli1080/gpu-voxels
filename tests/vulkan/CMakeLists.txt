@@ -18,6 +18,7 @@ gvl_add_test(test_vulkan
     test_octree_chunks.cpp
     test_octree_insert.cpp
     test_octree_insert_levels.cpp
+    test_octree_insert_sort.cpp
     test_octree_rebuild.cpp
     test_octree_timings.cpp
     test_octree_balancer.cpp

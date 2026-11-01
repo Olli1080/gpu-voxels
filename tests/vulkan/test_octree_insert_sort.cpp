@@ -1,0 +1,192 @@
+// Insert batches above `gpu_sort_limit` ids are sorted and made distinct on the GPU (radix sort, heads, scan, compaction), smaller ones on the
+// host. Both paths must give the same tree, the same dropped count and the same cubes for batches with duplicates, unsorted ids and ids outside
+// the tree, for single voxels and for nodes of a higher level.
+#include "vulkan_fixture.h"
+
+#include <algorithm>
+#include <random>
+#include <string>
+#include <vector>
+
+#include <gpu_voxels/vulkan/Octree.h>
+
+#include "../reference/octree_dynamic_reference.h"
+
+using namespace gpu_voxels::vulkan;
+using gvl_test::VulkanTest;
+namespace ref = gvl_reference::octree;
+
+namespace
+{
+	constexpr OctreeKind kKinds[] = { OctreeKind::Deterministic, OctreeKind::Probabilistic };
+	const char* name(OctreeKind kind) { return kind == OctreeKind::Probabilistic ? "probabilistic" : "deterministic"; }
+
+	/// `count` random ids of `level` below `limit` ids, with duplicates (every id appears about twice), unsorted, and about 5 % outside the level.
+	std::vector<uint64_t> messy_ids(std::mt19937_64& rng, size_t count, uint32_t level, uint32_t extent)
+	{
+		std::uniform_int_distribution<uint32_t> d(0, extent - 1);
+		std::vector<uint64_t> ids;
+		for (size_t i = 0; i < count; ++i)
+			ids.push_back(ref::morton(d(rng), d(rng), d(rng)) >> (3 * level));
+		const size_t distinct = ids.size();
+		for (size_t i = 0; i < distinct; ++i)
+			ids.push_back(ids[rng() % distinct]);
+		const uint64_t limit = uint64_t(1) << (3 * (14 - level));
+		for (size_t i = 0; i < count / 20 + 1; ++i)
+			ids.push_back(limit + rng() % limit);
+		std::shuffle(ids.begin(), ids.end(), rng);
+		return ids;
+	}
+
+	std::vector<OctreeCube> sorted_cubes(const Octree& tree)
+	{
+		auto cubes = tree.extract();
+		std::sort(cubes.begin(), cubes.end(), [](const OctreeCube& a, const OctreeCube& b) { return a.level != b.level ? a.level < b.level : a.id < b.id; });
+		return cubes;
+	}
+}
+
+TEST_F(VulkanTest, OctreeInsertSortedOnTheGpuEqualsTheHostSort)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		for (uint32_t seed = 0; seed < 4; ++seed)
+		{
+			SCOPED_TRACE(std::string(name(kind)) + ", seed " + std::to_string(seed));
+			std::mt19937_64 rng(seed * 31 + 3);
+			Octree gpu(ctx(), kind), host(ctx(), kind);
+			gpu.set_gpu_sort_limit(0);          // every batch on the GPU
+			host.set_gpu_sort_limit(1u << 30);  // every batch on the host
+			std::vector<OctreeVoxel> base;
+			for (int i = 0; i < 300; ++i)
+				base.push_back({ uint32_t(rng() % 32), uint32_t(rng() % 32), uint32_t(rng() % 32) });
+			gpu.build(base);
+			host.build(base);
+			// batch sizes: a single id, two ids, a few, hundreds, thousands (with the duplicates and invalid ids added on top)
+			for (const size_t count : { size_t(1), size_t(2), size_t(7), size_t(500), size_t(5000) })
+			{
+				const uint32_t level = count == 7 ? 2 : 0;
+				const auto ids = messy_ids(rng, count, level, 32);
+				const bool free_voxels = count % 2 == 0;
+				const auto datum = free_voxels ? OctreeDatum::Free : OctreeDatum::Occupied;
+				if (level == 0)
+				{
+					gpu.insert_ids(ids, datum);
+					host.insert_ids(ids, datum);
+				}
+				else
+				{
+					gpu.insert_nodes(level, ids, datum, OctreeInsertMode::Hard);
+					host.insert_nodes(level, ids, datum, OctreeInsertMode::Hard);
+				}
+				EXPECT_EQ(gpu.dropped_count(), host.dropped_count()) << "batch of " << count;
+				EXPECT_EQ(gpu.dump(), host.dump()) << "batch of " << count;
+			}
+			// ids over the whole 2^14 grid use all 42 bits of the sort key (and, as nodes of level 3, all 33 bits of the node id)
+			for (const uint32_t level : { 0u, 3u })
+			{
+				const auto ids = messy_ids(rng, 3000, level, 16384);
+				if (level == 0)
+				{
+					gpu.insert_ids(ids);
+					host.insert_ids(ids);
+				}
+				else
+				{
+					gpu.insert_nodes(level, ids, OctreeDatum::Free, OctreeInsertMode::Hard);
+					host.insert_nodes(level, ids, OctreeDatum::Free, OctreeInsertMode::Hard);
+				}
+				EXPECT_EQ(gpu.dropped_count(), host.dropped_count()) << "wide batch of level " << level;
+				EXPECT_EQ(gpu.dump(), host.dump()) << "wide batch of level " << level;
+			}
+			EXPECT_NO_THROW(gpu.check_tree());
+			EXPECT_EQ(sorted_cubes(gpu), sorted_cubes(host));
+			EXPECT_GT(gpu.dropped_count(), 0u);
+		}
+	}
+}
+
+TEST_F(VulkanTest, OctreeInsertOfALargeBatchTakesTheGpuSortAndEqualsTheHostSort)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		SCOPED_TRACE(name(kind));
+		std::mt19937_64 rng(99);
+		Octree gpu(ctx(), kind), host(ctx(), kind);
+		host.set_gpu_sort_limit(1u << 30);
+		const auto ids = messy_ids(rng, 40000, 0, 64); // 80 000 ids with duplicates: above the default limit of 20 000
+		ASSERT_GT(ids.size(), 20000u);
+		gpu.insert_ids(ids);
+		host.insert_ids(ids);
+		EXPECT_EQ(gpu.dropped_count(), host.dropped_count());
+		EXPECT_EQ(gpu.dump(), host.dump());
+		EXPECT_NO_THROW(gpu.check_tree());
+	}
+}
+
+// Propagate: the bounded path (one batch, the counts stay on the GPU) and the exact path (counts read back per level) give the same tree.
+TEST_F(VulkanTest, OctreePropagateInOneBatchEqualsThePerLevelPropagate)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		for (uint32_t seed = 0; seed < 6; ++seed)
+		{
+			SCOPED_TRACE(std::string(name(kind)) + ", seed " + std::to_string(seed));
+			std::mt19937_64 rng(seed * 17 + 1);
+			Octree bounded(ctx(), kind), exact(ctx(), kind);
+			exact.set_bounded_propagate_limit(0);
+			std::vector<OctreeVoxel> base;
+			for (int i = 0; i < 400; ++i)
+				base.push_back({ uint32_t(rng() % 40), uint32_t(rng() % 40), uint32_t(rng() % 40) });
+			bounded.build(base);
+			exact.build(base);
+			for (int step = 0; step < 8; ++step)
+			{
+				// several inserts of both kinds before one propagate: the bound is the sum of the batches
+				const int inserts = 1 + int(rng() % 3);
+				for (int k = 0; k < inserts; ++k)
+				{
+					const uint32_t level = rng() % 3 == 0 ? 1 + uint32_t(rng() % 3) : 0;
+					const auto ids = messy_ids(rng, 1 + rng() % 60, level, 40);
+					const auto datum = rng() % 2 ? OctreeDatum::Occupied : OctreeDatum::Free;
+					if (level == 0)
+					{
+						bounded.insert_ids(ids, datum, false);
+						exact.insert_ids(ids, datum, false);
+					}
+					else
+					{
+						bounded.insert_nodes(level, ids, datum, OctreeInsertMode::Hard, false);
+						exact.insert_nodes(level, ids, datum, OctreeInsertMode::Hard, false);
+					}
+				}
+				bounded.propagate();
+				exact.propagate();
+				ASSERT_EQ(bounded.dump(), exact.dump()) << "step " << step;
+				EXPECT_EQ(bounded.pending_update_count(), 0u);
+			}
+			EXPECT_NO_THROW(bounded.check_tree());
+		}
+	}
+}
+
+TEST_F(VulkanTest, OctreePropagateRefusesABoundThatIsTooSmall)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		SCOPED_TRACE(name(kind));
+		std::mt19937_64 rng(5);
+		Octree tree(ctx(), kind);
+		tree.insert_ids(messy_ids(rng, 3000, 0, 64), OctreeDatum::Occupied, false);
+		tree.test_set_pending_bound(1); // 3000 voxels flagged many nodes on the middle levels
+		EXPECT_THROW(tree.propagate(), VulkanError);
+	}
+}
