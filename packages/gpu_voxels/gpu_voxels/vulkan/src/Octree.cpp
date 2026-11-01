@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <map>
 #include <optional>
 #include <sstream>
@@ -16,6 +17,7 @@
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/Morton.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
+#include <gpu_voxels/vulkan/MetaPointCloud.h>
 #include <gpu_voxels/vulkan/Primitives.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
@@ -32,6 +34,7 @@ namespace gpu_voxels::vulkan
 		constexpr uint64_t kSentinelId = uint64_t(1) << 42; ///< sorts behind every valid id
 
 		struct CountPush { uint32_t n; };
+		struct PointsPush { uint32_t n, first; float voxel_side_length; };
 		struct HeadsPush { uint32_t n, shift; };
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
@@ -117,6 +120,7 @@ namespace gpu_voxels::vulkan
 		{
 			Kernels(Context& c, OctreeKind kind)
 				: morton_ids(c, GVL_SHADER_SPAN(octree_morton_ids_comp), 3, sizeof(CountPush)),
+				  points_to_ids(c, GVL_SHADER_SPAN(octree_points_to_ids_comp), 3, sizeof(PointsPush)),
 				  heads(c, GVL_SHADER_SPAN(octree_heads_comp), 2, sizeof(HeadsPush)),
 				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
 				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
@@ -142,7 +146,7 @@ namespace gpu_voxels::vulkan
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
-			ComputePipeline morton_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline morton_ids, points_to_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, compact_scan, compact_copy;
 		};
 
@@ -162,6 +166,7 @@ namespace gpu_voxels::vulkan
 		Context& context;
 		OctreeKind kind;
 		uint32_t max_groups_x = 65535;
+		float voxel_side_length = 0.0f; ///< metres; 0 = not set (point cloud inserts throw)
 		mutable Primitives primitives; // recording scans does not change the tree
 		Kernels kernels;
 		std::vector<Level> levels; ///< index = level
@@ -512,15 +517,139 @@ namespace gpu_voxels::vulkan
 					primitives.record_sort_pairs64(batch, sorted, values, n, 42, keep_alive);
 					batch.barrier();
 				}
-				dispatch(batch, kernels.heads, { &sorted, &heads }, n, HeadsPush{ n, 0 });
-				batch.barrier();
-				primitives.record_exclusive_scan(batch, heads, offsets, n, keep_alive);
-				batch.barrier();
-				dispatch(batch, kernels.compact, { &sorted, &heads, &offsets, &unique_ids }, n, CountPush{ n });
+				record_distinct(batch, sorted, heads, offsets, unique_ids, n, keep_alive);
 				batch.submit_and_wait();
 			}
-			count = read_word(offsets, n - 1) + read_word(heads, n - 1);
+			count = distinct_count(heads, offsets, n);
 			return unique_ids;
+		}
+
+		/// Records the distinct ids of the `n` sorted ids of `sorted` into `unique_ids` (heads of the runs, scan, compaction).
+		void record_distinct(CommandBatch& batch, DeviceBuffer& sorted, DeviceBuffer& heads, DeviceBuffer& offsets, DeviceBuffer& unique_ids,
+			uint32_t n, KeepAlive& keep_alive) const
+		{
+			dispatch(batch, kernels.heads, { &sorted, &heads }, n, HeadsPush{ n, 0 });
+			batch.barrier();
+			primitives.record_exclusive_scan(batch, heads, offsets, n, keep_alive);
+			batch.barrier();
+			dispatch(batch, kernels.compact, { &sorted, &heads, &offsets, &unique_ids }, n, CountPush{ n });
+		}
+
+		static uint32_t distinct_count(const DeviceBuffer& heads, const DeviceBuffer& offsets, uint32_t n)
+		{
+			return read_word(offsets, n - 1) + read_word(heads, n - 1);
+		}
+
+		/// Slice S6e: the `n` points first .. first + n - 1 of `points` (packed floats) -> level 0 ids on the GPU, sorted and distinct, in a device buffer;
+		/// `count` = number of distinct ids (0 = nothing to insert), `dropped_now` = number of points outside the tree (added to `dropped`).
+		DeviceBuffer sorted_point_ids(const DeviceBuffer& points, uint32_t first, uint32_t n, uint32_t& count, uint32_t& dropped_now)
+		{
+			count = 0;
+			dropped_now = 0;
+			if (n > kMaxVoxels)
+				throw VulkanError("Octree::insert_point_cloud: too many points in one insert");
+			if (n == 0)
+				return DeviceBuffer(context, 8);
+			DeviceBuffer ids(context, uint64_t(n) * 8), dropped_buffer(context, 4);
+			{
+				DeviceBuffer values(context, uint64_t(n) * 4);
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				batch.fill(dropped_buffer, 0);
+				batch.barrier();
+				dispatch(batch, kernels.points_to_ids, { &points, &ids, &dropped_buffer }, n, PointsPush{ n, first, voxel_side_length });
+				batch.barrier();
+				if (n > 1)
+					primitives.record_sort_pairs64(batch, ids, values, n, 43, keep_alive); // sentinel 2^42 needs 43 bits
+				batch.submit_and_wait();
+			}
+			dropped_now = read_word(dropped_buffer, 0);
+			dropped += dropped_now;
+			const uint32_t valid = n - dropped_now; // the sentinels sorted behind the valid ids
+			if (valid == 0)
+				return DeviceBuffer(context, 8);
+			DeviceBuffer heads(context, uint64_t(valid) * 4), offsets(context, uint64_t(valid) * 4), unique_ids(context, uint64_t(valid) * 8);
+			{
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				record_distinct(batch, ids, heads, offsets, unique_ids, valid, keep_alive);
+				batch.submit_and_wait();
+			}
+			count = distinct_count(heads, offsets, valid);
+			return unique_ids;
+		}
+
+		/// Hard insert of the voxels of `n` points (without propagate). \return the points outside the tree
+		uint32_t insert_points(const DeviceBuffer& points, uint32_t first, uint32_t n, OctreeDatum datum)
+		{
+			uint32_t count = 0, dropped_now = 0;
+			DeviceBuffer ids = sorted_point_ids(points, first, n, count, dropped_now);
+			if (count > 0)
+			{
+				insert_sorted(ids, count, 0, datum, OctreeInsertMode::Hard);
+				note_pending(count, true);
+			}
+			return dropped_now;
+		}
+
+		static OctreeDatum datum_of(uint8_t meaning, const char* function)
+		{
+			if (meaning == eBVM_OCCUPIED)
+				return OctreeDatum::Occupied;
+			if (meaning == eBVM_FREE)
+				return OctreeDatum::Free;
+			throw VulkanError(std::string("Octree::") + function + ": the tree stores occupied and free voxels only (meaning " + std::to_string(meaning) + ")");
+		}
+
+		void require_side_length(const char* function) const
+		{
+			if (!(voxel_side_length > 0.0f))
+				throw VulkanError(std::string("Octree::") + function + ": the voxel side length is not set");
+		}
+
+		uint32_t insert_point_cloud(std::span<const Point3f> points, uint8_t meaning, bool propagate_now)
+		{
+			const OctreeDatum datum = datum_of(meaning, "insert_point_cloud");
+			require_side_length("insert_point_cloud");
+			if (points.size() > kMaxVoxels)
+				throw VulkanError("Octree::insert_point_cloud: too many points in one insert");
+			uint32_t outside = 0;
+			if (!points.empty())
+			{
+				static_assert(sizeof(Point3f) == 12);
+				DeviceBuffer buffer(context, points.size_bytes());
+				buffer.upload(points.data(), points.size_bytes());
+				outside = insert_points(buffer, 0, static_cast<uint32_t>(points.size()), datum);
+			}
+			if (propagate_now)
+				propagate();
+			return outside;
+		}
+
+		uint32_t insert_meta_point_cloud(const MetaPointCloud& cloud, std::span<const uint8_t> meanings, bool propagate_now)
+		{
+			if (&cloud.context() != &context)
+				throw VulkanError("Octree::insert_meta_point_cloud: different contexts");
+			if (meanings.size() != cloud.num_clouds())
+				throw VulkanError("Octree::insert_meta_point_cloud: expected one meaning per sub cloud");
+			std::vector<OctreeDatum> data;
+			for (uint8_t meaning : meanings)
+				data.push_back(datum_of(meaning, "insert_meta_point_cloud"));
+			require_side_length("insert_meta_point_cloud");
+			uint32_t outside = 0;
+			for (uint32_t c = 0; c < cloud.num_clouds();)
+			{
+				uint32_t end = c + 1;
+				while (end < cloud.num_clouds() && data[end] == data[c])
+					++end;
+				outside += insert_points(cloud.points(), cloud.cloud_offset(c), cloud.cloud_offset(end) - cloud.cloud_offset(c), data[c]);
+				// a run is propagated before the next one is inserted (as with separate calls): inserting into nodes that still wait for their
+				// update gives other trees than inserting into a consistent one
+				if (propagate_now || end < cloud.num_clouds())
+					propagate();
+				c = end;
+			}
+			return outside;
 		}
 
 		void insert_ids(std::span<const uint64_t> node_ids, uint32_t level, OctreeDatum datum, OctreeInsertMode mode, bool propagate_now)
@@ -1253,11 +1382,22 @@ namespace gpu_voxels::vulkan
 
 	// ---------------------------------------------------------------------------------------------------------- public
 
-	Octree::Octree(Context& context, OctreeKind kind)
+	namespace
+	{
+		void check_side_length(float voxel_side_length)
+		{
+			if (!std::isfinite(voxel_side_length) || voxel_side_length < 0.0f)
+				throw VulkanError("Octree: the voxel side length must be positive (0 = not set)");
+		}
+	}
+
+	Octree::Octree(Context& context, OctreeKind kind, float voxel_side_length)
 	{
 		if (!context.info().buffer_device_address)
 			throw VulkanError("Octree: the device does not support bufferDeviceAddress, which the pointer-based nodes need");
+		check_side_length(voxel_side_length);
 		impl_ = std::make_unique<Impl>(context, kind);
+		impl_->voxel_side_length = voxel_side_length;
 	}
 
 	Octree::~Octree() = default;
@@ -1298,6 +1438,13 @@ namespace gpu_voxels::vulkan
 
 	OctreeKind Octree::kind() const { return impl_->kind; }
 	Context& Octree::context() const { return impl_->context; }
+	float Octree::voxel_side_length() const { return impl_->voxel_side_length; }
+
+	void Octree::set_voxel_side_length(float voxel_side_length)
+	{
+		check_side_length(voxel_side_length);
+		impl_->voxel_side_length = voxel_side_length;
+	}
 	void Octree::build(std::span<const OctreeVoxel> voxels) { impl_->build_coordinates(voxels); }
 	void Octree::build_from_ids(std::span<const uint64_t> morton_ids) { impl_->build_ids(morton_ids); }
 	void Octree::load_nodes(std::span<const OctreeNode> nodes, uint64_t max_blocks_per_chunk) { impl_->load_nodes(nodes, max_blocks_per_chunk); }
@@ -1320,6 +1467,35 @@ namespace gpu_voxels::vulkan
 		for (const OctreeVoxel& v : voxels)
 			ids.push_back(v.x < (1u << 14) && v.y < (1u << 14) && v.z < (1u << 14) ? morton::code60(v.x, v.y, v.z) : kSentinelId);
 		impl_->insert_ids(ids, 0, datum, OctreeInsertMode::Hard, propagate_now);
+	}
+
+	uint32_t Octree::insert_point_cloud(std::span<const Point3f> points, uint8_t meaning, bool propagate_now)
+	{
+		return impl_->insert_point_cloud(points, meaning, propagate_now);
+	}
+
+	uint32_t Octree::insert_coordinate_list(std::span<const Coord3ui> coordinates, uint8_t meaning, bool propagate_now)
+	{
+		static_assert(sizeof(Coord3ui) == sizeof(OctreeVoxel));
+		const OctreeDatum datum = Impl::datum_of(meaning, "insert_coordinate_list");
+		const uint64_t dropped_before = impl_->dropped;
+		std::vector<OctreeVoxel> voxels;
+		voxels.reserve(coordinates.size());
+		for (const Coord3ui& c : coordinates)
+			voxels.push_back({ c.x, c.y, c.z });
+		insert(voxels, datum, propagate_now);
+		return static_cast<uint32_t>(impl_->dropped - dropped_before);
+	}
+
+	uint32_t Octree::insert_meta_point_cloud(const MetaPointCloud& cloud, uint8_t meaning, bool propagate_now)
+	{
+		const std::vector<uint8_t> meanings(cloud.num_clouds(), meaning);
+		return impl_->insert_meta_point_cloud(cloud, meanings, propagate_now);
+	}
+
+	uint32_t Octree::insert_meta_point_cloud(const MetaPointCloud& cloud, std::span<const uint8_t> meanings, bool propagate_now)
+	{
+		return impl_->insert_meta_point_cloud(cloud, meanings, propagate_now);
 	}
 
 	void Octree::propagate() { impl_->propagate(); }

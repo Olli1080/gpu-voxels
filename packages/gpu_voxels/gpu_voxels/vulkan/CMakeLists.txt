@@ -20,6 +20,7 @@ target_sources(${PROJECT_NAME}
     src/DistanceVoxelMap.cpp
     src/KinematicChain.cpp
     src/Octree.cpp
+    src/OctreeStorage.cpp
     src/VoxelList.cpp
     src/MetaPointCloud.cpp
     src/ProbVoxelMap.cpp
@@ -39,6 +40,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/MetaPointCloud.h
     ${INCLUDE_DIR}/Octree.h
     ${INCLUDE_DIR}/OctreeFormat.h
+    ${INCLUDE_DIR}/OctreeStorage.h
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h
@@ -131,6 +133,7 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_compact_copy_det.comp
     shaders/octree_compact_copy_prob.comp
     shaders/octree_morton_ids.comp
+    shaders/octree_points_to_ids.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp
     shaders/pba_p1_update.comp

@@ -35,6 +35,7 @@ namespace gpu_voxels::vulkan
 {
 	class BitVoxelMap;
 	class BitVoxelList;
+	class MetaPointCloud;
 	class ProbVoxelMap;
 
 	struct OctreeVoxel
@@ -173,8 +174,10 @@ namespace gpu_voxels::vulkan
 		/// Maximum number of input voxels of one build (limit of the sort primitive, Primitives::kMaxSortElements).
 		static constexpr uint32_t kMaxVoxels = Primitives::kMaxSortElements;
 
-		/// \throws VulkanError if the device lacks bufferDeviceAddress. Starts as an empty tree (the root only).
-		Octree(Context& context, OctreeKind kind);
+		/// \param voxel_side_length edge of a voxel in metres (CUDA: resolution, whole millimetres); needed by the point cloud inserts only,
+		///        0 = not set (they throw until set_voxel_side_length)
+		/// \throws VulkanError if the device lacks bufferDeviceAddress or the side length is negative or NaN. Starts as an empty tree (the root only).
+		Octree(Context& context, OctreeKind kind, float voxel_side_length = 0.0f);
 		~Octree();
 		Octree(Octree&&) noexcept;
 		Octree& operator=(Octree&&) noexcept;
@@ -183,6 +186,9 @@ namespace gpu_voxels::vulkan
 
 		[[nodiscard]] OctreeKind kind() const;
 		[[nodiscard]] Context& context() const;
+		[[nodiscard]] float voxel_side_length() const;
+		/// \throws VulkanError for a negative or NaN side length (0 = not set). The tree itself does not depend on it.
+		void set_voxel_side_length(float voxel_side_length);
 
 		/// Replaces the tree by the tree of the given voxels (duplicates are merged). Voxels with a coordinate >= 2^14 are dropped
 		/// and counted in dropped_count() (CUDA only asserts). Blocking.
@@ -213,6 +219,26 @@ namespace gpu_voxels::vulkan
 		/// created down to the level. `mode`: see OctreeInsertMode. Level 0 is `insert_ids` (and ignores the mode: a leaf has no subtree).
 		void insert_nodes(uint32_t level, std::span<const uint64_t> node_ids, OctreeDatum datum = OctreeDatum::Occupied,
 			OctreeInsertMode mode = OctreeInsertMode::Hard, bool propagate_now = true);
+		/// Slice S6e, the façade of CUDA GvlNTree (insertPointCloud, insertCoordinateList, insertMetaPointCloud): the voxel of a point is
+		/// floor(point / voxel_side_length) like in the other Vulkan maps (CUDA truncates the float to uint32, which is undefined for negative
+		/// values and puts them into voxel 0 on the device), converted on the GPU. Points outside the 2^14 grid (negative, too far, NaN, inf) are
+		/// not inserted but counted in the return value and in dropped_count(). `meaning`: eBVM_OCCUPIED inserts occupied voxels; eBVM_FREE
+		/// inserts free voxels (an addition: CUDA logs an error for anything but eBVM_OCCUPIED and does nothing); every other meaning throws
+		/// (the tree cannot store it). Same effect as insert_ids (hard insert, duplicates merged), `propagate_now` as there.
+		/// \throws VulkanError if the voxel side length is not set, for another context, for a meaning that is not supported.
+		/// \return number of points that lie outside the tree
+		uint32_t insert_point_cloud(std::span<const Point3f> points, uint8_t meaning = eBVM_OCCUPIED, bool propagate_now = true);
+		/// Voxel coordinates (CUDA insertCoordinateList); a coordinate >= 2^14 is dropped. \return number of coordinates outside the tree
+		uint32_t insert_coordinate_list(std::span<const Coord3ui> coordinates, uint8_t meaning = eBVM_OCCUPIED, bool propagate_now = true);
+		/// All sub clouds of `cloud` (their points stay on the GPU) with one meaning. \return number of points outside the tree
+		uint32_t insert_meta_point_cloud(const MetaPointCloud& cloud, uint8_t meaning = eBVM_OCCUPIED, bool propagate_now = true);
+		/// One meaning per sub cloud (CUDA inserts everything with the first meaning and warns): the sub clouds are inserted in their order, runs
+		/// of sub clouds with the same meaning as one batch (duplicates merged), every run propagated before the next one is inserted, so the result
+		/// is that of one insert_point_cloud call per run: a voxel in an occupied and a later free run ends up as the later insert makes it (in a
+		/// probabilistic tree the occupancies add up). `propagate_now` concerns the end. \throws VulkanError unless there is one meaning per sub cloud
+		/// or for a meaning that is not supported (checked before anything is inserted).
+		uint32_t insert_meta_point_cloud(const MetaPointCloud& cloud, std::span<const uint8_t> meanings, bool propagate_now = true);
+
 		/// Recomputes the statuses of all nodes with NEEDS_UPDATE from their children, top-down expansion of fresh nodes included
 		/// (CUDA propagate), level by level on the GPU. Nothing to do on a tree without pending updates.
 		void propagate();

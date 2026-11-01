@@ -1,0 +1,25 @@
+F2 upper bound inclusive (x) : KILLED
+F11 sentinel below the valid ids : KILLED
+G1 sort key of 42 bits (the sentinel needs 43) : KILLED
+G6 runs of meanings not propagated in between : KILLED
+G10 side length not required : KILLED
+G11 outside count of runs not summed : KILLED
+G12 coordinate list returns the total dropped count : KILLED
+G13 empty point list uploads a buffer of size 0 : KILLED
+G14 point limit of the point span missing (equivalent: the check of the run refuses it as well) : SURVIVED
+G15 point limit of a run missing (equivalent: the sort primitive refuses it as well) : SURVIVED
+G16 point inserts do not note the pending ids (equivalent: propagate takes the exact path, only slower) : SURVIVED
+G17 side length setter does not validate : KILLED
+G18 constructor does not store the side length : KILLED
+M1 magic not checked : KILLED
+M10 has_children byte not limited to 0 / 1 : KILLED
+M11 write does not propagate first : KILLED
+M12 has_children not written : KILLED
+M13 occupancy not written : KILLED
+M14 side length not restored : KILLED
+M15 side length not written : KILLED
+M16 files written in text mode : KILLED
+M17 level of a record read from the status byte : KILLED
+M18 reading stops after the first batch : KILLED
+M19 nodes read in batches of 1 record (not a bug: equivalent) : SURVIVED
+restored

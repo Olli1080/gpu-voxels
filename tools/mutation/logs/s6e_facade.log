@@ -1,0 +1,52 @@
+F1 floor replaced by trunc (negative points near 0 become voxel 0) : KILLED
+F2 upper bound inclusive (x) : SURVIVED
+F3 lower bound of x missing : KILLED
+F4 lower bound of y missing : KILLED
+F5 upper bound of y missing : KILLED
+F6 upper bound of z missing : KILLED
+F7 dropped points not counted : KILLED
+F8 multiplication instead of division : KILLED
+F9 first point of the range ignored : KILLED
+F10 stride of 2 floats : KILLED
+F11 sentinel below the valid ids : SURVIVED
+F12 y and z swapped : KILLED
+G1 sort key of 42 bits (the sentinel needs 43) : PATTERN COUNT 2
+G2 distinct ids over all points including the sentinels : KILLED
+G3 dropped points not added to dropped_count : KILLED
+G4 no early return when every point is outside : KILLED
+G5 dropped counter not cleared (equivalent if the fresh buffer is zero) : KILLED
+G6 runs of meanings not propagated in between : SURVIVED
+G7 occupied and free swapped : KILLED
+G8 collision accepted as occupied : KILLED
+G9 one meaning per sub cloud not checked : KILLED
+G10 side length not required : KILLED
+G11 outside count of runs not summed : KILLED
+G12 coordinate list returns the total dropped count : KILLED
+G13 empty point list uploads a buffer of size 0 : KILLED
+G14 point limit of the point span missing : SURVIVED
+G15 point limit of a run missing : SURVIVED
+G16 point inserts do not note the pending ids : SURVIVED
+G17 side length setter does not validate : KILLED
+G18 constructor does not store the side length : KILLED
+M1 magic not checked : SURVIVED
+M2 version not checked : KILLED
+M3 kind of the target not checked : KILLED
+M4 reserved header word not checked : KILLED
+M5 side length not validated : KILLED
+M6 node count not limited (equivalent: the data ends first) : SURVIVED
+M7 checksum not compared : KILLED
+M8 header not part of the checksum : KILLED
+M9 reserved record word not checked : KILLED
+M10 has_children byte not limited to 0 / 1 : SURVIVED
+M11 write does not propagate first : KILLED
+M12 has_children not written : KILLED
+M13 occupancy not written : KILLED
+M14 side length not restored : KILLED
+M15 side length not written : KILLED
+M16 files written in text mode : KILLED
+M17 level of a record read from the status byte : KILLED
+M18 reading stops after the first batch : KILLED
+M19 nodes read in batches of 1 record (not a bug: equivalent) : SURVIVED
+M20 kind of the tree not written : KILLED
+M21 target replaced before the structure is checked : KILLED
+restored

@@ -31,7 +31,7 @@ MUT = [
     ('S1 sort key of 20 bits', CPP, "primitives.record_sort_pairs64(batch, sorted, values, n, 42, keep_alive);", "primitives.record_sort_pairs64(batch, sorted, values, n, 20, keep_alive);"),
     ('S2 no sort at all', CPP, "				if (n > 1)\n				{\n					primitives.record_sort_pairs64(batch, sorted, values, n, 42, keep_alive);", "				if (false)\n				{\n					primitives.record_sort_pairs64(batch, sorted, values, n, 42, keep_alive);"),
     ('S3 distinct ids by node of level 1 not by id', CPP, "dispatch(batch, kernels.heads, { &sorted, &heads }, n, HeadsPush{ n, 0 });", "dispatch(batch, kernels.heads, { &sorted, &heads }, n, HeadsPush{ n, 3 });"),
-    ('S4 distinct count without the last head', CPP, "count = read_word(offsets, n - 1) + read_word(heads, n - 1);\n			return unique_ids;", "count = read_word(offsets, n - 1);\n			return unique_ids;"),
+    ('S4 distinct count without the last head', CPP, "return read_word(offsets, n - 1) + read_word(heads, n - 1);", "return read_word(offsets, n - 1);"),
     ('S5 paths swapped (equivalent: both give the same tree)', CPP, "if (valid.size() <= gpu_sort_limit)", "if (valid.size() > gpu_sort_limit)"),
     ('P1 level 1 list bounded by the inserts not by 8 times', CPP, "capacity[1] = std::min<uint64_t>(8 * pending_bound,", "capacity[1] = std::min<uint64_t>(pending_bound,"),
     ('P2 soft inserts do not make the bound unknown', CPP, "pending_bounded = pending_bounded && bounded;", "pending_bounded = true;"),
