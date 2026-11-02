@@ -1,0 +1,37 @@
+V1 translation of x ignored : KILLED
+V2 y takes the rotation of z : KILLED
+V3 z takes the rotation of x : KILLED
+V4 trunc instead of floor : KILLED
+V5 x limit inclusive : KILLED
+V6 y limit inclusive : KILLED
+V7 z limit inclusive : KILLED
+V8 x zero excluded : KILLED
+V9 y zero excluded : KILLED
+V10 z zero excluded : KILLED
+V11 dropped points not counted : KILLED
+V12 multiply by the side length : KILLED
+V13 sentinel inside the valid ids : KILLED
+V14 high word of the id : KILLED
+R1 heads inverted : KILLED
+R2 start of a run off by one : KILLED
+C1 last run one too short : KILLED
+C2 last run reads past the starts : KILLED
+C3 count limit 254 : KILLED
+C4 lower clamp -128 : PATTERN COUNT 2
+C5 occupancy without the count : KILLED
+C6 number of runs without the last head : KILLED
+C7 occupancy without the initial value : KILLED
+P1 pose transposed : KILLED
+P2 sentinels counted as voxels : KILLED
+P3 sort over 42 bits only : KILLED
+P4 no sort : KILLED
+P5 model values swapped : KILLED
+P6 side length 0 accepted : KILLED
+P7 infinite side length accepted : KILLED
+P8 number of voxels is the number of valid points : KILLED
+P9 outside points not reported : KILLED
+P10 empty cloud skips the check of the side length : KILLED
+P11 occupancy read as the wrong width : KILLED
+restored
+C4 lower clamp -128 : KILLED
+restored

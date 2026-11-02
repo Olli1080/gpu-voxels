@@ -136,6 +136,9 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_compact_copy_prob.comp
     shaders/octree_morton_ids.comp
     shaders/octree_points_to_ids.comp
+    shaders/octree_sensor_voxels.comp
+    shaders/octree_run_starts.comp
+    shaders/octree_run_counts.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp
     shaders/pba_p1_update.comp

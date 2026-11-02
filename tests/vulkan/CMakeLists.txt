@@ -22,6 +22,7 @@ gvl_add_test(test_vulkan
     test_octree_insert_levels.cpp
     test_octree_insert_sort.cpp
     test_octree_rebuild.cpp
+    test_octree_sensor.cpp
     test_octree_timings.cpp
     test_octree_balancer.cpp
     test_octree_checkpoint.cpp

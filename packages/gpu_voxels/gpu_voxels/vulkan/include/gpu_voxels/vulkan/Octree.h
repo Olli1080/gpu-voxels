@@ -148,6 +148,23 @@ namespace gpu_voxels::vulkan
 	/// with the occupancy of the node by the next propagate (UPDATE_SUBTREE); in a deterministic tree soft cuts as well.
 	enum class OctreeInsertMode : uint8_t { Hard, Soft };
 
+	/// Slice S6f-1: occupancy of a voxel that holds `count` sensor points, clamp(initial + update * count, -127, 127) (CUDA SensorModel::
+	/// estimateVoxelProbability with the initial / update probability of SensorDataProcessing).
+	struct OctreeSensorModel
+	{
+		int8_t initial_probability = 0;
+		int8_t update_probability = 0;
+	};
+
+	/// A voxel of a voxelized sensor cloud: Morton id on the grid of the requested side length, number of points in it, occupancy from the model.
+	struct OctreeVoxelRun
+	{
+		uint64_t id = 0;
+		uint32_t count = 0;
+		int8_t occupancy = 0;
+		friend bool operator==(const OctreeVoxelRun&, const OctreeVoxelRun&) = default;
+	};
+
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
@@ -238,6 +255,15 @@ namespace gpu_voxels::vulkan
 		/// probabilistic tree the occupancies add up). `propagate_now` concerns the end. \throws VulkanError unless there is one meaning per sub cloud
 		/// or for a meaning that is not supported (checked before anything is inserted).
 		uint32_t insert_meta_point_cloud(const MetaPointCloud& cloud, std::span<const uint8_t> meanings, bool propagate_now = true);
+
+		/// Slice S6f-1 (first step of the sensor pipeline, CUDA Sensor::processSensorData / transformKinectPointCloud_simple): sensor points ->
+		/// world with `pose` (R * p + t, the last row is ignored) -> voxel = floor(world / voxel_side_length) -> the distinct voxels in Morton
+		/// order with the number of points in each and the occupancy `model` gives for that number. The side length is that of the free-space
+		/// or object grid of the pipeline, not the one of the tree; the tree is not touched. Points outside the 2^14 grid (negative, too far, NaN, inf,
+		/// also because of the pose) are left out and counted in `*outside` (CUDA: undefined for negative values). Done on the GPU.
+		/// \throws VulkanError for a side length that is not positive and finite, too many points.
+		[[nodiscard]] std::vector<OctreeVoxelRun> voxelize_points(std::span<const Point3f> points, const Matrix4f& pose, float voxel_side_length,
+			const OctreeSensorModel& model = {}, uint32_t* outside = nullptr);
 
 		/// Recomputes the statuses of all nodes with NEEDS_UPDATE from their children, top-down expansion of fresh nodes included
 		/// (CUDA propagate), level by level on the GPU. Nothing to do on a tree without pending updates.

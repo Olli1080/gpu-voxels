@@ -36,6 +36,9 @@ namespace gpu_voxels::vulkan
 		struct CountPush { uint32_t n; };
 		struct PointsPush { uint32_t n, first; float voxel_side_length; };
 		struct HeadsPush { uint32_t n, shift; };
+		struct SensorVoxelsPush { uint32_t n; float voxel_side_length; uint32_t pad[2]; float rows[12]; };
+		static_assert(sizeof(SensorVoxelsPush) == 64);
+		struct RunCountsPush { uint32_t n; int32_t initial_probability, update_probability; };
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
 		struct ExtractPush { uint32_t item_count, level, min_level, out_capacity, next_capacity; };
@@ -122,6 +125,9 @@ namespace gpu_voxels::vulkan
 			Kernels(Context& c, OctreeKind kind)
 				: morton_ids(c, GVL_SHADER_SPAN(octree_morton_ids_comp), 3, sizeof(CountPush)),
 				  points_to_ids(c, GVL_SHADER_SPAN(octree_points_to_ids_comp), 3, sizeof(PointsPush)),
+				  sensor_voxels(c, GVL_SHADER_SPAN(octree_sensor_voxels_comp), 3, sizeof(SensorVoxelsPush)),
+				  run_starts(c, GVL_SHADER_SPAN(octree_run_starts_comp), 3, sizeof(CountPush)),
+				  run_counts(c, GVL_SHADER_SPAN(octree_run_counts_comp), 5, sizeof(RunCountsPush)),
 				  heads(c, GVL_SHADER_SPAN(octree_heads_comp), 2, sizeof(HeadsPush)),
 				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
 				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
@@ -148,7 +154,7 @@ namespace gpu_voxels::vulkan
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
-			ComputePipeline morton_ids, points_to_ids, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, garbage_scan, compact_scan, compact_copy;
 		};
 
@@ -594,6 +600,96 @@ namespace gpu_voxels::vulkan
 				note_pending(count, true);
 			}
 			return dropped_now;
+		}
+
+		/// Slice S6f-1: the distinct voxels of `n` sensor points on the grid of `side` (device buffers: Morton ids, counts, occupancies as int32).
+		struct VoxelRuns
+		{
+			explicit VoxelRuns(Context& c) : ids(c, 8), counts(c, 4), occupancy(c, 4) {}
+			DeviceBuffer ids, counts, occupancy;
+			uint32_t count = 0;   ///< number of distinct voxels
+			uint32_t outside = 0; ///< points that were dropped
+		};
+
+		VoxelRuns voxelize(const DeviceBuffer& points, uint32_t n, const Matrix4f& pose, float side, const OctreeSensorModel& model)
+		{
+			if (!(side > 0.0f) || !std::isfinite(side))
+				throw VulkanError("Octree::voxelize_points: the voxel side length must be positive and finite");
+			if (n > kMaxVoxels)
+				throw VulkanError("Octree::voxelize_points: too many points in one call");
+			VoxelRuns runs(context);
+			if (n == 0)
+				return runs;
+			SensorVoxelsPush push{ n, side, { 0, 0 }, {} };
+			for (int r = 0; r < 3; ++r)
+				for (int c = 0; c < 4; ++c)
+					push.rows[4 * r + c] = pose(r, c);
+			DeviceBuffer ids(context, uint64_t(n) * 8), dropped_buffer(context, 4);
+			{
+				DeviceBuffer values(context, uint64_t(n) * 4);
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				batch.fill(dropped_buffer, 0);
+				batch.barrier();
+				dispatch(batch, kernels.sensor_voxels, { &points, &ids, &dropped_buffer }, n, push);
+				batch.barrier();
+				if (n > 1)
+					primitives.record_sort_pairs64(batch, ids, values, n, 43, keep_alive); // sentinel 2^42 needs 43 bits
+				batch.submit_and_wait();
+			}
+			runs.outside = read_word(dropped_buffer, 0);
+			const uint32_t valid = n - runs.outside; // the sentinels sorted behind the valid ids
+			if (valid == 0)
+				return runs;
+			DeviceBuffer heads(context, uint64_t(valid) * 4), offsets(context, uint64_t(valid) * 4), unique_ids(context, uint64_t(valid) * 8);
+			DeviceBuffer starts(context, uint64_t(valid) * 4), counts(context, uint64_t(valid) * 4), occupancy(context, uint64_t(valid) * 4);
+			{
+				KeepAlive keep_alive;
+				CommandBatch batch(context);
+				record_distinct(batch, ids, heads, offsets, unique_ids, valid, keep_alive);
+				batch.barrier();
+				dispatch(batch, kernels.run_starts, { &heads, &offsets, &starts }, valid, CountPush{ valid });
+				batch.barrier();
+				dispatch(batch, kernels.run_counts, { &heads, &offsets, &starts, &counts, &occupancy }, valid,
+					RunCountsPush{ valid, model.initial_probability, model.update_probability });
+				batch.submit_and_wait();
+			}
+			runs.count = distinct_count(heads, offsets, valid);
+			runs.ids = std::move(unique_ids);
+			runs.counts = std::move(counts);
+			runs.occupancy = std::move(occupancy);
+			return runs;
+		}
+
+		std::vector<OctreeVoxelRun> voxelize_points(std::span<const Point3f> points, const Matrix4f& pose, float side, const OctreeSensorModel& model,
+			uint32_t* outside)
+		{
+			if (points.size() > kMaxVoxels)
+				throw VulkanError("Octree::voxelize_points: too many points in one call");
+			std::vector<OctreeVoxelRun> result;
+			uint32_t dropped_now = 0;
+			if (points.empty())
+				voxelize(DeviceBuffer(context, 12), 0, pose, side, model); // validates the side length
+			else
+			{
+				static_assert(sizeof(Point3f) == 12);
+				DeviceBuffer buffer(context, points.size_bytes());
+				buffer.upload(points.data(), points.size_bytes());
+				const VoxelRuns runs = voxelize(buffer, static_cast<uint32_t>(points.size()), pose, side, model);
+				dropped_now = runs.outside;
+				if (runs.count > 0)
+				{
+					const auto ids = runs.ids.download_vector<uint64_t>(runs.count);
+					const auto counts = runs.counts.download_vector<uint32_t>(runs.count);
+					const auto occupancy = runs.occupancy.download_vector<int32_t>(runs.count);
+					result.reserve(runs.count);
+					for (uint32_t i = 0; i < runs.count; ++i)
+						result.push_back({ ids[i], counts[i], static_cast<int8_t>(occupancy[i]) });
+				}
+			}
+			if (outside)
+				*outside = dropped_now;
+			return result;
 		}
 
 		static OctreeDatum datum_of(uint8_t meaning, const char* function)
@@ -1577,6 +1673,12 @@ namespace gpu_voxels::vulkan
 	uint32_t Octree::insert_meta_point_cloud(const MetaPointCloud& cloud, std::span<const uint8_t> meanings, bool propagate_now)
 	{
 		return impl_->insert_meta_point_cloud(cloud, meanings, propagate_now);
+	}
+
+	std::vector<OctreeVoxelRun> Octree::voxelize_points(std::span<const Point3f> points, const Matrix4f& pose, float voxel_side_length,
+		const OctreeSensorModel& model, uint32_t* outside)
+	{
+		return impl_->voxelize_points(points, pose, voxel_side_length, model, outside);
 	}
 
 	void Octree::propagate() { impl_->propagate(); }

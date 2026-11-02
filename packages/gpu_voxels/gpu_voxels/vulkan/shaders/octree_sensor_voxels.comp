@@ -1,0 +1,32 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "morton.glsl"
+// Sensor points (3 floats per point) -> Morton ids (2 words, low first): world = R * p + t with the first three rows of the pose (row-major,
+// the last row is ignored, as in Sensor::sensorCoordinatesToWorldCoordinates), voxel = floor(world / voxel_side_length). A point whose voxel
+// does not lie inside the 2^14 grid (negative, too far, NaN, inf) gets the sentinel id 2^42 (sorts behind every valid id) and is counted in
+// dropped[0]. The side length is the one of the free-space or object grid of the sensor pipeline, not necessarily the one of the tree.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Points { float points[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 2) buffer Dropped { uint dropped[]; };
+layout(push_constant) uniform Push { uint n; float voxel_side_length; uint pad0; uint pad1; vec4 row0; vec4 row1; vec4 row2; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    const vec3 p = vec3(points[3u * i], points[3u * i + 1u], points[3u * i + 2u]);
+    const vec3 world = vec3(dot(pc.row0.xyz, p) + pc.row0.w, dot(pc.row1.xyz, p) + pc.row1.w, dot(pc.row2.xyz, p) + pc.row2.w);
+    const vec3 f = floor(world / pc.voxel_side_length);
+    uint64_t id = 1ul << 42;
+    // comparisons with NaN are false, so NaN takes the dropped branch
+    if (f.x >= 0.0 && f.x < 16384.0 && f.y >= 0.0 && f.y < 16384.0 && f.z >= 0.0 && f.z < 16384.0)
+        id = morton_code60(uvec3(f));
+    else
+        atomicAdd(dropped[0], 1u);
+    ids[2u * i] = uint(id & 0xFFFFFFFFul);
+    ids[2u * i + 1u] = uint(id >> 32);
+}

@@ -1,0 +1,26 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+// Run k of the n sorted ids (m = number of runs = offsets[n - 1] + heads[n - 1]): counts[k] = its length, occupancy[k] = the occupancy of a
+// voxel that holds that many sensor points, clamp(initial + update * count, -127, 127) (SensorModel::estimateVoxelProbability). The count
+// is limited to 255 before the product: with |update| >= 1 that already reaches the clamp from every initial value (and update = 0 does
+// not depend on the count), so the product cannot overflow.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Heads { uint heads[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Offsets { uint offsets[]; };
+layout(std430, set = 0, binding = 2) readonly buffer Starts { uint starts[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer Counts { uint counts[]; };
+layout(std430, set = 0, binding = 4) writeonly buffer Occupancy { int occupancy[]; };
+layout(push_constant) uniform Push { uint n; int initial_probability; int update_probability; } pc;
+
+void main()
+{
+    const uint k = oct_gid();
+    const uint m = offsets[pc.n - 1u] + heads[pc.n - 1u];
+    if (k >= m)
+        return;
+    const uint end = (k + 1u < m) ? starts[k + 1u] : pc.n;
+    const uint count = end - starts[k];
+    counts[k] = count;
+    occupancy[k] = clamp(pc.initial_probability + pc.update_probability * int(min(count, 255u)), -127, 127);
+}

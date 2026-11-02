@@ -1,0 +1,18 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+// starts[offsets[i]] = i for every i with heads[i] != 0: the position in the sorted ids where the k-th run of equal ids begins
+// (offsets = exclusive scan of heads).
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Heads { uint heads[]; };
+layout(std430, set = 0, binding = 1) readonly buffer Offsets { uint offsets[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer Starts { uint starts[]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n || heads[i] == 0u)
+        return;
+    starts[offsets[i]] = i;
+}
