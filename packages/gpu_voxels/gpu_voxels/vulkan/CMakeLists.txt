@@ -18,6 +18,7 @@ target_sources(${PROJECT_NAME}
     src/Context.cpp
     src/DeviceBuffer.cpp
     src/DistanceVoxelMap.cpp
+    src/GpuVoxels.cpp
     src/KinematicChain.cpp
     src/Octree.cpp
     src/OctreeStorage.cpp
@@ -35,6 +36,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/Context.h
     ${INCLUDE_DIR}/DeviceBuffer.h
     ${INCLUDE_DIR}/DistanceVoxelMap.h
+    ${INCLUDE_DIR}/GpuVoxels.h
     ${INCLUDE_DIR}/KinematicChain.h
     ${INCLUDE_DIR}/Morton.h
     ${INCLUDE_DIR}/MetaPointCloud.h

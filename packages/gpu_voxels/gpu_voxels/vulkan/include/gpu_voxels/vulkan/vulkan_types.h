@@ -27,6 +27,21 @@ namespace gpu_voxels::vulkan
 		eBVM_UNDEFINED = 255
 	};
 
+	/// Mirrors gpu_voxels::MapType (helpers/common_defines.h), same order.
+	enum MapType : uint8_t
+	{
+		MT_BITVECTOR_VOXELMAP,
+		MT_BITVECTOR_VOXELLIST,
+		MT_BITVECTOR_OCTREE,
+		MT_BITVECTOR_MORTON_VOXELLIST, ///< not built (as in CUDA: "not implemented")
+		MT_PROBAB_VOXELMAP,
+		MT_PROBAB_VOXELLIST,           ///< not built (as in CUDA: "not implemented")
+		MT_PROBAB_OCTREE,
+		MT_PROBAB_MORTON_VOXELLIST,    ///< not built (as in CUDA: "not implemented")
+		MT_COUNTING_VOXELLIST,
+		MT_DISTANCE_VOXELMAP
+	};
+
 	struct Point3f { float x, y, z; };
 	struct Coord3ui { uint32_t x, y, z; };
 	struct Dim3ui

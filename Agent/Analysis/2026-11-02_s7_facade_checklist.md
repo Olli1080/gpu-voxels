@@ -1,5 +1,7 @@
 # S7: `GpuVoxels` façade, checklist of every public method (2026-11-02)
 
+**Progress:** S7-1 is done (2026-11-02, [vulkan_gpu_voxels_facade.md](../knowledge_base/architecture/vulkan_gpu_voxels_facade.md)); the rows marked S7-1 below are implemented, S7-2 .. S7-5 are open. The text below is the state before S7-1.
+
 **Question:** what does the Vulkan backend need so that the public API of `gpu_voxels::GpuVoxels` ([GpuVoxels.h](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/include/gpu_voxels/GpuVoxels.h), implementation [GpuVoxels.cu](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/src/GpuVoxels.cu)) and the map interface behind it (`GpuVoxelsMap`, [GpuVoxelsMap.h](../../packages/gpu_voxels/gpu_voxels/core/include/gpu_voxels/core/GpuVoxelsMap.h)) can be offered on Vulkan?
 
 **Method:** both headers and `GpuVoxels.cu` were read in full, plus the `merge`, `clearBitVoxelMeaning`, `needsRebuild`, `getDimensions`, `writeToDisk` and self-collision overrides of the voxel map, voxel list and octree classes (the legacy behaviour column below comes from that reading, nothing ran under CUDA). The Vulkan side was read from its public headers (`vulkan/include/gpu_voxels/vulkan/*.h`). The examples in `packages/examples` were counted to see which calls are really used.
