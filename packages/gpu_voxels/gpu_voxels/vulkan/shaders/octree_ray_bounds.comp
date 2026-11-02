@@ -1,0 +1,25 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "morton.glsl"
+// Bounding box of n voxels given as Morton ids (2 words, low first): bounds[0..2] = smallest x, y, z, bounds[3..5] = largest x, y, z.
+// The host starts them with 0xFFFFFFFF / 0 and adds the sensor origin itself.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) buffer Bounds { uint bounds[6]; };
+layout(push_constant) uniform Push { uint n; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    const uvec3 c = morton_decode60(packUint2x32(uvec2(ids[2u * i], ids[2u * i + 1u])));
+    atomicMin(bounds[0], c.x);
+    atomicMin(bounds[1], c.y);
+    atomicMin(bounds[2], c.z);
+    atomicMax(bounds[3], c.x);
+    atomicMax(bounds[4], c.y);
+    atomicMax(bounds[5], c.z);
+}

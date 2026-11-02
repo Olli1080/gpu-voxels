@@ -39,6 +39,7 @@ namespace gpu_voxels::vulkan
 		struct SensorVoxelsPush { uint32_t n; float voxel_side_length; uint32_t pad[2]; float rows[12]; };
 		static_assert(sizeof(SensorVoxelsPush) == 64);
 		struct RunCountsPush { uint32_t n; int32_t initial_probability, update_probability; };
+		struct RayPush { uint32_t first, count, box_min[3], box_size[3], origin[3]; };
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
 		struct ExtractPush { uint32_t item_count, level, min_level, out_capacity, next_capacity; };
@@ -128,6 +129,8 @@ namespace gpu_voxels::vulkan
 				  sensor_voxels(c, GVL_SHADER_SPAN(octree_sensor_voxels_comp), 3, sizeof(SensorVoxelsPush)),
 				  run_starts(c, GVL_SHADER_SPAN(octree_run_starts_comp), 3, sizeof(CountPush)),
 				  run_counts(c, GVL_SHADER_SPAN(octree_run_counts_comp), 5, sizeof(RunCountsPush)),
+				  ray_bounds(c, GVL_SHADER_SPAN(octree_ray_bounds_comp), 2, sizeof(CountPush)),
+				  ray_cast(c, GVL_SHADER_SPAN(octree_ray_cast_comp), 2, sizeof(RayPush)),
 				  heads(c, GVL_SHADER_SPAN(octree_heads_comp), 2, sizeof(HeadsPush)),
 				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
 				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
@@ -154,7 +157,7 @@ namespace gpu_voxels::vulkan
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
-			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, ray_bounds, ray_cast, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, garbage_scan, compact_scan, compact_copy;
 		};
 
@@ -690,6 +693,97 @@ namespace gpu_voxels::vulkan
 			if (outside)
 				*outside = dropped_now;
 			return result;
+		}
+
+		// ------------------------------------------------------------------------------------------------ S6f-2: free-space rays
+
+		uint64_t ray_map_limit = uint64_t(1) << 28; ///< cells of the largest ray map
+		uint64_t ray_chunk_steps = uint64_t(1) << 28; ///< walk steps (rays of a chunk times the longest possible ray) per GPU submission
+		uint64_t ray_submissions = 0;                 ///< GPU submissions of ray chunks so far (observable for the tests)
+
+		/// The ray hits of `n` voxels (Morton ids in a device buffer) on the box that contains them and `origin`.
+		struct RayCounts
+		{
+			explicit RayCounts(Context& c) : counts(c, 4) {}
+			DeviceBuffer counts;
+			uint32_t box_min[3] = {}, box_size[3] = {};
+			uint64_t cells = 0;
+		};
+
+		RayCounts cast_rays(const DeviceBuffer& ids, uint32_t n, const OctreeVoxel& origin)
+		{
+			if (origin.x >= Octree::kCoordinateLimit || origin.y >= Octree::kCoordinateLimit || origin.z >= Octree::kCoordinateLimit)
+				throw VulkanError("Octree::cast_free_space_rays: the sensor origin lies outside the 2^14 grid");
+			RayCounts rays(context);
+			if (n == 0)
+				return rays;
+			uint32_t bounds[6] = { UINT32_MAX, UINT32_MAX, UINT32_MAX, 0, 0, 0 };
+			{
+				DeviceBuffer bounds_buffer(context, sizeof(bounds));
+				bounds_buffer.upload(bounds, sizeof(bounds));
+				CommandBatch batch(context);
+				dispatch(batch, kernels.ray_bounds, { &ids, &bounds_buffer }, n, CountPush{ n });
+				batch.submit_and_wait();
+				bounds_buffer.download(bounds, sizeof(bounds));
+			}
+			const uint32_t o[3] = { origin.x, origin.y, origin.z };
+			uint64_t cells = 1;
+			uint64_t longest = 0; // 1 + dx + dy + dz of the longest ray that fits into the box
+			for (int a = 0; a < 3; ++a)
+			{
+				rays.box_min[a] = std::min(bounds[a], o[a]);
+				rays.box_size[a] = std::max(bounds[3 + a], o[a]) - rays.box_min[a] + 1;
+				cells *= rays.box_size[a];
+				longest += rays.box_size[a] - 1;
+			}
+			longest += 1;
+			if (cells > ray_map_limit)
+				throw VulkanError("Octree::cast_free_space_rays: the box of the rays has " + std::to_string(cells) + " cells, more than the limit of " + std::to_string(ray_map_limit));
+			rays.cells = cells;
+			rays.counts = DeviceBuffer(context, cells * 4);
+			{
+				CommandBatch batch(context);
+				batch.fill(rays.counts, 0);
+				batch.submit_and_wait();
+			}
+			const uint64_t per_chunk = std::max<uint64_t>(1, ray_chunk_steps / longest);
+			for (uint64_t first = 0; first < n; first += per_chunk)
+			{
+				const uint32_t count = static_cast<uint32_t>(std::min<uint64_t>(per_chunk, n - first));
+				CommandBatch batch(context);
+				dispatch(batch, kernels.ray_cast, { &ids, &rays.counts }, count,
+					RayPush{ static_cast<uint32_t>(first), count, { rays.box_min[0], rays.box_min[1], rays.box_min[2] },
+						{ rays.box_size[0], rays.box_size[1], rays.box_size[2] }, { o[0], o[1], o[2] } });
+				batch.submit_and_wait();
+				++ray_submissions;
+			}
+			return rays;
+		}
+
+		OctreeRayMap cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin)
+		{
+			if (free_voxels.size() > kMaxVoxels)
+				throw VulkanError("Octree::cast_free_space_rays: too many voxels in one call");
+			std::vector<uint64_t> ids;
+			ids.reserve(free_voxels.size());
+			for (const OctreeVoxel& v : free_voxels)
+			{
+				if (v.x >= Octree::kCoordinateLimit || v.y >= Octree::kCoordinateLimit || v.z >= Octree::kCoordinateLimit)
+					throw VulkanError("Octree::cast_free_space_rays: a voxel lies outside the 2^14 grid");
+				ids.push_back(morton::code60(v.x, v.y, v.z));
+			}
+			DeviceBuffer buffer(context, std::max<uint64_t>(8, ids.size() * 8));
+			if (!ids.empty())
+				buffer.upload<uint64_t>(ids);
+			const RayCounts rays = cast_rays(buffer, static_cast<uint32_t>(ids.size()), origin);
+			OctreeRayMap map;
+			if (rays.cells > 0)
+			{
+				map.min = { rays.box_min[0], rays.box_min[1], rays.box_min[2] };
+				map.size = { rays.box_size[0], rays.box_size[1], rays.box_size[2] };
+				map.counts = rays.counts.download_vector<uint32_t>(rays.cells);
+			}
+			return map;
 		}
 
 		static OctreeDatum datum_of(uint8_t meaning, const char* function)
@@ -1680,6 +1774,15 @@ namespace gpu_voxels::vulkan
 	{
 		return impl_->voxelize_points(points, pose, voxel_side_length, model, outside);
 	}
+
+	OctreeRayMap Octree::cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin)
+	{
+		return impl_->cast_free_space_rays(free_voxels, origin);
+	}
+
+	void Octree::set_ray_map_limit(uint64_t cells) { impl_->ray_map_limit = cells; }
+	void Octree::test_set_ray_chunk_steps(uint64_t steps) { impl_->ray_chunk_steps = steps; }
+	uint64_t Octree::test_ray_submissions() const { return impl_->ray_submissions; }
 
 	void Octree::propagate() { impl_->propagate(); }
 	void Octree::rebuild() { impl_->rebuild(); }

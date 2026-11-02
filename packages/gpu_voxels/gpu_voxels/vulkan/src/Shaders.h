@@ -78,6 +78,10 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t octree_run_starts_comp_words;
 	extern const uint32_t octree_run_counts_comp[];
 	extern const std::size_t octree_run_counts_comp_words;
+	extern const uint32_t octree_ray_bounds_comp[];
+	extern const std::size_t octree_ray_bounds_comp_words;
+	extern const uint32_t octree_ray_cast_comp[];
+	extern const std::size_t octree_ray_cast_comp_words;
 	extern const uint32_t radix_histogram_comp[];
 	extern const std::size_t radix_histogram_comp_words;
 	extern const uint32_t radix_scatter_comp[];

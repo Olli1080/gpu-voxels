@@ -1,0 +1,43 @@
+B1 y minimum from x : KILLED
+B2 x maximum from y : KILLED
+B3 z maximum missing : KILLED
+B4 x minimum missing : KILLED
+B5 z minimum from y : KILLED
+K1 walk from the origin to the voxel : KILLED
+K2 last cell missing : KILLED
+K3 x branch also on equal error : KILLED
+K4 x branch needs only the first error : KILLED
+K5 y branch also on equal error : KILLED
+K6 error_xy after x step : KILLED
+K7 error_xz after x step : KILLED
+K8 error_xy after y step : KILLED
+K9 error_yz after y step : KILLED
+K10 error_xz after z step : KILLED
+K11 error_yz after z step : KILLED
+K12 step x on equal coordinates (equivalent: no step happens on a zero difference) : SURVIVED
+K13 step y direction inverted : KILLED
+K14 no guard (equivalent: the walk stays in its box) : SURVIVED
+K15 plain add instead of atomic : KILLED
+K16 y and z swapped in the index : KILLED
+K17 chunk offset ignored : KILLED
+K18 one ray too many : KILLED
+K19 box size of x taken from y : KILLED
+P1 origin x not checked : KILLED
+P2 limit exclusive : KILLED
+P3 box without the origin (minimum) : KILLED
+P4 box without the origin (maximum) : KILLED
+P5 longest ray too short : KILLED
+P6 longest ray without the end cell : KILLED
+P7 map filled with 1 : KILLED
+P8 map too small : KILLED
+P9 voxel x not checked : KILLED
+P10 chunk offset not passed : KILLED
+P11 origin x and y swapped in the push : KILLED
+P12 box minimum x and y swapped in the push : KILLED
+P13 returned minimum y and z swapped : KILLED
+P14 returned size x and z swapped : KILLED
+P15 chunks of the wrong size : SURVIVED
+P16 submission not counted : KILLED
+restored
+P15 chunks of the wrong size : KILLED
+restored

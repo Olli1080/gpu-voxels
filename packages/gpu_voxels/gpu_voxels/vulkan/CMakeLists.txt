@@ -139,6 +139,8 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_sensor_voxels.comp
     shaders/octree_run_starts.comp
     shaders/octree_run_counts.comp
+    shaders/octree_ray_bounds.comp
+    shaders/octree_ray_cast.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp
     shaders/pba_p1_update.comp

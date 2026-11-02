@@ -165,6 +165,14 @@ namespace gpu_voxels::vulkan
 		friend bool operator==(const OctreeVoxelRun&, const OctreeVoxelRun&) = default;
 	};
 
+	/// Slice S6f-2: hits of the free-space rays on a dense box of the free-space grid (CUDA: the byte / probability map of computeFreeSpaceViaRayCast).
+	struct OctreeRayMap
+	{
+		OctreeVoxel min;                ///< first cell of the box
+		OctreeVoxel size;               ///< cells per axis; 0 on every axis when no ray was cast
+		std::vector<uint32_t> counts;   ///< rays that visited the cell, index x + size.x * (y + size.y * z) relative to `min`
+	};
+
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
@@ -264,6 +272,21 @@ namespace gpu_voxels::vulkan
 		/// \throws VulkanError for a side length that is not positive and finite, too many points.
 		[[nodiscard]] std::vector<OctreeVoxelRun> voxelize_points(std::span<const Point3f> points, const Matrix4f& pose, float voxel_side_length,
 			const OctreeSensorModel& model = {}, uint32_t* outside = nullptr);
+
+		/// Slice S6f-2 (CUDA computeFreeSpaceViaRayCast / kernel_rayInsert, without packing): one ray from every voxel of `free_voxels` to `origin`
+		/// (the sensor voxel on the same grid), a 6-connected walk of 1 + dx + dy + dz cells including both end points (CUDA RayCaster::rayCast, walked
+		/// from the voxel to the origin as the octree kernel does). The result is the dense box that contains all voxels and the origin, with the
+		/// number of rays per cell: exact, where CUDA writes without atomics and loses hits (the cell is free if the count is not 0). Every voxel casts
+		/// one ray, pass each voxel once (the output of voxelize_points is distinct). No voxels: an empty map, nothing is cast. The tree is not touched.
+		/// The rays are cast in chunks so that one GPU submission stays short even for long rays. \throws VulkanError for coordinates outside the 2^14
+		/// grid (also of the origin) or a box of more cells than set_ray_map_limit() allows (checked before anything is allocated).
+		[[nodiscard]] OctreeRayMap cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin);
+		/// The largest box of cast_free_space_rays in cells (4 bytes each on the device; default 2^28 = 1 GiB). CUDA has no limit and fails in cudaMalloc.
+		void set_ray_map_limit(uint64_t cells);
+		/// Test hook: at most this many walk steps (rays in a chunk times the longest possible ray) per GPU submission (default 2^28).
+		void test_set_ray_chunk_steps(uint64_t steps);
+		/// Test hook: how many GPU submissions of ray chunks cast_free_space_rays has made so far (rays per chunk = steps / longest possible ray, at least 1).
+		[[nodiscard]] uint64_t test_ray_submissions() const;
 
 		/// Recomputes the statuses of all nodes with NEEDS_UPDATE from their children, top-down expansion of fresh nodes included
 		/// (CUDA propagate), level by level on the GPU. Nothing to do on a tree without pending updates.

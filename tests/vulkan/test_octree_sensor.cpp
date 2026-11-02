@@ -1,3 +1,4 @@
+// Slice S6f-2: Octree::cast_free_space_rays is compared with the host translation of the CUDA walk (ProbVoxelMapReference::walk) summed up per cell.
 // Slice S6f-1: Octree::voxelize_points, the first step of the sensor pipeline (pose, voxel grid of the pipeline, distinct voxels with the number of points
 // and the occupancy of the sensor model). Compared with a plain host reference that works in double precision (std::map of voxel -> count); the test
 // points are built from a chosen world position inside a voxel (away from its border) and the inverse pose, so float rounding on the GPU cannot change
@@ -6,15 +7,18 @@
 #include "vulkan_fixture.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <map>
 #include <random>
+#include <set>
 #include <vector>
 
 #include <gpu_voxels/vulkan/Octree.h>
 
 #include "../reference/octree_reference.h"
+#include "../reference/prob_voxel_map_reference.h"
 
 using namespace gpu_voxels::vulkan;
 using gvl_test::VulkanTest;
@@ -291,4 +295,239 @@ TEST_F(VulkanTest, OctreeVoxelizeLargeCloud)
 	for (int i = 0; i < 300000; ++i)
 		few.push_back(sensor_point(pose, (5.2 + d(rng)), (5.2 + d(rng)), (5.2 + d(rng))));
 	expect_same(tree, few, pose, 1.0f, { 3, -2 }, "few voxels");
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------- S6f-2: free-space rays
+
+namespace
+{
+	using RefWalk = gvl_reference::ProbVoxelMapReference;
+
+	struct RefRays
+	{
+		uint32_t min[3] = {}, size[3] = {};
+		std::vector<uint32_t> counts;
+	};
+
+	/// The box of the voxels and the origin, and per cell the number of walks from a voxel to the origin that visit it.
+	RefRays reference_rays(const std::vector<OctreeVoxel>& voxels, const OctreeVoxel& origin)
+	{
+		RefRays r;
+		if (voxels.empty())
+			return r;
+		uint32_t hi[3];
+		const uint32_t o[3] = { origin.x, origin.y, origin.z };
+		for (int a = 0; a < 3; ++a)
+		{
+			r.min[a] = hi[a] = o[a];
+			for (const OctreeVoxel& v : voxels)
+			{
+				const uint32_t c = a == 0 ? v.x : a == 1 ? v.y : v.z;
+				r.min[a] = std::min(r.min[a], c);
+				hi[a] = std::max(hi[a], c);
+			}
+			r.size[a] = hi[a] - r.min[a] + 1;
+		}
+		r.counts.assign(size_t(r.size[0]) * r.size[1] * r.size[2], 0);
+		for (const OctreeVoxel& v : voxels)
+			for (const auto& c : RefWalk::walk({ v.x, v.y, v.z }, { o[0], o[1], o[2] }))
+				++r.counts[size_t(c[0] - r.min[0]) + size_t(r.size[0]) * (size_t(c[1] - r.min[1]) + size_t(r.size[1]) * size_t(c[2] - r.min[2]))];
+		return r;
+	}
+
+	void expect_rays(Octree& tree, const std::vector<OctreeVoxel>& voxels, const OctreeVoxel& origin, const char* what)
+	{
+		const RefRays e = reference_rays(voxels, origin);
+		const OctreeRayMap got = tree.cast_free_space_rays(voxels, origin);
+		EXPECT_EQ(got.min.x, e.min[0]) << what;
+		EXPECT_EQ(got.min.y, e.min[1]) << what;
+		EXPECT_EQ(got.min.z, e.min[2]) << what;
+		EXPECT_EQ(got.size.x, e.size[0]) << what;
+		EXPECT_EQ(got.size.y, e.size[1]) << what;
+		EXPECT_EQ(got.size.z, e.size[2]) << what;
+		ASSERT_EQ(got.counts.size(), e.counts.size()) << what;
+		for (size_t i = 0; i < e.counts.size(); ++i)
+			if (got.counts[i] != e.counts[i])
+			{
+				ADD_FAILURE() << what << ": cell " << i << " has " << got.counts[i] << " rays, the reference " << e.counts[i];
+				break;
+			}
+	}
+
+	std::vector<OctreeVoxel> random_voxels(std::mt19937_64& rng, size_t count, uint32_t lo, uint32_t extent)
+	{
+		std::set<std::array<uint32_t, 3>> unique;
+		std::uniform_int_distribution<uint32_t> d(lo, lo + extent - 1);
+		while (unique.size() < count)
+			unique.insert({ d(rng), d(rng), d(rng) });
+		std::vector<OctreeVoxel> v;
+		for (const auto& c : unique)
+			v.push_back({ c[0], c[1], c[2] });
+		std::shuffle(v.begin(), v.end(), rng);
+		return v;
+	}
+}
+
+TEST_F(VulkanTest, OctreeRayCastMatchesWalk)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Deterministic);
+	std::mt19937_64 rng(21);
+	for (const uint64_t chunk : { uint64_t(1) << 28, uint64_t(1000), uint64_t(0) })
+	{
+		tree.test_set_ray_chunk_steps(chunk);
+		for (const size_t n : { size_t(1), size_t(2), size_t(10), size_t(300), size_t(3000) })
+		{
+			for (const uint32_t extent : { 4u, 12u, 60u })
+			{
+				if (n > size_t(extent) * extent * extent / 2)
+					continue;
+				const auto voxels = random_voxels(rng, n, 100, extent);
+				// the origin inside the box, on its corner, far outside on every side, on the axis of a voxel
+				const OctreeVoxel origins[] = { { 100 + extent / 2, 100 + extent / 2, 100 + extent / 2 }, { 100, 100, 100 }, { 100 + extent - 1, 100 + extent - 1, 100 + extent - 1 },
+					{ 10, 300, 150 }, { 300, 5, 5 }, { 0, 0, 0 }, { 150, 100, 7 }, { voxels[0].x, voxels[0].y, 3 }, { 100, voxels[0].y, voxels[0].z } };
+				for (const OctreeVoxel& o : origins)
+					expect_rays(tree, voxels, o, "random rays");
+			}
+		}
+	}
+}
+
+TEST_F(VulkanTest, OctreeRayCastKnownRays)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Probabilistic);
+	// a ray along an axis visits every cell between the end points, both included
+	{
+		const auto map = tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 5, 2, 2 } }, { 0, 2, 2 });
+		EXPECT_EQ(map.size.x, 6u);
+		EXPECT_EQ(map.size.y, 1u);
+		EXPECT_EQ(map.size.z, 1u);
+		EXPECT_EQ(map.counts, std::vector<uint32_t>(6, 1));
+	}
+	// the voxel of the origin alone: one cell, one ray
+	{
+		const auto map = tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 7, 8, 9 } }, { 7, 8, 9 });
+		EXPECT_EQ(map.counts, std::vector<uint32_t>(1, 1));
+		EXPECT_EQ(map.min.x, 7u);
+	}
+	// a diagonal ray visits 1 + 3 + 3 + 3 cells
+	{
+		const auto map = tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 3, 3, 3 } }, { 0, 0, 0 });
+		uint32_t sum = 0;
+		for (const uint32_t c : map.counts)
+			sum += c;
+		EXPECT_EQ(sum, 10u);
+		EXPECT_EQ(map.counts.front(), 1u); // the origin
+		EXPECT_EQ(map.counts.back(), 1u);  // the voxel itself
+	}
+	// the cells near the origin are visited by every ray: 100 voxels on a line, the origin at one end
+	{
+		std::vector<OctreeVoxel> line;
+		for (uint32_t x = 1; x <= 100; ++x)
+			line.push_back({ x, 0, 0 });
+		const auto map = tree.cast_free_space_rays(line, { 0, 0, 0 });
+		ASSERT_EQ(map.counts.size(), 101u);
+		for (uint32_t x = 0; x <= 100; ++x)
+			EXPECT_EQ(map.counts[x], 101u - std::max(x, 1u)) << x; // cell x is visited by the rays of the voxels x .. 100, the origin cell by all 100
+	}
+	// the walk from the voxel to the origin is not the walk from the origin to the voxel: find a pair where the sets differ and check that the GPU takes the first
+	{
+		auto cells = [](std::array<uint32_t, 3> a, std::array<uint32_t, 3> b)
+		{
+			std::set<std::array<int64_t, 3>> s;
+			for (const auto& c : RefWalk::walk(a, b))
+				s.insert(c);
+			return s;
+		};
+		bool found = false;
+		for (uint32_t x = 3; x < 12 && !found; ++x)
+			for (uint32_t y = 1; y < 12 && !found; ++y)
+				for (uint32_t z = 1; z < 12 && !found; ++z)
+					if (cells({ x, y, z }, { 0, 0, 0 }) != cells({ 0, 0, 0 }, { x, y, z }))
+					{
+						const auto map = tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { x, y, z } }, { 0, 0, 0 });
+						const auto expected = cells({ x, y, z }, { 0, 0, 0 });
+						std::set<std::array<int64_t, 3>> got;
+						for (uint32_t k = 0; k < map.counts.size(); ++k)
+							if (map.counts[k])
+								got.insert({ int64_t(map.min.x + k % map.size.x), int64_t(map.min.y + (k / map.size.x) % map.size.y), int64_t(map.min.z + k / (map.size.x * map.size.y)) });
+						EXPECT_EQ(got, expected) << x << " " << y << " " << z;
+						found = true;
+					}
+		EXPECT_TRUE(found) << "no pair with different walks: the check above tests nothing";
+	}
+}
+
+TEST_F(VulkanTest, OctreeRayCastArgumentsAndLimits)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Deterministic);
+	// no voxels: nothing is cast, but the origin is checked
+	{
+		const auto map = tree.cast_free_space_rays({}, { 1, 2, 3 });
+		EXPECT_TRUE(map.counts.empty());
+		EXPECT_EQ(map.size.x + map.size.y + map.size.z, 0u);
+		EXPECT_THROW((void)tree.cast_free_space_rays({}, { 16384, 0, 0 }), VulkanError);
+	}
+	// coordinates outside the grid
+	EXPECT_THROW((void)tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 1, 1, 1 } }, { 0, 16384, 0 }), VulkanError);
+	EXPECT_THROW((void)tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 1, 1, 16384 } }, { 0, 0, 0 }), VulkanError);
+	EXPECT_THROW((void)tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 1, 1, 1 }, { 0xFFFFFFFFu, 0, 0 } }, { 0, 0, 0 }), VulkanError);
+	// the limit of the box: 100 cells pass with a limit of 100, not with 99; the check is before the allocation and the tree stays usable
+	const std::vector<OctreeVoxel> row{ { 0, 0, 0 }, { 9, 9, 0 } };
+	tree.set_ray_map_limit(100);
+	EXPECT_EQ(tree.cast_free_space_rays(row, { 0, 0, 0 }).counts.size(), 100u);
+	tree.set_ray_map_limit(99);
+	EXPECT_THROW((void)tree.cast_free_space_rays(row, { 0, 0, 0 }), VulkanError);
+	tree.set_ray_map_limit(100);
+	EXPECT_NO_THROW((void)tree.cast_free_space_rays(row, { 0, 0, 0 }));
+	// the whole grid is far above the default limit and is refused without trying to allocate it
+	tree.set_ray_map_limit(uint64_t(1) << 28);
+	EXPECT_THROW((void)tree.cast_free_space_rays(std::vector<OctreeVoxel>{ { 16383, 16383, 16383 } }, { 0, 0, 0 }), VulkanError);
+	// the longest rays that fit into the default limit: along one axis over the whole grid, and a long thin box
+	expect_rays(tree, { { 16383, 0, 0 }, { 16383, 3, 2 } }, { 0, 0, 0 }, "grid length");
+	expect_rays(tree, { { 0, 16383, 5 }, { 7, 16383, 5 } }, { 3, 0, 0 }, "grid length y");
+	// the tree itself does not change
+	EXPECT_EQ(tree.extract().size(), 0u);
+}
+
+TEST_F(VulkanTest, OctreeRayCastLarge)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Deterministic);
+	std::mt19937_64 rng(33);
+	const auto voxels = random_voxels(rng, 40000, 0, 120);
+	expect_rays(tree, voxels, { 60, 60, 60 }, "40000 rays");
+	tree.test_set_ray_chunk_steps(100000); // many small submissions give the same map
+	expect_rays(tree, voxels, { 2, 100, 7 }, "40000 rays in chunks");
+}
+
+TEST_F(VulkanTest, OctreeRayCastChunks)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Deterministic);
+	std::mt19937_64 rng(44);
+	const auto voxels = random_voxels(rng, 100, 50, 12);
+	const OctreeVoxel origin{ 40, 60, 70 };
+	const RefRays box = reference_rays(voxels, origin);
+	const uint64_t longest = uint64_t(box.size[0]) + box.size[1] + box.size[2] - 2; // 1 + dx + dy + dz of the longest ray of the box
+	for (const uint64_t chunk : { uint64_t(1) << 28, uint64_t(1000), uint64_t(100), uint64_t(longest), uint64_t(longest - 1), uint64_t(2 * longest), uint64_t(3 * longest),
+		uint64_t(3 * longest + longest - 1), uint64_t(20 * longest), uint64_t(0) })
+	{
+		tree.test_set_ray_chunk_steps(chunk);
+		const uint64_t before = tree.test_ray_submissions();
+		expect_rays(tree, voxels, origin, "chunks");
+		const uint64_t per_chunk = std::max<uint64_t>(1, chunk / longest);
+		EXPECT_EQ(tree.test_ray_submissions() - before, (voxels.size() + per_chunk - 1) / per_chunk) << "chunk steps " << chunk;
+	}
+	// nothing to cast: no submission
+	const uint64_t before = tree.test_ray_submissions();
+	(void)tree.cast_free_space_rays({}, origin);
+	EXPECT_EQ(tree.test_ray_submissions(), before);
 }

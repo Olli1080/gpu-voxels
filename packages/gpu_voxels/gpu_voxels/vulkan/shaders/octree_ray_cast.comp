@@ -1,0 +1,56 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "morton.glsl"
+// Free-space ray cast of the sensor pipeline (CUDA kernel_rayInsert): for voxels first .. first + count - 1 of the id list one ray runs from the
+// voxel to the sensor origin, a 6-connected walk of 1 + dx + dy + dz cells including both end points (the walk of CUDA RayCaster::rayCast, the same
+// as prob_ray.glsl, only in this direction: the octree kernel swaps from and to). Every visited cell of the box [box_min, box_min + box_size) gets
+// one more hit in counts[x + size_x * (y + size_y * z)] (relative coordinates). CUDA writes a flag / a clamped probability without atomics and loses
+// hits to races; the count here is exact. A walk never leaves the box spanned by its end points; the guard only protects the buffer.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
+layout(std430, set = 0, binding = 1) buffer Counts { uint counts[]; };
+layout(push_constant) uniform Push { uint first, count, min_x, min_y, min_z, size_x, size_y, size_z, origin_x, origin_y, origin_z; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.count)
+        return;
+    const uint k = pc.first + i;
+    const ivec3 low = ivec3(pc.min_x, pc.min_y, pc.min_z);
+    const ivec3 size = ivec3(pc.size_x, pc.size_y, pc.size_z);
+    ivec3 p = ivec3(morton_decode60(packUint2x32(uvec2(ids[2u * k], ids[2u * k + 1u])))) - low;
+    const ivec3 target = ivec3(pc.origin_x, pc.origin_y, pc.origin_z) - low;
+    const ivec3 d = abs(target - p);
+    const ivec3 step = ivec3(target.x > p.x ? 1 : -1, target.y > p.y ? 1 : -1, target.z > p.z ? 1 : -1);
+    int n = 1 + d.x + d.y + d.z;
+    int error_xy = d.x - d.y;
+    int error_xz = d.x - d.z;
+    int error_yz = d.y - d.z;
+    const ivec3 dd = 2 * d;
+    for (; n > 0; --n)
+    {
+        if (all(greaterThanEqual(p, ivec3(0))) && all(lessThan(p, size)))
+            atomicAdd(counts[uint(p.x) + uint(size.x) * (uint(p.y) + uint(size.y) * uint(p.z))], 1u);
+        if (error_xy > 0 && error_xz > 0)
+        {
+            p.x += step.x;
+            error_xy -= dd.y;
+            error_xz -= dd.z;
+        }
+        else if (error_yz > 0)
+        {
+            p.y += step.y;
+            error_xy += dd.x;
+            error_yz -= dd.z;
+        }
+        else
+        {
+            p.z += step.z;
+            error_xz += dd.x;
+            error_yz += dd.y;
+        }
+    }
+}
