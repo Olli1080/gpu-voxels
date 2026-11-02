@@ -1,0 +1,12 @@
+D1 expansion condition inverted : KILLED
+D2 expansion copies PART : KILLED
+D3 flag of non-PART child kept : KILLED
+D4 level 2 children only when flagged (equivalent for consistent trees) : SURVIVED
+D5 children pushed although not flagged (equivalent for consistent trees) : KILLED
+GD1 node flag UPDATE_SUBTREE not looked at : KILLED
+GD2 inherited flag not looked at : KILLED
+GD3 no subtree update of the children : KILLED
+GD4 UPDATE_SUBTREE kept on children without PART : KILLED
+GD5 children below a subtree node only when flagged : KILLED
+GD6 flag not passed to the next level : KILLED
+restored

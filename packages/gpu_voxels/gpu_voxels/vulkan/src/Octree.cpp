@@ -62,7 +62,7 @@ namespace gpu_voxels::vulkan
 		struct InsertNodePush { uint32_t n, datum, soft, level; uint64_t base; };
 		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
 		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
-		struct PropagatePush { uint32_t count, level, from_counts, next_capacity, item_capacity; };
+		struct PropagatePush { uint32_t count, level, from_counts, next_capacity, item_capacity, count_only = 0; };
 		struct PropagateLeavesPush { uint32_t count, from_counts, item_capacity; };
 		struct PropagateUpPush { uint32_t count, level, from_counts, item_capacity; };
 		struct CompactScanPush { uint32_t count, capacity; };
@@ -740,6 +740,8 @@ namespace gpu_voxels::vulkan
 		uint64_t pending_bound = 0;
 		bool pending_bounded = true;
 		uint64_t bounded_propagate_limit = uint64_t(1) << 17;
+		/// The exact propagate path sizes a work list exactly (count pass first) when 8 entries per node of the level above would take more than this many bytes.
+		uint64_t exact_list_threshold = uint64_t(4) << 20;
 
 		void note_pending(uint64_t ids, bool bounded)
 		{
@@ -833,15 +835,38 @@ namespace gpu_voxels::vulkan
 				list[kRootLevel] = std::move(first);
 				count[kRootLevel] = 1;
 			}
-			// top-down: the nodes to update of every level, expanding fresh nodes on the way
+			// top-down: the nodes to update of every level, expanding fresh nodes on the way. The list of the next level needs at most 8 entries per
+			// node of this level: small lists are allocated with that size and the number of entries is read back after the pass. A big list is
+			// sized exactly instead (a count pass of the kernel, which changes nothing, tells how many nodes will enter it, one more round trip):
+			// allocating 8 times the nodes cost 70 % of the time for a million pending ids.
+			DeviceBuffer no_list(context, 16); // bound to the next list slot of a count pass, never written
+			auto zero_counter = [&]()
+			{
+				DeviceBuffer counter(context, 16);
+				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+				return counter;
+			};
 			for (int level = int(kRootLevel); level >= 2 && count[level] > 0; --level)
 			{
-				DeviceBuffer next(context, std::max<uint64_t>(16, uint64_t(count[level]) * 8 * 16)), counter(context, 16);
-				counter.upload<uint32_t>(std::vector<uint32_t>(4, 0u));
+				const uint64_t worst = uint64_t(count[level]) * 8;
+				uint64_t capacity = worst;
+				if (worst * 16 > exact_list_threshold)
+				{
+					DeviceBuffer counter = zero_counter();
+					CommandBatch batch(context);
+					dispatch(batch, kernels.prop_down, { &*list[level], &no_list, &counter }, worst, PropagatePush{ count[level], uint32_t(level), 0, 0, UINT32_MAX, 1 });
+					batch.submit_and_wait();
+					capacity = read_word(counter, 1);
+				}
+				DeviceBuffer next(context, std::max<uint64_t>(16, capacity * 16));
+				DeviceBuffer counter = zero_counter();
 				CommandBatch batch(context);
-				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, uint64_t(count[level]) * 8, PropagatePush{ count[level], uint32_t(level), 0, UINT32_MAX, UINT32_MAX });
+				dispatch(batch, kernels.prop_down, { &*list[level], &next, &counter }, worst, PropagatePush{ count[level], uint32_t(level), 0, uint32_t(capacity), UINT32_MAX });
 				batch.submit_and_wait();
 				count[level - 1] = read_word(counter, 0);
+				if (count[level - 1] > capacity)
+					throw VulkanError("Octree::propagate: the top-down pass of level " + std::to_string(level) + " listed " + std::to_string(count[level - 1]) +
+						" nodes where " + std::to_string(capacity) + " fit (internal error)");
 				list[level - 1] = std::move(next);
 			}
 			// bottom-up: level 1 from its leaves, then every level from its children
@@ -1479,6 +1504,7 @@ namespace gpu_voxels::vulkan
 	uint64_t Octree::test_garbage_host_fallbacks() const { return impl_->garbage_fallbacks; }
 	void Octree::set_gpu_sort_limit(uint32_t ids) { impl_->gpu_sort_limit = ids; }
 	void Octree::set_bounded_propagate_limit(uint64_t ids) { impl_->bounded_propagate_limit = ids; }
+	void Octree::set_exact_list_threshold(uint64_t bytes) { impl_->exact_list_threshold = bytes; }
 	void Octree::test_set_pending_bound(uint64_t ids) { impl_->pending_bound = ids; impl_->pending_bounded = true; }
 
 	void Octree::set_balancer_config(const OctreeBalancerConfig& config)

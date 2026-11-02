@@ -1,0 +1,15 @@
+E1 count pass counts nothing : KILLED
+E2 count pass counts every child (equivalent: the list is only larger) : SURVIVED
+E3 count pass does not return and changes the tree : KILLED
+E4 count pass counts into the word of the real pass : KILLED
+E5 count pass skips the condition on PART : KILLED
+H1 path choice inverted (equivalent: both paths give the same tree) : SURVIVED
+H2 count not used for the size (equivalent: lists of 8 entries per node) : SURVIVED
+H3 count read from the wrong word : KILLED
+H4 overflow of the exact list not detected (equivalent while the count pass is right) : SURVIVED
+H5 write pass without the capacity guard (equivalent while the count pass is right) : SURVIVED
+H6 count pass over too few nodes : KILLED
+H7 count pass is a real pass : KILLED
+H8 list sized for the count minus one : KILLED
+H9 counter not cleared between the passes (equivalent: a new zeroed buffer) : KILLED
+restored

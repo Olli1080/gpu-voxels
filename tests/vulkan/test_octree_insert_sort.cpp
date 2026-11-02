@@ -218,3 +218,104 @@ TEST_F(VulkanTest, OctreeInsertOfExistingVoxelsAllocatesNoBlocks)
 		}
 	}
 }
+
+// More pending ids than the bounded path takes (default limit 131 072): propagate runs the exact path. Its work lists of the big levels are sized
+// exactly after a count pass (threshold 4 MiB; here 150 000 ids make lists of 1 - 2 MB, so the threshold is lowered to 0 for one tree and raised to
+// never for another). All of them must equal the bounded path with the limit raised (the same kernels, lists sized from the bound), for single voxels
+// and for a soft insert of nodes (which makes the bound unknown anyway).
+TEST_F(VulkanTest, OctreeExactPropagateOfManyPendingIdsEqualsTheBoundedPath)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		for (uint32_t seed = 0; seed < 2; ++seed)
+		{
+			SCOPED_TRACE(std::string(name(kind)) + ", seed " + std::to_string(seed));
+			std::mt19937_64 rng(seed + 1000);
+			Octree exact(ctx(), kind), counted(ctx(), kind), plain(ctx(), kind), bounded(ctx(), kind);
+			bounded.set_bounded_propagate_limit(uint64_t(1) << 40);
+			counted.set_exact_list_threshold(0);
+			plain.set_exact_list_threshold(UINT64_MAX);
+			Octree* const trees[] = { &exact, &counted, &plain, &bounded };
+			std::vector<OctreeVoxel> base;
+			for (int i = 0; i < 2000; ++i)
+				base.push_back({ uint32_t(rng() % 64), uint32_t(rng() % 64), uint32_t(rng() % 64) });
+			for (Octree* tree : trees)
+				tree->build(base);
+			for (int round = 0; round < 3; ++round)
+			{
+				std::vector<uint64_t> ids;
+				for (int i = 0; i < 150000; ++i)
+					ids.push_back(ref::morton(uint32_t(rng() % 64), uint32_t(rng() % 64), uint32_t(rng() % 64)));
+				const auto datum = round == 1 ? OctreeDatum::Free : OctreeDatum::Occupied;
+				for (Octree* tree : trees)
+					tree->insert_ids(ids, datum, false);
+				if (round == 2) // a soft insert on top: the exact path for all
+				{
+					const std::vector<uint64_t> nodes = { 3, 5, 9 };
+					for (Octree* tree : trees)
+						tree->insert_nodes(2, nodes, OctreeDatum::Free, OctreeInsertMode::Soft, false);
+				}
+				for (Octree* tree : trees)
+					tree->propagate();
+				EXPECT_EQ(exact.pending_update_count(), 0u);
+				EXPECT_EQ(exact.dump(), bounded.dump()) << "round " << round;
+				EXPECT_EQ(counted.dump(), bounded.dump()) << "counted, round " << round;
+				EXPECT_EQ(plain.dump(), bounded.dump()) << "plain, round " << round;
+				EXPECT_NO_THROW(exact.check_tree());
+			}
+		}
+	}
+}
+
+// The exact path on random sequences with soft node inserts (subtree updates reach whole subtrees, so the lists are not bounded by the inserts): lists
+// sized exactly after a count pass on every level (threshold 0) give the same tree as lists of 8 entries per node (threshold never) and as the
+// per-level reference schedule the earlier tests compare against.
+TEST_F(VulkanTest, OctreeExactPropagateWithCountedListsEqualsUncountedLists)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	for (const auto kind : kKinds)
+	{
+		for (uint32_t seed = 0; seed < 6; ++seed)
+		{
+			SCOPED_TRACE(std::string(name(kind)) + ", seed " + std::to_string(seed));
+			std::mt19937_64 rng(seed * 13 + 7);
+			Octree counted(ctx(), kind), plain(ctx(), kind);
+			for (Octree* tree : { &counted, &plain })
+				tree->set_bounded_propagate_limit(0); // always the exact path
+			counted.set_exact_list_threshold(0);
+			plain.set_exact_list_threshold(UINT64_MAX);
+			std::vector<OctreeVoxel> base;
+			for (int i = 0; i < 400; ++i)
+				base.push_back({ uint32_t(rng() % 32), uint32_t(rng() % 32), uint32_t(rng() % 32) });
+			counted.build(base);
+			plain.build(base);
+			for (int step = 0; step < 8; ++step)
+			{
+				const bool propagate = rng() % 3 != 0;
+				const auto datum = rng() % 2 ? OctreeDatum::Free : OctreeDatum::Occupied;
+				if (rng() % 2)
+				{
+					const auto ids = messy_ids(rng, 200, 0, 32);
+					counted.insert_ids(ids, datum, propagate);
+					plain.insert_ids(ids, datum, propagate);
+				}
+				else
+				{
+					const uint32_t level = 1 + uint32_t(rng() % 3);
+					const auto ids = messy_ids(rng, 4, level, 32 >> level);
+					const auto mode = rng() % 2 ? OctreeInsertMode::Soft : OctreeInsertMode::Hard;
+					counted.insert_nodes(level, ids, datum, mode, propagate);
+					plain.insert_nodes(level, ids, datum, mode, propagate);
+				}
+				EXPECT_EQ(counted.dump(), plain.dump()) << "step " << step;
+			}
+			counted.propagate();
+			plain.propagate();
+			EXPECT_EQ(counted.dump(), plain.dump());
+			EXPECT_NO_THROW(counted.check_tree());
+		}
+	}
+}

@@ -1,0 +1,5 @@
+Q1 down kernel does not clamp the item count : KILLED
+Q2 down kernel writes past the next list : KILLED
+Q3 down kernel counts into its own level : KILLED
+Q4 down kernel takes the count from the wrong source : KILLED
+restored

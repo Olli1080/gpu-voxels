@@ -72,7 +72,14 @@ TEST_F(VulkanTest, DISABLED_OctreeDynamicTimings)
 			const std::string tag = std::string(kind == OctreeKind::Probabilistic ? "prob" : "det ") + " " + w.name;
 			std::mt19937_64 rng(42);
 			const auto base = random_voxels(rng, n, w.extent);
-			auto fresh = [&] { auto t = std::make_unique<Octree>(ctx(), kind); t->build(base); return t; };
+			auto fresh = [&]
+			{
+				auto t = std::make_unique<Octree>(ctx(), kind);
+				if (const char* e = std::getenv("GVL_TIMING_EXACT_LIST_THRESHOLD")) // A/B of the exact propagate path: bytes, 0 = always count first
+					t->set_exact_list_threshold(std::strtoull(e, nullptr, 10));
+				t->build(base);
+				return t;
+			};
 			auto best = [&](auto&& prepare_and_run) // prepare_and_run() returns the time of the operation in ms
 			{
 				double m = 1e300;

@@ -308,6 +308,9 @@ namespace gpu_voxels::vulkan
 		/// 131072, 0 = always the exact path with a read back per level); `test_set_pending_bound` overwrites the bound (a bound that is too small makes
 		/// propagate() throw instead of writing out of bounds).
 		void set_bounded_propagate_limit(uint64_t ids);
+		/// Test hook of the exact propagate path: a work list is sized exactly after a count pass when 8 entries per node of the level above would take
+		/// more than this many bytes (default 4 MiB; 0 = always counted first, UINT64_MAX = never: lists of 8 entries per node).
+		void set_exact_list_threshold(uint64_t bytes);
 		void test_set_pending_bound(uint64_t ids);
 		/// Test hook: memory_usage() counts the garbage blocks with the host walk only (default: on the GPU, with the host walk as the fallback for a corrupt tree).
 		void test_set_host_garbage_count(bool host);
