@@ -1369,7 +1369,7 @@ namespace gpu_voxels::vulkan
 		/// Slice S6d-6: the allocated blocks no node points to any more (cut subtrees that lost their parent pointer), per level 0 .. 13, counted on the
 		/// GPU: the reachable blocks are walked level by level from the root (every node with a child pointer, as the host walk of `analyze` does) in ONE
 		/// batch, the counts stay in a small buffer (the kernels read the count of their level from it, the lists are sized by the allocated blocks) and are
-		/// read back once. eturn false when a level holds more reachable blocks than were allocated (a block referenced twice: a corrupt tree), `garbage` is
+		/// read back once. \return false when a level holds more reachable blocks than were allocated (a block referenced twice: a corrupt tree), `garbage` is
 		/// then unchanged and the caller takes the host walk, which reports the problem.
 		bool count_garbage_on_gpu(std::array<uint64_t, kLevelCount>& garbage) const
 		{

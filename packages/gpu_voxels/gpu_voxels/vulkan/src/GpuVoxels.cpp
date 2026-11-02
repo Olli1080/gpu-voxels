@@ -25,6 +25,42 @@ namespace gpu_voxels::vulkan
 
 		template<class T, class P>
 		constexpr bool is_map_v = std::is_same_v<T, typename P::element_type>;
+
+		/// For every cloud the index of the link it belongs to (the link whose name is the cloud name); checks the arguments of add_robot.
+		std::vector<std::size_t> links_of_clouds(std::span<const std::string> link_names, std::size_t num_dh_parameters,
+			std::span<const std::string> cloud_names)
+		{
+			if (link_names.size() != num_dh_parameters)
+				throw VulkanError("add_robot: " + std::to_string(link_names.size()) + " link names but " + std::to_string(num_dh_parameters) + " sets of DH parameters");
+			for (std::size_t i = 0; i < link_names.size(); ++i)
+				for (std::size_t j = i + 1; j < link_names.size(); ++j)
+					if (link_names[i] == link_names[j])
+						throw VulkanError("add_robot: duplicate link name '" + link_names[i] + "'");
+
+			std::vector<std::size_t> links;
+			for (const std::string& cloud : cloud_names)
+			{
+				const auto it = std::find(link_names.begin(), link_names.end(), cloud);
+				if (it == link_names.end())
+					throw VulkanError("add_robot: '" + cloud + "' is no link name, so no joint would move this cloud");
+				const auto link = static_cast<std::size_t>(it - link_names.begin());
+				if (!links.empty() && link <= links.back())
+					throw VulkanError("add_robot: the cloud of link '" + cloud + "' is not listed in link order");
+				links.push_back(link);
+			}
+			return links;
+		}
+
+		std::vector<LinkSpec> link_specs(std::span<const std::string> link_names, std::span<const DHParameters> dh_parameters,
+			std::span<const std::size_t> link_of_cloud, std::vector<std::vector<Point3f>>& clouds)
+		{
+			std::vector<LinkSpec> links;
+			for (std::size_t i = 0; i < link_names.size(); ++i)
+				links.push_back({ link_names[i], dh_parameters[i], std::nullopt });
+			for (std::size_t k = 0; k < link_of_cloud.size(); ++k)
+				links[link_of_cloud[k]].cloud = std::move(clouds[k]);
+			return links;
+		}
 	}
 
 	const char* map_type_name(MapType type)
@@ -386,6 +422,138 @@ namespace gpu_voxels::vulkan
 		if (outside != nullptr)
 			*outside = static_cast<uint32_t>(std::min<uint64_t>(box.total - box.coordinates.size() + dropped, std::numeric_limits<uint32_t>::max()));
 		return true;
+	}
+
+	bool GpuVoxels::add_robot(const std::string& robot_name, DHConvention convention, std::span<const std::string> link_names,
+		std::span<const DHParameters> dh_parameters, std::span<const std::string> files, const std::filesystem::path& model_path)
+	{
+		if (robots_.contains(robot_name))
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' already exists." << endl);
+			return false;
+		}
+		Context& ctx = context();
+		const std::vector<std::size_t> link_of_cloud = links_of_clouds(link_names, dh_parameters.size(), files);
+		std::vector<std::vector<Point3f>> clouds;
+		try
+		{
+			for (const std::string& file : files)
+				clouds.push_back(load_point_cloud(file, model_path, PointCloudLoadOptions{}));
+		}
+		catch (const PointCloudFileError& e)
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, e.what() << endl);
+			return false;
+		}
+		const std::vector<LinkSpec> links = link_specs(link_names, dh_parameters, link_of_cloud, clouds);
+		robots_.emplace(robot_name, std::make_shared<KinematicChain>(ctx, convention, links));
+		return true;
+	}
+
+	bool GpuVoxels::add_robot(const std::string& robot_name, DHConvention convention, std::span<const std::string> link_names,
+		std::span<const DHParameters> dh_parameters, const MetaPointCloud& clouds, std::span<const std::string> cloud_names)
+	{
+		if (robots_.contains(robot_name))
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' already exists." << endl);
+			return false;
+		}
+		Context& ctx = context();
+		if (cloud_names.size() != clouds.num_clouds())
+			throw VulkanError("add_robot: " + std::to_string(cloud_names.size()) + " cloud names for " + std::to_string(clouds.num_clouds()) + " sub clouds");
+		const std::vector<std::size_t> link_of_cloud = links_of_clouds(link_names, dh_parameters.size(), cloud_names);
+		std::vector<std::vector<Point3f>> points;
+		for (uint32_t k = 0; k < clouds.num_clouds(); ++k)
+			points.push_back(clouds.download_cloud(k));
+		const std::vector<LinkSpec> links = link_specs(link_names, dh_parameters, link_of_cloud, points);
+		robots_.emplace(robot_name, std::make_shared<KinematicChain>(ctx, convention, links));
+		return true;
+	}
+
+	KinematicChainSharedPtr GpuVoxels::get_robot(const std::string& robot_name) const
+	{
+		const auto it = robots_.find(robot_name);
+		if (it == robots_.end())
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' not found." << endl);
+			return {};
+		}
+		return it->second;
+	}
+
+	bool GpuVoxels::set_robot_configuration(const std::string& robot_name, const std::map<std::string, float>& joint_values)
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		robot->set_configuration(joint_values);
+		return true;
+	}
+
+	bool GpuVoxels::get_robot_configuration(const std::string& robot_name, std::map<std::string, float>& joint_values) const
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		for (const auto& [name, value] : robot->configuration())
+			joint_values[name] = value;
+		return true;
+	}
+
+	bool GpuVoxels::set_robot_base_transformation(const std::string& robot_name, const Matrix4f& transformation)
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		robot->set_base_transformation(transformation);
+		return true;
+	}
+
+	bool GpuVoxels::get_robot_transformation(const std::string& robot_name, std::size_t idx, Matrix4f& transformation) const
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		transformation = robot->transform(idx);
+		return true;
+	}
+
+	bool GpuVoxels::update_robot_part(const std::string& robot_name, const std::string& link_name, std::span<const Point3f> points)
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		robot->update_link_cloud(link_name, points);
+		return true;
+	}
+
+	bool GpuVoxels::insert_robot_into_map(const std::string& robot_name, const std::string& map_name, uint8_t voxel_meaning, uint32_t* outside)
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return false;
+		const GpuVoxelsMapSharedPtr map = get_map(map_name);
+		if (!map)
+			return false;
+		const uint32_t dropped = map->insert_meta_point_cloud(robot->transformed_clouds(), voxel_meaning);
+		if (outside != nullptr)
+			*outside = dropped;
+		return true;
+	}
+
+	std::optional<BitVoxelMap::SelfCollisionResult> GpuVoxels::insert_robot_into_map_self_coll_aware(const std::string& robot_name,
+		const std::string& map_name, std::span<const uint8_t> voxel_meanings, std::span<const BitVector256> collision_masks)
+	{
+		const KinematicChainSharedPtr robot = get_robot(robot_name);
+		if (!robot)
+			return std::nullopt;
+		const GpuVoxelsMapSharedPtr map = get_map(map_name);
+		if (!map)
+			return std::nullopt;
+		BitVoxelMap* bit_map = map->as<BitVoxelMap>();
+		if (bit_map == nullptr)
+			unsupported(map->type(), "insert_robot_into_map_self_coll_aware");
+		return bit_map->insert_meta_point_cloud_with_self_collision_check(robot->transformed_clouds(), voxel_meanings, collision_masks);
 	}
 
 	bool GpuVoxels::visualize_map(const std::string& map_name, bool) const

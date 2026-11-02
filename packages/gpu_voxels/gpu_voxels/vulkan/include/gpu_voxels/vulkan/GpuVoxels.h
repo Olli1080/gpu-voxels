@@ -6,8 +6,9 @@
 /*!\file
  * \brief  Façade of the Vulkan backend: named maps behind one runtime type (slice S7-1 of the migration plan).
  *
- * Counterpart of gpu_voxels::GpuVoxels / GpuVoxelsMap for maps, lists and octrees. Robots, point cloud files, boxes,
- * primitives, merge and disk I/O follow in S7-2 .. S7-5 (Agent/Analysis/2026-11-02_s7_facade_checklist.md). The
+ * Counterpart of gpu_voxels::GpuVoxels / GpuVoxelsMap for maps, lists and octrees, point cloud files, boxes (S7-2) and DH
+ * robots (S7-3). Merge, disk I/O and primitives follow in S7-4 and S7-5, URDF robots and the viewer later
+ * (Agent/Analysis/2026-11-02_s7_facade_checklist.md). The
  * decisions D1 .. D6 of that note apply: a thin handle over the concrete classes, checked as<T>(), unsupported
  * operations throw, no locking, Vulkan value types in the signatures, namespace gpu_voxels::vulkan.
  */
@@ -18,13 +19,16 @@
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/Context.h>
 #include <gpu_voxels/vulkan/DistanceVoxelMap.h>
+#include <gpu_voxels/vulkan/KinematicChain.h>
 #include <gpu_voxels/vulkan/MetaPointCloud.h>
 #include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/PointCloudFile.h>
@@ -111,6 +115,9 @@ namespace gpu_voxels::vulkan
 	};
 
 	using GpuVoxelsMapSharedPtr = std::shared_ptr<GpuVoxelsMap>;
+	/// The Vulkan robot is the DH chain itself (there is no URDF robot yet, so no common interface class). Like the maps,
+	/// a handle must not outlive the GpuVoxels (the Context) that made it.
+	using KinematicChainSharedPtr = std::shared_ptr<KinematicChain>;
 
 	class GpuVoxels;
 	using GpuVoxelsSharedPtr = std::shared_ptr<GpuVoxels>;
@@ -159,16 +166,56 @@ namespace gpu_voxels::vulkan
 
 		/// CUDA insertPointCloudFromFile: loads `model_path / file` (.xyz, .pcd, .binvox, see PointCloudFile.h), shifts it so its minimum is 0
 		/// if asked, applies `p = scaling * p + offset` and inserts the points with the meaning.
-		/// eturn false (and an error log) for an unknown map or a file that cannot be read (unknown extension, missing, malformed);
+		/// \return false (and an error log) for an unknown map or a file that cannot be read (unknown extension, missing, malformed);
 		///         `outside` receives the number of points that were not inserted
 		bool insert_point_cloud_from_file(const std::string& map_name, const std::filesystem::path& file, const std::filesystem::path& model_path,
 			uint8_t voxel_meaning, bool shift_to_zero = false, Point3f offset = { 0.0f, 0.0f, 0.0f }, float scaling = 1.0f, uint32_t* outside = nullptr);
 		/// CUDA insertBoxIntoMap: the voxels from floor(min / side) to ceil(max / side) inclusive (see box_voxel_coordinates) inserted as a
 		/// coordinate list with the meaning. `points_per_voxel` only sets the step (CUDA: round(1 / points_per_voxel) voxels, so it makes no
 		/// difference above 2). Voxels beyond the map are counted in `outside` without being generated.
-		/// eturn false (and an error log) for an unknown map. 	hrows VulkanError for points_per_voxel 0 and the cases of box_voxel_coordinates
+		/// \return false (and an error log) for an unknown map. \throws VulkanError for points_per_voxel 0 and the cases of box_voxel_coordinates
 		bool insert_box_into_map(Point3f corner_min, Point3f corner_max, const std::string& map_name, uint8_t voxel_meaning,
 			uint16_t points_per_voxel = 1, uint32_t* outside = nullptr);
+
+		/// CUDA addRobot (DH, files): link i is `link_names[i]` with `dh_parameters[i]`. `files` are the model files of the links
+		/// that have geometry; as in CUDA a file belongs to the link whose name is the file string, so every entry of `files` must be
+		/// a link name. Differences: the files must be listed in link order (sub cloud k of the robot = k-th link with a file; CUDA:
+		/// k-th file), a file that is no link name throws (CUDA keeps it as a cloud that no joint moves). Files are read with
+		/// load_point_cloud (no shift, scaling 1) from `model_path`; links without a file only add their DH transformation.
+		/// \return false (and an error log) if the name is used or a file cannot be read (CUDA: a file error leaves a robot without
+		///         clouds and still returns true); nothing is added then
+		/// \throws VulkanError for different numbers of links and parameters, duplicate link names, an unknown or misplaced file,
+		///         before the context exists
+		bool add_robot(const std::string& robot_name, DHConvention convention, std::span<const std::string> link_names,
+			std::span<const DHParameters> dh_parameters, std::span<const std::string> files, const std::filesystem::path& model_path);
+		/// CUDA addRobot (DH, MetaPointCloud): the clouds are copied. `cloud_names[k]` is the link that sub cloud k belongs to (CUDA keeps
+		/// the names in the MetaPointCloud); same rules as above (link names, link order). \return false for a used name.
+		/// \throws VulkanError as above, and for a number of names that differs from the number of sub clouds
+		bool add_robot(const std::string& robot_name, DHConvention convention, std::span<const std::string> link_names,
+			std::span<const DHParameters> dh_parameters, const MetaPointCloud& clouds, std::span<const std::string> cloud_names);
+		/// \return the robot; empty (and an error log) for an unknown name
+		[[nodiscard]] KinematicChainSharedPtr get_robot(const std::string& robot_name) const;
+
+		/// Wrappers of the KinematicChain members, all `false` (and an error log) for an unknown robot.
+		/// update_robot_part: the number of points must not change and the link must have a cloud (\throws VulkanError otherwise).
+		bool set_robot_configuration(const std::string& robot_name, const std::map<std::string, float>& joint_values);
+		/// Extends `joint_values` with every joint of the robot (CUDA getConfiguration).
+		bool get_robot_configuration(const std::string& robot_name, std::map<std::string, float>& joint_values) const;
+		bool set_robot_base_transformation(const std::string& robot_name, const Matrix4f& transformation);
+		/// idx 0 is the base, num_links() the end effector. \throws VulkanError for a larger index (CUDA: identity and an error log)
+		bool get_robot_transformation(const std::string& robot_name, std::size_t idx, Matrix4f& transformation) const;
+		bool update_robot_part(const std::string& robot_name, const std::string& link_name, std::span<const Point3f> points);
+
+		/// CUDA insertRobotIntoMap: all link clouds in the current pose with one meaning. `false` for an unknown robot or map;
+		/// `outside` receives the number of points that were not inserted.
+		bool insert_robot_into_map(const std::string& robot_name, const std::string& map_name, uint8_t voxel_meaning, uint32_t* outside = nullptr);
+		/// CUDA insertRobotIntoMapSelfCollAware, bit maps only: BitVoxelMap::insert_meta_point_cloud_with_self_collision_check with
+		/// the empty defaults of CUDA (meaning of sub cloud k = eBVM_SWEPT_VOLUME_START + k, every sub cloud collides with all but itself
+		/// and eBVM_COLLISION). Returns the whole result (CUDA: only `colliding`, so an unknown name and "no collision" are both false);
+		/// nullopt (and an error log) for an unknown robot or map. \throws VulkanError for every other map type (CUDA logs and returns
+		/// true) and for the argument errors of the map class
+		std::optional<BitVoxelMap::SelfCollisionResult> insert_robot_into_map_self_coll_aware(const std::string& robot_name, const std::string& map_name,
+			std::span<const uint8_t> voxel_meanings = {}, std::span<const BitVector256> collision_masks = {});
 
 		/// There is no viewer on Vulkan (decision Q6): always false, like CUDA without GPUVOXEL_VISUALIZE.
 		bool visualize_map(const std::string& map_name, bool force_repaint = true) const;
@@ -185,6 +232,7 @@ namespace gpu_voxels::vulkan
 		Dim3ui dimensions_{ 0, 0, 0 };
 		float voxel_side_length_ = 0.0f;
 		std::map<std::string, GpuVoxelsMapSharedPtr> maps_; ///< destroyed before the owned context
+		std::map<std::string, KinematicChainSharedPtr> robots_; ///< likewise
 	};
 }
 
