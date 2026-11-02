@@ -1,0 +1,19 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+// ids[i] <<= shift in place (Morton ids of 2 words, low first): the node ids of a level of the sensor pipeline become the level 0 ids the insert
+// kernels walk with (a node of level L has the level 0 id node_id << 3 * L; its low 3 * L bits are 0).
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) buffer Ids { uint ids[]; };
+layout(push_constant) uniform Push { uint n; uint shift; } pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.n)
+        return;
+    const uint64_t id = packUint2x32(uvec2(ids[2u * i], ids[2u * i + 1u])) << pc.shift;
+    ids[2u * i] = uint(id & 0xFFFFFFFFul);
+    ids[2u * i + 1u] = uint(id >> 32);
+}

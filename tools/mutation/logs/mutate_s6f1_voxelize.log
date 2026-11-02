@@ -35,3 +35,7 @@ P11 occupancy read as the wrong width : KILLED
 restored
 C4 lower clamp -128 : KILLED
 restored
+V5 x limit inclusive : KILLED
+V6 y limit inclusive : KILLED
+V7 z limit inclusive : KILLED
+restored

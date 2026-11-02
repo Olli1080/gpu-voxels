@@ -1,0 +1,47 @@
+L1 leaves take the first value for every voxel : KILLED
+L2 leaves ignore the values : KILLED
+N1 nodes take the first value for every node : KILLED
+N2 nodes ignore the values : KILLED
+S1 shift by half : KILLED
+S2 high word of the shifted id : KILLED
+I1 leaves told there are no values : KILLED
+I2 nodes told there are no values : KILLED
+I3 values buffer not bound to the leaves : KILLED
+I4 values buffer not bound to the nodes : KILLED
+F1 free space inserted hard : KILLED
+F2 objects inserted soft : KILLED
+F3 free cubes without their values : KILLED
+F4 objects without their occupancy : KILLED
+F5 cubes inserted as occupied : KILLED
+F6 objects inserted as free : KILLED
+F7 cube level without the scale : KILLED
+F8 cube ids shifted by the level of the free grid : KILLED
+F9 objects inserted on level 0 : KILLED
+F10 object ids shifted by the free scale : KILLED
+F11 origin without the free-space scale : KILLED
+F12 negative origin accepted : SURVIVED
+F13 origin limit of the tree grid : KILLED
+F14 object grid limit of the tree grid : SURVIVED
+F15 free grid limit of the tree grid : KILLED
+F16 free space always bounded for propagate : SURVIVED
+F17 free grid taken from the objects : KILLED
+F18 cubes not counted : KILLED
+F19 no propagate : KILLED
+F20 empty level of cubes not skipped : KILLED
+F21 outside count of the objects from the free grid (equivalent: all grids cover the same extent) : SURVIVED
+F22 free voxels counted from the objects : KILLED
+F23 scale limit 2^14 : KILLED
+F24 any scale accepted : KILLED
+F25 scale 0 accepted : SURVIVED
+F26 object level from the free scale : KILLED
+F27 objects voxelized on the tree grid : KILLED
+F28 free space voxelized on the tree grid : KILLED
+F29 origin x and y swapped for the rays : KILLED
+F30 cube above the root not detected (equivalent: cannot happen) : SURVIVED
+F31 voxel side length not required : SURVIVED
+restored
+F12 negative origin accepted : KILLED
+F14 object grid limit of the tree grid : KILLED
+F16 free space always bounded for propagate : KILLED
+F25 scale 0 accepted : KILLED
+F31 voxel side length not required : KILLED

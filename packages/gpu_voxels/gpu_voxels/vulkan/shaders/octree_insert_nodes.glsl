@@ -3,6 +3,8 @@
 // on). Deterministic: status = (status without occupancy bits and PART) | datum, so an existing node loses PART (hard and soft mode alike).
 // Probabilistic: the occupancy is SET to 127 / -127 (not added), the status says UNKNOWN; the hard mode clears PART (the subtree is cut, its
 // block stays reachable), the soft mode keeps PART and sets UPDATE_SUBTREE on an existing node that has it.
+// Slice S6f-4: with use_values != 0 the probabilistic occupancy of node i is values[i] (free space with the value of its rays) instead of the
+// constant of the datum; the deterministic tree ignores the values.
 // The wrapper defines OCT_PROB and includes this file.
 #include "octree_nodes.glsl"
 #include "octree_dyn.glsl"
@@ -13,12 +15,14 @@ layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
 layout(std430, set = 0, binding = 1) readonly buffer Info { uvec4 info[]; };
 layout(std430, set = 0, binding = 2) readonly buffer HeadsT { uint heads_t[]; };
 layout(std430, set = 0, binding = 3) readonly buffer OffsetsT { uint excl_t[]; };
+layout(std430, set = 0, binding = 4) readonly buffer Values { int values[]; };
 layout(push_constant) uniform Push
 {
     uint n;
     uint datum;     // OCT_OCCUPIED or OCT_FREE
     uint soft;      // 1 = soft mode
     uint level;     // target level, 1 .. 13
+    uint use_values; // 1 = the occupancy of node i is values[i]
     uint64_t base;  // first block of the new chunk of the target level (0 if there is none)
 } pc;
 
@@ -42,7 +46,7 @@ void main()
         node.flags |= OCT_UPDATE_SUBTREE;
     if (pc.soft == 0u)
         node.status &= ~OCT_PART;
-    node.occupancy = pc.datum == OCT_OCCUPIED ? 127 : -127;
+    node.occupancy = pc.use_values != 0u ? values[i] : (pc.datum == OCT_OCCUPIED ? 127 : -127);
     node.status = (node.status & ~OCT_OCCUPANCY_MASK) | OCT_UNKNOWN;
 #else
     node.status = (node.status & ~(OCT_OCCUPANCY_MASK | OCT_PART)) | pc.datum;

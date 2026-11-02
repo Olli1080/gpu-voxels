@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <map>
 #include <optional>
@@ -36,7 +37,7 @@ namespace gpu_voxels::vulkan
 		struct CountPush { uint32_t n; };
 		struct PointsPush { uint32_t n, first; float voxel_side_length; };
 		struct HeadsPush { uint32_t n, shift; };
-		struct SensorVoxelsPush { uint32_t n; float voxel_side_length; uint32_t pad[2]; float rows[12]; };
+		struct SensorVoxelsPush { uint32_t n; float voxel_side_length; uint32_t limit, pad; float rows[12]; };
 		static_assert(sizeof(SensorVoxelsPush) == 64);
 		struct RunCountsPush { uint32_t n; int32_t initial_probability, update_probability; };
 		struct RayPush { uint32_t first, count, box_min[3], box_size[3], origin[3]; };
@@ -67,9 +68,9 @@ namespace gpu_voxels::vulkan
 		struct InsertWalkPush { uint32_t n, target; uint64_t root; };
 		struct InsertHeadsPush { uint32_t n, level, target; };
 		struct InsertCountPush { uint32_t n, target; };
-		struct InsertNodePush { uint32_t n, datum, soft, level; uint64_t base; };
+		struct InsertNodePush { uint32_t n, datum, soft, level, use_values, pad; uint64_t base; };
 		struct InsertLinkPush { uint32_t n, level; uint64_t base, base_up; };
-		struct InsertLeafPush { uint32_t n, datum; uint64_t base0; };
+		struct InsertLeafPush { uint32_t n, datum, use_values, pad; uint64_t base0; };
 		struct PropagatePush { uint32_t count, level, from_counts, next_capacity, item_capacity, count_only = 0; };
 		struct PropagateLeavesPush { uint32_t count, from_counts, item_capacity; };
 		struct PropagateUpPush { uint32_t count, level, from_counts, item_capacity; };
@@ -133,6 +134,7 @@ namespace gpu_voxels::vulkan
 				  sensor_voxels(c, GVL_SHADER_SPAN(octree_sensor_voxels_comp), 3, sizeof(SensorVoxelsPush)),
 				  run_starts(c, GVL_SHADER_SPAN(octree_run_starts_comp), 3, sizeof(CountPush)),
 				  run_counts(c, GVL_SHADER_SPAN(octree_run_counts_comp), 5, sizeof(RunCountsPush)),
+				  shift_ids(c, GVL_SHADER_SPAN(octree_shift_ids_comp), 1, sizeof(HeadsPush)),
 				  ray_bounds(c, GVL_SHADER_SPAN(octree_ray_bounds_comp), 2, sizeof(CountPush)),
 				  ray_cast(c, GVL_SHADER_SPAN(octree_ray_cast_comp), 2, sizeof(RayPush)),
 				  free_values(c, GVL_SHADER_SPAN(octree_free_values_comp), 2, sizeof(FreeValuesPush)),
@@ -153,17 +155,17 @@ namespace gpu_voxels::vulkan
 				  insert_heads(c, GVL_SHADER_SPAN(octree_insert_heads_comp), 3, sizeof(InsertHeadsPush)),
 				  insert_count(c, GVL_SHADER_SPAN(octree_insert_count_comp), 3, sizeof(InsertCountPush)),
 				  insert_link(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_link_prob_comp) : GVL_SHADER_SPAN(octree_insert_link_det_comp), 6, sizeof(InsertLinkPush)),
-				  insert_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_leaves_prob_comp) : GVL_SHADER_SPAN(octree_insert_leaves_det_comp), 4, sizeof(InsertLeafPush)),
+				  insert_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_leaves_prob_comp) : GVL_SHADER_SPAN(octree_insert_leaves_det_comp), 5, sizeof(InsertLeafPush)),
 				  prop_down(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_down_prob_comp) : GVL_SHADER_SPAN(octree_propagate_down_det_comp), 3, sizeof(PropagatePush)),
 				  prop_leaves(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_leaves_prob_comp) : GVL_SHADER_SPAN(octree_propagate_leaves_det_comp), 2, sizeof(PropagateLeavesPush)),
-				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 4, sizeof(InsertNodePush)),
+				  insert_nodes(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_insert_nodes_prob_comp) : GVL_SHADER_SPAN(octree_insert_nodes_det_comp), 5, sizeof(InsertNodePush)),
 				  prop_up(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_propagate_up_prob_comp) : GVL_SHADER_SPAN(octree_propagate_up_det_comp), 2, sizeof(PropagateUpPush)),
 				  garbage_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_garbage_scan_prob_comp) : GVL_SHADER_SPAN(octree_garbage_scan_det_comp), 3, sizeof(GarbageScanPush)),
 				  compact_scan(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_scan_prob_comp) : GVL_SHADER_SPAN(octree_compact_scan_det_comp), 4, sizeof(CompactScanPush)),
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
-			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, ray_bounds, ray_cast, free_values, free_pack, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, shift_ids, ray_bounds, ray_cast, free_values, free_pack, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, garbage_scan, compact_scan, compact_copy;
 		};
 
@@ -620,7 +622,7 @@ namespace gpu_voxels::vulkan
 			uint32_t outside = 0; ///< points that were dropped
 		};
 
-		VoxelRuns voxelize(const DeviceBuffer& points, uint32_t n, const Matrix4f& pose, float side, const OctreeSensorModel& model)
+		VoxelRuns voxelize(const DeviceBuffer& points, uint32_t n, const Matrix4f& pose, float side, const OctreeSensorModel& model, uint32_t limit = Octree::kCoordinateLimit)
 		{
 			if (!(side > 0.0f) || !std::isfinite(side))
 				throw VulkanError("Octree::voxelize_points: the voxel side length must be positive and finite");
@@ -629,7 +631,7 @@ namespace gpu_voxels::vulkan
 			VoxelRuns runs(context);
 			if (n == 0)
 				return runs;
-			SensorVoxelsPush push{ n, side, { 0, 0 }, {} };
+			SensorVoxelsPush push{ n, side, limit, 0, {} };
 			for (int r = 0; r < 3; ++r)
 				for (int c = 0; c < 4; ++c)
 					push.rows[4 * r + c] = pose(r, c);
@@ -918,6 +920,86 @@ namespace gpu_voxels::vulkan
 			return result;
 		}
 
+		// ------------------------------------------------------------------------------------------------ S6f-4: point cloud insert with free space
+
+		void shift_ids(DeviceBuffer& ids, uint32_t n, uint32_t shift)
+		{
+			if (n == 0 || shift == 0)
+				return;
+			CommandBatch batch(context);
+			dispatch(batch, kernels.shift_ids, { &ids }, n, HeadsPush{ n, shift });
+			batch.submit_and_wait();
+		}
+
+		OctreeSensorResult insert_point_cloud_with_free_space(std::span<const Point3f> points, const Matrix4f& pose, const OctreeSensorOptions& options, bool propagate_now)
+		{
+			require_side_length("insert_point_cloud_with_free_space");
+			const auto power_of_two = [](uint32_t s) { return s >= 1 && (s & (s - 1)) == 0 && s <= (1u << 13); };
+			if (!power_of_two(options.free_space_scale) || !power_of_two(options.object_scale))
+				throw VulkanError("Octree::insert_point_cloud_with_free_space: the scales of the free-space and object grids must be powers of two from 1 to 2^13");
+			if (points.size() > kMaxVoxels)
+				throw VulkanError("Octree::insert_point_cloud_with_free_space: too many points in one insert");
+			const uint32_t free_shift = static_cast<uint32_t>(std::countr_zero(options.free_space_scale));
+			const uint32_t object_shift = static_cast<uint32_t>(std::countr_zero(options.object_scale));
+			// the sensor voxel on the grid of the free space (CUDA: the translation in mm divided by the resolution, then by the scale, truncated)
+			OctreeVoxel origin;
+			uint32_t* const origin_axis[3] = { &origin.x, &origin.y, &origin.z };
+			for (int a = 0; a < 3; ++a)
+			{
+				const double v = std::floor(double(pose(a, 3)) / (double(voxel_side_length) * options.free_space_scale));
+				if (!(v >= 0.0 && v < double(Octree::kCoordinateLimit >> free_shift)))
+					throw VulkanError("Octree::insert_point_cloud_with_free_space: the sensor origin lies outside the grid of the free space");
+				*origin_axis[a] = static_cast<uint32_t>(v);
+			}
+			OctreeSensorResult result;
+			if (!points.empty())
+			{
+				static_assert(sizeof(Point3f) == 12);
+				DeviceBuffer buffer(context, points.size_bytes());
+				buffer.upload(points.data(), points.size_bytes());
+				const uint32_t n = static_cast<uint32_t>(points.size());
+				const bool prob = kind == OctreeKind::Probabilistic;
+				// everything that can fail for a reason of the input (a box above the limit) is computed before the tree is touched
+				VoxelRuns objects = voxelize(buffer, n, pose, voxel_side_length * float(options.object_scale), options.object_model, Octree::kCoordinateLimit >> object_shift);
+				std::optional<VoxelRuns> separate_free;
+				if (options.free_space_scale != options.object_scale)
+					separate_free = voxelize(buffer, n, pose, voxel_side_length * float(options.free_space_scale), {}, Octree::kCoordinateLimit >> free_shift);
+				const VoxelRuns& free_runs = separate_free ? *separate_free : objects;
+				result.outside_object = objects.outside;
+				result.outside_free = free_runs.outside;
+				result.object_voxels = objects.count;
+				result.free_voxels = free_runs.count;
+				std::vector<FreeLevel> cubes;
+				if (free_runs.count > 0)
+				{
+					const RayCounts rays = cast_rays(free_runs.ids, free_runs.count, origin);
+					cubes = pack_free_cells(rays.counts, rays.box_min, rays.box_size);
+				}
+				// CUDA order: the free space level by level (soft), then the objects (hard), one propagate at the end
+				for (uint32_t l = 0; l < cubes.size(); ++l)
+				{
+					if (cubes[l].count == 0)
+						continue;
+					const uint32_t target = l + free_shift;
+					if (target >= kRootLevel)
+						throw VulkanError("Octree::insert_point_cloud_with_free_space: a free-space cube as big as the whole tree (internal error)");
+					shift_ids(cubes[l].ids, cubes[l].count, 3 * target);
+					insert_sorted(cubes[l].ids, cubes[l].count, target, OctreeDatum::Free, OctreeInsertMode::Soft, prob ? &cubes[l].values : nullptr);
+					note_pending(cubes[l].count, target == 0);
+					result.free_cubes += cubes[l].count;
+				}
+				if (objects.count > 0)
+				{
+					shift_ids(objects.ids, objects.count, 3 * object_shift);
+					insert_sorted(objects.ids, objects.count, object_shift, OctreeDatum::Occupied, OctreeInsertMode::Hard, prob ? &objects.occupancy : nullptr);
+					note_pending(objects.count, true);
+				}
+			}
+			if (propagate_now)
+				propagate();
+			return result;
+		}
+
 		static OctreeDatum datum_of(uint8_t meaning, const char* function)
 		{
 			if (meaning == eBVM_OCCUPIED)
@@ -996,8 +1078,9 @@ namespace gpu_voxels::vulkan
 		/// `ids`: `n` sorted, distinct level 0 ids. The steps are described in the insert shaders; the new blocks of every level from `target` up
 		/// become one new chunk each. Two submits and one read back: (1) walk + count of the new blocks of all levels, (2) the numbering of the
 		/// blocks (heads + scan per level), linking and the final kernel in one batch.
-		void insert_sorted(DeviceBuffer& id_buffer, uint32_t n, uint32_t target, OctreeDatum datum, OctreeInsertMode mode)
+		void insert_sorted(DeviceBuffer& id_buffer, uint32_t n, uint32_t target, OctreeDatum datum, OctreeInsertMode mode, const DeviceBuffer* values = nullptr)
 		{
+			DeviceBuffer no_values(context, 4); // `values`: one int32 occupancy per id for a probabilistic tree (slice S6f-4), replaces the constant of the datum
 			DeviceBuffer info(context, uint64_t(n) * 16), stats(context, 16 * 4);
 			{
 				CommandBatch batch(context);
@@ -1049,10 +1132,10 @@ namespace gpu_voxels::vulkan
 			// the arrays of the target level are now in *_up (or unused when no voxel needs a new block there)
 			const uint32_t datum_bits = datum == OctreeDatum::Occupied ? uint32_t(kOccupied) : uint32_t(kFree);
 			if (target == 0)
-				dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up }, n, InsertLeafPush{ n, datum_bits, base[0] });
+				dispatch(batch, kernels.insert_leaves, { &id_buffer, &info, heads_up, excl_up, values ? values : &no_values }, n, InsertLeafPush{ n, datum_bits, values ? 1u : 0u, 0, base[0] });
 			else
-				dispatch(batch, kernels.insert_nodes, { &id_buffer, &info, heads_up, excl_up }, n,
-					InsertNodePush{ n, datum_bits, mode == OctreeInsertMode::Soft ? 1u : 0u, target, base[target] });
+				dispatch(batch, kernels.insert_nodes, { &id_buffer, &info, heads_up, excl_up, values ? values : &no_values }, n,
+					InsertNodePush{ n, datum_bits, mode == OctreeInsertMode::Soft ? 1u : 0u, target, values ? 1u : 0u, 0, base[target] });
 			batch.submit_and_wait();
 		}
 
@@ -1910,6 +1993,11 @@ namespace gpu_voxels::vulkan
 	OctreeRayMap Octree::cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin)
 	{
 		return impl_->cast_free_space_rays(free_voxels, origin);
+	}
+
+	OctreeSensorResult Octree::insert_point_cloud_with_free_space(std::span<const Point3f> points, const Matrix4f& pose, const OctreeSensorOptions& options, bool propagate_now)
+	{
+		return impl_->insert_point_cloud_with_free_space(points, pose, options, propagate_now);
 	}
 
 	std::vector<std::vector<OctreeFreeCube>> Octree::pack_free_space(const OctreeRayMap& map) { return impl_->pack_free_space(map); }

@@ -182,6 +182,23 @@ namespace gpu_voxels::vulkan
 		friend bool operator==(const OctreeFreeCube&, const OctreeFreeCube&) = default;
 	};
 
+	/// Slice S6f-4: settings of insert_point_cloud_with_free_space (CUDA: free_space_resolution, occupied_space_resolution and the sensor model).
+	struct OctreeSensorOptions
+	{
+		uint32_t free_space_scale = 1;  ///< side of a cell of the free-space grid in tree voxels: a power of two, 1 .. 2^13 (CUDA free_space_resolution / resolution)
+		uint32_t object_scale = 1;      ///< the same for the grid of the object voxels (CUDA occupied_space_resolution / resolution)
+		OctreeSensorModel object_model; ///< occupancy of an object voxel from the number of points in it (probabilistic tree)
+	};
+
+	struct OctreeSensorResult
+	{
+		uint32_t outside_object = 0; ///< points outside the grid of the object voxels (not inserted as objects)
+		uint32_t outside_free = 0;   ///< points outside the grid of the free space (no ray to them)
+		uint32_t object_voxels = 0;  ///< distinct object voxels inserted
+		uint32_t free_voxels = 0;    ///< distinct free-space voxels the rays were cast to
+		uint64_t free_cubes = 0;     ///< cubes of free space inserted (all levels)
+	};
+
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
@@ -292,6 +309,19 @@ namespace gpu_voxels::vulkan
 		[[nodiscard]] OctreeRayMap cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin);
 		/// The largest box of cast_free_space_rays in cells (4 bytes each on the device; default 2^28 = 1 GiB). CUDA has no limit and fails in cudaMalloc.
 		void set_ray_map_limit(uint64_t cells);
+		/// Slice S6f-4 (CUDA GvlNTree::insertPointCloudWithFreespaceCalculation without Kinect depth images): the points (sensor coordinates, metres) are
+		/// moved by `pose`, voxelized on the grid of the free space and on the grid of the objects (voxel_side_length times the scales), a ray runs from
+		/// the sensor (the translation of `pose`, as a voxel of the free-space grid) to every free-space voxel (cast_free_space_rays), the cells the rays
+		/// visit are packed into the biggest aligned cubes (pack_free_space) and inserted as free space with a SOFT insert level by level, then the object
+		/// voxels are inserted with a HARD insert (CUDA order, so an object wins inside a free cube), and the tree is propagated once at the end. In a
+		/// deterministic tree free cubes and object voxels are free / occupied; in a probabilistic tree a free cube gets the occupancy max(-10 * rays, -127)
+		/// of its cells (all 8 cells of a packed cube are equal), an object voxel the occupancy of the sensor model for the number of its points (a new
+		/// voxel is set to it, an existing one is increased by it). Everything that can fail for the input (a sensor outside the grid, a ray box above
+		/// set_ray_map_limit) is detected before the tree is changed. `propagate_now` as in insert_ids. The tree must have its voxel side length set.
+		/// \throws VulkanError for a voxel side length that is not set, scales that are not powers of two (1 .. 2^13), a sensor origin outside the grid of
+		/// the free space (also negative), too many points, a ray box above the limit.
+		OctreeSensorResult insert_point_cloud_with_free_space(std::span<const Point3f> points, const Matrix4f& pose, const OctreeSensorOptions& options = {},
+			bool propagate_now = true);
 		/// Slice S6f-3 (CUDA packVoxel_Map): the free cells of a ray map as the biggest aligned cubes: level by level, a 2x2x2 group of cells (absolute
 		/// alignment) becomes one cell of the next level when all 8 are free and, in a probabilistic tree, have the same value; every other free cell stays
 		/// at its level. A cell of the ray map is free when its count is not 0; its value in a probabilistic tree is max(-10 * count, -127) (what CUDA

@@ -1,3 +1,5 @@
+// Slice S6f-4: Octree::insert_point_cloud_with_free_space against the dynamic reference (the inserts the pipeline has to make, in the CUDA order),
+// a lookup check of what the pipeline must do to a fresh tree, argument errors without changes to the tree, propagation.
 // Slice S6f-3: Octree::pack_free_space is compared with a sparse host reference of the packing (groups found with std::map), alone and behind the rays.
 // Slice S6f-2: Octree::cast_free_space_rays is compared with the host translation of the CUDA walk (ProbVoxelMapReference::walk) summed up per cell.
 // Slice S6f-1: Octree::voxelize_points, the first step of the sensor pipeline (pose, voxel grid of the pipeline, distinct voxels with the number of points
@@ -8,16 +10,19 @@
 #include "vulkan_fixture.h"
 
 #include <algorithm>
+#include <bit>
 #include <array>
 #include <cmath>
 #include <limits>
 #include <map>
 #include <random>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <gpu_voxels/vulkan/Octree.h>
 
+#include "../reference/octree_dynamic_reference.h"
 #include "../reference/octree_reference.h"
 #include "../reference/prob_voxel_map_reference.h"
 
@@ -56,7 +61,7 @@ namespace
 	};
 
 	/// The reference: double arithmetic, one map entry per voxel, occupancy from the unclamped count.
-	Expected reference(const std::vector<Point3f>& points, const Matrix4f& pose, float side, const OctreeSensorModel& model)
+	Expected reference(const std::vector<Point3f>& points, const Matrix4f& pose, float side, const OctreeSensorModel& model, uint32_t limit = 16384)
 	{
 		std::map<uint64_t, uint32_t> counts;
 		Expected e;
@@ -66,7 +71,7 @@ namespace
 			for (int r = 0; r < 3; ++r)
 				w[r] = double(pose(r, 0)) * p.x + double(pose(r, 1)) * p.y + double(pose(r, 2)) * p.z + pose(r, 3);
 			const double fx = std::floor(w[0] / side), fy = std::floor(w[1] / side), fz = std::floor(w[2] / side);
-			if (!(fx >= 0 && fx < 16384 && fy >= 0 && fy < 16384 && fz >= 0 && fz < 16384))
+			if (!(fx >= 0 && fx < limit && fy >= 0 && fy < limit && fz >= 0 && fz < limit))
 			{
 				++e.outside;
 				continue;
@@ -767,5 +772,433 @@ TEST_F(VulkanTest, OctreeRaysAndPacking)
 					EXPECT_EQ(tree.pack_free_space(gpu), tree.pack_free_space(map));
 				}
 			}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------- S6f-4: the whole pipeline
+
+namespace
+{
+	using Dyn = ref::DynamicOctreeReference;
+	ref::Kind to_ref_kind(OctreeKind kind) { return kind == OctreeKind::Probabilistic ? ref::Kind::Probabilistic : ref::Kind::Deterministic; }
+
+	std::string difference(const std::vector<OctreeNode>& gpu, const std::vector<ref::Node>& expected)
+	{
+		if (gpu.size() != expected.size())
+			return "node counts differ: GPU " + std::to_string(gpu.size()) + ", reference " + std::to_string(expected.size());
+		for (size_t i = 0; i < gpu.size(); ++i)
+		{
+			const auto& a = gpu[i];
+			const auto& b = expected[i];
+			if (a.level != b.level || a.id != b.id || a.status != b.status || a.occupancy != b.occupancy || a.has_children != b.has_children)
+				return "node " + std::to_string(i) + ": GPU (level " + std::to_string(a.level) + ", id " + std::to_string(a.id) + ", status " + std::to_string(a.status) + ", occupancy " +
+					std::to_string(a.occupancy) + (a.has_children ? ", children" : "") + ") reference (level " + std::to_string(b.level) + ", id " + std::to_string(b.id) + ", status " +
+					std::to_string(b.status) + ", occupancy " + std::to_string(b.occupancy) + (b.has_children ? ", children" : "") + ")";
+		}
+		return {};
+	}
+
+	void expect_tree(const Octree& tree, const Dyn& model, const std::string& what)
+	{
+		EXPECT_EQ(difference(tree.dump(), model.dump()), "") << what;
+		EXPECT_NO_THROW(tree.check_tree()) << what;
+		EXPECT_EQ(tree.pending_update_count(), 0u) << what << ": NEEDS_UPDATE left behind";
+		const auto stats = tree.memory_usage();
+		for (uint32_t level = 0; level < 14; ++level)
+			EXPECT_EQ(stats.garbage_blocks[level], model.garbage_blocks(level)) << what << ", garbage blocks of level " << level;
+	}
+
+	OctreeVoxel voxel_of_id(uint64_t id)
+	{
+		OctreeVoxel v;
+		for (uint32_t b = 0; b < 14; ++b)
+		{
+			v.x |= uint32_t((id >> (3 * b)) & 1) << b;
+			v.y |= uint32_t((id >> (3 * b + 1)) & 1) << b;
+			v.z |= uint32_t((id >> (3 * b + 2)) & 1) << b;
+		}
+		return v;
+	}
+
+	/// A sensor with a cloud around it: the world positions lie on a spherical shell, each inside a voxel of the TREE grid and away from its border (which
+	/// keeps it away from the borders of every coarser grid too), so float and double arithmetic give the same voxels.
+	struct Scene
+	{
+		std::vector<Point3f> points;
+		Matrix4f pose;
+	};
+
+	/// `skewed`: the sensor has different coordinates on the axes (otherwise the same on all three, for scenes near the far end of the grid).
+	Scene make_scene(std::mt19937_64& rng, float side, double center_voxel, double radius_lo, double radius_hi, size_t n, bool skewed = true)
+	{
+		Scene s;
+		std::uniform_real_distribution<double> angle(-3.0, 3.0), frac(0.25, 0.75), radius(radius_lo, radius_hi), unit(-1.0, 1.0);
+		const double c = (std::floor(center_voxel) + 0.5) * side; // the sensor in the middle of a voxel
+		s.pose = make_pose(float(angle(rng)), float(angle(rng)), float(angle(rng)), float(c), float(skewed ? c * 1.1 : c), float(skewed ? c * 0.9 : c));
+		for (size_t i = 0; i < n; ++i)
+		{
+			double d[3] = { unit(rng), unit(rng), unit(rng) };
+			const double len = std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+			if (len < 1e-3)
+				continue;
+			const double r = radius(rng);
+			double w[3];
+			const double origin[3] = { double(s.pose(0, 3)), double(s.pose(1, 3)), double(s.pose(2, 3)) };
+			for (int a = 0; a < 3; ++a)
+				w[a] = (std::floor((origin[a] + r * d[a] / len) / side) + frac(rng)) * side;
+			s.points.push_back(sensor_point(s.pose, w[0], w[1], w[2]));
+			if (i % 4 == 3)
+				s.points.push_back(s.points[rng() % s.points.size()]); // repeated points: counts above 1
+		}
+		return s;
+	}
+
+	/// The sensor pipeline as the reference sees it (the pieces were checked one by one above): voxelize both grids, rays, packing, the inserts of the
+	/// dynamic reference in the CUDA order, propagate.
+	struct SensorExpectation
+	{
+		Expected objects, free_space;
+		OctreeVoxel origin;
+		std::vector<OctreeVoxel> free_voxels;
+		RefRays rays;
+		Cubes cubes;
+	};
+
+	SensorExpectation expect_sensor(const Scene& s, float side, const OctreeSensorOptions& o, bool prob)
+	{
+		SensorExpectation e;
+		const uint32_t fs = uint32_t(std::countr_zero(o.free_space_scale)), os = uint32_t(std::countr_zero(o.object_scale));
+		e.objects = reference(s.points, s.pose, side * float(o.object_scale), o.object_model, 16384u >> os);
+		e.free_space = reference(s.points, s.pose, side * float(o.free_space_scale), {}, 16384u >> fs);
+		uint32_t* axis[3] = { &e.origin.x, &e.origin.y, &e.origin.z };
+		for (int a = 0; a < 3; ++a)
+			*axis[a] = uint32_t(std::floor(double(s.pose(a, 3)) / (double(side) * o.free_space_scale)));
+		for (const auto& run : e.free_space.runs)
+			e.free_voxels.push_back(voxel_of_id(run.id));
+		OctreeRayMap map;
+		if (!e.free_voxels.empty())
+		{
+			e.rays = reference_rays(e.free_voxels, e.origin);
+			map.min = { e.rays.min[0], e.rays.min[1], e.rays.min[2] };
+			map.size = { e.rays.size[0], e.rays.size[1], e.rays.size[2] };
+			map.counts = e.rays.counts;
+		}
+		e.cubes = reference_pack(map, prob);
+		return e;
+	}
+
+	void apply_to_reference(Dyn& model, const SensorExpectation& e, const OctreeSensorOptions& o, bool prob)
+	{
+		const uint32_t fs = uint32_t(std::countr_zero(o.free_space_scale)), os = uint32_t(std::countr_zero(o.object_scale));
+		for (uint32_t l = 0; l < e.cubes.size(); ++l)
+			for (const OctreeFreeCube& cube : e.cubes[l])
+				model.insert(cube.id << (3 * (l + fs)), Dyn::Datum::Free, l + fs, Dyn::Mode::Soft, prob ? int(cube.occupancy) : Dyn::kDatumValue);
+		for (const OctreeVoxelRun& run : e.objects.runs)
+			model.insert(run.id << (3 * os), Dyn::Datum::Occupied, os, Dyn::Mode::Hard, prob ? int(run.occupancy) : Dyn::kDatumValue);
+		model.propagate();
+	}
+}
+
+TEST_F(VulkanTest, OctreeSensorInsertMatchesReference)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	std::mt19937_64 rng(88);
+	const float side = 0.05f;
+	const OctreeSensorModel models[] = { { 0, 100 }, { 0, 50 }, { 20, 30 }, { 0, -5 } };
+	for (const OctreeKind kind : kKinds)
+	{
+		const bool prob = kind == OctreeKind::Probabilistic;
+		for (const auto [free_scale, object_scale] : { std::pair{ 1u, 1u }, std::pair{ 2u, 1u }, std::pair{ 4u, 2u }, std::pair{ 1u, 2u }, std::pair{ 8u, 4u }, std::pair{ 2u, 2u } })
+		{
+			Octree tree(ctx(), kind, side);
+			Dyn model(to_ref_kind(kind));
+			OctreeSensorOptions options;
+			options.free_space_scale = free_scale;
+			options.object_scale = object_scale;
+			options.object_model = models[rng() % std::size(models)];
+			// three clouds from different poses: the second and third insert into an existing tree (existing leaves and nodes, soft inserts into PART nodes)
+			for (const size_t n : { size_t(300), size_t(1500), size_t(600) })
+			{
+				const Scene scene = make_scene(rng, side, 60.0 + double(rng() % 40), 0.6, 2.0, n);
+				const SensorExpectation e = expect_sensor(scene, side, options, prob);
+				const OctreeSensorResult r = tree.insert_point_cloud_with_free_space(scene.points, scene.pose, options);
+				apply_to_reference(model, e, options, prob);
+				const std::string what = std::string(prob ? "probabilistic" : "deterministic") + " scales " + std::to_string(free_scale) + "/" + std::to_string(object_scale) + ", " + std::to_string(n) + " points";
+				expect_tree(tree, model, what);
+				EXPECT_EQ(r.object_voxels, e.objects.runs.size()) << what;
+				EXPECT_EQ(r.free_voxels, e.free_space.runs.size()) << what;
+				EXPECT_EQ(r.outside_object, e.objects.outside) << what;
+				EXPECT_EQ(r.outside_free, e.free_space.outside) << what;
+				uint64_t cubes = 0;
+				for (const auto& level : e.cubes)
+					cubes += level.size();
+				EXPECT_EQ(r.free_cubes, cubes) << what;
+				EXPECT_GT(r.free_cubes, 0u) << what << ": the scene has free space";
+			}
+			// far from the origin of the grid: ids with bits above 2^32, a sensor at coordinates up to 15000 voxels
+			for (const double center : { 1200.0, 9000.0, 15000.0 })
+			{
+				const Scene scene = make_scene(rng, side, center + double(rng() % 200), 0.6, 2.0, 400, false);
+				const SensorExpectation e = expect_sensor(scene, side, options, prob);
+				tree.insert_point_cloud_with_free_space(scene.points, scene.pose, options);
+				apply_to_reference(model, e, options, prob);
+				expect_tree(tree, model, std::string(prob ? "probabilistic" : "deterministic") + " scales " + std::to_string(free_scale) + "/" + std::to_string(object_scale) + ", far scene at " + std::to_string(center));
+			}
+		}
+	}
+}
+
+TEST_F(VulkanTest, OctreeSensorInsertMeaning)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	// What a point cloud with free space has to do to a fresh tree (scales 1 / 1), checked with lookups and without the reference of the packing: the cells
+	// the rays visit are free (probabilistic: the value of their rays), an object voxel is occupied (probabilistic: the value of its free cell plus the
+	// sensor model, because the object is inserted into the leaf the free space made), everything else is unknown.
+	std::mt19937_64 rng(99);
+	const float side = 0.05f;
+	for (const OctreeKind kind : kKinds)
+	{
+		const bool prob = kind == OctreeKind::Probabilistic;
+		Octree tree(ctx(), kind, side);
+		OctreeSensorOptions options;
+		options.object_model = { 0, 100 };
+		const Scene scene = make_scene(rng, side, 70.0, 0.5, 1.5, 400);
+		const SensorExpectation e = expect_sensor(scene, side, options, prob);
+		tree.insert_point_cloud_with_free_space(scene.points, scene.pose, options);
+		std::map<uint64_t, uint32_t> object_count;
+		std::map<uint64_t, int> object_occupancy;
+		for (const auto& run : e.objects.runs)
+		{
+			object_count[run.id] = run.count;
+			object_occupancy[run.id] = run.occupancy;
+		}
+		std::vector<uint64_t> ids;
+		std::vector<std::pair<int, int>> expected; // free ray count, object occupancy (-1000 = none)
+		for (size_t i = 0; i < e.rays.counts.size(); ++i)
+		{
+			const OctreeVoxel v{ e.rays.min[0] + uint32_t(i % e.rays.size[0]), e.rays.min[1] + uint32_t((i / e.rays.size[0]) % e.rays.size[1]), e.rays.min[2] + uint32_t(i / (size_t(e.rays.size[0]) * e.rays.size[1])) };
+			const uint64_t id = ref::morton(v.x, v.y, v.z);
+			if (e.rays.counts[i] == 0 && !object_count.count(id))
+				continue;
+			ids.push_back(id);
+			expected.push_back({ int(e.rays.counts[i]), object_count.count(id) ? object_occupancy[id] : -1000 });
+		}
+		for (const auto& run : e.objects.runs) // object voxels outside the ray box
+			if (std::find(ids.begin(), ids.end(), run.id) == ids.end())
+			{
+				ids.push_back(run.id);
+				expected.push_back({ 0, run.occupancy });
+			}
+		const auto found = tree.find(ids);
+		ASSERT_EQ(found.size(), ids.size());
+		size_t occupied = 0, freed = 0;
+		for (size_t i = 0; i < ids.size(); ++i)
+		{
+			const auto [rays, object] = expected[i];
+			if (prob)
+			{
+				const int free_value = rays > 0 ? std::max(-10 * rays, -127) : 0;
+				int want;
+				if (object != -1000)
+					want = rays > 0 ? std::clamp(free_value + object, -127, 127) : object;
+				else
+					want = free_value;
+				EXPECT_EQ(int(found[i].occupancy), want) << "voxel " << ids[i] << ", rays " << rays << ", object " << object;
+			}
+			else
+			{
+				const uint8_t want = object != -1000 ? octree_format::kOccupied : octree_format::kFree;
+				EXPECT_EQ(found[i].status & octree_format::kOccupancyMask, want) << "voxel " << ids[i] << ", rays " << rays << ", object " << object;
+			}
+			object != -1000 ? ++occupied : ++freed;
+		}
+		EXPECT_GT(occupied, 10u);
+		EXPECT_GT(freed, 100u);
+		// voxels no ray reached and no point is in stay unknown
+		const std::vector<uint64_t> far_away = { ref::morton(1, 1, 1), ref::morton(2000, 2000, 2000), ref::morton(16383, 16383, 16383) };
+		for (const auto& f : tree.find(far_away))
+			EXPECT_EQ(f.status & octree_format::kOccupancyMask, octree_format::kUnknown);
+	}
+}
+
+TEST_F(VulkanTest, OctreeSensorInsertArguments)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	std::mt19937_64 rng(111);
+	const float side = 0.05f;
+	for (const OctreeKind kind : kKinds)
+	{
+		const bool prob = kind == OctreeKind::Probabilistic;
+		const Scene scene = make_scene(rng, side, 60.0, 0.6, 1.5, 300);
+		OctreeSensorOptions options;
+		options.object_model = { 0, 100 };
+		// no voxel side length: the message says so (the origin check would refuse the pose with another message), also without points
+		{
+			Octree tree(ctx(), kind);
+			for (const std::vector<Point3f>& points : { scene.points, std::vector<Point3f>{} })
+			{
+				try
+				{
+					(void)tree.insert_point_cloud_with_free_space(points, scene.pose, options);
+					ADD_FAILURE() << "no exception";
+				}
+				catch (const VulkanError& e)
+				{
+					EXPECT_NE(std::string(e.what()).find("side length"), std::string::npos) << e.what();
+				}
+			}
+		}
+		Octree tree(ctx(), kind, side);
+		const auto empty_dump = tree.dump();
+		// scales that are not powers of two, zero, above 2^13: refused, nothing inserted
+		for (const uint32_t bad : { 0u, 3u, 6u, 16384u, 1u << 14, 1u << 20 })
+		{
+			OctreeSensorOptions o = options;
+			o.free_space_scale = bad;
+			EXPECT_THROW((void)tree.insert_point_cloud_with_free_space(scene.points, scene.pose, o), VulkanError) << bad;
+			o = options;
+			o.object_scale = bad;
+			EXPECT_THROW((void)tree.insert_point_cloud_with_free_space(scene.points, scene.pose, o), VulkanError) << bad;
+		}
+		// the sensor outside the grid of the free space (negative, too far; the limit depends on the scale), nothing inserted
+		for (const auto [x, scale] : { std::pair{ -0.5f, 1u }, std::pair{ -1e-3f, 1u }, std::pair{ 16384.0f * side, 1u }, std::pair{ 16384.0f * side - 0.01f, 2u + 0u }, std::pair{ 8192.0f * 2 * side, 2u } })
+		{
+			OctreeSensorOptions o = options;
+			o.free_space_scale = scale;
+			Matrix4f pose = scene.pose;
+			pose(0, 3) = x;
+			const bool valid = x >= 0 && std::floor(double(x) / (double(side) * scale)) < double(16384 / scale);
+			if (valid)
+				continue; // the one valid position in the list is not an error
+			EXPECT_THROW((void)tree.insert_point_cloud_with_free_space(scene.points, pose, o), VulkanError) << x << " scale " << scale;
+		}
+		EXPECT_TRUE(difference(tree.dump(), ref::DynamicOctreeReference(to_ref_kind(kind)).dump()).empty());
+		EXPECT_EQ(tree.dump().size(), empty_dump.size());
+		// a ray box above the limit is detected before the tree changes
+		tree.set_ray_map_limit(100);
+		EXPECT_THROW((void)tree.insert_point_cloud_with_free_space(scene.points, scene.pose, options), VulkanError);
+		EXPECT_EQ(tree.dump().size(), empty_dump.size());
+		EXPECT_EQ(tree.pending_update_count(), 0u);
+		tree.set_ray_map_limit(uint64_t(1) << 28);
+		// no points: nothing happens, also with propagate
+		{
+			const OctreeSensorResult r = tree.insert_point_cloud_with_free_space({}, scene.pose, options);
+			EXPECT_EQ(r.object_voxels + r.free_voxels + r.outside_object + r.outside_free, 0u);
+			EXPECT_EQ(r.free_cubes, 0u);
+			EXPECT_EQ(tree.dump().size(), empty_dump.size());
+		}
+		// the checks of the arguments do not depend on the points: a sensor outside the grid and a scale that is not allowed are refused for an empty cloud too
+		{
+			Matrix4f negative = scene.pose;
+			negative(0, 3) = -1.0f;
+			EXPECT_THROW((void)tree.insert_point_cloud_with_free_space({}, negative, options), VulkanError);
+			for (const uint32_t bad : { 0u, 3u, 1u << 14 })
+			{
+				OctreeSensorOptions o = options;
+				o.object_scale = bad;
+				EXPECT_THROW((void)tree.insert_point_cloud_with_free_space({}, scene.pose, o), VulkanError) << bad;
+				o = options;
+				o.free_space_scale = bad;
+				EXPECT_THROW((void)tree.insert_point_cloud_with_free_space({}, scene.pose, o), VulkanError) << bad;
+			}
+		}
+		// points outside the grid: counted, not inserted. Every grid covers the extent of the tree (a coarse cell is a block of tree voxels), so the last voxel of the
+		// tree grid is inside the coarser free-space grid too and both counts agree
+		{
+			const float nan = std::numeric_limits<float>::quiet_NaN();
+			std::vector<Point3f> points = scene.points;
+			const Matrix4f id = Matrix4f::identity();
+			(void)id;
+			// the points in world coordinates through the inverse pose
+			points.push_back(sensor_point(scene.pose, -1.0, 2.0, 2.0));
+			points.push_back(sensor_point(scene.pose, 3.0, -1.0, 2.0));
+			points.push_back({ nan, 1.0f, 1.0f });
+			points.push_back(sensor_point(scene.pose, 16383.5 * side, 3.0, 3.0)); // the last voxel of the tree grid in x
+			points.push_back(sensor_point(scene.pose, 16384.5 * side, 3.0, 3.0)); // one voxel behind it: outside the coarse grid too, whose limit is 8192 cells
+			OctreeSensorOptions o = options;
+			o.free_space_scale = 2;
+			const SensorExpectation e = expect_sensor(Scene{ points, scene.pose }, side, o, prob);
+			const OctreeSensorResult r = tree.insert_point_cloud_with_free_space(points, scene.pose, o);
+			EXPECT_EQ(r.outside_object, e.objects.outside);
+			EXPECT_EQ(r.outside_free, e.free_space.outside);
+			EXPECT_EQ(r.outside_object, 4u);
+			EXPECT_EQ(r.outside_free, 4u);
+			EXPECT_NO_THROW(tree.check_tree());
+		}
+		// the same with a coarse grid of the objects: one voxel behind the edge is outside its limit of 8192 cells and must not be inserted
+		{
+			std::vector<Point3f> points = scene.points;
+			points.push_back(sensor_point(scene.pose, 16384.5 * side, 3.0, 3.0));
+			points.push_back(sensor_point(scene.pose, 16383.5 * side, 3.0, 3.0)); // the last cell of the coarse grid
+			OctreeSensorOptions o = options;
+			o.object_scale = 2;
+			const SensorExpectation e = expect_sensor(Scene{ points, scene.pose }, side, o, prob);
+			const OctreeSensorResult r = tree.insert_point_cloud_with_free_space(points, scene.pose, o);
+			EXPECT_EQ(r.outside_object, e.objects.outside);
+			EXPECT_EQ(r.outside_object, 1u);
+			EXPECT_EQ(r.outside_free, 1u);
+			EXPECT_NO_THROW(tree.check_tree());
+		}
+	}
+}
+
+TEST_F(VulkanTest, OctreeSensorInsertPropagation)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	std::mt19937_64 rng(123);
+	const float side = 0.05f;
+	for (const OctreeKind kind : kKinds)
+	{
+		const Scene a = make_scene(rng, side, 65.0, 0.6, 1.8, 800), b = make_scene(rng, side, 70.0, 0.6, 1.8, 800);
+		OctreeSensorOptions options;
+		options.free_space_scale = 2;
+		options.object_model = { 0, 100 };
+		Octree now(ctx(), kind, side), later(ctx(), kind, side);
+		now.insert_point_cloud_with_free_space(a.points, a.pose, options);
+		now.insert_point_cloud_with_free_space(b.points, b.pose, options);
+		// the same inserts with the propagation done separately, once after each call: the same tree
+		later.insert_point_cloud_with_free_space(a.points, a.pose, options, false);
+		EXPECT_GT(later.pending_update_count(), 0u);
+		later.propagate();
+		later.insert_point_cloud_with_free_space(b.points, b.pose, options, false);
+		later.propagate();
+		EXPECT_TRUE(now.dump() == later.dump());
+		EXPECT_EQ(later.pending_update_count(), 0u);
+		EXPECT_NO_THROW(later.check_tree());
+	}
+}
+
+TEST_F(VulkanTest, OctreeSensorInsertFreeSpaceOverDetail)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	// Free space of a coarse grid over a tree that already has detail: the soft insert of a cube on a node with PART marks UPDATE_SUBTREE, so the propagate
+	// has to reach many more nodes than there are inserted ids and must not take the bounded path (its lists are sized from the number of inserted ids).
+	std::mt19937_64 rng(131);
+	const float side = 0.05f;
+	for (const OctreeKind kind : kKinds)
+	{
+		Octree tree(ctx(), kind, side);
+		Dyn model(to_ref_kind(kind));
+		const bool prob = kind == OctreeKind::Probabilistic;
+		OctreeSensorOptions fine;
+		fine.object_model = { 0, 100 };
+		const Scene detail = make_scene(rng, side, 80.0, 0.6, 1.4, 3000); // a dense shell: detail on every level
+		apply_to_reference(model, expect_sensor(detail, side, fine, prob), fine, prob);
+		tree.insert_point_cloud_with_free_space(detail.points, detail.pose, fine);
+		expect_tree(tree, model, "detail");
+		OctreeSensorOptions coarse = fine;
+		coarse.free_space_scale = 8; // the free cells are nodes of level 3
+		// the same sensor position (the translation depends on the centre only), points farther out: the rays cross the detailed shell
+		const Scene outer = make_scene(rng, side, 80.0, 1.6, 2.0, 1500);
+		const SensorExpectation e = expect_sensor(outer, side, coarse, prob);
+		const OctreeSensorResult r = tree.insert_point_cloud_with_free_space(outer.points, outer.pose, coarse);
+		apply_to_reference(model, e, coarse, prob);
+		expect_tree(tree, model, "free space over detail");
+		EXPECT_GT(r.free_cubes, 50u);
 	}
 }

@@ -95,7 +95,11 @@ namespace gvl_reference::octree
 
 		/// CUDA insertVoxel for one voxel (a level 0 id; for level > 0 only the bits above 3 * level count): the node of `level` on its path is
 		/// set occupied / free. Hard = hard reset data, Soft = soft reset data (differs from hard in the probabilistic tree only).
-		void insert(uint64_t voxel_id, Datum datum, uint32_t level_wanted = 0, Mode mode = Mode::Hard)
+		/// `occupancy` (slice S6f-4, probabilistic tree): the value the insert uses instead of 127 / -127 (the sensor pipeline inserts free space and objects with
+		/// the occupancy of their rays / points); kDatumValue = the constant of the datum.
+		static constexpr int kDatumValue = 1000;
+
+		void insert(uint64_t voxel_id, Datum datum, uint32_t level_wanted = 0, Mode mode = Mode::Hard, int occupancy = kDatumValue)
 		{
 			const uint32_t to_level = std::max(level_wanted, 1u);
 			uint32_t level = kRootLevel;
@@ -110,12 +114,12 @@ namespace gvl_reference::octree
 			nodes_.at({ level, id }).needs_update = true;
 			if (level_wanted == 0 && level == 1 && part(1, id))
 			{
-				set_target(nodes_.at({ 0, voxel_id }), 0, datum, mode, true);
+				set_target(nodes_.at({ 0, voxel_id }), 0, datum, mode, true, occupancy);
 				return;
 			}
 			if (level_wanted > 0 && level == level_wanted)
 			{
-				set_target(nodes_.at({ level, id }), level, datum, mode, true);
+				set_target(nodes_.at({ level, id }), level, datum, mode, true, occupancy);
 				return;
 			}
 			// new blocks below the node where the walk ended, down to the wanted level
@@ -139,7 +143,7 @@ namespace gvl_reference::octree
 				owner.has_block = true;
 				owner.status |= status::PART;
 			}
-			set_target(nodes_.at({ level_wanted, voxel_id >> (3 * level_wanted) }), level_wanted, datum, mode, false);
+			set_target(nodes_.at({ level_wanted, voxel_id >> (3 * level_wanted) }), level_wanted, datum, mode, false, occupancy);
 		}
 
 		/// Propagate on the whole tree.
@@ -277,8 +281,9 @@ namespace gvl_reference::octree
 
 		/// The datum of an insert on the node of `level`: a leaf (level 0, deterministic: set; probabilistic: a new leaf is set, an existing one
 		/// updated) or an inner node (set, PART cleared in the hard mode, UPDATE_SUBTREE in the soft probabilistic mode).
-		void set_target(Memory& node, uint32_t level, Datum datum, Mode mode, bool existing) const
+		void set_target(Memory& node, uint32_t level, Datum datum, Mode mode, bool existing, int occupancy = kDatumValue) const
 		{
+			const int value = occupancy == kDatumValue ? datum_value(datum) : occupancy;
 			const uint8_t set = datum == Datum::Occupied ? status::OCCUPIED : status::FREE;
 			if (kind_ == Kind::Deterministic)
 			{
@@ -288,7 +293,7 @@ namespace gvl_reference::octree
 			if (level == 0)
 			{
 				const int old_value = node.occupancy == kUnknownOccupancy ? 0 : node.occupancy;
-				node.occupancy = existing ? int8_t(clamp_occupancy(old_value + datum_value(datum))) : int8_t(datum_value(datum));
+				node.occupancy = existing ? int8_t(clamp_occupancy(old_value + value)) : int8_t(value);
 			}
 			else
 			{
@@ -296,7 +301,7 @@ namespace gvl_reference::octree
 					node.update_subtree = true;
 				if (mode == Mode::Hard)
 					node.status = uint8_t(node.status & ~status::PART);
-				node.occupancy = int8_t(datum_value(datum));
+				node.occupancy = int8_t(value);
 			}
 			node.status = uint8_t((node.status & ~status::OCCUPANCY_MASK) | status::UNKNOWN);
 		}

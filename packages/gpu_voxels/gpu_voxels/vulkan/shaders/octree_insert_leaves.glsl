@@ -2,6 +2,8 @@
 // setNode), an existing leaf (kind 0) keeps every bit except the occupancy bits and PART (CUDA updateNode with the hard reset data).
 // Probabilistic: a new leaf is SET to the occupancy of the datum (127 occupied, -127 free), an existing leaf is UPDATED (old occupancy, UNKNOWN
 // counts as 0, plus the datum, clamped to -127 .. 127); the status then says UNKNOWN (CUDA _updateStatus), every other bit stays.
+// Slice S6f-4: with use_values != 0 the probabilistic delta of voxel i is values[i] (an occupancy in -127 .. 127, the sensor model of an object
+// voxel) instead of the constant of the datum; the deterministic tree ignores the values.
 // The wrapper defines OCT_PROB and includes this file.
 #include "octree_nodes.glsl"
 #include "octree_dyn.glsl"
@@ -12,10 +14,12 @@ layout(std430, set = 0, binding = 0) readonly buffer Ids { uint ids[]; };
 layout(std430, set = 0, binding = 1) readonly buffer Info { uvec4 info[]; };
 layout(std430, set = 0, binding = 2) readonly buffer Heads0 { uint heads0[]; };
 layout(std430, set = 0, binding = 3) readonly buffer Offsets0 { uint excl0[]; };
+layout(std430, set = 0, binding = 4) readonly buffer Values { int values[]; };
 layout(push_constant) uniform Push
 {
     uint n;
     uint datum;     // OCT_OCCUPIED or OCT_FREE
+    uint use_values; // 1 = the occupancy of voxel i is values[i]
     uint64_t base0; // first block of the new leaf chunk (0 if there is none)
 } pc;
 
@@ -35,7 +39,7 @@ void main()
         block = oct_load_node(packUint2x32(uvec2(f.y, f.z))).child;
     OctLeafBlock leaves = OctLeafBlock(block);
 #if OCT_PROB
-    const int delta = pc.datum == OCT_OCCUPIED ? 127 : -127;
+    const int delta = pc.use_values != 0u ? values[i] : (pc.datum == OCT_OCCUPIED ? 127 : -127);
     OctNode leaf = oct_load_leaf(leaves, slot);
     if (is_new)
         leaf.occupancy = delta;

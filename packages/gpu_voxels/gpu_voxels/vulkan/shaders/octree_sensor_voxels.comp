@@ -4,14 +4,15 @@
 #include "morton.glsl"
 // Sensor points (3 floats per point) -> Morton ids (2 words, low first): world = R * p + t with the first three rows of the pose (row-major,
 // the last row is ignored, as in Sensor::sensorCoordinatesToWorldCoordinates), voxel = floor(world / voxel_side_length). A point whose voxel
-// does not lie inside the 2^14 grid (negative, too far, NaN, inf) gets the sentinel id 2^42 (sorts behind every valid id) and is counted in
-// dropped[0]. The side length is the one of the free-space or object grid of the sensor pipeline, not necessarily the one of the tree.
+// does not lie inside the grid (a coordinate below 0 or from `limit` on, NaN, inf; limit = 2^14 for the tree grid, 2^(14 - s) for a grid that is
+// 2^s times coarser) gets the sentinel id 2^42 (sorts behind every valid id) and is counted in dropped[0]. The side length is the one of the
+// free-space or object grid of the sensor pipeline, not necessarily the one of the tree.
 layout(local_size_x = 64) in;
 #include "octree_gid.glsl"
 layout(std430, set = 0, binding = 0) readonly buffer Points { float points[]; };
 layout(std430, set = 0, binding = 1) writeonly buffer Ids { uint ids[]; };
 layout(std430, set = 0, binding = 2) buffer Dropped { uint dropped[]; };
-layout(push_constant) uniform Push { uint n; float voxel_side_length; uint pad0; uint pad1; vec4 row0; vec4 row1; vec4 row2; } pc;
+layout(push_constant) uniform Push { uint n; float voxel_side_length; uint limit; uint pad1; vec4 row0; vec4 row1; vec4 row2; } pc;
 
 void main()
 {
@@ -23,7 +24,8 @@ void main()
     const vec3 f = floor(world / pc.voxel_side_length);
     uint64_t id = 1ul << 42;
     // comparisons with NaN are false, so NaN takes the dropped branch
-    if (f.x >= 0.0 && f.x < 16384.0 && f.y >= 0.0 && f.y < 16384.0 && f.z >= 0.0 && f.z < 16384.0)
+    const float limit = float(pc.limit);
+    if (f.x >= 0.0 && f.x < limit && f.y >= 0.0 && f.y < limit && f.z >= 0.0 && f.z < limit)
         id = morton_code60(uvec3(f));
     else
         atomicAdd(dropped[0], 1u);
