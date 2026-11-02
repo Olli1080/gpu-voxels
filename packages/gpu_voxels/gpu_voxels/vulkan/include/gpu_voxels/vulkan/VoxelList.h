@@ -19,7 +19,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 #include <gpu_voxels/vulkan/Context.h>
@@ -31,6 +33,7 @@
 namespace gpu_voxels::vulkan
 {
 	class BitVoxelMap;
+	class CountingVoxelList;
 
 	/// Behaviour shared by all list types. Not instantiable; use BitVoxelList or CountingVoxelList.
 	class VoxelListBase
@@ -87,6 +90,14 @@ namespace gpu_voxels::vulkan
 		/// entry (the sign extended count) for Counting lists.
 		[[nodiscard]] std::vector<uint32_t> download_voxel_words() const;
 
+		/// Replaces all entries. The entries must be valid: ids strictly ascending, every id the linear index of its coordinates, coordinates inside
+		/// the reference map, `payload` of words-per-entry words each (bit lists 8, counting lists one sign extended int8 per entry).
+		/// \throws VulkanError for anything else; the list is unchanged then
+		void assign_entries(std::span<const uint32_t> ids, std::span<const Coord3ui> coordinates, std::span<const uint32_t> payload);
+		/// The reason why assign_entries would refuse these entries for a list of `kind` with these reference dimensions, empty if they are valid.
+		[[nodiscard]] static std::optional<std::string> entries_problem(Dim3ui reference_dimensions, Kind kind, std::span<const uint32_t> ids,
+			std::span<const Coord3ui> coordinates, std::span<const uint32_t> payload);
+
 		// ---- device access for other Vulkan code ----
 		/// Buffers hold at least `size()` entries (ids: 1 word, coordinates: 3 words, payload: words per entry).
 		[[nodiscard]] const DeviceBuffer& ids_buffer() const;
@@ -107,6 +118,12 @@ namespace gpu_voxels::vulkan
 		uint32_t collide_with_bit_map(const BitVoxelMap& map);
 		/// Bit lists: appends all occupied voxels of the map (payload copied), then make_unique().
 		uint32_t append_occupied_voxels(const BitVoxelMap& map);
+		/// Appends the entries of `other` moved by `offset` (host side: the entries of `other` are downloaded), then make_unique().
+		/// Payload: bit list from bit list: copied; bit list from counting list: no bits; counting list from counting list: the counts;
+		/// counting list from bit list: count 0 (all as CUDA). `meaning` (bit lists only) replaces the payload of the new entries by that one bit.
+		/// \return number of entries of `other` whose moved voxel lies outside the reference map (dropped)
+		/// \throws VulkanError for another context or other reference dimensions or voxel side length, or `&other == this`
+		uint32_t merge_entries(const VoxelListBase& other, Offset3i offset, std::optional<uint8_t> meaning);
 
 	private:
 		struct Impl;
@@ -139,6 +156,14 @@ namespace gpu_voxels::vulkan
 		/// \return number of voxels appended
 		uint32_t insert_occupied_voxels(const BitVoxelMap& map);
 
+		/// CUDA merge of a bit list / counting list / bit map into this list (new entries are OR-ed into existing ones).
+		/// \return number of entries dropped because their moved voxel lies outside (0 for a map)
+		uint32_t merge(const BitVoxelList& other, Offset3i offset = {}, std::optional<uint8_t> new_meaning = std::nullopt);
+		uint32_t merge(const CountingVoxelList& other, Offset3i offset = {}, std::optional<uint8_t> new_meaning = std::nullopt);
+		/// The occupied voxels of the map (same dimensions); `new_meaning` replaces their bits. CUDA applies an offset to the ids after the
+		/// copy, which is not a shift of the voxels, so there is none here.
+		uint32_t merge(const BitVoxelMap& other, std::optional<uint8_t> new_meaning = std::nullopt);
+
 		/// One 256-bit vector per entry.
 		[[nodiscard]] std::vector<BitVector256> download_bit_vectors() const;
 	};
@@ -157,6 +182,11 @@ namespace gpu_voxels::vulkan
 		void subtract(const CountingVoxelList& other);
 		/// Removes the entries whose id occurs in the bit list (CUDA subtractFromCountingVoxelList).
 		void subtract_from_counting_list(const BitVoxelList& other);
+
+		/// CUDA merge: entries of another counting list keep their counts, entries of a bit list get count 0; counts of equal ids are added
+		/// (wrapping like int8_t). \return number of entries dropped (moved outside the reference map)
+		uint32_t merge(const CountingVoxelList& other, Offset3i offset = {});
+		uint32_t merge(const BitVoxelList& other, Offset3i offset = {});
 
 		[[nodiscard]] std::vector<int8_t> download_counts() const;
 	};

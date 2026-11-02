@@ -316,6 +316,13 @@ namespace gpu_voxels::vulkan
 		return out;
 	}
 
+	void BitVoxelMap::upload_words(std::span<const uint32_t> words)
+	{
+		if (words.size() != voxel_count() * kWordsPerVoxel)
+			throw VulkanError("BitVoxelMap::upload_words: expected " + std::to_string(voxel_count() * kWordsPerVoxel) + " words, got " + std::to_string(words.size()));
+		voxels_.upload(words.data(), words.size_bytes());
+	}
+
 	std::vector<uint32_t> BitVoxelMap::download_words(uint64_t first_voxel, uint64_t count) const
 	{
 		if (first_voxel > voxel_count())

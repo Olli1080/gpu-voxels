@@ -116,6 +116,10 @@ namespace gpu_voxels::vulkan
 		/// Packed voxels (x | y << 10 | z << 20).
 		[[nodiscard]] std::vector<uint32_t> download_words() const;
 
+		/// Replaces all voxels by packed words (voxel_count() words, the layout of download_words(): x | y << 10 | z << 20).
+		/// 	hrows VulkanError for another number of words or a word with bits above bit 29; the map is unchanged then
+		void upload_words(std::span<const uint32_t> words);
+
 		/// Device buffer with the packed voxels for other Vulkan code; read-only for callers.
 		[[nodiscard]] const DeviceBuffer& voxel_buffer() const { return voxels_; }
 

@@ -208,6 +208,143 @@ namespace gpu_voxels::vulkan
 		return true;
 	}
 
+	namespace
+	{
+		Offset3i voxel_offset_of(Point3f metric, float side, bool floor_mode)
+		{
+			auto axis = [&](float value) -> int32_t
+			{
+				const float voxels = floor_mode ? std::floor(value / side) : std::trunc(value / side);
+				if (!std::isfinite(voxels) || std::fabs(voxels) >= 2147483648.0f)
+					throw VulkanError("merge: the offset is not finite or beyond 2^31 voxels");
+				return static_cast<int32_t>(voxels);
+			};
+			return { axis(metric.x), axis(metric.y), axis(metric.z) };
+		}
+	}
+
+	uint32_t GpuVoxelsMap::merge(const GpuVoxelsMap& other, Offset3i voxel_offset, std::optional<uint8_t> new_meaning)
+	{
+		if (&other == this)
+			throw VulkanError("a map cannot be merged into itself");
+		const BitVoxelList* other_bit_list = other.as<BitVoxelList>();
+		const CountingVoxelList* other_counting_list = other.as<CountingVoxelList>();
+		const BitVoxelMap* other_bit_map = other.as<BitVoxelMap>();
+		const auto refuse = [&]() { unsupported(type_, (std::string("merge of ") + map_type_name(other.type_)).c_str()); };
+		const auto same_side = [&]()
+		{
+			if (other.voxel_side_length() != voxel_side_length())
+				throw VulkanError("merge: the voxel side lengths differ");
+		};
+		const auto no_offset = [&](const char* target)
+		{
+			if (!(voxel_offset == Offset3i{}))
+				throw VulkanError(std::string("merge into ") + target + ": an offset is not supported");
+		};
+
+		if (is<BitVoxelMap>() || is<ProbVoxelMap>() || is<DistanceVoxelMap>())
+		{
+			if (other_bit_list == nullptr && other_counting_list == nullptr)
+				refuse();
+			same_side();
+			no_offset("a map");
+			if (new_meaning)
+				throw VulkanError("merge into a map: a new meaning is not supported (CUDA ignores it and inserts occupied voxels)");
+			const std::vector<Coord3ui> coordinates = other_bit_list != nullptr ? other_bit_list->download_coordinates() : other_counting_list->download_coordinates();
+			return coordinates.empty() ? 0u : insert_coordinate_list(coordinates, eBVM_OCCUPIED);
+		}
+		if (BitVoxelList* list = as<BitVoxelList>())
+		{
+			if (other_bit_list == nullptr && other_counting_list == nullptr && other_bit_map == nullptr)
+				refuse();
+			same_side();
+			if (other_bit_list != nullptr)
+				return list->merge(*other_bit_list, voxel_offset, new_meaning);
+			if (other_counting_list != nullptr)
+				return list->merge(*other_counting_list, voxel_offset, new_meaning);
+			no_offset("a bit list from a map");
+			return list->merge(*other_bit_map, new_meaning);
+		}
+		if (CountingVoxelList* list = as<CountingVoxelList>())
+		{
+			if (other_bit_list == nullptr && other_counting_list == nullptr)
+				refuse();
+			same_side();
+			if (new_meaning)
+				throw VulkanError("merge into a counting list: a new meaning is not supported (CUDA ignores it)");
+			return other_bit_list != nullptr ? list->merge(*other_bit_list, voxel_offset) : list->merge(*other_counting_list, voxel_offset);
+		}
+		unsupported(type_, (std::string("merge of ") + map_type_name(other.type_)).c_str()); // octrees
+	}
+
+	uint32_t GpuVoxelsMap::merge_metric(const GpuVoxelsMap& other, Point3f metric_offset, std::optional<uint8_t> new_meaning)
+	{
+		const bool list_target = is<BitVoxelList>() || is<CountingVoxelList>();
+		return merge(other, voxel_offset_of(metric_offset, voxel_side_length(), list_target), new_meaning);
+	}
+
+	bool GpuVoxelsMap::write_to_disk(const std::filesystem::path& file)
+	{
+		if (Octree* tree = as<Octree>())
+		{
+			try
+			{
+				OctreeNativeStorage().write_file(*tree, file.string());
+			}
+			catch (const VulkanError& e)
+			{
+				LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+				return false;
+			}
+			return true;
+		}
+		try
+		{
+			std::visit([&](const auto& map)
+			{
+				if constexpr (!std::is_same_v<std::remove_cvref_t<decltype(*map)>, Octree>)
+					write_map_file(file, *map);
+			}, storage_);
+		}
+		catch (const MapFileError& e)
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+			return false;
+		}
+		return true;
+	}
+
+	bool GpuVoxelsMap::read_from_disk(const std::filesystem::path& file)
+	{
+		if (Octree* tree = as<Octree>())
+		{
+			try
+			{
+				OctreeNativeStorage().read_file(*tree, file.string());
+			}
+			catch (const VulkanError& e)
+			{
+				LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+				return false;
+			}
+			return true;
+		}
+		try
+		{
+			std::visit([&](auto& map)
+			{
+				if constexpr (!std::is_same_v<std::remove_cvref_t<decltype(*map)>, Octree>)
+					read_map_file(file, *map);
+			}, storage_);
+		}
+		catch (const MapFileError& e)
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+			return false;
+		}
+		return true;
+	}
+
 	uint64_t GpuVoxelsMap::memory_usage_bytes() const
 	{
 		return std::visit([&](const auto& map) -> uint64_t

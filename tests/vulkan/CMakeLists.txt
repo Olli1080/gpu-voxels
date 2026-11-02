@@ -14,6 +14,8 @@ gvl_add_test(test_vulkan
     test_distance_pba.cpp
     test_gpu_voxels.cpp
     test_gpu_voxels_robots.cpp
+    test_gpu_voxels_merge.cpp
+    test_gpu_voxels_disk.cpp
     test_kinematic_chain.cpp
     test_meta_point_cloud.cpp
     test_octree_build.cpp

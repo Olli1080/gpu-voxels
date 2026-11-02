@@ -178,6 +178,16 @@ namespace gpu_voxels::vulkan
 		clear_map();
 	}
 
+	void ProbVoxelMap::upload_occupancy(std::span<const int8_t> values)
+	{
+		if (values.size() != voxel_count())
+			throw VulkanError("ProbVoxelMap::upload_occupancy: expected " + std::to_string(voxel_count()) + " values, got " + std::to_string(values.size()));
+		std::vector<uint32_t> words(values.size());
+		for (std::size_t i = 0; i < words.size(); ++i)
+			words[i] = static_cast<uint32_t>(static_cast<int32_t>(values[i]));
+		voxels_.upload(words.data(), words.size() * sizeof(uint32_t));
+	}
+
 	std::vector<int8_t> ProbVoxelMap::download_occupancy(uint64_t first_voxel, uint64_t voxel_count_in) const
 	{
 		if (first_voxel > voxel_count())

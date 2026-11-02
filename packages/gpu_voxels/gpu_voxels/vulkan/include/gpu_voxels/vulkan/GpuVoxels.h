@@ -7,7 +7,7 @@
  * \brief  Façade of the Vulkan backend: named maps behind one runtime type (slice S7-1 of the migration plan).
  *
  * Counterpart of gpu_voxels::GpuVoxels / GpuVoxelsMap for maps, lists and octrees, point cloud files, boxes (S7-2) and DH
- * robots (S7-3). Merge, disk I/O and primitives follow in S7-4 and S7-5, URDF robots and the viewer later
+ * robots (S7-3), merge and disk I/O of maps and lists (S7-4). Primitives follow in S7-5, URDF robots and the viewer later
  * (Agent/Analysis/2026-11-02_s7_facade_checklist.md). The
  * decisions D1 .. D6 of that note apply: a thin handle over the concrete classes, checked as<T>(), unsupported
  * operations throw, no locking, Vulkan value types in the signatures, namespace gpu_voxels::vulkan.
@@ -29,8 +29,10 @@
 #include <gpu_voxels/vulkan/Context.h>
 #include <gpu_voxels/vulkan/DistanceVoxelMap.h>
 #include <gpu_voxels/vulkan/KinematicChain.h>
+#include <gpu_voxels/vulkan/MapFile.h>
 #include <gpu_voxels/vulkan/MetaPointCloud.h>
 #include <gpu_voxels/vulkan/Octree.h>
+#include <gpu_voxels/vulkan/OctreeStorage.h>
 #include <gpu_voxels/vulkan/PointCloudFile.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
@@ -97,6 +99,25 @@ namespace gpu_voxels::vulkan
 		bool rebuild();
 		/// CUDA rebuildIfNeeded: rebuilds when needed. \return true if it rebuilt
 		bool rebuild_if_needed();
+
+		/// CUDA merge: copies the data of `other` into this map, moved by `voxel_offset`. The combinations (the rest throws, CUDA logs and
+		/// returns false): bit / prob. / distance map <- bit list or counting list (the coordinates are inserted as occupied; no offset and no
+		/// `new_meaning`, CUDA has no offset there and ignores the meaning); bit list <- bit list, counting list (bit vectors OR-ed into existing
+		/// entries; `new_meaning` replaces the bits of the new entries) or bit map (the occupied voxels, no offset); counting list <- counting list
+		/// (counts added) or bit list (count 0 for new entries, as CUDA), no `new_meaning`. Octrees merge nothing (CUDA: stub).
+		/// \return number of voxels / entries that were not merged because they lie outside this map or reference map (after the offset)
+		/// \throws VulkanError for an unsupported combination or argument, a different voxel side length (lists: or reference dimensions),
+		///         `&other == this`
+		uint32_t merge(const GpuVoxelsMap& other, Offset3i voxel_offset = {}, std::optional<uint8_t> new_meaning = std::nullopt);
+		/// CUDA merge with a metric offset: `voxel_offset = floor(metric_offset / side)` for list targets (CUDA mapToVoxelsSigned) and the truncation
+		/// toward zero for maps (CUDA cast). \throws VulkanError for an offset that is not finite or beyond +-2^31 voxels, and as above
+		uint32_t merge_metric(const GpuVoxelsMap& other, Point3f metric_offset, std::optional<uint8_t> new_meaning = std::nullopt);
+
+		/// CUDA writeToDisk / readFromDisk: the native formats of MapFile.h (octrees: OctreeNativeStorage). A file that cannot be written, opened or
+		/// used (wrong type, dimensions, side length, length or checksum) gives `false` and an error log (CUDA the same, but reads partly); a read
+		/// replaces the whole content and leaves the map unchanged when it fails. Octrees restore the voxel side length of the file.
+		bool write_to_disk(const std::filesystem::path& file);
+		bool read_from_disk(const std::filesystem::path& file);
 
 		[[nodiscard]] uint64_t memory_usage_bytes() const;
 		/// Voxels per axis. Maps: their dimensions; lists: the dimensions of the reference map (CUDA returns

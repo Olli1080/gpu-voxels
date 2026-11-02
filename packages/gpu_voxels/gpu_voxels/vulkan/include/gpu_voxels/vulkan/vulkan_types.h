@@ -44,6 +44,12 @@ namespace gpu_voxels::vulkan
 
 	struct Point3f { float x, y, z; };
 	struct Coord3ui { uint32_t x, y, z; };
+	/// Signed shift in voxels (CUDA Vector3i).
+	struct Offset3i
+	{
+		int32_t x = 0, y = 0, z = 0;
+		bool operator==(const Offset3i&) const = default;
+	};
 	struct Dim3ui
 	{
 		uint32_t x, y, z;

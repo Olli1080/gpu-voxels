@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME}
     src/Octree.cpp
     src/OctreeStorage.cpp
     src/PointCloudFile.cpp
+    src/MapFile.cpp
     src/VoxelList.cpp
     src/MetaPointCloud.cpp
     src/ProbVoxelMap.cpp
@@ -45,6 +46,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/OctreeFormat.h
     ${INCLUDE_DIR}/OctreeStorage.h
     ${INCLUDE_DIR}/PointCloudFile.h
+    ${INCLUDE_DIR}/MapFile.h
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h

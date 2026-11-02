@@ -116,6 +116,10 @@ namespace gpu_voxels::vulkan
 		/// Bit i of a voxel is bit (i % 32) of word (i / 32).
 		[[nodiscard]] std::vector<uint32_t> download_words(uint64_t first_voxel = 0, uint64_t voxel_count = UINT64_MAX) const;
 
+		/// Replaces all voxels by `words` (voxel_count() * kWordsPerVoxel words, the layout of download_words()).
+		/// 	hrows VulkanError for another number of words; the map is unchanged then
+		void upload_words(std::span<const uint32_t> words);
+
 		/// Device buffer with the voxels (kWordsPerVoxel words each) for other Vulkan code; read-only for callers.
 		[[nodiscard]] const DeviceBuffer& voxel_buffer() const { return voxels_; }
 

@@ -373,6 +373,16 @@ namespace gpu_voxels::vulkan
 		return obstacles;
 	}
 
+	void DistanceVoxelMap::upload_words(std::span<const uint32_t> words)
+	{
+		if (words.size() != voxel_count())
+			throw VulkanError("DistanceVoxelMap::upload_words: expected " + std::to_string(voxel_count()) + " words, got " + std::to_string(words.size()));
+		for (const uint32_t word : words)
+			if ((word >> 30) != 0)
+				throw VulkanError("DistanceVoxelMap::upload_words: a word has bits above bit 29");
+		voxels_.upload(words.data(), words.size_bytes());
+	}
+
 	std::vector<uint32_t> DistanceVoxelMap::download_words() const
 	{
 		return voxels_.download_vector<uint32_t>(voxel_count());

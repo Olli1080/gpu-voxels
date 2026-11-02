@@ -6,6 +6,7 @@
 #include <gpu_voxels/vulkan/VoxelList.h>
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <functional>
 #include <string>
@@ -498,6 +499,107 @@ namespace gpu_voxels::vulkan
 		return found;
 	}
 
+	uint32_t VoxelListBase::merge_entries(const VoxelListBase& other, Offset3i offset, std::optional<uint8_t> meaning)
+	{
+		if (&other == this)
+			throw VulkanError("VoxelList: a list cannot be merged into itself");
+		impl_->check_other(*this, other);
+		if (other.voxel_side_length() != voxel_side_length_)
+			throw VulkanError("VoxelList: the voxel side lengths differ");
+		const uint32_t n = other.size();
+		if (n == 0)
+			return 0;
+
+		const std::vector<Coord3ui> coords = other.download_coordinates();
+		const std::vector<uint32_t> source = other.download_voxel_words();
+		const uint32_t words = impl_->words;
+		const uint32_t source_words = words_of(other.kind());
+		std::vector<uint32_t> ids;
+		std::vector<Coord3ui> moved;
+		std::vector<uint32_t> payload;
+		ids.reserve(n);
+		moved.reserve(n);
+		payload.reserve(static_cast<std::size_t>(n) * words);
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			const int64_t x = int64_t(coords[i].x) + offset.x;
+			const int64_t y = int64_t(coords[i].y) + offset.y;
+			const int64_t z = int64_t(coords[i].z) + offset.z;
+			if (x < 0 || y < 0 || z < 0 || x >= int64_t(dimensions_.x) || y >= int64_t(dimensions_.y) || z >= int64_t(dimensions_.z))
+				continue;
+			moved.push_back({ static_cast<uint32_t>(x), static_cast<uint32_t>(y), static_cast<uint32_t>(z) });
+			ids.push_back(static_cast<uint32_t>((uint64_t(z) * dimensions_.y + uint64_t(y)) * dimensions_.x + uint64_t(x)));
+			if (kind_ == Kind::Bit)
+			{
+				std::array<uint32_t, kBitWords> bits{};
+				if (meaning)
+					bits[*meaning / 32] |= 1u << (*meaning % 32);
+				else if (other.kind() == Kind::Bit)
+					std::copy_n(source.begin() + static_cast<std::ptrdiff_t>(i) * source_words, kBitWords, bits.begin());
+				payload.insert(payload.end(), bits.begin(), bits.end());
+			}
+			else
+				payload.push_back(other.kind() == Kind::Counting ? source[i] : 0u);
+		}
+		const uint32_t kept = static_cast<uint32_t>(ids.size());
+		if (kept == 0)
+			return n;
+
+		Entries fresh(*context_, kept, words);
+		fresh.ids.upload(ids.data(), ids.size() * sizeof(uint32_t));
+		fresh.coords.upload(moved.data(), moved.size() * sizeof(Coord3ui));
+		fresh.voxels.upload(payload.data(), payload.size() * sizeof(uint32_t));
+		Entries combined = impl_->combine_with_existing(kept, [&](CommandBatch& batch, Entries& dst, uint32_t first)
+		{
+			batch.copy(fresh.ids, dst.ids, uint64_t(kept) * sizeof(uint32_t), 0, uint64_t(first) * sizeof(uint32_t));
+			batch.copy(fresh.coords, dst.coords, uint64_t(kept) * 3 * sizeof(uint32_t), 0, uint64_t(first) * 3 * sizeof(uint32_t));
+			batch.copy(fresh.voxels, dst.voxels, uint64_t(kept) * words * sizeof(uint32_t), 0, uint64_t(first) * words * sizeof(uint32_t));
+		});
+		impl_->entries = impl_->make_unique(std::move(combined));
+		if (n > kept)
+			LOGGING_WARNING_C(VulkanLog, VoxelList, (n - kept) << " entrie(s) lie outside the reference map dimensions after the offset!" << endl);
+		return n - kept;
+	}
+
+	std::optional<std::string> VoxelListBase::entries_problem(Dim3ui dims, Kind kind, std::span<const uint32_t> ids,
+		std::span<const Coord3ui> coordinates, std::span<const uint32_t> payload)
+	{
+		const std::size_t n = ids.size();
+		if (coordinates.size() != n || payload.size() != n * words_of(kind))
+			return "ids, coordinates and payload do not have the same number of entries";
+		if (n > kMaxEntries)
+			return "more than " + std::to_string(kMaxEntries) + " entries are not supported";
+		for (std::size_t i = 0; i < n; ++i)
+		{
+			const Coord3ui c = coordinates[i];
+			if (c.x >= dims.x || c.y >= dims.y || c.z >= dims.z)
+				return "entry " + std::to_string(i) + " lies outside the reference map";
+			if (ids[i] != (uint64_t(c.z) * dims.y + c.y) * dims.x + c.x)
+				return "the id of entry " + std::to_string(i) + " is not the index of its coordinates";
+			if (i > 0 && ids[i] <= ids[i - 1])
+				return "the ids are not strictly ascending at entry " + std::to_string(i);
+			if (kind == Kind::Counting && static_cast<uint32_t>(static_cast<int32_t>(static_cast<int8_t>(payload[i] & 0xFFu))) != payload[i])
+				return "the count of entry " + std::to_string(i) + " is not a sign extended int8";
+		}
+		return std::nullopt;
+	}
+
+	void VoxelListBase::assign_entries(std::span<const uint32_t> ids, std::span<const Coord3ui> coordinates, std::span<const uint32_t> payload)
+	{
+		if (const auto problem = entries_problem(dimensions_, kind_, ids, coordinates, payload))
+			throw VulkanError("VoxelList::assign_entries: " + *problem);
+		const std::size_t n = ids.size();
+		const uint32_t words = impl_->words;
+		Entries fresh(*context_, static_cast<uint32_t>(n), words);
+		if (n > 0)
+		{
+			fresh.ids.upload(ids.data(), n * sizeof(uint32_t));
+			fresh.coords.upload(coordinates.data(), n * sizeof(Coord3ui));
+			fresh.voxels.upload(payload.data(), payload.size() * sizeof(uint32_t));
+		}
+		impl_->entries = std::move(fresh);
+	}
+
 	// ---- BitVoxelList ----
 
 	BitVoxelList::BitVoxelList(Context& context, Dim3ui reference_dimensions, float voxel_side_length)
@@ -523,6 +625,29 @@ namespace gpu_voxels::vulkan
 	uint32_t BitVoxelList::insert_occupied_voxels(const BitVoxelMap& map)
 	{
 		return append_occupied_voxels(map);
+	}
+
+	uint32_t BitVoxelList::merge(const BitVoxelList& other, Offset3i offset, std::optional<uint8_t> new_meaning)
+	{
+		return merge_entries(other, offset, new_meaning);
+	}
+
+	uint32_t BitVoxelList::merge(const CountingVoxelList& other, Offset3i offset, std::optional<uint8_t> new_meaning)
+	{
+		return merge_entries(other, offset, new_meaning);
+	}
+
+	uint32_t BitVoxelList::merge(const BitVoxelMap& other, std::optional<uint8_t> new_meaning)
+	{
+		if (!new_meaning)
+		{
+			append_occupied_voxels(other);
+			return 0;
+		}
+		// The voxels of the map in a list of their own, so that only they get the new meaning.
+		BitVoxelList taken(context(), reference_dimensions(), voxel_side_length());
+		taken.append_occupied_voxels(other);
+		return merge_entries(taken, {}, new_meaning);
 	}
 
 	std::vector<BitVector256> BitVoxelList::download_bit_vectors() const
@@ -556,6 +681,16 @@ namespace gpu_voxels::vulkan
 	void CountingVoxelList::subtract_from_counting_list(const BitVoxelList& other)
 	{
 		subtract_entries_of(other);
+	}
+
+	uint32_t CountingVoxelList::merge(const CountingVoxelList& other, Offset3i offset)
+	{
+		return merge_entries(other, offset, std::nullopt);
+	}
+
+	uint32_t CountingVoxelList::merge(const BitVoxelList& other, Offset3i offset)
+	{
+		return merge_entries(other, offset, std::nullopt);
 	}
 
 	std::vector<int8_t> CountingVoxelList::download_counts() const

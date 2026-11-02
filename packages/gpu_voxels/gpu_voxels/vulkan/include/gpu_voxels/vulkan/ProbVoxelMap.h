@@ -140,6 +140,10 @@ namespace gpu_voxels::vulkan
 		/// Occupancy of `voxel_count` voxels from `first_voxel` (-128 = unknown).
 		[[nodiscard]] std::vector<int8_t> download_occupancy(uint64_t first_voxel = 0, uint64_t voxel_count = UINT64_MAX) const;
 
+		/// Replaces the occupancy of all voxels (voxel_count() values, -128 = unknown, the layout of download_occupancy()).
+		/// 	hrows VulkanError for another number of values; the map is unchanged then
+		void upload_occupancy(std::span<const int8_t> values);
+
 		/// Device buffer with one 32-bit word per voxel (sign extended int8) for other Vulkan code; read-only for callers.
 		[[nodiscard]] const DeviceBuffer& voxel_buffer() const { return voxels_; }
 
