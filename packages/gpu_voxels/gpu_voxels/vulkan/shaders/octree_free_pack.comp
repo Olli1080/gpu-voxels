@@ -1,0 +1,66 @@
+#version 450
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "morton.glsl"
+// One level of the free-space packing (CUDA kernel_packMortonL0Map): one invocation per 2x2x2 group of cells of this level's dense map
+// `cells` (box lo / size in cell coordinates of this level, lo even, size even; value 0 = no free space). The group is replaced by its parent
+// cell in `next_cells` (the box next_lo / next_size of the next level) when all 8 cells are free AND have the same value (deterministic tree:
+// every free cell has value 1, so "all free"; probabilistic tree: equal occupancy, CUDA isPackingPossible: max - min == 0). Otherwise every
+// free cell of the group is emitted: out_ids = Morton node id of the cell (cell coordinates at this level, absolute), out_values = its value.
+// Two passes of the same code (count_only = 1 changes nothing and only counts): counter[0] = emitted cells, counter[1] = parents.
+// The group order is not the id order: the host sorts the emitted list.
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Cells { int cells[]; };
+layout(std430, set = 0, binding = 1) buffer Next { int next_cells[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer OutIds { uint out_ids[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer OutValues { int out_values[]; };
+layout(std430, set = 0, binding = 4) buffer Counter { uint counter[2]; };
+layout(push_constant) uniform Push
+{
+    uint count_only, groups, capacity, lo_x, lo_y, lo_z, size_x, size_y, size_z, next_lo_x, next_lo_y, next_lo_z, next_size_x, next_size_y, next_size_z;
+} pc;
+
+void main()
+{
+    const uint idx = oct_gid();
+    if (idx >= pc.groups)
+        return;
+    const uint hx = pc.size_x / 2u, hy = pc.size_y / 2u;
+    const uvec3 g = uvec3(idx % hx, (idx / hx) % hy, idx / (hx * hy));
+    int v[8];
+    uint free_mask = 0u;
+    bool equal = true;
+    for (uint k = 0u; k < 8u; ++k)
+    {
+        const uvec3 local = 2u * g + uvec3(k & 1u, (k >> 1u) & 1u, k >> 2u);
+        v[k] = cells[local.x + pc.size_x * (local.y + pc.size_y * local.z)];
+        if (v[k] != 0)
+            free_mask |= 1u << k;
+        equal = equal && v[k] == v[0];
+    }
+    if (free_mask == 0u)
+        return;
+    if (free_mask == 255u && equal)
+    {
+        const uvec3 parent = uvec3(pc.lo_x, pc.lo_y, pc.lo_z) / 2u + g - uvec3(pc.next_lo_x, pc.next_lo_y, pc.next_lo_z);
+        if (pc.count_only == 0u)
+            next_cells[parent.x + pc.next_size_x * (parent.y + pc.next_size_y * parent.z)] = v[0];
+        atomicAdd(counter[1], 1u);
+        return;
+    }
+    for (uint k = 0u; k < 8u; ++k)
+    {
+        if ((free_mask & (1u << k)) == 0u)
+            continue;
+        const uint slot = atomicAdd(counter[0], 1u);
+        if (pc.count_only == 0u && slot < pc.capacity)
+        {
+            const uvec3 cell = uvec3(pc.lo_x, pc.lo_y, pc.lo_z) + 2u * g + uvec3(k & 1u, (k >> 1u) & 1u, k >> 2u);
+            const uint64_t id = morton_code60(cell);
+            out_ids[2u * slot] = uint(id & 0xFFFFFFFFul);
+            out_ids[2u * slot + 1u] = uint(id >> 32);
+            out_values[slot] = v[k];
+        }
+    }
+}

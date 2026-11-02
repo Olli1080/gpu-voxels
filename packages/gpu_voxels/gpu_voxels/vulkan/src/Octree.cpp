@@ -40,6 +40,10 @@ namespace gpu_voxels::vulkan
 		static_assert(sizeof(SensorVoxelsPush) == 64);
 		struct RunCountsPush { uint32_t n; int32_t initial_probability, update_probability; };
 		struct RayPush { uint32_t first, count, box_min[3], box_size[3], origin[3]; };
+		struct FreeValuesPush { uint32_t total, lo[3], size[3], box_min[3], box_size[3], prob; int32_t free_update, min_probability; };
+		struct FreePackPush { uint32_t count_only, groups, capacity, lo[3], size[3], next_lo[3], next_size[3]; };
+		constexpr int32_t kFreeUpdateProbability = -10; ///< CUDA FREE_UPDATE_PROBABILITY
+		constexpr int32_t kMinProbability = -127;       ///< CUDA MIN_PROBABILITY
 		struct BuildPush { uint32_t n, level; uint64_t chunk, prev_chunk; };
 		struct FindPush { uint32_t n, pad; uint64_t root; };
 		struct ExtractPush { uint32_t item_count, level, min_level, out_capacity, next_capacity; };
@@ -131,6 +135,8 @@ namespace gpu_voxels::vulkan
 				  run_counts(c, GVL_SHADER_SPAN(octree_run_counts_comp), 5, sizeof(RunCountsPush)),
 				  ray_bounds(c, GVL_SHADER_SPAN(octree_ray_bounds_comp), 2, sizeof(CountPush)),
 				  ray_cast(c, GVL_SHADER_SPAN(octree_ray_cast_comp), 2, sizeof(RayPush)),
+				  free_values(c, GVL_SHADER_SPAN(octree_free_values_comp), 2, sizeof(FreeValuesPush)),
+				  free_pack(c, GVL_SHADER_SPAN(octree_free_pack_comp), 5, sizeof(FreePackPush)),
 				  heads(c, GVL_SHADER_SPAN(octree_heads_comp), 2, sizeof(HeadsPush)),
 				  compact(c, GVL_SHADER_SPAN(octree_compact_ids_comp), 4, sizeof(CountPush)),
 				  build(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_build_prob_comp) : GVL_SHADER_SPAN(octree_build_det_comp), 4, sizeof(BuildPush)),
@@ -157,7 +163,7 @@ namespace gpu_voxels::vulkan
 				  compact_copy(c, kind == OctreeKind::Probabilistic ? GVL_SHADER_SPAN(octree_compact_copy_prob_comp) : GVL_SHADER_SPAN(octree_compact_copy_det_comp), 2, sizeof(CompactCopyPush))
 			{
 			}
-			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, ray_bounds, ray_cast, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
+			ComputePipeline morton_ids, points_to_ids, sensor_voxels, run_starts, run_counts, ray_bounds, ray_cast, free_values, free_pack, heads, compact, build, find, extract, collide, clear_collision, collide_trees, lb_count, lb_move, lb_trees, lb_extract;
 			ComputePipeline insert_walk, insert_heads, insert_count, insert_link, insert_leaves, prop_down, prop_leaves, insert_nodes, prop_up, garbage_scan, compact_scan, compact_copy;
 		};
 
@@ -784,6 +790,132 @@ namespace gpu_voxels::vulkan
 				map.counts = rays.counts.download_vector<uint32_t>(rays.cells);
 			}
 			return map;
+		}
+
+		// ------------------------------------------------------------------------------------------------ S6f-3: packing of the free space
+
+		/// The free cells of one level of the free-space grid after packing: ids (Morton node ids, sorted) and values (int32) in device buffers.
+		struct FreeLevel
+		{
+			explicit FreeLevel(Context& c) : ids(c, 8), values(c, 4) {}
+			DeviceBuffer ids, values;
+			uint32_t count = 0;
+		};
+
+		/// The cells of level `l` of the packing: the box of the ray map (box_min / box_size in cells of level 0) at that level, extended to even cell coordinates.
+		static void packing_box(const uint32_t box_min[3], const uint32_t box_size[3], uint32_t l, uint32_t lo[3], uint32_t size[3])
+		{
+			for (int a = 0; a < 3; ++a)
+			{
+				lo[a] = (box_min[a] >> l) & ~1u;
+				size[a] = (((box_min[a] + box_size[a] - 1) >> l) | 1u) - lo[a] + 1;
+			}
+		}
+
+		std::vector<FreeLevel> pack_free_cells(const DeviceBuffer& counts, const uint32_t box_min[3], const uint32_t box_size[3])
+		{
+			std::vector<FreeLevel> levels_out;
+			levels_out.reserve(kLevelCount);
+			for (uint32_t l = 0; l < kLevelCount; ++l)
+				levels_out.emplace_back(context);
+			uint32_t lo[3], size[3];
+			packing_box(box_min, box_size, 0, lo, size);
+			const uint64_t cells = uint64_t(size[0]) * size[1] * size[2];
+			if (cells > ray_map_limit || cells > UINT32_MAX)
+				throw VulkanError("Octree::pack_free_space: the box of the free space has " + std::to_string(cells) + " cells (extended to even coordinates), more than the limit of " + std::to_string(ray_map_limit));
+			DeviceBuffer current(context, cells * 4);
+			{
+				CommandBatch batch(context);
+				dispatch(batch, kernels.free_values, { &counts, &current }, cells,
+					FreeValuesPush{ static_cast<uint32_t>(cells), { lo[0], lo[1], lo[2] }, { size[0], size[1], size[2] }, { box_min[0], box_min[1], box_min[2] },
+						{ box_size[0], box_size[1], box_size[2] }, kind == OctreeKind::Probabilistic ? 1u : 0u, kFreeUpdateProbability, kMinProbability });
+				batch.submit_and_wait();
+			}
+			DeviceBuffer no_ids(context, 8), no_values(context, 4), no_next(context, 4);
+			for (uint32_t l = 0; l < kLevelCount; ++l)
+			{
+				packing_box(box_min, box_size, l, lo, size);
+				uint32_t next_lo[3], next_size[3];
+				packing_box(box_min, box_size, l + 1, next_lo, next_size);
+				const uint32_t groups = (size[0] / 2) * (size[1] / 2) * (size[2] / 2);
+				FreePackPush push{ 1, groups, 0, { lo[0], lo[1], lo[2] }, { size[0], size[1], size[2] }, { next_lo[0], next_lo[1], next_lo[2] },
+					{ next_size[0], next_size[1], next_size[2] } };
+				DeviceBuffer counter(context, 8);
+				const uint32_t zero[2] = { 0, 0 };
+				counter.upload(zero, sizeof(zero));
+				{
+					CommandBatch batch(context);
+					dispatch(batch, kernels.free_pack, { &current, &no_next, &no_ids, &no_values, &counter }, groups, push);
+					batch.submit_and_wait();
+				}
+				const uint32_t emitted = read_word(counter, 0), parents = read_word(counter, 1);
+				if (parents > 0 && l + 1 == kLevelCount)
+					throw VulkanError("Octree::pack_free_space: internal error, cells packed into a level above the root");
+				if (emitted == 0 && parents == 0)
+					break;
+				FreeLevel& result = levels_out[l];
+				if (emitted > 0)
+				{
+					result.ids = DeviceBuffer(context, uint64_t(emitted) * 8);
+					result.values = DeviceBuffer(context, uint64_t(emitted) * 4);
+				}
+				const uint64_t next_cells = uint64_t(next_size[0]) * next_size[1] * next_size[2];
+				DeviceBuffer next(context, parents > 0 ? next_cells * 4 : 4);
+				counter.upload(zero, sizeof(zero));
+				push.count_only = 0;
+				push.capacity = emitted;
+				{
+					KeepAlive keep_alive;
+					CommandBatch batch(context);
+					if (parents > 0)
+						batch.fill(next, 0);
+					batch.barrier();
+					dispatch(batch, kernels.free_pack, { &current, parents > 0 ? &next : &no_next, emitted > 0 ? &result.ids : &no_ids, emitted > 0 ? &result.values : &no_values, &counter }, groups, push);
+					batch.barrier();
+					if (emitted > 1)
+						primitives.record_sort_pairs64(batch, result.ids, result.values, emitted, 42, keep_alive);
+					batch.submit_and_wait();
+				}
+				if (read_word(counter, 0) != emitted || read_word(counter, 1) != parents)
+					throw VulkanError("Octree::pack_free_space: internal error, the second pass found other cells than the counting pass");
+				result.count = emitted;
+				if (parents == 0)
+					break;
+				current = std::move(next);
+			}
+			return levels_out;
+		}
+
+		std::vector<std::vector<OctreeFreeCube>> pack_free_space(const OctreeRayMap& map)
+		{
+			std::vector<std::vector<OctreeFreeCube>> result(kLevelCount);
+			const uint32_t box_min[3] = { map.min.x, map.min.y, map.min.z };
+			const uint32_t box_size[3] = { map.size.x, map.size.y, map.size.z };
+			if (map.counts.empty() && box_size[0] == 0 && box_size[1] == 0 && box_size[2] == 0)
+				return result;
+			uint64_t cells = 1;
+			for (int a = 0; a < 3; ++a)
+			{
+				if (box_size[a] == 0 || box_min[a] >= Octree::kCoordinateLimit || box_size[a] > Octree::kCoordinateLimit - box_min[a])
+					throw VulkanError("Octree::pack_free_space: the box of the map is empty or lies outside the 2^14 grid");
+				cells *= box_size[a];
+			}
+			if (cells != map.counts.size())
+				throw VulkanError("Octree::pack_free_space: the number of counts does not match the size of the box");
+			DeviceBuffer counts(context, cells * 4);
+			counts.upload<uint32_t>(map.counts);
+			const std::vector<FreeLevel> packed = pack_free_cells(counts, box_min, box_size);
+			for (uint32_t l = 0; l < kLevelCount; ++l)
+			{
+				if (packed[l].count == 0)
+					continue;
+				const auto ids = packed[l].ids.download_vector<uint64_t>(packed[l].count);
+				const auto values = packed[l].values.download_vector<int32_t>(packed[l].count);
+				result[l].reserve(packed[l].count);
+				for (uint32_t i = 0; i < packed[l].count; ++i)
+					result[l].push_back({ ids[i], static_cast<int8_t>(kind == OctreeKind::Probabilistic ? values[i] : 0) });
+			}
+			return result;
 		}
 
 		static OctreeDatum datum_of(uint8_t meaning, const char* function)
@@ -1780,6 +1912,7 @@ namespace gpu_voxels::vulkan
 		return impl_->cast_free_space_rays(free_voxels, origin);
 	}
 
+	std::vector<std::vector<OctreeFreeCube>> Octree::pack_free_space(const OctreeRayMap& map) { return impl_->pack_free_space(map); }
 	void Octree::set_ray_map_limit(uint64_t cells) { impl_->ray_map_limit = cells; }
 	void Octree::test_set_ray_chunk_steps(uint64_t steps) { impl_->ray_chunk_steps = steps; }
 	uint64_t Octree::test_ray_submissions() const { return impl_->ray_submissions; }

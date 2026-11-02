@@ -1,3 +1,4 @@
+// Slice S6f-3: Octree::pack_free_space is compared with a sparse host reference of the packing (groups found with std::map), alone and behind the rays.
 // Slice S6f-2: Octree::cast_free_space_rays is compared with the host translation of the CUDA walk (ProbVoxelMapReference::walk) summed up per cell.
 // Slice S6f-1: Octree::voxelize_points, the first step of the sensor pipeline (pose, voxel grid of the pipeline, distinct voxels with the number of points
 // and the occupancy of the sensor model). Compared with a plain host reference that works in double precision (std::map of voxel -> count); the test
@@ -530,4 +531,241 @@ TEST_F(VulkanTest, OctreeRayCastChunks)
 	const uint64_t before = tree.test_ray_submissions();
 	(void)tree.cast_free_space_rays({}, origin);
 	EXPECT_EQ(tree.test_ray_submissions(), before);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------- S6f-3: packing
+
+namespace
+{
+	using Cubes = std::vector<std::vector<OctreeFreeCube>>;
+
+	/// The reference of the packing: sparse maps of cell -> value, level by level, groups found with a std::map keyed by the parent cell. The value of a
+	/// free cell is max(-10 * count, -127) in a probabilistic tree (from the unclamped count) and 1 in a deterministic one.
+	Cubes reference_pack(const OctreeRayMap& map, bool prob)
+	{
+		Cubes result(Octree::kLevels);
+		std::map<std::array<uint32_t, 3>, int> cur;
+		for (size_t i = 0; i < map.counts.size(); ++i)
+		{
+			if (map.counts[i] == 0)
+				continue;
+			const std::array<uint32_t, 3> c = { map.min.x + uint32_t(i % map.size.x), map.min.y + uint32_t((i / map.size.x) % map.size.y), map.min.z + uint32_t(i / (size_t(map.size.x) * map.size.y)) };
+			cur[c] = prob ? int(std::max<int64_t>(-10 * int64_t(map.counts[i]), -127)) : 1;
+		}
+		for (uint32_t level = 0; level < Octree::kLevels && !cur.empty(); ++level)
+		{
+			std::map<std::array<uint32_t, 3>, std::vector<std::pair<std::array<uint32_t, 3>, int>>> groups;
+			for (const auto& [c, v] : cur)
+				groups[{ c[0] >> 1, c[1] >> 1, c[2] >> 1 }].push_back({ c, v });
+			std::map<std::array<uint32_t, 3>, int> next;
+			for (const auto& [parent, children] : groups)
+			{
+				bool equal = true;
+				for (const auto& child : children)
+					equal = equal && child.second == children[0].second;
+				if (children.size() == 8 && equal)
+					next[parent] = children[0].second;
+				else
+					for (const auto& [c, v] : children)
+						result[level].push_back({ ref::morton(c[0], c[1], c[2]), static_cast<int8_t>(prob ? v : 0) });
+			}
+			std::sort(result[level].begin(), result[level].end(), [](const OctreeFreeCube& a, const OctreeFreeCube& b) { return a.id < b.id; });
+			cur = std::move(next);
+		}
+		return result;
+	}
+
+	void expect_cubes(Octree& tree, const OctreeRayMap& map, bool prob, const char* what)
+	{
+		const Cubes e = reference_pack(map, prob);
+		const Cubes got = tree.pack_free_space(map);
+		ASSERT_EQ(got.size(), e.size()) << what;
+		for (size_t l = 0; l < e.size(); ++l)
+		{
+			EXPECT_EQ(got[l].size(), e[l].size()) << what << ", level " << l;
+			for (size_t i = 0; i < std::min(got[l].size(), e[l].size()); ++i)
+				if (!(got[l][i] == e[l][i]))
+				{
+					ADD_FAILURE() << what << ", level " << l << ", cube " << i << ": (id " << got[l][i].id << ", value " << int(got[l][i].occupancy) << ") but the reference has (id " << e[l][i].id << ", value "
+						<< int(e[l][i].occupancy) << ")";
+					break;
+				}
+		}
+	}
+
+	OctreeRayMap make_map(OctreeVoxel min, OctreeVoxel size, std::vector<uint32_t> counts)
+	{
+		OctreeRayMap m;
+		m.min = min;
+		m.size = size;
+		m.counts = std::move(counts);
+		return m;
+	}
+
+	/// Random counts: a cell is free with probability `density`, its count is 1 .. max_count.
+	OctreeRayMap random_map(std::mt19937_64& rng, OctreeVoxel min, OctreeVoxel size, double density, uint32_t max_count)
+	{
+		std::bernoulli_distribution free(density);
+		std::uniform_int_distribution<uint32_t> count(1, max_count);
+		std::vector<uint32_t> counts(size_t(size.x) * size.y * size.z, 0);
+		for (auto& c : counts)
+			if (free(rng))
+				c = count(rng);
+		return make_map(min, size, std::move(counts));
+	}
+}
+
+TEST_F(VulkanTest, OctreePackFreeSpaceMatchesReference)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	std::mt19937_64 rng(55);
+	for (const OctreeKind kind : kKinds)
+	{
+		Octree tree(ctx(), kind);
+		const bool prob = kind == OctreeKind::Probabilistic;
+		// boxes of every alignment, the density from sparse to full, counts from all equal to widely different (and above the clamp of 13)
+		for (const OctreeVoxel min : { OctreeVoxel{ 0, 0, 0 }, OctreeVoxel{ 1, 0, 3 }, OctreeVoxel{ 3, 5, 7 }, OctreeVoxel{ 6, 6, 6 }, OctreeVoxel{ 13, 22, 9 }, OctreeVoxel{ 16321, 16300, 16370 } })
+			for (const OctreeVoxel size : { OctreeVoxel{ 1, 1, 1 }, OctreeVoxel{ 2, 2, 2 }, OctreeVoxel{ 5, 3, 4 }, OctreeVoxel{ 8, 8, 8 }, OctreeVoxel{ 9, 17, 12 }, OctreeVoxel{ 30, 30, 30 }, OctreeVoxel{ 64, 3, 40 } })
+				for (const double density : { 0.05, 0.5, 0.9, 0.99, 1.0 })
+					for (const uint32_t max_count : { 1u, 2u, 14u, 40u })
+					{
+						if (min.x + size.x > 16384 || min.y + size.y > 16384 || min.z + size.z > 16384)
+							continue;
+						expect_cubes(tree, random_map(rng, min, size, density, max_count), prob, "random map");
+					}
+	}
+}
+
+TEST_F(VulkanTest, OctreePackFreeSpaceKnownCases)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree det(ctx(), OctreeKind::Deterministic), prob(ctx(), OctreeKind::Probabilistic);
+	// one full 8x8x8 box on an aligned corner: a single cube of level 3, for both kinds, with the value -10 in the probabilistic tree
+	{
+		const auto map = make_map({ 8, 16, 24 }, { 8, 8, 8 }, std::vector<uint32_t>(512, 1));
+		for (Octree* tree : { &det, &prob })
+		{
+			const auto cubes = tree->pack_free_space(map);
+			ASSERT_EQ(cubes.size(), size_t(Octree::kLevels));
+			for (uint32_t l = 0; l < Octree::kLevels; ++l)
+				if (l != 3)
+					EXPECT_TRUE(cubes[l].empty()) << l;
+			ASSERT_EQ(cubes[3].size(), 1u);
+			EXPECT_EQ(cubes[3][0].id, ref::morton(1, 2, 3));
+			EXPECT_EQ(cubes[3][0].occupancy, tree == &prob ? -10 : 0);
+		}
+	}
+	// the same box shifted by one cell: no aligned 8-cube exists any more, the packing finds the aligned parts
+	{
+		const auto cubes = det.pack_free_space(make_map({ 9, 16, 24 }, { 8, 8, 8 }, std::vector<uint32_t>(512, 1)));
+		uint64_t voxels = 0;
+		for (uint32_t l = 0; l < Octree::kLevels; ++l)
+			voxels += uint64_t(cubes[l].size()) << (3 * l);
+		EXPECT_EQ(voxels, 512u); // the cubes cover exactly the free cells
+		EXPECT_TRUE(cubes[3].empty());
+	}
+	// 2 x 2 x 2: the deterministic tree packs, the probabilistic one only if the counts are equal (below and above the clamp)
+	{
+		std::vector<uint32_t> counts(8, 1);
+		counts[7] = 2;
+		EXPECT_EQ(det.pack_free_space(make_map({ 4, 4, 4 }, { 2, 2, 2 }, counts))[1].size(), 1u);
+		const auto split = prob.pack_free_space(make_map({ 4, 4, 4 }, { 2, 2, 2 }, counts));
+		EXPECT_TRUE(split[1].empty());
+		EXPECT_EQ(split[0].size(), 8u);
+		EXPECT_EQ(split[0][7].occupancy, -20);
+		counts.assign(8, 13);
+		counts[3] = 400; // 13 rays and 400 rays both give -127
+		const auto clamped = prob.pack_free_space(make_map({ 4, 4, 4 }, { 2, 2, 2 }, counts));
+		ASSERT_EQ(clamped[1].size(), 1u);
+		EXPECT_EQ(clamped[1][0].occupancy, -127);
+		EXPECT_TRUE(clamped[0].empty());
+	}
+	// one hole in a 4x4x4 block: the other seven 2x2x2 groups pack, the group with the hole stays as 7 cells
+	{
+		std::vector<uint32_t> counts(64, 1);
+		counts[0] = 0;
+		const auto cubes = det.pack_free_space(make_map({ 0, 0, 0 }, { 4, 4, 4 }, counts));
+		EXPECT_EQ(cubes[0].size(), 7u);
+		EXPECT_EQ(cubes[1].size(), 7u);
+		EXPECT_TRUE(cubes[2].empty());
+	}
+	// packing over many levels: a full 64 cube on the top corner of the grid is one cube of level 6
+	{
+		const auto cubes = det.pack_free_space(make_map({ 16320, 16320, 16320 }, { 64, 64, 64 }, std::vector<uint32_t>(64 * 64 * 64, 3)));
+		for (uint32_t l = 0; l < Octree::kLevels; ++l)
+			EXPECT_EQ(cubes[l].size(), l == 6 ? 1u : 0u) << l;
+		EXPECT_EQ(cubes[6][0].id, ref::morton(255, 255, 255));
+	}
+	// no free cell at all, and the empty map
+	EXPECT_EQ(det.pack_free_space(make_map({ 5, 5, 5 }, { 3, 3, 3 }, std::vector<uint32_t>(27, 0))), Cubes(Octree::kLevels));
+	EXPECT_EQ(det.pack_free_space(OctreeRayMap{}), Cubes(Octree::kLevels));
+}
+
+TEST_F(VulkanTest, OctreePackFreeSpaceBigBox)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Probabilistic);
+	// 128 cells per side all free with 5 rays each: one cube of level 7 (the packing runs over 7 levels, 2M cells at the first)
+	const auto cubes = tree.pack_free_space(make_map({ 256, 128, 384 }, { 128, 128, 128 }, std::vector<uint32_t>(128 * 128 * 128, 5)));
+	for (uint32_t l = 0; l < Octree::kLevels; ++l)
+		EXPECT_EQ(cubes[l].size(), l == 7 ? 1u : 0u) << l;
+	EXPECT_EQ(cubes[7][0].id, ref::morton(2, 1, 3));
+	EXPECT_EQ(cubes[7][0].occupancy, -50);
+}
+
+TEST_F(VulkanTest, OctreePackFreeSpaceArguments)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	Octree tree(ctx(), OctreeKind::Deterministic);
+	// the counts must fit the box, the box must lie in the grid and have cells
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 0, 0, 0 }, { 2, 2, 2 }, std::vector<uint32_t>(7, 1))), VulkanError);
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 0, 0, 0 }, { 2, 2, 2 }, std::vector<uint32_t>(9, 1))), VulkanError);
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 16380, 0, 0 }, { 8, 1, 1 }, std::vector<uint32_t>(8, 1))), VulkanError);
+	EXPECT_NO_THROW((void)tree.pack_free_space(make_map({ 16380, 0, 0 }, { 4, 1, 1 }, std::vector<uint32_t>(4, 1))));
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 16384, 0, 0 }, { 1, 1, 1 }, std::vector<uint32_t>(1, 1))), VulkanError);
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 20000, 0, 0 }, { 1, 1, 1 }, std::vector<uint32_t>(1, 1))), VulkanError);
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 0, 0, 0xFFFFFFF0u }, { 1, 1, 1 }, std::vector<uint32_t>(1, 1))), VulkanError);
+	EXPECT_THROW((void)tree.pack_free_space(make_map({ 0, 0, 0 }, { 0, 2, 2 }, {})), VulkanError);
+	// the limit counts the cells of the box extended to even coordinates: one cell at an odd position takes 2 x 2 x 2
+	const auto one = make_map({ 3, 3, 3 }, { 1, 1, 1 }, std::vector<uint32_t>(1, 1));
+	tree.set_ray_map_limit(7);
+	EXPECT_THROW((void)tree.pack_free_space(one), VulkanError);
+	tree.set_ray_map_limit(8);
+	EXPECT_NO_THROW((void)tree.pack_free_space(one));
+	// nothing changes after a refusal
+	EXPECT_EQ(tree.pack_free_space(one)[0].size(), 1u);
+}
+
+TEST_F(VulkanTest, OctreeRaysAndPacking)
+{
+	if (!ctx().info().buffer_device_address)
+		GTEST_SKIP() << "bufferDeviceAddress not supported";
+	std::mt19937_64 rng(66);
+	for (const OctreeKind kind : kKinds)
+	{
+		Octree tree(ctx(), kind);
+		for (const size_t n : { size_t(5), size_t(200), size_t(3000) })
+			for (const uint32_t extent : { 10u, 24u, 40u })
+			{
+				if (n > size_t(extent) * extent * extent / 4)
+					continue;
+				const auto voxels = random_voxels(rng, n, 200, extent);
+				for (const OctreeVoxel& o : { OctreeVoxel{ 200 + extent / 2, 200 + extent / 2, 200 + extent / 2 }, OctreeVoxel{ 190, 215, 230 }, OctreeVoxel{ 199, 199, 199 } })
+				{
+					const RefRays rays = reference_rays(voxels, o);
+					OctreeRayMap map;
+					map.min = { rays.min[0], rays.min[1], rays.min[2] };
+					map.size = { rays.size[0], rays.size[1], rays.size[2] };
+					map.counts = rays.counts;
+					expect_cubes(tree, map, kind == OctreeKind::Probabilistic, "rays then packing");
+					// the same through the GPU rays
+					const OctreeRayMap gpu = tree.cast_free_space_rays(voxels, o);
+					EXPECT_EQ(tree.pack_free_space(gpu), tree.pack_free_space(map));
+				}
+			}
+	}
 }

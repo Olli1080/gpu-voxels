@@ -3,7 +3,7 @@
 - **Date:** 2026-11-02
 - **Question:** What does `GvlNTree::insertPointCloudWithFreespaceCalculation` do exactly, and which parts do we build on the Vulkan octree (user decisions 2026-11-02: the point cloud path, no Kinect depth images, the result need not be bit-identical to CUDA, CUDA parity is not a goal here)?
 - **Scope / non-goals:** semantics read from the CUDA sources (**inferred**, nothing was run under CUDA). Out: Kinect depth image preprocessing (`_processDepthImage`, `kernel_preprocessDepthImage`, border cuts), viewer, ROS. No code of S6f exists yet.
-- **Status:** in progress: S6f-1 and S6f-2 are done (see [vulkan_octree_sensor.md](../knowledge_base/architecture/vulkan_octree_sensor.md)); S6f-3 and S6f-4 open
+- **Status:** in progress: S6f-1 .. S6f-3 are done (see [vulkan_octree_sensor.md](../knowledge_base/architecture/vulkan_octree_sensor.md)); S6f-4 open
 
 ## Method
 Read: `octree/NTree.hpp` (`insertVoxel` sensor variant ~2261, `computeFreeSpaceViaRayCast` ~1935, `packVoxel_Map` ~1568), `kernels/kernel_Octree.h` (`kernel_rayInsert` ~1750, `kernel_packMortonL0Map` ~2035), `kernels/kernel_common.h` (`handleRayHit`, `isPackingPossible`, `maxMinReduction`, `getRayCastInit`), `src/Sensor.cu` (`processSensorData(const Vector3f*)`, `_processSensorData`), `src/PointCloud.cu` + `src/kernel_PointCloud.cu` (`transformKinectPointCloud_simple`, `kernel_voxelize*`), `SensorModel.h`, `CommonValues.h`. Not read: `MapProperties::align()` / `createNextLevelMap()` / `computeMortonOffsetPtr`.

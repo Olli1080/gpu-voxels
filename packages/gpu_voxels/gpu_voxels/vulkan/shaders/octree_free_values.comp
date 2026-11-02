@@ -1,0 +1,35 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+// Level 0 of the free-space packing (CUDA computeFreeSpaceViaRayCast hands this map to packVoxel_Map): the hit counts of the ray cast box
+// (counts, box_min / box_size) are copied into the dense map `values` of the box aligned to even cell coordinates (lo / size, so that every
+// 2x2x2 group is complete; cells outside the ray box get 0 = no free space). Value of a cell with `count` rays:
+//   deterministic tree (prob = 0): 1 (CUDA ns_FREE: only "free or not" matters),
+//   probabilistic tree (prob = 1): max(free_update * count, min_probability) = what CUDA handleRayHit computes by adding
+//   max(FREE_UPDATE_PROBABILITY, MIN_PROBABILITY - v) once per ray (without its lost updates). The count is limited to 255 first: with
+//   free_update = -10 the clamp is reached after 13 rays, the limit only protects the product from overflow.
+// Cells are indexed x + size_x * (y + size_y * z), relative to lo (values) or box_min (counts).
+layout(local_size_x = 64) in;
+#include "octree_gid.glsl"
+layout(std430, set = 0, binding = 0) readonly buffer Counts { uint counts[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Values { int values[]; };
+layout(push_constant) uniform Push
+{
+    uint total, lo_x, lo_y, lo_z, size_x, size_y, size_z, box_min_x, box_min_y, box_min_z, box_size_x, box_size_y, box_size_z, prob;
+    int free_update, min_probability;
+} pc;
+
+void main()
+{
+    const uint i = oct_gid();
+    if (i >= pc.total)
+        return;
+    const uint x = i % pc.size_x, y = (i / pc.size_x) % pc.size_y, z = i / (pc.size_x * pc.size_y);
+    const ivec3 rel = ivec3(pc.lo_x + x, pc.lo_y + y, pc.lo_z + z) - ivec3(pc.box_min_x, pc.box_min_y, pc.box_min_z);
+    uint count = 0u;
+    if (all(greaterThanEqual(rel, ivec3(0))) && rel.x < int(pc.box_size_x) && rel.y < int(pc.box_size_y) && rel.z < int(pc.box_size_z))
+        count = counts[uint(rel.x) + pc.box_size_x * (uint(rel.y) + pc.box_size_y * uint(rel.z))];
+    int value = 0;
+    if (count != 0u)
+        value = pc.prob == 0u ? 1 : max(pc.free_update * int(min(count, 255u)), pc.min_probability);
+    values[i] = value;
+}

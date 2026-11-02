@@ -1,0 +1,41 @@
+F1 count 1 is not free : KILLED
+F2 count limit 12 : KILLED
+F3 min instead of max : KILLED
+F4 box edge inclusive : KILLED
+F5 y and z swapped in the count index : KILLED
+F6 x of the cell from y : KILLED
+F7 deterministic value taken for probabilistic : KILLED
+G1 pack without the equal values : KILLED
+G2 pack equal values without all being free : SURVIVED
+G3 equality ignored : KILLED
+G4 empty group not skipped (equivalent: nothing is emitted for it) : SURVIVED
+G5 parent not halved : KILLED
+G6 parents not counted : KILLED
+G7 parent value of the last child : SURVIVED
+G8 emitted cells not counted : KILLED
+G9 capacity guard off by one (equivalent while the counts agree) : SURVIVED
+G10 writes in the counting pass too (equivalent: the capacity is 0 there) : SURVIVED
+G11 cell id with x and y swapped : KILLED
+G12 value of the first cell for every cell : KILLED
+G13 group row from the wrong size : KILLED
+G14 only positive values are free : KILLED
+G15 one group too many (equivalent in safe mode: it reads a zero group) : KILLED
+G16 next map not written : KILLED
+P1 box not aligned down : KILLED
+P2 box not aligned up : KILLED
+P3 limit exclusive : KILLED
+P4 packing above the root not detected (equivalent: cannot happen) : SURVIVED
+P5 empty level does not stop (equivalent: one more empty pass) : SURVIVED
+P6 second pass not checked (equivalent: defensive) : SURVIVED
+P7 sort over 3 bits : KILLED
+P8 no sort : KILLED
+P9 deterministic values for a probabilistic tree : KILLED
+P10 size of the counts not checked : KILLED
+P11 end of the box not checked : KILLED
+P12 start of the box not checked : KILLED
+P13 occupancy of a deterministic tree reported : KILLED
+P14 update and minimum swapped in the push : KILLED
+P15 box size and minimum swapped in the push : KILLED
+P16 next map not cleared : KILLED
+P17 counter of the second pass not cleared : KILLED
+restored

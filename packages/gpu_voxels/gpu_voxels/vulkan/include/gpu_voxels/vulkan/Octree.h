@@ -173,6 +173,15 @@ namespace gpu_voxels::vulkan
 		std::vector<uint32_t> counts;   ///< rays that visited the cell, index x + size.x * (y + size.y * z) relative to `min`
 	};
 
+	/// Slice S6f-3: a cube of free space on the free-space grid: node id on its level (the cube has 2^level cells per side, the cell with the
+	/// coordinates x, y, z of that level has the Morton id of (x, y, z)) and, in a probabilistic tree, the occupancy value of the cube (0 in a deterministic tree).
+	struct OctreeFreeCube
+	{
+		uint64_t id = 0;
+		int8_t occupancy = 0;
+		friend bool operator==(const OctreeFreeCube&, const OctreeFreeCube&) = default;
+	};
+
 	struct OctreeStats
 	{
 		uint64_t bytes = 0;                  ///< all chunks
@@ -283,6 +292,13 @@ namespace gpu_voxels::vulkan
 		[[nodiscard]] OctreeRayMap cast_free_space_rays(std::span<const OctreeVoxel> free_voxels, const OctreeVoxel& origin);
 		/// The largest box of cast_free_space_rays in cells (4 bytes each on the device; default 2^28 = 1 GiB). CUDA has no limit and fails in cudaMalloc.
 		void set_ray_map_limit(uint64_t cells);
+		/// Slice S6f-3 (CUDA packVoxel_Map): the free cells of a ray map as the biggest aligned cubes: level by level, a 2x2x2 group of cells (absolute
+		/// alignment) becomes one cell of the next level when all 8 are free and, in a probabilistic tree, have the same value; every other free cell stays
+		/// at its level. A cell of the ray map is free when its count is not 0; its value in a probabilistic tree is max(-10 * count, -127) (what CUDA
+		/// computes with one update of -10 per ray when no update is lost), in a deterministic tree all free cells are the same. Result: one list per level
+		/// of the free-space grid (index = level, kLevels entries), each sorted by id. Done on the GPU on a dense map of the box extended to even cell
+		/// coordinates. 	hrows VulkanError for a map whose counts do not fit its size, a coordinate outside the 2^14 grid, or a box (extended) above set_ray_map_limit().
+		[[nodiscard]] std::vector<std::vector<OctreeFreeCube>> pack_free_space(const OctreeRayMap& map);
 		/// Test hook: at most this many walk steps (rays in a chunk times the longest possible ray) per GPU submission (default 2^28).
 		void test_set_ray_chunk_steps(uint64_t steps);
 		/// Test hook: how many GPU submissions of ray chunks cast_free_space_rays has made so far (rays per chunk = steps / longest possible ray, at least 1).

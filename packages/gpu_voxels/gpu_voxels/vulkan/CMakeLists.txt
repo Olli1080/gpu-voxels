@@ -141,6 +141,8 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/octree_run_counts.comp
     shaders/octree_ray_bounds.comp
     shaders/octree_ray_cast.comp
+    shaders/octree_free_values.comp
+    shaders/octree_free_pack.comp
     shaders/pba_p1_flood.comp
     shaders/pba_p1_propagate.comp
     shaders/pba_p1_update.comp

@@ -82,6 +82,10 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t octree_ray_bounds_comp_words;
 	extern const uint32_t octree_ray_cast_comp[];
 	extern const std::size_t octree_ray_cast_comp_words;
+	extern const uint32_t octree_free_values_comp[];
+	extern const std::size_t octree_free_values_comp_words;
+	extern const uint32_t octree_free_pack_comp[];
+	extern const std::size_t octree_free_pack_comp_words;
 	extern const uint32_t radix_histogram_comp[];
 	extern const std::size_t radix_histogram_comp_words;
 	extern const uint32_t radix_scatter_comp[];
