@@ -25,6 +25,7 @@ gvl_add_test(test_vulkan
     test_octree_rebuild.cpp
     test_octree_sensor.cpp
     test_octree_timings.cpp
+    test_point_cloud_file.cpp
     test_octree_balancer.cpp
     test_octree_checkpoint.cpp
     test_octree_collision.cpp
@@ -38,7 +39,8 @@ gvl_add_test(test_vulkan
     test_voxel_list_ops.cpp
   LIBS gpu_voxels_vulkan
   DEFINITIONS
-    "GVL_TEST_SHADER_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/shaders\"")
+    "GVL_TEST_SHADER_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/shaders\""
+    "GVL_TEST_MODEL_DIR=\"${CMAKE_SOURCE_DIR}/packages/gpu_voxels/models\"")
 
 gvl_add_shaders(test_vulkan
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders"

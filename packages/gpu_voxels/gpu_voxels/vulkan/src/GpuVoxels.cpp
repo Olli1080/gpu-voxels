@@ -5,7 +5,9 @@
 
 #include <gpu_voxels/vulkan/GpuVoxels.h>
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <mutex>
 #include <string>
 #include <type_traits>
@@ -345,6 +347,44 @@ namespace gpu_voxels::vulkan
 		const uint32_t dropped = map->insert_meta_point_cloud(cloud, voxel_meaning);
 		if (outside != nullptr)
 			*outside = dropped;
+		return true;
+	}
+
+	bool GpuVoxels::insert_point_cloud_from_file(const std::string& map_name, const std::filesystem::path& file, const std::filesystem::path& model_path,
+		uint8_t voxel_meaning, bool shift_to_zero, Point3f offset, float scaling, uint32_t* outside)
+	{
+		const GpuVoxelsMapSharedPtr map = get_map(map_name);
+		if (!map)
+			return false;
+		std::vector<Point3f> points;
+		try
+		{
+			points = load_point_cloud(file, model_path, PointCloudLoadOptions{ shift_to_zero, offset, scaling });
+		}
+		catch (const PointCloudFileError& e)
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, e.what() << endl);
+			return false;
+		}
+		const uint32_t dropped = map->insert_point_cloud(points, voxel_meaning);
+		if (outside != nullptr)
+			*outside = dropped;
+		return true;
+	}
+
+	bool GpuVoxels::insert_box_into_map(Point3f corner_min, Point3f corner_max, const std::string& map_name, uint8_t voxel_meaning,
+		uint16_t points_per_voxel, uint32_t* outside)
+	{
+		const GpuVoxelsMapSharedPtr map = get_map(map_name);
+		if (!map)
+			return false;
+		if (points_per_voxel == 0)
+			throw VulkanError("points_per_voxel must be at least 1");
+		const BoxVoxels box = box_voxel_coordinates(corner_min, corner_max, voxel_side_length_ / static_cast<float>(points_per_voxel),
+			voxel_side_length_, map->dimensions());
+		const uint32_t dropped = map->insert_coordinate_list(box.coordinates, voxel_meaning);
+		if (outside != nullptr)
+			*outside = static_cast<uint32_t>(std::min<uint64_t>(box.total - box.coordinates.size() + dropped, std::numeric_limits<uint32_t>::max()));
 		return true;
 	}
 

@@ -22,6 +22,7 @@ target_sources(${PROJECT_NAME}
     src/KinematicChain.cpp
     src/Octree.cpp
     src/OctreeStorage.cpp
+    src/PointCloudFile.cpp
     src/VoxelList.cpp
     src/MetaPointCloud.cpp
     src/ProbVoxelMap.cpp
@@ -43,6 +44,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/Octree.h
     ${INCLUDE_DIR}/OctreeFormat.h
     ${INCLUDE_DIR}/OctreeStorage.h
+    ${INCLUDE_DIR}/PointCloudFile.h
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h

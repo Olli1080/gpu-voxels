@@ -15,6 +15,7 @@
 #define GPU_VOXELS_VULKAN_GPU_VOXELS_H_INCLUDED
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <span>
@@ -26,6 +27,7 @@
 #include <gpu_voxels/vulkan/DistanceVoxelMap.h>
 #include <gpu_voxels/vulkan/MetaPointCloud.h>
 #include <gpu_voxels/vulkan/Octree.h>
+#include <gpu_voxels/vulkan/PointCloudFile.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 #include <gpu_voxels/vulkan/vulkan_types.h>
@@ -154,6 +156,19 @@ namespace gpu_voxels::vulkan
 			std::span<const uint8_t> voxel_meanings, uint32_t* outside = nullptr);
 		bool insert_meta_point_cloud_into_map(const MetaPointCloud& cloud, const std::string& map_name, uint8_t voxel_meaning,
 			uint32_t* outside = nullptr);
+
+		/// CUDA insertPointCloudFromFile: loads `model_path / file` (.xyz, .pcd, .binvox, see PointCloudFile.h), shifts it so its minimum is 0
+		/// if asked, applies `p = scaling * p + offset` and inserts the points with the meaning.
+		/// eturn false (and an error log) for an unknown map or a file that cannot be read (unknown extension, missing, malformed);
+		///         `outside` receives the number of points that were not inserted
+		bool insert_point_cloud_from_file(const std::string& map_name, const std::filesystem::path& file, const std::filesystem::path& model_path,
+			uint8_t voxel_meaning, bool shift_to_zero = false, Point3f offset = { 0.0f, 0.0f, 0.0f }, float scaling = 1.0f, uint32_t* outside = nullptr);
+		/// CUDA insertBoxIntoMap: the voxels from floor(min / side) to ceil(max / side) inclusive (see box_voxel_coordinates) inserted as a
+		/// coordinate list with the meaning. `points_per_voxel` only sets the step (CUDA: round(1 / points_per_voxel) voxels, so it makes no
+		/// difference above 2). Voxels beyond the map are counted in `outside` without being generated.
+		/// eturn false (and an error log) for an unknown map. 	hrows VulkanError for points_per_voxel 0 and the cases of box_voxel_coordinates
+		bool insert_box_into_map(Point3f corner_min, Point3f corner_max, const std::string& map_name, uint8_t voxel_meaning,
+			uint16_t points_per_voxel = 1, uint32_t* outside = nullptr);
 
 		/// There is no viewer on Vulkan (decision Q6): always false, like CUDA without GPUVOXEL_VISUALIZE.
 		bool visualize_map(const std::string& map_name, bool force_repaint = true) const;

@@ -1,6 +1,6 @@
 # S7: `GpuVoxels` façade, checklist of every public method (2026-11-02)
 
-**Progress:** S7-1 is done (2026-11-02, [vulkan_gpu_voxels_facade.md](../knowledge_base/architecture/vulkan_gpu_voxels_facade.md)); the rows marked S7-1 below are implemented, S7-2 .. S7-5 are open. The text below is the state before S7-1.
+**Progress:** S7-1 and S7-2 are done (2026-11-02, [vulkan_gpu_voxels_facade.md](../knowledge_base/architecture/vulkan_gpu_voxels_facade.md), [vulkan_gpu_voxels_files.md](../knowledge_base/architecture/vulkan_gpu_voxels_files.md)); the rows marked S7-1 and S7-2 below are implemented, S7-3 .. S7-5 are open. The text below is the state before S7-1.
 
 **Question:** what does the Vulkan backend need so that the public API of `gpu_voxels::GpuVoxels` ([GpuVoxels.h](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/include/gpu_voxels/GpuVoxels.h), implementation [GpuVoxels.cu](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/src/GpuVoxels.cu)) and the map interface behind it (`GpuVoxelsMap`, [GpuVoxelsMap.h](../../packages/gpu_voxels/gpu_voxels/core/include/gpu_voxels/core/GpuVoxelsMap.h)) can be offered on Vulkan?
 
