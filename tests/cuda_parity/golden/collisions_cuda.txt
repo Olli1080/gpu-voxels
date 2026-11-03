@@ -469,3 +469,18 @@ merge off=-3,-3,-3 meaning=9 entries=307 hash=c09a7912bdd7b81d
 merge off=5,5,5 meaning=9 entries=238 hash=ed9ebc82a6066e11
 merge off=16,0,0 meaning=9 entries=137 hash=f891bbdf8af70b61
 merge off=0,0,-20 meaning=9 entries=137 hash=f891bbdf8af70b61
+prob insert 0 meaning=1 unknown=4016 positive=80 negative=0 hash=f3421452de9cb965 values=72:80
+prob insert 1 meaning=1 unknown=3937 positive=159 negative=0 hash=dc080bfb2a525970 values=72:158,127:1
+prob insert 2 meaning=200 unknown=3859 positive=237 negative=0 hash=6701adf942eca5c8 values=71:78,72:156,127:3
+prob insert 3 meaning=100 unknown=3784 positive=237 negative=75 hash=90fd988f0ae1005a values=-29:75,42:1,43:4,71:77,72:152,127:3
+prob insert 4 meaning=0 unknown=3710 positive=237 negative=149 hash=60663ebc288dd1ae values=-29:75,-10:74,42:1,43:4,61:2,62:4,71:75,72:148,127:3
+prob insert 5 meaning=129 unknown=3638 positive=237 negative=149 hash=30450838b1575bae values=-29:75,-10:74,0:72,42:1,43:4,61:2,62:4,71:75,72:148,127:3
+prob insert 6 meaning=130 unknown=3565 positive=311 negative=149 hash=d72860db9a7029e4 values=-29:75,-10:73,-9:1,0:71,1:74,42:1,43:4,61:2,62:4,71:75,72:143,73:5,127:3
+prob insert 7 meaning=131 unknown=3494 positive=382 negative=149 hash=e7d18e4e02978b4c values=-29:72,-27:3,-10:71,-9:1,-8:2,0:71,1:73,2:71,3:1,42:1,43:4,61:2,62:4,71:73,72:142,73:7,74:1,127:3
+prob insert 8 meaning=254 unknown=3428 positive=453 negative=144 hash=c51651b47cdf1fbb values=-29:70,-27:3,-10:68,-9:1,-8:2,0:71,1:70,2:70,3:1,42:1,43:4,61:2,62:4,71:70,72:140,73:7,74:1,96:2,115:3,125:66,126:3,127:9
+prob insert 9 meaning=4 unknown=3357 positive=448 negative=220 hash=13e07395a63e0576 values=-127:3,-125:72,-123:2,-53:2,-29:69,-27:3,-10:66,-9:1,-8:2,0:71,1:70,2:68,3:1,42:1,43:4,61:2,62:4,71:70,72:138,73:7,74:1,96:2,115:3,125:65,126:3,127:9
+prob insert 10 meaning=50 unknown=3293 positive=444 negative=291 hash=be7e4b796193dab7 values=-127:6,-125:69,-123:2,-89:3,-79:67,-78:3,-53:2,-29:69,-27:3,-10:63,-9:1,-8:2,-7:1,0:68,1:67,2:68,3:1,42:1,43:4,46:3,61:2,62:4,71:70,72:137,73:7,74:1,96:2,115:3,125:62,126:3,127:9
+prob insert 11 meaning=3 unknown=3305 positive=436 negative=288 hash=2f6cf33e7d7bb22f values=-127:6,-125:69,-123:2,-89:3,-79:66,-78:3,-53:2,-29:68,-27:3,-10:62,-9:1,-8:2,-7:1,0:67,1:66,2:68,3:1,42:1,43:4,46:2,61:2,62:4,71:68,72:135,73:7,74:1,96:2,115:3,125:61,126:2,127:9
+prob insert 12 meaning=1 unknown=3237 positive=506 negative=286 hash=0db9baab4cc86207 values=-127:6,-125:67,-123:2,-89:3,-79:65,-78:3,-53:4,-29:68,-27:3,-10:60,-9:1,-8:2,-7:2,0:67,1:63,2:68,3:1,42:1,43:4,46:2,61:2,62:6,71:66,72:203,73:10,74:1,96:2,115:3,125:59,126:2,127:13
+prob dup meaning=1 points=2 unknown=4095 positive=1 negative=0 hash=937cf20278a1e70d values=72:1
+prob dup meaning=0 points=4 unknown=4095 positive=0 negative=1 hash=ef79566beea087c3 values=-10:1

@@ -5,6 +5,8 @@
 import subprocess, os, sys
 root = os.environ.get('GVL_ROOT', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))).replace(chr(92), '/') + '/'
 SH = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/list_collide.comp'
+PA = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/prob_apply_accumulated.comp'
+PC = root + 'packages/gpu_voxels/gpu_voxels/vulkan/src/ProbVoxelMap.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
 MUT = [
@@ -15,6 +17,9 @@ MUT = [
     ('P5 offset: 3D bounds check replaced by the array end', SH, "if (c.x < 0 || c.y < 0 || c.z < 0 || c.x >= int(pc.dim_x) || c.y >= int(pc.dim_y) || c.z >= int(pc.dim_z))",
      "if (c.x < 0 || c.y < 0 || c.z < 0 || c.x >= int(pc.dim_x) + 1 || c.y >= int(pc.dim_y) || c.z >= int(pc.dim_z))"),
     ('P6 bit map: FREE counts as occupied', SH, "uint map_bits = map_vox[mb] & 0xFFFFFFFEu;", "uint map_bits = map_vox[mb];"),
+    ('P7 prob accumulate: upper clamp 126', PA, "uint(clamp(base + acc[i], PROB_MIN, PROB_MAX))", "uint(clamp(base + acc[i], PROB_MIN, 126))"),
+    ('P8 prob: swept volume meaning minus 128', PC, "static_cast<int32_t>(meaning) - eBVM_UNCERTAIN_OCC_PROB", "static_cast<int32_t>(meaning) - 128"),
+    ('P9 prob: unknown meaning does not unset', PC, "case eBVM_UNDEFINED: return { true, 0 };", "case eBVM_UNDEFINED: return { false, 0 };"),
 ]
 
 TESTS = 'VulkanTest.CudaParity*'

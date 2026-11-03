@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <gpu_voxels/GpuVoxels.h>
+#include <gpu_voxels/helpers/PointCloud.h>
 #include <gpu_voxels/logging/logging_gpu_voxels.h>
 
 #include "parity_inputs.h"
@@ -108,6 +109,35 @@ int main(int argc, char* argv[])
 		std::printf("%s\n", merge_line(c, list_entries(*target->as<voxellist::BitVectorVoxelList>())).c_str());
 	}
 
+	// scenario 4: probabilistic map, insertPointCloud with swept volume meanings (one call each); insertSensorData does not launch in this CUDA build (K41)
+	gvl->addMap(MT_PROBAB_VOXELMAP, "prob4");
+	{
+		const auto values = [&]()
+		{
+			auto* map = gvl->getMap("prob4")->as<voxelmap::ProbVoxelMap>();
+			const size_t n = static_cast<size_t>(kDim) * kDim * kDim;
+			std::vector<ProbabilisticVoxel> host(n);
+			HANDLE_CUDA_ERROR(cudaMemcpy(host.data(), map->getDeviceDataPtr(), n * sizeof(ProbabilisticVoxel), cudaMemcpyDeviceToHost));
+			std::vector<int> out;
+			for (const ProbabilisticVoxel& v : host)
+				out.push_back(static_cast<int>(v.getOccupancy()));
+			return out;
+		};
+		int step = 0;
+		for (const PointSet& set : prob_insert_sets())
+		{
+			insert(gvl, "prob4", std::vector<PointSet>{ set });
+			std::printf("%s\n", prob_line("insert " + std::to_string(step++) + " meaning=" + std::to_string(set.meaning), values()).c_str());
+		}
+		// the same voxel several times in one call, on a fresh map each
+		for (const PointSet& set : prob_duplicate_sets())
+		{
+			gvl->delMap("prob4");
+			gvl->addMap(MT_PROBAB_VOXELMAP, "prob4");
+			insert(gvl, "prob4", std::vector<PointSet>{ set });
+			std::printf("%s\n", prob_line("dup meaning=" + std::to_string(set.meaning) + " points=" + std::to_string(set.points.size()), values()).c_str());
+		}
+	}
 	gvl.reset();
 	return 0;
 }

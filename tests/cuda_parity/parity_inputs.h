@@ -6,6 +6,8 @@
 #define GVL_CUDA_PARITY_INPUTS_H_INCLUDED
 
 #include <array>
+#include <map>
+#include <set>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -211,6 +213,71 @@ namespace gvl_parity
 		std::snprintf(text, sizeof text, "merge off=%d,%d,%d meaning=%d entries=%zu hash=%016llx", c.offset[0], c.offset[1], c.offset[2], c.meaning, entries.size(),
 			static_cast<unsigned long long>(hash_entries(entries)));
 		return text;
+	}
+	// ---- scenario 4: probabilistic map, insertPointCloud with swept volume meanings (one call each) ----
+	// Same-sign updates inside one call give the same result in every order (CUDA applies them with atomics), so the whole map is compared after every call.
+
+	inline std::vector<PointSet> prob_insert_sets()
+	{
+		Lcg rng(20);
+		std::vector<PointSet> sets;
+		// 1 occupied (+72), 200 (+71), 100 (-29), 0 free (-10), 129 / 130 / 131 (+0 / +1 / +2), 254 (+125), 4 (-125), 50 (-79), 3 unknown (sets the voxel unknown)
+		for (const int meaning : { 1, 1, 200, 100, 0, 129, 130, 131, 254, 4, 50, 3, 1 })
+		{
+			// distinct voxels inside one call: CUDA loses all but one update of a voxel that is hit twice in one call (see prob_duplicate_sets)
+			PointSet set{ meaning, {} };
+			std::set<std::array<int, 3>> used;
+			while (set.points.size() < 80)
+			{
+				const PointSet one = random_set(rng, meaning, 1);
+				const std::array<int, 3> voxel{ static_cast<int>(one.points[0][0]), static_cast<int>(one.points[0][1]), static_cast<int>(one.points[0][2]) };
+				if (used.insert(voxel).second)
+					set.points.push_back(one.points[0]);
+			}
+			sets.push_back(set);
+		}
+		return sets;
+	}
+
+	/// The same voxel twice (meaning 1: +72 twice) and four times (meaning 0: -10 four times) in one call, each on a fresh map.
+	inline std::vector<PointSet> prob_duplicate_sets()
+	{
+		return { { 1, { { 5.5f, 5.5f, 5.5f }, { 5.5f, 5.5f, 5.5f } } }, { 0, { { 7.5f, 7.5f, 7.5f }, { 7.5f, 7.5f, 7.5f }, { 7.5f, 7.5f, 7.5f }, { 7.5f, 7.5f, 7.5f } } } };
+	}
+
+	/// FNV-1a over the occupancy of all voxels (the int8 values as bytes).
+	inline uint64_t hash_occupancy(const std::vector<int>& values)
+	{
+		uint64_t h = 14695981039346656037ULL;
+		for (const int v : values)
+		{
+			h ^= static_cast<uint8_t>(static_cast<int8_t>(v));
+			h *= 1099511628211ULL;
+		}
+		return h;
+	}
+
+	inline std::string prob_line(const std::string& what, const std::vector<int>& values)
+	{
+		std::size_t unknown = 0, positive = 0, negative = 0;
+		for (const int v : values)
+		{
+			unknown += v == -128 ? 1 : 0;
+			positive += v > 0 ? 1 : 0;
+			negative += (v < 0 && v != -128) ? 1 : 0;
+		}
+		// the distinct values with their number of voxels (unknown = -128 is left out): shows which values differ when the hashes do
+		std::map<int, std::size_t> histogram;
+		for (const int v : values)
+			if (v != -128)
+				++histogram[v];
+		std::string values_text;
+		for (const auto& [value, count] : histogram)
+			values_text += (values_text.empty() ? "" : ",") + std::to_string(value) + ":" + std::to_string(count);
+		char text[220];
+		std::snprintf(text, sizeof text, "prob %s unknown=%zu positive=%zu negative=%zu hash=%016llx values=", what.c_str(), unknown, positive, negative,
+			static_cast<unsigned long long>(hash_occupancy(values)));
+		return text + values_text;
 	}
 }
 

@@ -186,3 +186,63 @@ TEST_F(VulkanTest, CudaParityListMerge)
 			ADD_FAILURE() << "Vulkan differs from CUDA:\nCUDA:   " << golden[i] << "\nVulkan: " << mine[i];
 	EXPECT_EQ(different, 0u);
 }
+
+// Scenario 4: ProbVoxelMap insert_point_cloud with swept volume meanings (one call each, UpdateMode::Accumulate): the whole map after every call, as the
+// count of unknown / positive / negative voxels and a hash of all values. (CUDA insertSensorData does not launch in this build: K41, not compared.)
+TEST_F(VulkanTest, CudaParityProbMap)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "prob insert " });
+	ASSERT_GT(golden.size(), 10u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+	ASSERT_NE(gvl.add_map(MT_PROBAB_VOXELMAP, "prob4"), nullptr);
+
+	const auto values = [&]()
+	{
+		std::vector<int> out;
+		for (const int8_t v : gvl.get_map("prob4")->as<ProbVoxelMap>()->download_occupancy())
+			out.push_back(v);
+		return out;
+	};
+	std::vector<std::string> mine;
+	int step = 0;
+	for (const gvl_parity::PointSet& set : gvl_parity::prob_insert_sets())
+	{
+		insert(gvl, "prob4", { set });
+		mine.push_back(gvl_parity::prob_line("insert " + std::to_string(step++) + " meaning=" + std::to_string(set.meaning), values()));
+	}
+	ASSERT_EQ(mine.size(), golden.size());
+	std::size_t different = 0;
+	for (std::size_t i = 0; i < mine.size(); ++i)
+		if (mine[i] != golden[i] && different++ < 20)
+			ADD_FAILURE() << "Vulkan differs from CUDA:\nCUDA:   " << golden[i] << "\nVulkan: " << mine[i];
+	EXPECT_EQ(different, 0u);
+}
+
+// A voxel that is hit twice (or four times) in one insert_point_cloud call: Vulkan applies every update (the sum, clamped), CUDA applies exactly one
+// (the voxel update of the kernel is not an atomic read-modify-write, the other updates of the call are lost). Documented difference, K42: the CUDA
+// golden lines show 72 for two +72 updates and -10 for four -10 updates, Vulkan 127 and -40.
+TEST_F(VulkanTest, CudaParityProbMapDuplicatePointsInOneCall)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "prob dup " });
+	ASSERT_EQ(golden.size(), 2u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+	std::vector<std::string> mine;
+	for (const gvl_parity::PointSet& set : gvl_parity::prob_duplicate_sets())
+	{
+		gvl.del_map("prob4");
+		ASSERT_NE(gvl.add_map(MT_PROBAB_VOXELMAP, "prob4"), nullptr);
+		insert(gvl, "prob4", { set });
+		std::vector<int> values;
+		for (const int8_t v : gvl.get_map("prob4")->as<ProbVoxelMap>()->download_occupancy())
+			values.push_back(v);
+		mine.push_back(gvl_parity::prob_line("dup meaning=" + std::to_string(set.meaning) + " points=" + std::to_string(set.points.size()), values));
+	}
+	EXPECT_NE(golden[0].find("values=72:1"), std::string::npos) << golden[0];
+	EXPECT_NE(golden[1].find("values=-10:1"), std::string::npos) << golden[1];
+	EXPECT_NE(mine[0].find("values=127:1"), std::string::npos) << mine[0];
+	EXPECT_NE(mine[1].find("values=-40:1"), std::string::npos) << mine[1];
+}
