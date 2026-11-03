@@ -8,6 +8,7 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -15,6 +16,7 @@
 
 #include <gpu_voxels/vulkan/GpuVoxels.h>
 
+#include "../reference/prob_voxel_map_reference.h"
 #include "list_collision_model.h"
 
 using namespace gpu_voxels::vulkan;
@@ -72,6 +74,66 @@ namespace
 		for (const int8_t v : map.download_occupancy())
 			n += v >= minimum ? 1 : 0;
 		return n;
+	}
+
+	/// eBVM_MAX_OCC_PROB / eBVM_MAX_FREE_PROB of CUDA (the swept volume meanings 254 and 4: occupancy updates +125 and -125).
+	constexpr uint8_t kMaxOccProb = eBVM_SWEPT_VOLUME_END, kMaxFreeProb = eBVM_SWEPT_VOLUME_START;
+
+	/// CUDA geometry_generation::Range: start, start + spacing, ... (float additions) while the value is <= end.
+	std::vector<float> range_values(float lo, float hi, float spacing)
+	{
+		std::vector<float> values;
+		for (float v = lo; v <= hi; v += spacing)
+			values.push_back(v);
+		return values;
+	}
+
+	/// CUDA createBoxOfPoints(min, max, delta) (x outermost, z innermost); the helper is not part of the Vulkan library.
+	std::vector<Point3f> box_of_points(Point3f lo, Point3f hi, float delta)
+	{
+		std::vector<Point3f> points;
+		for (const float x : range_values(lo.x, hi.x, delta))
+			for (const float y : range_values(lo.y, hi.y, delta))
+				for (const float z : range_values(lo.z, hi.z, delta))
+					points.push_back({ x, y, z });
+		return points;
+	}
+
+	/// CUDA createSphereOfPoints(center, radius, delta): the grid points of the bounding box that lie within the radius.
+	std::vector<Point3f> sphere_of_points(Point3f c, float radius, float delta)
+	{
+		std::vector<Point3f> points;
+		for (const float x : range_values(c.x - radius, c.x + radius, delta))
+			for (const float y : range_values(c.y - radius, c.y + radius, delta))
+				for (const float z : range_values(c.z - radius, c.z + radius, delta))
+				{
+					const float dx = c.x - x, dy = c.y - y, dz = c.z - z;
+					if (std::sqrt(dx * dx + dy * dy + dz * dz) <= radius)
+						points.push_back({ x, y, z });
+				}
+		return points;
+	}
+
+	void shift(std::vector<Point3f>& points, float dx, float dy, float dz)
+	{
+		for (Point3f& p : points)
+		{
+			p.x += dx;
+			p.y += dy;
+			p.z += dz;
+		}
+	}
+
+	void expect_prob_equal(const ProbVoxelMap& map, const gvl_reference::ProbVoxelMapReference& ref, const std::string& what)
+	{
+		const auto gpu = map.download_occupancy();
+		const Dim3ui d = map.dimensions();
+		uint64_t different = 0, first = 0;
+		for (uint64_t i = 0; i < gpu.size(); ++i)
+			if (static_cast<int>(gpu[i]) != ref.get(i) && different++ == 0)
+				first = i;
+		EXPECT_EQ(different, 0u) << what << ": first difference at voxel (" << first % d.x << ", " << (first / d.x) % d.y << ", " << first / d.x / d.y
+			<< "): " << (different == 0 ? 0 : int(gpu[first])) << " instead of " << ref.get(first);
 	}
 
 	class ExampleTest : public VulkanTest
@@ -428,4 +490,196 @@ TEST_F(ExampleTest, CountingVoxelList)
 		EXPECT_EQ(counting.collide_with(bits, static_cast<int8_t>(threshold)), static_cast<uint32_t>(expected)) << "threshold " << threshold;
 	}
 	EXPECT_EQ(counting.collide_with(bits, 0), remaining.size());
+}
+
+// ProbVoxels.cpp: shifted boxes with swept-volume meanings (occupancy updates meaning - 129) and a slab of "uncertain" points. The program's
+// createBoxOfPoints is re-implemented above. Expectations: the sparse reference (sum of the updates per voxel, clamped) and hand-calculated voxels.
+TEST_F(ExampleTest, ProbVoxels)
+{
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ 136, 136, 136 }, 1.0f);
+	const GpuVoxelsMapSharedPtr map = gvl.add_map(MT_PROBAB_VOXELMAP, "myProbVoxelMap");
+	ASSERT_NE(map, nullptr);
+	const ProbVoxelMap& prob = *map->as<ProbVoxelMap>();
+	gvl_reference::ProbVoxelMapReference ref(136, 136, 136, 1.0f);
+
+	const auto insert = [&](const std::vector<Point3f>& points, uint8_t meaning)
+	{
+		const uint32_t outside = map->insert_point_cloud(points, meaning);
+		const auto events = ref.point_events(points, static_cast<int>(meaning) - 129);
+		ref.apply_accumulated(events.events);
+		EXPECT_EQ(outside, events.outside) << "meaning " << int(meaning);
+		EXPECT_EQ(outside, 0u) << "all boxes lie inside the map (meaning " << int(meaning) << ")";
+	};
+
+	std::vector<Point3f> box = box_of_points({ 10, 10, 30 }, { 30, 30, 50 }, 0.9f);
+	EXPECT_EQ(box.size(), 23u * 23u * 23u) << "10 + 0.9 k <= 30 for k = 0 .. 22";
+	insert(box, kMaxOccProb);
+	shift(box, 0, 15, 15);
+	insert(box, kMaxOccProb);
+	for (const uint8_t meaning : { 229, 204, 179, 154 })
+	{
+		shift(box, 0, 15, 15);
+		insert(box, meaning);
+	}
+	expect_prob_equal(prob, ref, "after the occupied boxes");
+	shift(box, 0, 15, -15);
+	insert(box, 104);
+	for (const uint8_t meaning : { 79, 54, 29, 4, 4 })
+	{
+		shift(box, 0, -15, -15);
+		insert(box, meaning);
+	}
+
+	insert(box_of_points({ 10, 5, 5 }, { 12, 130, 130 }, 0.9f), eBVM_UNCERTAIN_OCC_PROB);
+	expect_prob_equal(prob, ref, "ProbVoxels");
+
+	// Hand-calculated voxels (points of the first box per axis: 10, 10.9, 11.8, 12.7, 13.6, ...; of the slab: x in {10, 10.9, 11.8}).
+	const Dim3ui dims = prob.dimensions();
+	const auto voxel = [&](uint32_t x, uint32_t y, uint32_t z) { return int(prob.download_occupancy(ProbVoxelMap::voxel_index(dims, { x, y, z }), 1)[0]); };
+	EXPECT_EQ(voxel(10, 10, 30), 127) << "8 points of +125 saturate; the slab adds 0";
+	EXPECT_EQ(voxel(13, 11, 31), 125) << "one point (13.6, 11.8, 31.8) of +125";
+	EXPECT_EQ(voxel(11, 5, 5), 0) << "only the slab touches it: unknown plus 0 is uncertain, not unknown";
+	EXPECT_EQ(voxel(0, 0, 0), -128);
+	EXPECT_EQ(voxel(135, 135, 135), -128);
+	const auto occupancy = prob.download_occupancy();
+	EXPECT_NE(std::find(occupancy.begin(), occupancy.end(), int8_t(-125)), occupancy.end()) << "voxels with a single point of the free boxes";
+}
+
+// ProbMap2DistMap.cpp / ProbMap2DistMapExample.cpp (the two programs do the same): two overlapping boxes as occupied / free space, merge_occupied
+// with threshold 0.55, then parallel banding with m1 = 1, m2 = 1, m3 = 4. The comment of the program ("the overlap has probability 0.5") does not
+// hold with spacing 0.9: every voxel of a box holds at least one point, so +127 minus 125 per point leaves at most 2.
+TEST_F(ExampleTest, ProbMap2DistMap)
+{
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ 128, 128, 128 }, 1.0f);
+	const GpuVoxelsMapSharedPtr prob_map = gvl.add_map(MT_PROBAB_VOXELMAP, "myProbVoxelMap");
+	const GpuVoxelsMapSharedPtr dist_map = gvl.add_map(MT_DISTANCE_VOXELMAP, "myDistanceMap");
+	ASSERT_NE(prob_map, nullptr);
+	ASSERT_NE(dist_map, nullptr);
+	ProbVoxelMap& prob = *prob_map->as<ProbVoxelMap>();
+	DistanceVoxelMap& dist = *dist_map->as<DistanceVoxelMap>();
+	gvl_reference::ProbVoxelMapReference ref(128, 128, 128, 1.0f);
+
+	const auto points1 = box_of_points({ 40, 40, 40 }, { 60, 60, 60 }, 0.9f);
+	const auto points2 = box_of_points({ 50, 50, 50 }, { 70, 70, 70 }, 0.9f);
+	EXPECT_EQ(prob_map->insert_point_cloud(points1, kMaxOccProb), 0u);
+	EXPECT_EQ(prob_map->insert_point_cloud(points2, kMaxFreeProb), 0u);
+	ref.apply_accumulated(ref.point_events(points1, 125).events);
+	ref.apply_accumulated(ref.point_events(points2, -125).events);
+	expect_prob_equal(prob, ref, "ProbMap2DistMap prob map");
+
+	dist.merge_occupied(prob, 0.55f);
+	dist.compute_distances(DistanceAlgorithm::ParallelBanding, { 1, 1, 4 });
+
+	// Hand count: both boxes cover the voxels 40 .. 59 and 50 .. 69 per axis (every voxel holds a point, the next point after 59.8 is 60.7 > 60).
+	// The first box is occupied (>= 125) except the 10^3 voxels it shares with the second one (<= 2, threshold: > 12).
+	const int level = gvl_reference::ProbVoxelMapReference::probability_from_float(0.55f);
+	EXPECT_EQ(level, 12);
+	const Dim3ui dims = dist.dimensions();
+	std::vector<std::array<int, 3>> obstacles;
+	std::vector<bool> is_obstacle(dims.voxel_count());
+	for (uint32_t z = 0; z < dims.z; ++z)
+		for (uint32_t y = 0; y < dims.y; ++y)
+			for (uint32_t x = 0; x < dims.x; ++x)
+			{
+				const uint64_t index = DistanceVoxelMap::voxel_index(dims, { x, y, z });
+				is_obstacle[index] = ref.get(index) > level;
+				if (is_obstacle[index])
+					obstacles.push_back({ int(x), int(y), int(z) });
+			}
+	EXPECT_EQ(obstacles.size(), 20u * 20u * 20u - 10u * 10u * 10u);
+
+	const auto nearest = dist.download_obstacles();
+	uint64_t wrong_obstacles = 0;
+	for (uint32_t z = 0; z < dims.z; ++z)
+		for (uint32_t y = 0; y < dims.y; ++y)
+			for (uint32_t x = 0; x < dims.x; ++x)
+			{
+				const uint64_t index = DistanceVoxelMap::voxel_index(dims, { x, y, z });
+				const Coord3ui n = nearest[index];
+				wrong_obstacles += ((n.x == x && n.y == y && n.z == z) != is_obstacle[index]) ? 1 : 0;
+			}
+	EXPECT_EQ(wrong_obstacles, 0u) << "a voxel stores itself exactly when it is an obstacle";
+
+	// Brute force squared distances of a sample, and hand-calculated ones.
+	std::vector<uint32_t> indices;
+	for (uint64_t i = 0; i < dims.voxel_count(); i += 997)
+		indices.push_back(static_cast<uint32_t>(i));
+	const auto distances = dist.squared_distances(indices);
+	uint64_t wrong_distances = 0;
+	for (std::size_t k = 0; k < indices.size(); ++k)
+	{
+		const int x = indices[k] % dims.x, y = (indices[k] / dims.x) % dims.y, z = indices[k] / dims.x / dims.y;
+		int64_t best = std::numeric_limits<int64_t>::max();
+		for (const auto& o : obstacles)
+			best = std::min<int64_t>(best, int64_t(o[0] - x) * (o[0] - x) + int64_t(o[1] - y) * (o[1] - y) + int64_t(o[2] - z) * (o[2] - z));
+		wrong_distances += distances[k] != best ? 1 : 0;
+	}
+	EXPECT_EQ(wrong_distances, 0u) << indices.size() << " sampled voxels";
+	EXPECT_EQ(dist.squared_obstacle_distance({ 45, 45, 45 }), 0);
+	EXPECT_EQ(dist.squared_obstacle_distance({ 30, 30, 30 }), 300) << "to (40, 40, 40)";
+	EXPECT_EQ(dist.squared_obstacle_distance({ 50, 50, 50 }), 1) << "inside the shared part, next to (49, 50, 50)";
+	EXPECT_EQ(dist.squared_obstacle_distance({ 60, 60, 60 }), 123) << "to (59, 59, 49): 1 + 1 + 11^2";
+	EXPECT_EQ(dist.squared_obstacle_distance({ 127, 127, 127 }), 78 * 78 + 68 * 68 + 68 * 68) << "to (59, 59, 49)";
+}
+
+// RaycastingSensorExample.cpp: two probabilistic maps, one with the robot cut out, a sensor that moves along a line (5 of its 50 positions).
+// Sphere points are generated as in CUDA; expectations: the sparse reference with the ray walk translated from the CUDA code (Accumulate mode:
+// the updates of one call are summed, the CUDA program applies them in an unspecified order).
+TEST_F(ExampleTest, RaycastingSensorExample)
+{
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ 128, 128, 128 }, 1.0f);
+	const GpuVoxelsMapSharedPtr map1 = gvl.add_map(MT_PROBAB_VOXELMAP, "myProbVoxelMap");
+	const GpuVoxelsMapSharedPtr map2 = gvl.add_map(MT_PROBAB_VOXELMAP, "myProbVoxelMap2");
+	const GpuVoxelsMapSharedPtr robot_map = gvl.add_map(MT_BITVECTOR_VOXELMAP, "myRobotMap");
+	ASSERT_NE(robot_map, nullptr);
+	ProbVoxelMap& prob1 = *map1->as<ProbVoxelMap>();
+	ProbVoxelMap& prob2 = *map2->as<ProbVoxelMap>();
+	const BitVoxelMap& robot = *robot_map->as<BitVoxelMap>();
+
+	std::vector<Point3f> obstacle = sphere_of_points({ 50, 65, 50 }, 10.0f, 0.9f);
+	const std::size_t first_sphere = obstacle.size();
+	const std::vector<Point3f> sphere2 = sphere_of_points({ 65, 50, 50 }, 8.0f, 0.9f);
+	obstacle.insert(obstacle.end(), sphere2.begin(), sphere2.end());
+	EXPECT_GT(first_sphere, 5000u);
+	EXPECT_GT(sphere2.size(), 2000u);
+
+	const auto robot1 = box_of_points({ 35, 50, 35 }, { 50, 90, 65 }, 0.9f);
+	const auto robot2 = box_of_points({ 35, 65, 35 }, { 65, 80, 65 }, 0.9f);
+	EXPECT_EQ(robot_map->insert_point_cloud(robot1, eBVM_OCCUPIED), 0u);
+	EXPECT_EQ(robot_map->insert_point_cloud(robot2, eBVM_OCCUPIED), 0u);
+	gvl_reference::BitVoxelMapReference robot_ref(128, 128, 128, 1.0f);
+	robot_ref.insert_points(robot1, eBVM_OCCUPIED);
+	robot_ref.insert_points(robot2, eBVM_OCCUPIED);
+
+	gvl_reference::ProbVoxelMapReference ref1(128, 128, 128, 1.0f), ref2(128, 128, 128, 1.0f);
+	const Dim3ui dims = prob1.dimensions();
+	for (const std::size_t pos : { 50, 51, 52, 98, 99 })
+	{
+		const Point3f sensor{ float(pos), 2.0f, float(pos / 2.0) };
+		const float origin[3] = { sensor.x, sensor.y, sensor.z };
+		const auto cut = prob1.insert_sensor_data(obstacle, sensor, true, &robot, eBVM_OCCUPIED);
+		const auto uncut = prob2.insert_sensor_data(obstacle, sensor, true, nullptr);
+
+		const auto events1 = ref1.sensor_events(obstacle, origin, true, &robot_ref, eBVM_OCCUPIED, -10, 72);
+		const auto events2 = ref2.sensor_events(obstacle, origin, true, nullptr, eBVM_OCCUPIED, -10, 72);
+		ref1.apply_accumulated(events1.events);
+		ref2.apply_accumulated(events2.events);
+		EXPECT_EQ(cut.cut_by_robot, events1.cut_by_robot) << "pos " << pos;
+		EXPECT_EQ(cut.outside, events1.outside) << "pos " << pos;
+		EXPECT_EQ(uncut.cut_by_robot, 0u) << "pos " << pos << ": no robot map, nothing is cut";
+		EXPECT_EQ(uncut.outside, events2.outside) << "pos " << pos;
+		EXPECT_GT(cut.cut_by_robot, 1000u) << "pos " << pos << ": most of the first sphere lies inside the robot boxes";
+		EXPECT_EQ(cut.outside, 0u);
+		expect_prob_equal(prob1, ref1, "robot cut, pos " + std::to_string(pos));
+		expect_prob_equal(prob2, ref2, "no cut, pos " + std::to_string(pos));
+
+		// The sensor voxel is the start of every ray: thousands of free updates of -10 saturate it.
+		const uint64_t sensor_voxel = ProbVoxelMap::voxel_index(dims, { uint32_t(pos), 2u, uint32_t(pos / 2) });
+		EXPECT_EQ(int(prob1.download_occupancy(sensor_voxel, 1)[0]), -127) << "pos " << pos;
+		EXPECT_EQ(int(prob2.download_occupancy(sensor_voxel, 1)[0]), -127) << "pos " << pos;
+	}
+	EXPECT_NE(prob1.download_occupancy(), prob2.download_occupancy()) << "the cut changes the first map";
 }
