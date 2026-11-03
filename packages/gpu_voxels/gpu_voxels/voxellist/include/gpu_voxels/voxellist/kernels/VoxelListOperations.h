@@ -123,7 +123,7 @@ namespace gpu_voxels {
 
 		template<class VoxelType>
 		__global__
-			void kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
+			void __launch_bounds__(cMAX_THREADS_PER_BLOCK) kernelCollideWithVoxelMap(const MapVoxelID* this_id_list, BitVectorVoxel* this_voxel_list, uint32_t this_list_size,
 				const VoxelType* other_map, Vector3ui other_map_dim, float col_threshold,
 				Vector3i offset, uint16_t* coll_counter_results, BitVectorVoxel* bitvoxel_results);
 

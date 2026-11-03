@@ -35,6 +35,21 @@ namespace
 				bits.push_back(b);
 		return bits;
 	}
+
+	/// The entries of a bit list in list order (sorted by id).
+	std::vector<ListEntry> list_entries(voxellist::BitVectorVoxelList& list)
+	{
+		const size_t n = list.getDimensions().x();
+		thrust::host_vector<Vector3ui> coords;
+		list.copyCoordsToHost(coords);
+		std::vector<BitVectorVoxel> voxels(n);
+		if (n > 0)
+			HANDLE_CUDA_ERROR(cudaMemcpy(voxels.data(), list.getDeviceDataPtr(), n * sizeof(BitVectorVoxel), cudaMemcpyDeviceToHost));
+		std::vector<ListEntry> entries;
+		for (size_t i = 0; i < n; ++i)
+			entries.push_back({ coords[i].x(), coords[i].y(), coords[i].z(), set_bits(voxels[i]) });
+		return entries;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -75,6 +90,24 @@ int main(int argc, char* argv[])
 		std::printf("%s\n", line(c, count, set_bits(types)).c_str());
 	}
 	std::printf("list entries %zu\n", static_cast<size_t>(gvl->getMap("list")->getDimensions().x()));
+
+	// scenario 2: merge of a bit list into a bit list with an offset (fresh lists for every call)
+	for (const MergeCall& c : merge_calls())
+	{
+		for (const char* name : { "target", "source" })
+		{
+			gvl->delMap(name);
+			gvl->addMap(MT_BITVECTOR_VOXELLIST, name);
+		}
+		insert(gvl, "target", merge_target_sets());
+		insert(gvl, "source", list_sets());
+		const BitVoxelMeaning meaning = BitVoxelMeaning(c.meaning < 0 ? 0 : c.meaning);
+		auto target = gvl->getMap("target");
+		if (!target->merge(gvl->getMap("source"), Vector3i(c.offset[0], c.offset[1], c.offset[2]), c.meaning < 0 ? nullptr : &meaning))
+			std::fprintf(stderr, "merge failed\n");
+		std::printf("%s\n", merge_line(c, list_entries(*target->as<voxellist::BitVectorVoxelList>())).c_str());
+	}
+
 	gvl.reset();
 	return 0;
 }

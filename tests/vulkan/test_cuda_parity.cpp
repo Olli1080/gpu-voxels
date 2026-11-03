@@ -21,7 +21,8 @@ using gvl_test::VulkanTest;
 
 namespace
 {
-	std::vector<std::string> read_lines(const std::string& name)
+	/// The lines of a golden file that start with one of the prefixes (the file holds the lines of all scenarios).
+	std::vector<std::string> read_lines(const std::string& name, const std::vector<std::string>& prefixes)
 	{
 		std::ifstream in(std::filesystem::path(GVL_TEST_PARITY_DIR) / name);
 		std::vector<std::string> lines;
@@ -29,7 +30,12 @@ namespace
 		{
 			if (!text.empty() && text.back() == '\r')
 				text.pop_back();
-			lines.push_back(text);
+			for (const std::string& prefix : prefixes)
+				if (text.rfind(prefix, 0) == 0)
+				{
+					lines.push_back(text);
+					break;
+				}
 		}
 		return lines;
 	}
@@ -61,8 +67,8 @@ namespace
 // host model with the 3D offset, and the original CUDA == host model with the linear offset (so the change of CUDA is exactly the border rule).
 TEST_F(VulkanTest, CudaParityListMapCollisions)
 {
-	const std::vector<std::string> golden = read_lines("collisions_cuda.txt");
-	const std::vector<std::string> unfixed = read_lines("collisions_cuda_unfixed_border.txt"); // CUDA as upstream: linear offset
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "default ", "types ", "mask ", "list entries" });
+	const std::vector<std::string> unfixed = read_lines("collisions_cuda_unfixed_border.txt", { "default ", "types ", "mask ", "list entries" }); // CUDA as upstream: linear offset
 	ASSERT_GT(golden.size(), 400u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
 
 	GpuVoxels gvl(ctx());
@@ -141,4 +147,42 @@ TEST_F(VulkanTest, CudaParityListMapCollisions)
 	EXPECT_EQ(vulkan_vs_cuda, 0u);
 	EXPECT_EQ(unfixed_vs_linear, 0u);
 	EXPECT_GT(border_lines, 100u) << "the scenario must exercise the border";
+}
+
+// Scenario 2: GpuVoxelsMap::merge of a bit list into a bit list with an offset (entries that leave the map are dropped; the CUDA lines are hashes of the
+// whole resulting list: coordinates and set bits in list order).
+TEST_F(VulkanTest, CudaParityListMerge)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "merge " });
+	ASSERT_GT(golden.size(), 20u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+	std::vector<std::string> mine;
+	for (const gvl_parity::MergeCall& c : gvl_parity::merge_calls())
+	{
+		for (const char* name : { "target", "source" })
+		{
+			gvl.del_map(name);
+			ASSERT_NE(gvl.add_map(MT_BITVECTOR_VOXELLIST, name), nullptr);
+		}
+		insert(gvl, "target", gvl_parity::merge_target_sets());
+		insert(gvl, "source", gvl_parity::list_sets());
+		const GpuVoxelsMapSharedPtr target = gvl.get_map("target");
+		target->merge(*gvl.get_map("source"), { c.offset[0], c.offset[1], c.offset[2] },
+			c.meaning < 0 ? std::nullopt : std::optional<uint8_t>(static_cast<uint8_t>(c.meaning)));
+		const BitVoxelList& list = *target->as<BitVoxelList>();
+		const auto coordinates = list.download_coordinates();
+		const auto vectors = list.download_bit_vectors();
+		std::vector<gvl_parity::ListEntry> entries;
+		for (std::size_t i = 0; i < coordinates.size(); ++i)
+			entries.push_back({ coordinates[i].x, coordinates[i].y, coordinates[i].z, set_bits(vectors[i]) });
+		mine.push_back(gvl_parity::merge_line(c, entries));
+	}
+	ASSERT_EQ(mine.size(), golden.size());
+	std::size_t different = 0;
+	for (std::size_t i = 0; i < mine.size(); ++i)
+		if (mine[i] != golden[i] && different++ < 20)
+			ADD_FAILURE() << "Vulkan differs from CUDA:\nCUDA:   " << golden[i] << "\nVulkan: " << mine[i];
+	EXPECT_EQ(different, 0u);
 }

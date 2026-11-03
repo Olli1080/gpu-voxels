@@ -439,3 +439,33 @@ mask prob thr=0.5 off=0,15,0 mask=4 count=0
 mask prob thr=0.5 off=0,15,0 mask=5 count=0
 mask prob thr=0.5 off=0,15,0 mask=6 count=0
 list entries 320
+merge off=0,0,0 meaning=-1 entries=441 hash=f67f30fbddf81197
+merge off=1,0,0 meaning=-1 entries=430 hash=c8c8e7880457769a
+merge off=-1,0,0 meaning=-1 entries=424 hash=4591fb8efae91930
+merge off=0,1,0 meaning=-1 entries=429 hash=6e0063b873c8c70e
+merge off=0,-1,0 meaning=-1 entries=422 hash=0841879dd507bac8
+merge off=0,0,1 meaning=-1 entries=423 hash=ef408adc4b3b7604
+merge off=0,0,-1 meaning=-1 entries=428 hash=f16b366d3856521f
+merge off=3,2,1 meaning=-1 entries=334 hash=2e92fd5ac053ec81
+merge off=15,0,0 meaning=-1 entries=160 hash=495ea5ec4c6070a7
+merge off=-15,0,0 meaning=-1 entries=158 hash=59d4b2842f624fbd
+merge off=0,15,0 meaning=-1 entries=161 hash=9ab7d5bc16689a4d
+merge off=-3,-3,-3 meaning=-1 entries=307 hash=c5c0ed084ba7da04
+merge off=5,5,5 meaning=-1 entries=238 hash=9ece60cba378f153
+merge off=16,0,0 meaning=-1 entries=137 hash=f891bbdf8af70b61
+merge off=0,0,-20 meaning=-1 entries=137 hash=f891bbdf8af70b61
+merge off=0,0,0 meaning=9 entries=441 hash=d6f830f2616bc7f9
+merge off=1,0,0 meaning=9 entries=430 hash=047019cf071f6758
+merge off=-1,0,0 meaning=9 entries=424 hash=3b26918f0e3df064
+merge off=0,1,0 meaning=9 entries=429 hash=92e97178b87cef89
+merge off=0,-1,0 meaning=9 entries=422 hash=3ecb906892af4b07
+merge off=0,0,1 meaning=9 entries=423 hash=fc3967e480382ab8
+merge off=0,0,-1 meaning=9 entries=428 hash=4cecd572d9878af7
+merge off=3,2,1 meaning=9 entries=334 hash=8b8111a6f868a81b
+merge off=15,0,0 meaning=9 entries=160 hash=4b5eca4c75e42593
+merge off=-15,0,0 meaning=9 entries=158 hash=6fdad3f07da2b06f
+merge off=0,15,0 meaning=9 entries=161 hash=5c18775df34413a0
+merge off=-3,-3,-3 meaning=9 entries=307 hash=c09a7912bdd7b81d
+merge off=5,5,5 meaning=9 entries=238 hash=ed9ebc82a6066e11
+merge off=16,0,0 meaning=9 entries=137 hash=f891bbdf8af70b61
+merge off=0,0,-20 meaning=9 entries=137 hash=f891bbdf8af70b61

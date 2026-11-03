@@ -144,6 +144,74 @@ namespace gvl_parity
 			text += " types=" + bits_text(types);
 		return text;
 	}
+
+	// ---- scenario 2: merge of a bit list into a bit list with an offset (GpuVoxelsMap::merge) ----
+
+	/// Content of the list that is merged into (a second list from the same generator, some voxels coincide with the source).
+	inline std::vector<PointSet> merge_target_sets()
+	{
+		Lcg rng(10);
+		std::vector<PointSet> sets;
+		sets.push_back(random_set(rng, 1, 60));
+		sets.push_back(random_set(rng, 77, 60));
+		sets.push_back(random_set(rng, 0, 20));
+		return sets;
+	}
+
+	struct MergeCall
+	{
+		std::array<int, 3> offset;
+		int meaning; ///< -1: no new meaning
+	};
+
+	inline std::vector<MergeCall> merge_calls()
+	{
+		const std::vector<std::array<int, 3>> offsets{ { 0, 0, 0 }, { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 },
+			{ 3, 2, 1 }, { 15, 0, 0 }, { -15, 0, 0 }, { 0, 15, 0 }, { -3, -3, -3 }, { 5, 5, 5 }, { 16, 0, 0 }, { 0, 0, -20 } };
+		std::vector<MergeCall> out;
+		for (const int meaning : { -1, 9 })
+			for (const auto& offset : offsets)
+				out.push_back({ offset, meaning });
+		return out;
+	}
+
+	struct ListEntry
+	{
+		uint32_t x, y, z;
+		std::vector<int> bits;
+	};
+
+	/// FNV-1a over the entries in list order: coordinates, number of set bits, the set bits.
+	inline uint64_t hash_entries(const std::vector<ListEntry>& entries)
+	{
+		uint64_t h = 14695981039346656037ULL;
+		const auto add = [&h](uint32_t v)
+		{
+			for (int i = 0; i < 4; ++i)
+			{
+				h ^= (v >> (8 * i)) & 0xFFu;
+				h *= 1099511628211ULL;
+			}
+		};
+		for (const ListEntry& e : entries)
+		{
+			add(e.x);
+			add(e.y);
+			add(e.z);
+			add(static_cast<uint32_t>(e.bits.size()));
+			for (const int b : e.bits)
+				add(static_cast<uint32_t>(b));
+		}
+		return h;
+	}
+
+	inline std::string merge_line(const MergeCall& c, const std::vector<ListEntry>& entries)
+	{
+		char text[200];
+		std::snprintf(text, sizeof text, "merge off=%d,%d,%d meaning=%d entries=%zu hash=%016llx", c.offset[0], c.offset[1], c.offset[2], c.meaning, entries.size(),
+			static_cast<unsigned long long>(hash_entries(entries)));
+		return text;
+	}
 }
 
 #endif

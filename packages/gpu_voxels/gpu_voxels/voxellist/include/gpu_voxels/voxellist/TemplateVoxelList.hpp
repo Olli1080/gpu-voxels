@@ -30,6 +30,7 @@
 #include "CountingVoxelList.h"
 
 #include <fstream>
+#include <limits>
 #include <gpu_voxels/logging/logging_voxellist.h>
 #include <gpu_voxels/voxellist/kernels/VoxelListOperations.hpp>
 #include <gpu_voxels/voxelmap/kernels/VoxelMapOperations.h>
@@ -74,26 +75,33 @@ namespace gpu_voxels
 			}
 		};
 
-		// Thrust operator applyOffsetOperator:
+		// Thrust operator applyOffsetOperator: moves an entry by a voxel offset. The id is computed from the moved coordinates; an entry whose moved
+		// coordinates leave the reference map gets the largest id, so that make_unique() sorts all of them to the end and drops them
+		// (adding the offset to the linear id would wrap across rows and slices at the border).
 		template<class VoxelIDType>
 		struct applyOffsetOperator
 		{
 			typedef thrust::tuple<Vector3ui, VoxelIDType> coordKeyTuple;
 
-			ptrdiff_t addr_offset;
+			Vector3ui ref_map_dim;
 			Vector3i coord_offset;
 			applyOffsetOperator(const Vector3ui& ref_map_dim, const Vector3i& offset)
+				: ref_map_dim(ref_map_dim), coord_offset(offset)
 			{
-				coord_offset = offset;
-				addr_offset = voxelmap::getVoxelIndexSigned(ref_map_dim, offset);
 			}
 
 			__host__ __device__
 				coordKeyTuple operator()(const coordKeyTuple& input) const
 			{
 				coordKeyTuple ret;
-				thrust::get<0>(ret) = (thrust::get<0>(input).template cast<int64_t>() + coord_offset.template cast<int64_t>()).template cast<uint32_t>();
-				thrust::get<1>(ret) = thrust::get<1>(input) + addr_offset;
+				const int64_t x = int64_t(thrust::get<0>(input).x()) + coord_offset.x();
+				const int64_t y = int64_t(thrust::get<0>(input).y()) + coord_offset.y();
+				const int64_t z = int64_t(thrust::get<0>(input).z()) + coord_offset.z();
+				const bool inside = x >= 0 && y >= 0 && z >= 0 && x < int64_t(ref_map_dim.x()) && y < int64_t(ref_map_dim.y()) && z < int64_t(ref_map_dim.z());
+				thrust::get<0>(ret) = Vector3ui(uint32_t(x), uint32_t(y), uint32_t(z));
+				thrust::get<1>(ret) = inside
+					? VoxelIDType((uint64_t(z) * ref_map_dim.y() + uint64_t(y)) * ref_map_dim.x() + uint64_t(x))
+					: (std::numeric_limits<VoxelIDType>::max)();
 				return ret;
 			}
 		};
@@ -187,6 +195,9 @@ namespace gpu_voxels
 				LOGGING_ERROR_C(VoxellistLog, TemplateVoxelList, "Caught Thrust exception while dropping duplicates: " << e.what() << endl);
 				exit(-1);
 			}
+			// Entries that merge(offset) moved out of the reference map carry the largest id (applyOffsetOperator): the sort put them last and unique kept one.
+			if (m_dev_id_list.size() > 0 && VoxelIDType(m_dev_id_list.back()) == (std::numeric_limits<VoxelIDType>::max)())
+				this->resize(m_dev_id_list.size() - 1);
 			LOGGING_DEBUG_C(VoxellistLog, TemplateVoxelList, "List size after make_unique: " << m_dev_list.size() << endl);
 		}
 		
