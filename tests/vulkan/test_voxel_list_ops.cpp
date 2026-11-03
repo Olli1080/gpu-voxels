@@ -160,7 +160,7 @@ TEST_F(VulkanTest, BitListCollisionWithMapMarksCollidingEntries)
 
 	BitVoxelList list(ctx(), dims, kSide);
 	auto ref = bit_reference(dims);
-	for (uint8_t meaning : { uint8_t{ 4 }, uint8_t{ 0 } }) // meaning 0: list voxels without any bit except FREE are inspected as well
+	for (uint8_t meaning : { uint8_t{ 4 }, uint8_t{ 0 } }) // meaning 0: entries with only the FREE bit never collide (the list voxel is inspected too)
 	{
 		const auto points = random_points(rng, 900, dims);
 		list.insert_point_cloud(points, meaning);

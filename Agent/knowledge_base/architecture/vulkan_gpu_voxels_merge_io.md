@@ -2,7 +2,7 @@
 
 Status: **Tested, not Parity** (the CUDA behaviour is a reading of `GpuVoxelsMap.h`, `TemplateVoxelMap.hpp`, `TemplateVoxelList.hpp`, `TemplateVoxelList.cu` and `GvlNTree.hpp`; nothing ran under CUDA). Builds on [vulkan_gpu_voxels_facade.md](vulkan_gpu_voxels_facade.md). Plan: [S7 checklist](../../Analysis/2026-11-02_s7_facade_checklist.md), rows `merge` and `writeToDisk` / `readFromDisk` of section 3. Code: `GpuVoxelsMap::merge`, `merge_metric`, `write_to_disk`, `read_from_disk` in `vulkan/src/GpuVoxels.cpp`; list merging in `vulkan/src/VoxelList.cpp`; the file format in `vulkan/include/gpu_voxels/vulkan/MapFile.h` / `vulkan/src/MapFile.cpp`.
 
-Not part of this slice: merging maps into maps and octrees (CUDA does not either: false / stub), reading CUDA's own dump files, `collideWithTypeMask`, primitives (S7-5).
+Not part of this slice: merging maps into maps and octrees (CUDA does not either: false / stub), reading CUDA's own dump files; list collisions and primitives are S7-5 ([vulkan_gpu_voxels_examples.md](vulkan_gpu_voxels_examples.md)).
 
 ## Merge
 `uint32_t merge(const GpuVoxelsMap& other, Offset3i voxel_offset = {}, std::optional<uint8_t> new_meaning = {})` returns the number of voxels / entries that were not merged because they lie outside after the offset (CUDA returns a bool). Everything not in this table throws `VulkanError` "the operation 'merge of <source type>' is not supported by the map type <target>" (CUDA logs and returns `false`; D2 of the checklist).

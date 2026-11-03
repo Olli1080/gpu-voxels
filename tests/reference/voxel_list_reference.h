@@ -11,8 +11,10 @@
 //    (CUDA would saturate negative values to voxel 0, see known issue K21);
 //  * entries with equal ids are merged: bit vectors OR-ed, counts added with int8 wrap-around;
 //  * counting entries start with count 1 per inserted point / coordinate, the meaning is ignored;
-//  * list vs map collision only inspects the MAP voxel (occupied = any bit except bit 0) and marks the list voxel
-//    with bit 2; list vs list collision counts entries whose id occurs in the other list.
+//  * list vs map collision (DefaultCollider): the MAP voxel and the LIST voxel must both be occupied (any bit except
+//    bit 0); the list voxel is marked with bit 2. S4 had this wrong (only the map voxel); corrected in S7-5 after reading
+//    TemplateVoxelList::collisionCheckWithCollider / kernelCollideWithVoxelMap(Collider) / DefaultCollider::collide.
+//    List vs list collision counts entries whose id occurs in the other list.
 #ifndef GVL_TEST_VOXEL_LIST_REFERENCE_H_INCLUDED
 #define GVL_TEST_VOXEL_LIST_REFERENCE_H_INCLUDED
 
@@ -91,12 +93,12 @@ namespace gvl_reference
 			return collisions;
 		}
 
-		/// Bit lists: entries whose map voxel is occupied get bit 2. \return number of such entries
+		/// Bit lists: entries whose own voxel and map voxel are occupied get bit 2. \return number of such entries
 		uint32_t collide_with_map(const BitVoxelMapReference& map)
 		{
 			uint32_t collisions = 0;
 			for (auto& [id, entry] : entries_)
-				if (BitVoxelMapReference::occupied(map.get(id)))
+				if (BitVoxelMapReference::occupied(entry.bits) && BitVoxelMapReference::occupied(map.get(id)))
 				{
 					entry.bits.set(2);
 					++collisions;

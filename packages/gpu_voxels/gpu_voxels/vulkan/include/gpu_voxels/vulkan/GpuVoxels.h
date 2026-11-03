@@ -7,7 +7,7 @@
  * \brief  Façade of the Vulkan backend: named maps behind one runtime type (slice S7-1 of the migration plan).
  *
  * Counterpart of gpu_voxels::GpuVoxels / GpuVoxelsMap for maps, lists and octrees, point cloud files, boxes (S7-2) and DH
- * robots (S7-3), merge and disk I/O of maps and lists (S7-4). Primitives follow in S7-5, URDF robots and the viewer later
+ * robots (S7-3), merge and disk I/O of maps and lists (S7-4), primitive arrays (S7-5). URDF robots and the viewer follow later
  * (Agent/Analysis/2026-11-02_s7_facade_checklist.md). The
  * decisions D1 .. D6 of that note apply: a thin handle over the concrete classes, checked as<T>(), unsupported
  * operations throw, no locking, Vulkan value types in the signatures, namespace gpu_voxels::vulkan.
@@ -34,6 +34,7 @@
 #include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/OctreeStorage.h>
 #include <gpu_voxels/vulkan/PointCloudFile.h>
+#include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 #include <gpu_voxels/vulkan/vulkan_types.h>
@@ -238,8 +239,24 @@ namespace gpu_voxels::vulkan
 		std::optional<BitVoxelMap::SelfCollisionResult> insert_robot_into_map_self_coll_aware(const std::string& robot_name, const std::string& map_name,
 			std::span<const uint8_t> voxel_meanings = {}, std::span<const BitVector256> collision_masks = {});
 
+		/// CUDA addPrimitives: a new, empty host container of `type` (see PrimitiveArray.h) with the dimensions and voxel side length of
+		/// this instance; the names are separate from the map names. \return false (and an error log) if the name is used
+		/// \throws VulkanError before initialize() and for a type that is neither sphere nor cuboid
+		bool add_primitives(PrimitiveType type, const std::string& array_name);
+		/// \return false (and an error log) for an unknown name. Handles from get_primitives() stay valid.
+		bool del_primitives(const std::string& array_name);
+		/// CUDA modifyPrimitives: PrimitiveArray::set_points of the named array, all four forms. \return false (and an error log) for an
+		/// unknown name. \throws VulkanError as PrimitiveArray::set_points (the array is unchanged then)
+		bool modify_primitives(const std::string& array_name, std::span<const Point4f> metric_positions);
+		bool modify_primitives(const std::string& array_name, std::span<const Coord4i> voxel_positions);
+		bool modify_primitives(const std::string& array_name, std::span<const Point3f> metric_positions, float diameter);
+		bool modify_primitives(const std::string& array_name, std::span<const Coord3i> voxel_positions, uint32_t diameter);
+		/// The array itself (CUDA has no getter; without a viewer it is the only way to look at the content). Empty (and an error log) for an unknown name.
+		[[nodiscard]] PrimitiveArraySharedPtr get_primitives(const std::string& array_name) const;
+
 		/// There is no viewer on Vulkan (decision Q6): always false, like CUDA without GPUVOXEL_VISUALIZE.
 		bool visualize_map(const std::string& map_name, bool force_repaint = true) const;
+		bool visualize_primitives_array(const std::string& array_name, bool force_repaint = true) const;
 
 		[[nodiscard]] Dim3ui dimensions() const { return dimensions_; }
 		[[nodiscard]] float voxel_side_length() const { return voxel_side_length_; }
@@ -254,6 +271,7 @@ namespace gpu_voxels::vulkan
 		float voxel_side_length_ = 0.0f;
 		std::map<std::string, GpuVoxelsMapSharedPtr> maps_; ///< destroyed before the owned context
 		std::map<std::string, KinematicChainSharedPtr> robots_; ///< likewise
+		std::map<std::string, PrimitiveArraySharedPtr> primitives_; ///< host only
 	};
 }
 

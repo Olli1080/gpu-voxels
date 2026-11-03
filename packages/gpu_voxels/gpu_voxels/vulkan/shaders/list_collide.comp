@@ -1,0 +1,93 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "bit_voxel_common.glsl"
+// Collision of a BitVoxelList with a map of the same dimensions as the reference map (CUDA kernelCollideWithVoxelMap in
+// its three forms). Entry i looks at the map voxel at its coordinates plus the offset; a voxel that lies outside the map
+// is skipped (CUDA moves a linear index instead, which wraps across rows). The map is a bit map (8 words per voxel,
+// occupied = a bit besides FREE) or a probabilistic map (one sign extended int8 per word).
+//   mode 0 (collideWith, DefaultCollider): the list voxel has a bit besides FREE and the map voxel is occupied; a
+//          probabilistic voxel is occupied when its occupancy is >= pc.level
+//   mode 1 (collideWithTypes): the map voxel is occupied (probabilistic: float(occupancy) >= pc.threshold); the bits of the
+//          colliding list voxels are OR-ed into result[1..8]
+//   mode 2 (collideWithTypeMask): as mode 1 and the list voxel shares a bit with pc.mask
+// A colliding list voxel gets the eBVM_COLLISION bit (after its bits were read); result[0] counts the collisions.
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Coords { uint coords[]; };
+layout(std430, set = 0, binding = 1) buffer ListVox { uint list_vox[]; };
+layout(std430, set = 0, binding = 2) readonly buffer MapVox { uint map_vox[]; };
+layout(std430, set = 0, binding = 3) buffer Result { uint result[]; };
+layout(push_constant) uniform Push
+{
+    uint n;
+    uint dim_x;
+    uint dim_y;
+    uint dim_z;
+    int off_x;
+    int off_y;
+    int off_z;
+    uint mode;
+    uint map_kind; // 0 bit map, 1 probabilistic map
+    int level;
+    float threshold;
+    uint mask[8];
+} pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.n; i += stride)
+    {
+        const ivec3 c = ivec3(int(coords[3u * i]), int(coords[3u * i + 1u]), int(coords[3u * i + 2u]))
+            + ivec3(pc.off_x, pc.off_y, pc.off_z);
+        if (c.x < 0 || c.y < 0 || c.z < 0 || c.x >= int(pc.dim_x) || c.y >= int(pc.dim_y) || c.z >= int(pc.dim_z))
+            continue;
+        const uint index = (uint(c.z) * pc.dim_y + uint(c.y)) * pc.dim_x + uint(c.x);
+        const uint lb = i * WORDS_PER_VOXEL;
+
+        bool map_occupied;
+        if (pc.map_kind == 0u)
+        {
+            const uint mb = index * WORDS_PER_VOXEL;
+            uint map_bits = map_vox[mb] & 0xFFFFFFFEu;
+            for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+                map_bits |= map_vox[mb + w];
+            map_occupied = map_bits != 0u;
+        }
+        else if (pc.mode == 0u)
+        {
+            map_occupied = int(map_vox[index]) >= pc.level;
+        }
+        else
+        {
+            map_occupied = float(int(map_vox[index])) >= pc.threshold;
+        }
+        if (!map_occupied)
+            continue;
+
+        if (pc.mode == 0u)
+        {
+            uint list_bits = list_vox[lb] & 0xFFFFFFFEu;
+            for (uint w = 1u; w < WORDS_PER_VOXEL; ++w)
+                list_bits |= list_vox[lb + w];
+            if (list_bits == 0u)
+                continue;
+        }
+        else if (pc.mode == 2u)
+        {
+            uint shared_bits = 0u;
+            for (uint w = 0u; w < WORDS_PER_VOXEL; ++w)
+                shared_bits |= pc.mask[w] & list_vox[lb + w];
+            if (shared_bits == 0u)
+                continue;
+        }
+
+        if (pc.mode == 1u)
+        {
+            for (uint w = 0u; w < WORDS_PER_VOXEL; ++w)
+                if (list_vox[lb + w] != 0u)
+                    atomicOr(result[1u + w], list_vox[lb + w]);
+        }
+        list_vox[lb + meaning_word(BVM_COLLISION)] |= meaning_mask(BVM_COLLISION);
+        atomicAdd(result[0], 1u);
+    }
+}

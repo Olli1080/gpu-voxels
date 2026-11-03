@@ -34,6 +34,7 @@ namespace gpu_voxels::vulkan
 {
 	class BitVoxelMap;
 	class CountingVoxelList;
+	class ProbVoxelMap;
 
 	/// Behaviour shared by all list types. Not instantiable; use BitVoxelList or CountingVoxelList.
 	class VoxelListBase
@@ -114,8 +115,19 @@ namespace gpu_voxels::vulkan
 		uint32_t count_common_entries(const VoxelListBase& other, const int8_t* threshold) const;
 		/// Removes the entries of a Counting list with count < threshold.
 		void remove_counts_below(int8_t threshold);
-		/// Bit lists: marks entries whose voxel in `map` is occupied with eBVM_COLLISION. \return number of collisions
-		uint32_t collide_with_bit_map(const BitVoxelMap& map);
+		/// The three collisions of a bit list with a map (shader list_collide.comp); `map_voxels` is the voxel buffer of a BitVoxelMap
+		/// or ProbVoxelMap with the reference dimensions. Colliding entries get eBVM_COLLISION.
+		enum class MapCollisionMode : uint32_t { Default = 0, Types = 1, TypeMask = 2 };
+		struct MapCollision
+		{
+			uint32_t count = 0;
+			BitVector256 types{}; ///< Types mode: OR of the bits of the colliding entries
+		};
+		/// \param level Default mode with a probabilistic map: collides if occupancy >= level; \param threshold the other modes: float(occupancy) >= threshold
+		/// \param mask TypeMask mode only. Entries whose moved voxel lies outside the map never collide.
+		/// \throws VulkanError for a counting list or other dimensions
+		MapCollision collide_with_map(const DeviceBuffer& map_voxels, Dim3ui map_dimensions, bool probabilistic, MapCollisionMode mode,
+			Offset3i offset, int32_t level, float threshold, const BitVector256* mask);
 		/// Bit lists: appends all occupied voxels of the map (payload copied), then make_unique().
 		uint32_t append_occupied_voxels(const BitVoxelMap& map);
 		/// Appends the entries of `other` moved by `offset` (host side: the entries of `other` are downloaded), then make_unique().
@@ -145,10 +157,32 @@ namespace gpu_voxels::vulkan
 
 		/// Number of entries whose id also occurs in `other` (CUDA collideWith(list), no offset).
 		[[nodiscard]] uint32_t collide_with(const BitVoxelList& other) const;
-		/// Number of entries whose voxel in `map` is occupied (any bit except eBVM_FREE). Side effect (as in CUDA):
-		/// these entries get the eBVM_COLLISION bit. The list voxel itself is not inspected.
-		/// \throws VulkanError if the map dimensions differ from the reference dimensions
-		uint32_t collide_with(const BitVoxelMap& map);
+		/// Collision with a bit map of the reference dimensions (CUDA collideWith(BitVoxelMap) with the DefaultCollider): the entry's voxel has a
+		/// bit besides eBVM_FREE and so does the map voxel at the entry's coordinates + `offset`. Side effect (as in CUDA): colliding entries
+		/// get the eBVM_COLLISION bit. An offset moves the coordinates in three dimensions, an entry that would leave the map does not collide
+		/// (CUDA adds the offset to the linear index, which wraps across rows and slices).
+		/// \return number of collisions
+		/// \throws VulkanError if the map dimensions or the context differ
+		uint32_t collide_with(const BitVoxelMap& map, Offset3i offset = {});
+		/// Same with a probabilistic map (CUDA DefaultCollider(Bit, Prob)): the map voxel collides if its occupancy is at least
+		/// ProbVoxelMap::probability_from_float(threshold) (CUDA default 1.0 -> 127).
+		uint32_t collide_with(const ProbVoxelMap& map, float threshold = 1.0f, Offset3i offset = {});
+
+		/// Result of collide_with_types() / collide_with_type_mask().
+		struct TypeCollision
+		{
+			uint32_t count = 0;        ///< number of colliding entries
+			BitVector256 types{};      ///< OR of the bits of the colliding entries (before eBVM_COLLISION was added)
+		};
+		/// CUDA collideWithTypes(map): entries whose map voxel is occupied collide, whatever their own voxel holds. A bit map voxel is occupied with
+		/// any bit besides FREE (`threshold` is ignored, as in CUDA); a probabilistic voxel if float(occupancy) >= threshold, **without** the
+		/// conversion of collide_with(): the default 1.0 means occupancy >= 1, not 127. Offset and marking as in collide_with().
+		TypeCollision collide_with_types(const BitVoxelMap& map, float threshold = 1.0f, Offset3i offset = {});
+		TypeCollision collide_with_types(const ProbVoxelMap& map, float threshold = 1.0f, Offset3i offset = {});
+		/// CUDA collideWithTypeMask(map): as collide_with_types, and an entry only collides if its voxel has a bit that is also set in
+		/// `types_to_check` (an empty mask collides with nothing). Marking as above. The count is 32 bit (CUDA sums uint16 per block).
+		uint32_t collide_with_type_mask(const BitVoxelMap& map, const BitVector256& types_to_check, float threshold = 1.0f, Offset3i offset = {});
+		uint32_t collide_with_type_mask(const ProbVoxelMap& map, const BitVector256& types_to_check, float threshold = 1.0f, Offset3i offset = {});
 		/// Removes the entries whose id occurs in `other` (CUDA subtract).
 		void subtract(const BitVoxelList& other);
 		/// Appends every occupied voxel of `map` (payload copied; OR-ed into entries that already exist). No CUDA

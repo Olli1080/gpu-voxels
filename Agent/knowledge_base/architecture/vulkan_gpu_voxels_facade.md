@@ -2,7 +2,7 @@
 
 Status: **Tested, not Parity** (the CUDA behaviour is a reading of `GpuVoxels.cu`, `GpuVoxelsMap.h` and the map classes; nothing ran under CUDA). Plan and checklist: [S7 checklist](../../Analysis/2026-11-02_s7_facade_checklist.md). Header `vulkan/include/gpu_voxels/vulkan/GpuVoxels.h`, code `vulkan/src/GpuVoxels.cpp`, namespace `gpu_voxels::vulkan`. The legacy header is untouched.
 
-Not part of this slice: primitive arrays, `collideWithTypeMask`, URDF, viewer (S7-5, later). Merge and disk I/O (S7-4): [vulkan_gpu_voxels_merge_io.md](vulkan_gpu_voxels_merge_io.md). Point cloud files and boxes (S7-2): [vulkan_gpu_voxels_files.md](vulkan_gpu_voxels_files.md); robots (S7-3): [vulkan_gpu_voxels_robots.md](vulkan_gpu_voxels_robots.md).
+Not part of this slice: URDF, viewer (later). Primitive arrays, list collisions with maps and the example smoke tests (S7-5): [vulkan_gpu_voxels_examples.md](vulkan_gpu_voxels_examples.md). Merge and disk I/O (S7-4): [vulkan_gpu_voxels_merge_io.md](vulkan_gpu_voxels_merge_io.md). Point cloud files and boxes (S7-2): [vulkan_gpu_voxels_files.md](vulkan_gpu_voxels_files.md); robots (S7-3): [vulkan_gpu_voxels_robots.md](vulkan_gpu_voxels_robots.md).
 
 ## Types
 | Type | Contract |

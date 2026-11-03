@@ -27,6 +27,7 @@ target_sources(${PROJECT_NAME}
     src/VoxelList.cpp
     src/MetaPointCloud.cpp
     src/ProbVoxelMap.cpp
+    src/PrimitiveArray.cpp
     src/Primitives.cpp
     src/vma_impl.cpp
   PUBLIC FILE_SET HEADERS
@@ -47,6 +48,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/OctreeStorage.h
     ${INCLUDE_DIR}/PointCloudFile.h
     ${INCLUDE_DIR}/MapFile.h
+    ${INCLUDE_DIR}/PrimitiveArray.h
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h
@@ -85,7 +87,7 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/dist_merge_occupied.comp
     shaders/dist_query.comp
     shaders/fill_iota.comp
-    shaders/list_collide_map.comp
+    shaders/list_collide.comp
     shaders/list_compact.comp
     shaders/list_entries_coords.comp
     shaders/list_entries_meta.comp

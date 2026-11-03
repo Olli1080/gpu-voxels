@@ -16,6 +16,7 @@
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
 #include <gpu_voxels/vulkan/Primitives.h>
+#include <gpu_voxels/vulkan/ProbVoxelMap.h>
 
 #include "Shaders.h"
 
@@ -37,6 +38,16 @@ namespace gpu_voxels::vulkan
 		struct MembershipPush { uint32_t n, other_n, use_threshold; int32_t threshold; };
 		struct CountGePush { uint32_t n; int32_t threshold; };
 		struct GatherPush { uint32_t voxel_count, dim_x, dim_y, dim_z, dst_offset; };
+		struct CollidePush
+		{
+			uint32_t n, dim_x, dim_y, dim_z;
+			int32_t off_x, off_y, off_z;
+			uint32_t mode, map_kind;
+			int32_t level;
+			float threshold;
+			uint32_t mask[8];
+		};
+		constexpr uint32_t kCollideResultWords = 9; // count + the OR of the bits of 8 words
 
 		uint32_t group_count(const Context& context, uint64_t items)
 		{
@@ -98,12 +109,13 @@ namespace gpu_voxels::vulkan
 			  unique_merge(ctx, GVL_SHADER_SPAN(list_unique_merge_comp), 8, sizeof(MergePush)),
 			  normalize_counts(ctx, GVL_SHADER_SPAN(list_normalize_counts_comp), 1, sizeof(CountPush)),
 			  membership(ctx, GVL_SHADER_SPAN(list_membership_comp), 6, sizeof(MembershipPush)),
-			  collide_map(ctx, GVL_SHADER_SPAN(list_collide_map_comp), 4, sizeof(CountPush)),
+			  collide(ctx, GVL_SHADER_SPAN(list_collide_comp), 4, sizeof(CollidePush)),
 			  flags_map_occupied(ctx, GVL_SHADER_SPAN(list_flags_map_occupied_comp), 2, sizeof(CountPush)),
 			  gather_map(ctx, GVL_SHADER_SPAN(list_gather_map_comp), 6, sizeof(GatherPush)),
 			  flags_count_ge(ctx, GVL_SHADER_SPAN(list_flags_count_ge_comp), 2, sizeof(CountGePush)),
 			  entries(ctx, 0, words),
-			  counter(ctx, sizeof(uint32_t))
+			  counter(ctx, sizeof(uint32_t)),
+			  collide_result(ctx, kCollideResultWords * sizeof(uint32_t))
 		{
 		}
 
@@ -239,12 +251,13 @@ namespace gpu_voxels::vulkan
 		ComputePipeline unique_merge;
 		ComputePipeline normalize_counts;
 		ComputePipeline membership;
-		ComputePipeline collide_map;
+		ComputePipeline collide;
 		ComputePipeline flags_map_occupied;
 		ComputePipeline gather_map;
 		ComputePipeline flags_count_ge;
 		Entries entries;
 		DeviceBuffer counter; ///< one uint32 scratch counter
+		DeviceBuffer collide_result; ///< kCollideResultWords words
 	};
 
 	VoxelListBase::VoxelListBase(Context& context, Dim3ui reference_dimensions, float voxel_side_length, Kind kind)
@@ -449,21 +462,32 @@ namespace gpu_voxels::vulkan
 		impl_->keep_flagged(flags, pos, total_of_scan(flags, pos, n));
 	}
 
-	uint32_t VoxelListBase::collide_with_bit_map(const BitVoxelMap& map)
+	VoxelListBase::MapCollision VoxelListBase::collide_with_map(const DeviceBuffer& map_voxels, Dim3ui map_dimensions, bool probabilistic,
+		MapCollisionMode mode, Offset3i offset, int32_t level, float threshold, const BitVector256* mask)
 	{
 		if (kind_ != Kind::Bit)
-			throw VulkanError("VoxelList: only bit lists collide with bit maps");
-		if (!(map.dimensions() == dimensions_))
+			throw VulkanError("VoxelList: only bit lists collide with maps");
+		if (!(map_dimensions == dimensions_))
 			throw VulkanError("VoxelList: the reference dimensions do not match the map dimensions");
 		const Entries& mine = impl_->entries;
-		if (mine.count == 0)
-			return 0;
+		MapCollision result;
+		// An offset of a whole axis or more moves every entry out of the map. Smaller offsets cannot overflow in the shader.
+		const auto beyond = [](int32_t shift, uint32_t extent) { return shift >= 0 ? static_cast<uint32_t>(shift) >= extent : -static_cast<int64_t>(shift) >= static_cast<int64_t>(extent); };
+		if (mine.count == 0 || beyond(offset.x, dimensions_.x) || beyond(offset.y, dimensions_.y) || beyond(offset.z, dimensions_.z))
+			return result;
+
+		CollidePush push{ mine.count, dimensions_.x, dimensions_.y, dimensions_.z, offset.x, offset.y, offset.z,
+			static_cast<uint32_t>(mode), probabilistic ? 1u : 0u, level, threshold, {} };
+		if (mask != nullptr)
+			std::copy(mask->begin(), mask->end(), push.mask);
 		CommandBatch batch(*context_);
-		batch.fill(impl_->counter, 0);
-		batch.dispatch(impl_->collide_map, { &mine.ids, &mine.voxels, &map.voxel_buffer(), &impl_->counter },
-			group_count(*context_, mine.count), CountPush{ mine.count });
+		batch.fill(impl_->collide_result, 0);
+		batch.dispatch(impl_->collide, { &mine.coords, &mine.voxels, &map_voxels, &impl_->collide_result }, group_count(*context_, mine.count), push);
 		batch.submit_and_wait();
-		return impl_->counter.download_vector<uint32_t>(1).front();
+		const std::vector<uint32_t> words = impl_->collide_result.download_vector<uint32_t>(kCollideResultWords);
+		result.count = words[0];
+		std::copy(words.begin() + 1, words.end(), result.types.begin());
+		return result;
 	}
 
 	uint32_t VoxelListBase::append_occupied_voxels(const BitVoxelMap& map)
@@ -612,9 +636,53 @@ namespace gpu_voxels::vulkan
 		return count_common_entries(other, nullptr);
 	}
 
-	uint32_t BitVoxelList::collide_with(const BitVoxelMap& map)
+	namespace
 	{
-		return collide_with_bit_map(map);
+		template<class Map>
+		void check_context(const Context* context, const Map& map)
+		{
+			if (&map.context() != context)
+				throw VulkanError("VoxelList: the map belongs to another context");
+		}
+	}
+
+	uint32_t BitVoxelList::collide_with(const BitVoxelMap& map, Offset3i offset)
+	{
+		check_context(&context(), map);
+		return collide_with_map(map.voxel_buffer(), map.dimensions(), false, MapCollisionMode::Default, offset, 0, 0.0f, nullptr).count;
+	}
+
+	uint32_t BitVoxelList::collide_with(const ProbVoxelMap& map, float threshold, Offset3i offset)
+	{
+		check_context(&context(), map);
+		return collide_with_map(map.voxel_buffer(), map.dimensions(), true, MapCollisionMode::Default, offset,
+			ProbVoxelMap::probability_from_float(threshold), 0.0f, nullptr).count;
+	}
+
+	BitVoxelList::TypeCollision BitVoxelList::collide_with_types(const BitVoxelMap& map, float threshold, Offset3i offset)
+	{
+		check_context(&context(), map);
+		const MapCollision r = collide_with_map(map.voxel_buffer(), map.dimensions(), false, MapCollisionMode::Types, offset, 0, threshold, nullptr);
+		return { r.count, r.types };
+	}
+
+	BitVoxelList::TypeCollision BitVoxelList::collide_with_types(const ProbVoxelMap& map, float threshold, Offset3i offset)
+	{
+		check_context(&context(), map);
+		const MapCollision r = collide_with_map(map.voxel_buffer(), map.dimensions(), true, MapCollisionMode::Types, offset, 0, threshold, nullptr);
+		return { r.count, r.types };
+	}
+
+	uint32_t BitVoxelList::collide_with_type_mask(const BitVoxelMap& map, const BitVector256& types_to_check, float threshold, Offset3i offset)
+	{
+		check_context(&context(), map);
+		return collide_with_map(map.voxel_buffer(), map.dimensions(), false, MapCollisionMode::TypeMask, offset, 0, threshold, &types_to_check).count;
+	}
+
+	uint32_t BitVoxelList::collide_with_type_mask(const ProbVoxelMap& map, const BitVector256& types_to_check, float threshold, Offset3i offset)
+	{
+		check_context(&context(), map);
+		return collide_with_map(map.voxel_buffer(), map.dimensions(), true, MapCollisionMode::TypeMask, offset, 0, threshold, &types_to_check).count;
 	}
 
 	void BitVoxelList::subtract(const BitVoxelList& other)

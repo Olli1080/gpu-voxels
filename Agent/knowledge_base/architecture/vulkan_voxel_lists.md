@@ -1,7 +1,7 @@
 # Vulkan voxel lists (slice S4, 2026-10-23)
 
 Classes in `gpu_voxels_vulkan` (`VoxelList.h`): `VoxelListBase` (shared behaviour), `BitVoxelList` (BitVoxel<256>), `CountingVoxelList` (int8 count), plus `BitVoxelMap::merge_voxel_list()` and `BitVoxelMap::voxel_buffer()`. Primitives behind them: exclusive scan and stable radix sort ([Primitives.h](../../../packages/gpu_voxels/gpu_voxels/vulkan/include/gpu_voxels/vulkan/Primitives.h), slice P2).
-Status: **Tested** against an independent CPU reference; **not Parity** (no CUDA run, Q5). Not part of S4: `ProbabilisticVoxelList`, offset collisions, `collideWithTypes` / bit-mask collision of lists, disk I/O, `getCenterOfMass`, `extractCubes`, `clone`/`equals`, the abstract CUDA/Vulkan interface.
+Status: **Tested** against an independent CPU reference; **not Parity** (no CUDA run, Q5). Not part of S4: `ProbabilisticVoxelList`, offset collisions, `collideWithTypes` / bit-mask collision of lists (both S7-5: [vulkan_gpu_voxels_examples.md](vulkan_gpu_voxels_examples.md)), disk I/O, `getCenterOfMass`, `extractCubes`, `clone`/`equals`, the abstract CUDA/Vulkan interface.
 
 ## Data model
 A list = three parallel device buffers: `ids` (linear voxel index of the *reference map*, `z*dx*dy + y*dx + x`, uint32), `coordinates` (3 x uint32), payload (Bit: 8 words per entry, bit i = meaning i; Counting: one word holding the sign extended int8 count). Invariant after every public operation: sorted by id, ids unique. Buffers never have size 0 (an empty list holds one dummy element), `size()` is the entry count.
@@ -15,7 +15,7 @@ A list = three parallel device buffers: `ids` (linear voxel index of the *refere
 | `CountingVoxelList::remove_underpopulated` | same name | flag `count >= threshold`, scan, compaction |
 | `collideWith(list)` (`binary_search`), `collideWith(CountingVoxelList, BitVoxelList, threshold)` | `collide_with` | one binary search per entry; for counting lists only entries with `count >= threshold` count |
 | `subtract`, `subtractFromCountingVoxelList` | `subtract`, `subtract_from_counting_list` | removes every entry whose id occurs in the other list |
-| `collideWith(BitVoxelMap)` (`kernelCollideWithVoxelMap`) | `BitVoxelList::collide_with(map)` | only the **map** voxel is inspected (occupied = any bit except FREE); colliding list voxels get `eBVM_COLLISION`; 32-bit counter |
+| `collideWith(BitVoxelMap)` (`kernelCollideWithVoxelMap`) | `BitVoxelList::collide_with(map)` | **corrected in S7-5:** the list voxel and the map voxel must both be occupied (any bit except FREE; DefaultCollider), S4 only looked at the map voxel; colliding list voxels get `eBVM_COLLISION`; 32-bit counter; now with a three dimensional offset and for prob. maps, see [vulkan_gpu_voxels_examples.md](vulkan_gpu_voxels_examples.md) |
 | `TemplateVoxelMap::merge(list)` | `BitVoxelMap::merge_voxel_list` | inserts the list coordinates with `eBVM_OCCUPIED`, payload ignored, no offset (CUDA rejects offsets) |
 | - (viewer scans maps in `extractCubes`) | `BitVoxelList::insert_occupied_voxels(map)` | **new**: appends all occupied voxels of a map (flags, scan, gather, merge) |
 

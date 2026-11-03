@@ -1,6 +1,6 @@
 # S7: `GpuVoxels` façade, checklist of every public method (2026-11-02)
 
-**Progress:** S7-1 .. S7-4 are done (2026-11-02, [vulkan_gpu_voxels_facade.md](../knowledge_base/architecture/vulkan_gpu_voxels_facade.md), [vulkan_gpu_voxels_files.md](../knowledge_base/architecture/vulkan_gpu_voxels_files.md), [vulkan_gpu_voxels_robots.md](../knowledge_base/architecture/vulkan_gpu_voxels_robots.md)); the rows marked S7-1 .. S7-4 below are implemented (merge and disk I/O: [vulkan_gpu_voxels_merge_io.md](../knowledge_base/architecture/vulkan_gpu_voxels_merge_io.md)), S7-5 is open (joint limits do not exist for DH robots, also not in CUDA). The text below is the state before S7-1.
+**Progress:** S7-1 .. S7-5 are done (2026-11-02, [vulkan_gpu_voxels_facade.md](../knowledge_base/architecture/vulkan_gpu_voxels_facade.md), [vulkan_gpu_voxels_files.md](../knowledge_base/architecture/vulkan_gpu_voxels_files.md), [vulkan_gpu_voxels_robots.md](../knowledge_base/architecture/vulkan_gpu_voxels_robots.md)); the rows marked S7-1 .. S7-4 below are implemented (merge and disk I/O: [vulkan_gpu_voxels_merge_io.md](../knowledge_base/architecture/vulkan_gpu_voxels_merge_io.md)), S7-5 too (primitives, list collisions, examples: [vulkan_gpu_voxels_examples.md](../knowledge_base/architecture/vulkan_gpu_voxels_examples.md); joint limits do not exist for DH robots, also not in CUDA). Only the URDF robot and the viewer remain (Q6). The text below is the state before S7-1.
 
 **Question:** what does the Vulkan backend need so that the public API of `gpu_voxels::GpuVoxels` ([GpuVoxels.h](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/include/gpu_voxels/GpuVoxels.h), implementation [GpuVoxels.cu](../../packages/gpu_voxels/gpu_voxels/gpu_voxels/src/GpuVoxels.cu)) and the map interface behind it (`GpuVoxelsMap`, [GpuVoxelsMap.h](../../packages/gpu_voxels/gpu_voxels/core/include/gpu_voxels/core/GpuVoxelsMap.h)) can be offered on Vulkan?
 
@@ -34,7 +34,7 @@ Legend: **R** = the Vulkan building block exists and is tested, the façade only
 | 18 | `insertRobotIntoMap` | `insertMetaPointCloud(*robot->getTransformedClouds(), meaning)` | `KinematicChain::transformed_clouds()` + `insert_meta_point_cloud` | R | S7-3 |
 | 19 | `insertRobotIntoMapSelfCollAware` | `map->insertMetaPointCloudWithSelfCollisionCheck` | bit map only (`insert_meta_point_cloud_with_self_collision_check`); the legacy prob. map, distance map, lists and octree log "not supported" and **return true** | R (bit map) / N | S7-3 |
 | 20 | `insertBoxIntoMap` | `geometry_generation::createBoxOfPoints(min, max, side / points_per_voxel, side)` gives coordinates, then `insertCoordinateList` | `insert_coordinate_list` exists, the box generator is CPU code inside `GeometryGeneration.cu`; a host implementation must be written and tested against the formula | W (small) | S7-2 |
-| 21 | `addPrimitives`, `delPrimitives`, `modifyPrimitives` (4 overloads) | a host container of points / sizes for the viewer (`PrimitiveArray::setPoints`) | none; it has no GPU part, a consumer exists only with a viewer | W (small) / O | S7-5 |
+| 21 | `addPrimitives`, `delPrimitives`, `modifyPrimitives` (4 overloads) | a host container of points / sizes for the viewer (`PrimitiveArray::setPoints`) | none; it has no GPU part, a consumer exists only with a viewer | done in S7-5 | S7-5 |
 | 22 | `getDimensions` (2 overloads), `getVoxelSideLength` | return what `initialize` stored | trivial | R | S7-1 |
 | 23 | Types in the header: `CudaIpcMemHandleSharedPtr`, `ManagedMap(s)`, `ManagedPrimitiveArray(s)`, `ManagedRobots` | CUDA IPC handle (visualizer sharing), bookkeeping maps | IPC handle: not applicable (N); the bookkeeping is internal | N / W | S7-1 |
 
@@ -77,7 +77,7 @@ Legend: **R** = the Vulkan building block exists and is tested, the façade only
 | `as<T>()`, `is<T>()` | W | W | W | W | W | W | design question D1 |
 | public `m_mutex` | W | W | W | W | W | W | design question D3 |
 
-**Collisions are not in the interface** (`collideWith` is commented out in `GpuVoxelsMap`); the examples call them on the concrete class through `as<T>()` (9 `collideWith`, 4 `collideWithTypes`, 8 `collideWithTypeMask`). On Vulkan the collision pairs exist as methods of the classes (S1 to S6c); **`BitVoxelList::collideWithTypeMask` is missing** (S4 open item) and is the only collision call of the examples without a counterpart.
+**Collisions are not in the interface** (`collideWith` is commented out in `GpuVoxelsMap`); the examples call them on the concrete class through `as<T>()` (9 `collideWith`, 4 `collideWithTypes`, 8 `collideWithTypeMask`). On Vulkan the collision pairs exist as methods of the classes (S1 to S6c); **`BitVoxelList::collideWithTypeMask` is missing** (S4 open item) and (statement of 2026-11-02, **wrong**) the only collision call of the examples without a counterpart: S7-5 found that the examples also call `collideWith(ProbVoxelMap, threshold, offset)` and `collideWithTypes(ProbVoxelMap, ...)` of a bit list; all three exist now.
 
 ## 4. Design questions with the default I will use
 

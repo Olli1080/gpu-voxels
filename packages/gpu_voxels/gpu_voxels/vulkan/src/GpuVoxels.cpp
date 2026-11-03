@@ -693,10 +693,87 @@ namespace gpu_voxels::vulkan
 		return bit_map->insert_meta_point_cloud_with_self_collision_check(robot->transformed_clouds(), voxel_meanings, collision_masks);
 	}
 
+	bool GpuVoxels::add_primitives(PrimitiveType type, const std::string& array_name)
+	{
+		if (!initialized_)
+			throw VulkanError("initialize() has to be called before primitive arrays are added");
+		if (primitives_.contains(array_name))
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' already exists." << endl);
+			return false;
+		}
+		primitives_.emplace(array_name, std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, type));
+		return true;
+	}
+
+	bool GpuVoxels::del_primitives(const std::string& array_name)
+	{
+		if (primitives_.erase(array_name) == 0)
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' not found." << endl);
+			return false;
+		}
+		return true;
+	}
+
+	PrimitiveArraySharedPtr GpuVoxels::get_primitives(const std::string& array_name) const
+	{
+		const auto it = primitives_.find(array_name);
+		if (it == primitives_.end())
+		{
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' not found." << endl);
+			return {};
+		}
+		return it->second;
+	}
+
+	bool GpuVoxels::modify_primitives(const std::string& array_name, std::span<const Point4f> metric_positions)
+	{
+		const PrimitiveArraySharedPtr array = get_primitives(array_name);
+		if (!array)
+			return false;
+		array->set_points(metric_positions);
+		return true;
+	}
+
+	bool GpuVoxels::modify_primitives(const std::string& array_name, std::span<const Coord4i> voxel_positions)
+	{
+		const PrimitiveArraySharedPtr array = get_primitives(array_name);
+		if (!array)
+			return false;
+		array->set_points(voxel_positions);
+		return true;
+	}
+
+	bool GpuVoxels::modify_primitives(const std::string& array_name, std::span<const Point3f> metric_positions, float diameter)
+	{
+		const PrimitiveArraySharedPtr array = get_primitives(array_name);
+		if (!array)
+			return false;
+		array->set_points(metric_positions, diameter);
+		return true;
+	}
+
+	bool GpuVoxels::modify_primitives(const std::string& array_name, std::span<const Coord3i> voxel_positions, uint32_t diameter)
+	{
+		const PrimitiveArraySharedPtr array = get_primitives(array_name);
+		if (!array)
+			return false;
+		array->set_points(voxel_positions, diameter);
+		return true;
+	}
+
 	bool GpuVoxels::visualize_map(const std::string& map_name, bool) const
 	{
 		if (!maps_.contains(map_name))
 			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << map_name << "' not found." << endl);
+		return false;
+	}
+
+	bool GpuVoxels::visualize_primitives_array(const std::string& array_name, bool) const
+	{
+		if (!primitives_.contains(array_name))
+			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives Array with name '" << array_name << "' not found." << endl);
 		return false;
 	}
 }

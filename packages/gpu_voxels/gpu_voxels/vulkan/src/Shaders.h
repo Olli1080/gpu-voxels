@@ -96,8 +96,8 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t radix_histogram64_comp_words;
 	extern const uint32_t radix_scatter64_comp[];
 	extern const std::size_t radix_scatter64_comp_words;
-	extern const uint32_t list_collide_map_comp[];
-	extern const std::size_t list_collide_map_comp_words;
+	extern const uint32_t list_collide_comp[];
+	extern const std::size_t list_collide_comp_words;
 	extern const uint32_t list_compact_comp[];
 	extern const std::size_t list_compact_comp_words;
 	extern const uint32_t list_entries_coords_comp[];
