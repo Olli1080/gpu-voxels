@@ -1,0 +1,441 @@
+default bit thr=1.0 off=0,0,0 count=21
+default bit thr=1.0 off=1,0,0 count=25
+default bit thr=1.0 off=-1,0,0 count=20
+default bit thr=1.0 off=0,1,0 count=17
+default bit thr=1.0 off=0,-1,0 count=32
+default bit thr=1.0 off=0,0,1 count=17
+default bit thr=1.0 off=0,0,-1 count=17
+default bit thr=1.0 off=3,2,1 count=12
+default bit thr=1.0 off=15,0,0 count=3
+default bit thr=1.0 off=-15,0,0 count=1
+default bit thr=1.0 off=0,15,0 count=2
+default bit thr=0.5 off=0,0,0 count=21
+default bit thr=0.5 off=1,0,0 count=25
+default bit thr=0.5 off=-1,0,0 count=20
+default bit thr=0.5 off=0,1,0 count=17
+default bit thr=0.5 off=0,-1,0 count=32
+default bit thr=0.5 off=0,0,1 count=17
+default bit thr=0.5 off=0,0,-1 count=17
+default bit thr=0.5 off=3,2,1 count=12
+default bit thr=0.5 off=15,0,0 count=3
+default bit thr=0.5 off=-15,0,0 count=1
+default bit thr=0.5 off=0,15,0 count=2
+default bit thr=0.0 off=0,0,0 count=21
+default bit thr=0.0 off=1,0,0 count=25
+default bit thr=0.0 off=-1,0,0 count=20
+default bit thr=0.0 off=0,1,0 count=17
+default bit thr=0.0 off=0,-1,0 count=32
+default bit thr=0.0 off=0,0,1 count=17
+default bit thr=0.0 off=0,0,-1 count=17
+default bit thr=0.0 off=3,2,1 count=12
+default bit thr=0.0 off=15,0,0 count=3
+default bit thr=0.0 off=-15,0,0 count=1
+default bit thr=0.0 off=0,15,0 count=2
+default prob thr=1.0 off=0,0,0 count=9
+default prob thr=1.0 off=1,0,0 count=6
+default prob thr=1.0 off=-1,0,0 count=6
+default prob thr=1.0 off=0,1,0 count=6
+default prob thr=1.0 off=0,-1,0 count=6
+default prob thr=1.0 off=0,0,1 count=6
+default prob thr=1.0 off=0,0,-1 count=9
+default prob thr=1.0 off=3,2,1 count=4
+default prob thr=1.0 off=15,0,0 count=0
+default prob thr=1.0 off=-15,0,0 count=1
+default prob thr=1.0 off=0,15,0 count=0
+default prob thr=0.5 off=0,0,0 count=17
+default prob thr=0.5 off=1,0,0 count=11
+default prob thr=0.5 off=-1,0,0 count=19
+default prob thr=0.5 off=0,1,0 count=12
+default prob thr=0.5 off=0,-1,0 count=16
+default prob thr=0.5 off=0,0,1 count=14
+default prob thr=0.5 off=0,0,-1 count=17
+default prob thr=0.5 off=3,2,1 count=9
+default prob thr=0.5 off=15,0,0 count=0
+default prob thr=0.5 off=-15,0,0 count=1
+default prob thr=0.5 off=0,15,0 count=1
+default prob thr=0.0 off=0,0,0 count=22
+default prob thr=0.0 off=1,0,0 count=20
+default prob thr=0.0 off=-1,0,0 count=25
+default prob thr=0.0 off=0,1,0 count=19
+default prob thr=0.0 off=0,-1,0 count=21
+default prob thr=0.0 off=0,0,1 count=24
+default prob thr=0.0 off=0,0,-1 count=22
+default prob thr=0.0 off=3,2,1 count=13
+default prob thr=0.0 off=15,0,0 count=1
+default prob thr=0.0 off=-15,0,0 count=1
+default prob thr=0.0 off=0,15,0 count=1
+types bit thr=1.0 off=0,0,0 count=22 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=1,0,0 count=30 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=-1,0,0 count=23 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=0,1,0 count=19 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=0,-1,0 count=33 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=0,0,1 count=19 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=0,0,-1 count=20 types={0,1,5,40,77,130,200}
+types bit thr=1.0 off=3,2,1 count=15 types={0,1,5,40,77,130}
+types bit thr=1.0 off=15,0,0 count=3 types={1,5}
+types bit thr=1.0 off=-15,0,0 count=1 types={1,40}
+types bit thr=1.0 off=0,15,0 count=2 types={5,40}
+types bit thr=0.5 off=0,0,0 count=22 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=1,0,0 count=30 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=-1,0,0 count=23 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=0,1,0 count=19 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=0,-1,0 count=33 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=0,0,1 count=19 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=0,0,-1 count=20 types={0,1,5,40,77,130,200}
+types bit thr=0.5 off=3,2,1 count=15 types={0,1,5,40,77,130}
+types bit thr=0.5 off=15,0,0 count=3 types={1,5}
+types bit thr=0.5 off=-15,0,0 count=1 types={1,40}
+types bit thr=0.5 off=0,15,0 count=2 types={5,40}
+types bit thr=0.0 off=0,0,0 count=22 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=1,0,0 count=30 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=-1,0,0 count=23 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=0,1,0 count=19 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=0,-1,0 count=33 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=0,0,1 count=19 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=0,0,-1 count=20 types={0,1,5,40,77,130,200}
+types bit thr=0.0 off=3,2,1 count=15 types={0,1,5,40,77,130}
+types bit thr=0.0 off=15,0,0 count=3 types={1,5}
+types bit thr=0.0 off=-15,0,0 count=1 types={1,40}
+types bit thr=0.0 off=0,15,0 count=2 types={5,40}
+types prob thr=1.0 off=0,0,0 count=16 types={1,5,40,77,130,200}
+types prob thr=1.0 off=1,0,0 count=11 types={1,5,40,130,200}
+types prob thr=1.0 off=-1,0,0 count=19 types={0,1,5,40,77,130,200}
+types prob thr=1.0 off=0,1,0 count=13 types={0,1,5,40,77,130,200}
+types prob thr=1.0 off=0,-1,0 count=16 types={0,1,5,40,77,130,200}
+types prob thr=1.0 off=0,0,1 count=17 types={0,1,5,40,77,200}
+types prob thr=1.0 off=0,0,-1 count=16 types={0,1,5,40,77,130,200}
+types prob thr=1.0 off=3,2,1 count=9 types={5,40,77,130,200}
+types prob thr=1.0 off=15,0,0 count=0 types={}
+types prob thr=1.0 off=-15,0,0 count=1 types={1}
+types prob thr=1.0 off=0,15,0 count=0 types={}
+types prob thr=0.5 off=0,0,0 count=16 types={1,5,40,77,130,200}
+types prob thr=0.5 off=1,0,0 count=11 types={1,5,40,130,200}
+types prob thr=0.5 off=-1,0,0 count=19 types={0,1,5,40,77,130,200}
+types prob thr=0.5 off=0,1,0 count=13 types={0,1,5,40,77,130,200}
+types prob thr=0.5 off=0,-1,0 count=16 types={0,1,5,40,77,130,200}
+types prob thr=0.5 off=0,0,1 count=17 types={0,1,5,40,77,200}
+types prob thr=0.5 off=0,0,-1 count=16 types={0,1,5,40,77,130,200}
+types prob thr=0.5 off=3,2,1 count=9 types={5,40,77,130,200}
+types prob thr=0.5 off=15,0,0 count=0 types={}
+types prob thr=0.5 off=-15,0,0 count=1 types={1}
+types prob thr=0.5 off=0,15,0 count=0 types={}
+types prob thr=0.0 off=0,0,0 count=17 types={1,5,40,77,130,200}
+types prob thr=0.0 off=1,0,0 count=11 types={1,5,40,130,200}
+types prob thr=0.0 off=-1,0,0 count=20 types={0,1,5,40,77,130,200}
+types prob thr=0.0 off=0,1,0 count=13 types={0,1,5,40,77,130,200}
+types prob thr=0.0 off=0,-1,0 count=18 types={0,1,5,40,77,130,200}
+types prob thr=0.0 off=0,0,1 count=17 types={0,1,5,40,77,200}
+types prob thr=0.0 off=0,0,-1 count=18 types={0,1,5,40,77,130,200}
+types prob thr=0.0 off=3,2,1 count=9 types={5,40,77,130,200}
+types prob thr=0.0 off=15,0,0 count=0 types={}
+types prob thr=0.0 off=-15,0,0 count=1 types={1}
+types prob thr=0.0 off=0,15,0 count=1 types={40}
+mask bit thr=1.0 off=0,0,0 mask=0 count=0
+mask bit thr=1.0 off=0,0,0 mask=1 count=3
+mask bit thr=1.0 off=0,0,0 mask=2 count=2
+mask bit thr=1.0 off=0,0,0 mask=3 count=9
+mask bit thr=1.0 off=0,0,0 mask=4 count=2
+mask bit thr=1.0 off=0,0,0 mask=5 count=22
+mask bit thr=1.0 off=0,0,0 mask=6 count=12
+mask bit thr=1.0 off=1,0,0 mask=0 count=0
+mask bit thr=1.0 off=1,0,0 mask=1 count=7
+mask bit thr=1.0 off=1,0,0 mask=2 count=5
+mask bit thr=1.0 off=1,0,0 mask=3 count=13
+mask bit thr=1.0 off=1,0,0 mask=4 count=5
+mask bit thr=1.0 off=1,0,0 mask=5 count=30
+mask bit thr=1.0 off=1,0,0 mask=6 count=8
+mask bit thr=1.0 off=-1,0,0 mask=0 count=0
+mask bit thr=1.0 off=-1,0,0 mask=1 count=1
+mask bit thr=1.0 off=-1,0,0 mask=2 count=6
+mask bit thr=1.0 off=-1,0,0 mask=3 count=12
+mask bit thr=1.0 off=-1,0,0 mask=4 count=3
+mask bit thr=1.0 off=-1,0,0 mask=5 count=23
+mask bit thr=1.0 off=-1,0,0 mask=6 count=7
+mask bit thr=1.0 off=0,1,0 mask=0 count=0
+mask bit thr=1.0 off=0,1,0 mask=1 count=3
+mask bit thr=1.0 off=0,1,0 mask=2 count=5
+mask bit thr=1.0 off=0,1,0 mask=3 count=10
+mask bit thr=1.0 off=0,1,0 mask=4 count=2
+mask bit thr=1.0 off=0,1,0 mask=5 count=19
+mask bit thr=1.0 off=0,1,0 mask=6 count=7
+mask bit thr=1.0 off=0,-1,0 mask=0 count=0
+mask bit thr=1.0 off=0,-1,0 mask=1 count=8
+mask bit thr=1.0 off=0,-1,0 mask=2 count=6
+mask bit thr=1.0 off=0,-1,0 mask=3 count=13
+mask bit thr=1.0 off=0,-1,0 mask=4 count=1
+mask bit thr=1.0 off=0,-1,0 mask=5 count=33
+mask bit thr=1.0 off=0,-1,0 mask=6 count=15
+mask bit thr=1.0 off=0,0,1 mask=0 count=0
+mask bit thr=1.0 off=0,0,1 mask=1 count=3
+mask bit thr=1.0 off=0,0,1 mask=2 count=5
+mask bit thr=1.0 off=0,0,1 mask=3 count=8
+mask bit thr=1.0 off=0,0,1 mask=4 count=2
+mask bit thr=1.0 off=0,0,1 mask=5 count=19
+mask bit thr=1.0 off=0,0,1 mask=6 count=7
+mask bit thr=1.0 off=0,0,-1 mask=0 count=0
+mask bit thr=1.0 off=0,0,-1 mask=1 count=3
+mask bit thr=1.0 off=0,0,-1 mask=2 count=1
+mask bit thr=1.0 off=0,0,-1 mask=3 count=7
+mask bit thr=1.0 off=0,0,-1 mask=4 count=3
+mask bit thr=1.0 off=0,0,-1 mask=5 count=20
+mask bit thr=1.0 off=0,0,-1 mask=6 count=8
+mask bit thr=1.0 off=3,2,1 mask=0 count=0
+mask bit thr=1.0 off=3,2,1 mask=1 count=1
+mask bit thr=1.0 off=3,2,1 mask=2 count=5
+mask bit thr=1.0 off=3,2,1 mask=3 count=8
+mask bit thr=1.0 off=3,2,1 mask=4 count=3
+mask bit thr=1.0 off=3,2,1 mask=5 count=15
+mask bit thr=1.0 off=3,2,1 mask=6 count=3
+mask bit thr=1.0 off=15,0,0 mask=0 count=0
+mask bit thr=1.0 off=15,0,0 mask=1 count=1
+mask bit thr=1.0 off=15,0,0 mask=2 count=2
+mask bit thr=1.0 off=15,0,0 mask=3 count=2
+mask bit thr=1.0 off=15,0,0 mask=4 count=0
+mask bit thr=1.0 off=15,0,0 mask=5 count=3
+mask bit thr=1.0 off=15,0,0 mask=6 count=0
+mask bit thr=1.0 off=-15,0,0 mask=0 count=0
+mask bit thr=1.0 off=-15,0,0 mask=1 count=1
+mask bit thr=1.0 off=-15,0,0 mask=2 count=0
+mask bit thr=1.0 off=-15,0,0 mask=3 count=1
+mask bit thr=1.0 off=-15,0,0 mask=4 count=0
+mask bit thr=1.0 off=-15,0,0 mask=5 count=1
+mask bit thr=1.0 off=-15,0,0 mask=6 count=0
+mask bit thr=1.0 off=0,15,0 mask=0 count=0
+mask bit thr=1.0 off=0,15,0 mask=1 count=0
+mask bit thr=1.0 off=0,15,0 mask=2 count=1
+mask bit thr=1.0 off=0,15,0 mask=3 count=2
+mask bit thr=1.0 off=0,15,0 mask=4 count=0
+mask bit thr=1.0 off=0,15,0 mask=5 count=2
+mask bit thr=1.0 off=0,15,0 mask=6 count=0
+mask bit thr=0.5 off=0,0,0 mask=0 count=0
+mask bit thr=0.5 off=0,0,0 mask=1 count=3
+mask bit thr=0.5 off=0,0,0 mask=2 count=2
+mask bit thr=0.5 off=0,0,0 mask=3 count=9
+mask bit thr=0.5 off=0,0,0 mask=4 count=2
+mask bit thr=0.5 off=0,0,0 mask=5 count=22
+mask bit thr=0.5 off=0,0,0 mask=6 count=12
+mask bit thr=0.5 off=1,0,0 mask=0 count=0
+mask bit thr=0.5 off=1,0,0 mask=1 count=7
+mask bit thr=0.5 off=1,0,0 mask=2 count=5
+mask bit thr=0.5 off=1,0,0 mask=3 count=13
+mask bit thr=0.5 off=1,0,0 mask=4 count=5
+mask bit thr=0.5 off=1,0,0 mask=5 count=30
+mask bit thr=0.5 off=1,0,0 mask=6 count=8
+mask bit thr=0.5 off=-1,0,0 mask=0 count=0
+mask bit thr=0.5 off=-1,0,0 mask=1 count=1
+mask bit thr=0.5 off=-1,0,0 mask=2 count=6
+mask bit thr=0.5 off=-1,0,0 mask=3 count=12
+mask bit thr=0.5 off=-1,0,0 mask=4 count=3
+mask bit thr=0.5 off=-1,0,0 mask=5 count=23
+mask bit thr=0.5 off=-1,0,0 mask=6 count=7
+mask bit thr=0.5 off=0,1,0 mask=0 count=0
+mask bit thr=0.5 off=0,1,0 mask=1 count=3
+mask bit thr=0.5 off=0,1,0 mask=2 count=5
+mask bit thr=0.5 off=0,1,0 mask=3 count=10
+mask bit thr=0.5 off=0,1,0 mask=4 count=2
+mask bit thr=0.5 off=0,1,0 mask=5 count=19
+mask bit thr=0.5 off=0,1,0 mask=6 count=7
+mask bit thr=0.5 off=0,-1,0 mask=0 count=0
+mask bit thr=0.5 off=0,-1,0 mask=1 count=8
+mask bit thr=0.5 off=0,-1,0 mask=2 count=6
+mask bit thr=0.5 off=0,-1,0 mask=3 count=13
+mask bit thr=0.5 off=0,-1,0 mask=4 count=1
+mask bit thr=0.5 off=0,-1,0 mask=5 count=33
+mask bit thr=0.5 off=0,-1,0 mask=6 count=15
+mask bit thr=0.5 off=0,0,1 mask=0 count=0
+mask bit thr=0.5 off=0,0,1 mask=1 count=3
+mask bit thr=0.5 off=0,0,1 mask=2 count=5
+mask bit thr=0.5 off=0,0,1 mask=3 count=8
+mask bit thr=0.5 off=0,0,1 mask=4 count=2
+mask bit thr=0.5 off=0,0,1 mask=5 count=19
+mask bit thr=0.5 off=0,0,1 mask=6 count=7
+mask bit thr=0.5 off=0,0,-1 mask=0 count=0
+mask bit thr=0.5 off=0,0,-1 mask=1 count=3
+mask bit thr=0.5 off=0,0,-1 mask=2 count=1
+mask bit thr=0.5 off=0,0,-1 mask=3 count=7
+mask bit thr=0.5 off=0,0,-1 mask=4 count=3
+mask bit thr=0.5 off=0,0,-1 mask=5 count=20
+mask bit thr=0.5 off=0,0,-1 mask=6 count=8
+mask bit thr=0.5 off=3,2,1 mask=0 count=0
+mask bit thr=0.5 off=3,2,1 mask=1 count=1
+mask bit thr=0.5 off=3,2,1 mask=2 count=5
+mask bit thr=0.5 off=3,2,1 mask=3 count=8
+mask bit thr=0.5 off=3,2,1 mask=4 count=3
+mask bit thr=0.5 off=3,2,1 mask=5 count=15
+mask bit thr=0.5 off=3,2,1 mask=6 count=3
+mask bit thr=0.5 off=15,0,0 mask=0 count=0
+mask bit thr=0.5 off=15,0,0 mask=1 count=1
+mask bit thr=0.5 off=15,0,0 mask=2 count=2
+mask bit thr=0.5 off=15,0,0 mask=3 count=2
+mask bit thr=0.5 off=15,0,0 mask=4 count=0
+mask bit thr=0.5 off=15,0,0 mask=5 count=3
+mask bit thr=0.5 off=15,0,0 mask=6 count=0
+mask bit thr=0.5 off=-15,0,0 mask=0 count=0
+mask bit thr=0.5 off=-15,0,0 mask=1 count=1
+mask bit thr=0.5 off=-15,0,0 mask=2 count=0
+mask bit thr=0.5 off=-15,0,0 mask=3 count=1
+mask bit thr=0.5 off=-15,0,0 mask=4 count=0
+mask bit thr=0.5 off=-15,0,0 mask=5 count=1
+mask bit thr=0.5 off=-15,0,0 mask=6 count=0
+mask bit thr=0.5 off=0,15,0 mask=0 count=0
+mask bit thr=0.5 off=0,15,0 mask=1 count=0
+mask bit thr=0.5 off=0,15,0 mask=2 count=1
+mask bit thr=0.5 off=0,15,0 mask=3 count=2
+mask bit thr=0.5 off=0,15,0 mask=4 count=0
+mask bit thr=0.5 off=0,15,0 mask=5 count=2
+mask bit thr=0.5 off=0,15,0 mask=6 count=0
+mask prob thr=1.0 off=0,0,0 mask=0 count=0
+mask prob thr=1.0 off=0,0,0 mask=1 count=2
+mask prob thr=1.0 off=0,0,0 mask=2 count=1
+mask prob thr=1.0 off=0,0,0 mask=3 count=8
+mask prob thr=1.0 off=0,0,0 mask=4 count=0
+mask prob thr=1.0 off=0,0,0 mask=5 count=16
+mask prob thr=1.0 off=0,0,0 mask=6 count=6
+mask prob thr=1.0 off=1,0,0 mask=0 count=0
+mask prob thr=1.0 off=1,0,0 mask=1 count=2
+mask prob thr=1.0 off=1,0,0 mask=2 count=3
+mask prob thr=1.0 off=1,0,0 mask=3 count=7
+mask prob thr=1.0 off=1,0,0 mask=4 count=0
+mask prob thr=1.0 off=1,0,0 mask=5 count=11
+mask prob thr=1.0 off=1,0,0 mask=6 count=2
+mask prob thr=1.0 off=-1,0,0 mask=0 count=0
+mask prob thr=1.0 off=-1,0,0 mask=1 count=4
+mask prob thr=1.0 off=-1,0,0 mask=2 count=3
+mask prob thr=1.0 off=-1,0,0 mask=3 count=9
+mask prob thr=1.0 off=-1,0,0 mask=4 count=1
+mask prob thr=1.0 off=-1,0,0 mask=5 count=19
+mask prob thr=1.0 off=-1,0,0 mask=6 count=5
+mask prob thr=1.0 off=0,1,0 mask=0 count=0
+mask prob thr=1.0 off=0,1,0 mask=1 count=2
+mask prob thr=1.0 off=0,1,0 mask=2 count=2
+mask prob thr=1.0 off=0,1,0 mask=3 count=8
+mask prob thr=1.0 off=0,1,0 mask=4 count=1
+mask prob thr=1.0 off=0,1,0 mask=5 count=13
+mask prob thr=1.0 off=0,1,0 mask=6 count=2
+mask prob thr=1.0 off=0,-1,0 mask=0 count=0
+mask prob thr=1.0 off=0,-1,0 mask=1 count=3
+mask prob thr=1.0 off=0,-1,0 mask=2 count=3
+mask prob thr=1.0 off=0,-1,0 mask=3 count=7
+mask prob thr=1.0 off=0,-1,0 mask=4 count=1
+mask prob thr=1.0 off=0,-1,0 mask=5 count=16
+mask prob thr=1.0 off=0,-1,0 mask=6 count=5
+mask prob thr=1.0 off=0,0,1 mask=0 count=0
+mask prob thr=1.0 off=0,0,1 mask=1 count=2
+mask prob thr=1.0 off=0,0,1 mask=2 count=3
+mask prob thr=1.0 off=0,0,1 mask=3 count=5
+mask prob thr=1.0 off=0,0,1 mask=4 count=3
+mask prob thr=1.0 off=0,0,1 mask=5 count=17
+mask prob thr=1.0 off=0,0,1 mask=6 count=7
+mask prob thr=1.0 off=0,0,-1 mask=0 count=0
+mask prob thr=1.0 off=0,0,-1 mask=1 count=2
+mask prob thr=1.0 off=0,0,-1 mask=2 count=1
+mask prob thr=1.0 off=0,0,-1 mask=3 count=5
+mask prob thr=1.0 off=0,0,-1 mask=4 count=1
+mask prob thr=1.0 off=0,0,-1 mask=5 count=16
+mask prob thr=1.0 off=0,0,-1 mask=6 count=8
+mask prob thr=1.0 off=3,2,1 mask=0 count=0
+mask prob thr=1.0 off=3,2,1 mask=1 count=0
+mask prob thr=1.0 off=3,2,1 mask=2 count=2
+mask prob thr=1.0 off=3,2,1 mask=3 count=7
+mask prob thr=1.0 off=3,2,1 mask=4 count=0
+mask prob thr=1.0 off=3,2,1 mask=5 count=9
+mask prob thr=1.0 off=3,2,1 mask=6 count=4
+mask prob thr=1.0 off=15,0,0 mask=0 count=0
+mask prob thr=1.0 off=15,0,0 mask=1 count=0
+mask prob thr=1.0 off=15,0,0 mask=2 count=0
+mask prob thr=1.0 off=15,0,0 mask=3 count=0
+mask prob thr=1.0 off=15,0,0 mask=4 count=0
+mask prob thr=1.0 off=15,0,0 mask=5 count=0
+mask prob thr=1.0 off=15,0,0 mask=6 count=0
+mask prob thr=1.0 off=-15,0,0 mask=0 count=0
+mask prob thr=1.0 off=-15,0,0 mask=1 count=1
+mask prob thr=1.0 off=-15,0,0 mask=2 count=0
+mask prob thr=1.0 off=-15,0,0 mask=3 count=0
+mask prob thr=1.0 off=-15,0,0 mask=4 count=0
+mask prob thr=1.0 off=-15,0,0 mask=5 count=1
+mask prob thr=1.0 off=-15,0,0 mask=6 count=0
+mask prob thr=1.0 off=0,15,0 mask=0 count=0
+mask prob thr=1.0 off=0,15,0 mask=1 count=0
+mask prob thr=1.0 off=0,15,0 mask=2 count=0
+mask prob thr=1.0 off=0,15,0 mask=3 count=0
+mask prob thr=1.0 off=0,15,0 mask=4 count=0
+mask prob thr=1.0 off=0,15,0 mask=5 count=0
+mask prob thr=1.0 off=0,15,0 mask=6 count=0
+mask prob thr=0.5 off=0,0,0 mask=0 count=0
+mask prob thr=0.5 off=0,0,0 mask=1 count=2
+mask prob thr=0.5 off=0,0,0 mask=2 count=1
+mask prob thr=0.5 off=0,0,0 mask=3 count=8
+mask prob thr=0.5 off=0,0,0 mask=4 count=0
+mask prob thr=0.5 off=0,0,0 mask=5 count=16
+mask prob thr=0.5 off=0,0,0 mask=6 count=6
+mask prob thr=0.5 off=1,0,0 mask=0 count=0
+mask prob thr=0.5 off=1,0,0 mask=1 count=2
+mask prob thr=0.5 off=1,0,0 mask=2 count=3
+mask prob thr=0.5 off=1,0,0 mask=3 count=7
+mask prob thr=0.5 off=1,0,0 mask=4 count=0
+mask prob thr=0.5 off=1,0,0 mask=5 count=11
+mask prob thr=0.5 off=1,0,0 mask=6 count=2
+mask prob thr=0.5 off=-1,0,0 mask=0 count=0
+mask prob thr=0.5 off=-1,0,0 mask=1 count=4
+mask prob thr=0.5 off=-1,0,0 mask=2 count=3
+mask prob thr=0.5 off=-1,0,0 mask=3 count=9
+mask prob thr=0.5 off=-1,0,0 mask=4 count=1
+mask prob thr=0.5 off=-1,0,0 mask=5 count=19
+mask prob thr=0.5 off=-1,0,0 mask=6 count=5
+mask prob thr=0.5 off=0,1,0 mask=0 count=0
+mask prob thr=0.5 off=0,1,0 mask=1 count=2
+mask prob thr=0.5 off=0,1,0 mask=2 count=2
+mask prob thr=0.5 off=0,1,0 mask=3 count=8
+mask prob thr=0.5 off=0,1,0 mask=4 count=1
+mask prob thr=0.5 off=0,1,0 mask=5 count=13
+mask prob thr=0.5 off=0,1,0 mask=6 count=2
+mask prob thr=0.5 off=0,-1,0 mask=0 count=0
+mask prob thr=0.5 off=0,-1,0 mask=1 count=3
+mask prob thr=0.5 off=0,-1,0 mask=2 count=3
+mask prob thr=0.5 off=0,-1,0 mask=3 count=7
+mask prob thr=0.5 off=0,-1,0 mask=4 count=1
+mask prob thr=0.5 off=0,-1,0 mask=5 count=16
+mask prob thr=0.5 off=0,-1,0 mask=6 count=5
+mask prob thr=0.5 off=0,0,1 mask=0 count=0
+mask prob thr=0.5 off=0,0,1 mask=1 count=2
+mask prob thr=0.5 off=0,0,1 mask=2 count=3
+mask prob thr=0.5 off=0,0,1 mask=3 count=5
+mask prob thr=0.5 off=0,0,1 mask=4 count=3
+mask prob thr=0.5 off=0,0,1 mask=5 count=17
+mask prob thr=0.5 off=0,0,1 mask=6 count=7
+mask prob thr=0.5 off=0,0,-1 mask=0 count=0
+mask prob thr=0.5 off=0,0,-1 mask=1 count=2
+mask prob thr=0.5 off=0,0,-1 mask=2 count=1
+mask prob thr=0.5 off=0,0,-1 mask=3 count=5
+mask prob thr=0.5 off=0,0,-1 mask=4 count=1
+mask prob thr=0.5 off=0,0,-1 mask=5 count=16
+mask prob thr=0.5 off=0,0,-1 mask=6 count=8
+mask prob thr=0.5 off=3,2,1 mask=0 count=0
+mask prob thr=0.5 off=3,2,1 mask=1 count=0
+mask prob thr=0.5 off=3,2,1 mask=2 count=2
+mask prob thr=0.5 off=3,2,1 mask=3 count=7
+mask prob thr=0.5 off=3,2,1 mask=4 count=0
+mask prob thr=0.5 off=3,2,1 mask=5 count=9
+mask prob thr=0.5 off=3,2,1 mask=6 count=4
+mask prob thr=0.5 off=15,0,0 mask=0 count=0
+mask prob thr=0.5 off=15,0,0 mask=1 count=0
+mask prob thr=0.5 off=15,0,0 mask=2 count=0
+mask prob thr=0.5 off=15,0,0 mask=3 count=0
+mask prob thr=0.5 off=15,0,0 mask=4 count=0
+mask prob thr=0.5 off=15,0,0 mask=5 count=0
+mask prob thr=0.5 off=15,0,0 mask=6 count=0
+mask prob thr=0.5 off=-15,0,0 mask=0 count=0
+mask prob thr=0.5 off=-15,0,0 mask=1 count=1
+mask prob thr=0.5 off=-15,0,0 mask=2 count=0
+mask prob thr=0.5 off=-15,0,0 mask=3 count=0
+mask prob thr=0.5 off=-15,0,0 mask=4 count=0
+mask prob thr=0.5 off=-15,0,0 mask=5 count=1
+mask prob thr=0.5 off=-15,0,0 mask=6 count=0
+mask prob thr=0.5 off=0,15,0 mask=0 count=0
+mask prob thr=0.5 off=0,15,0 mask=1 count=0
+mask prob thr=0.5 off=0,15,0 mask=2 count=0
+mask prob thr=0.5 off=0,15,0 mask=3 count=0
+mask prob thr=0.5 off=0,15,0 mask=4 count=0
+mask prob thr=0.5 off=0,15,0 mask=5 count=0
+mask prob thr=0.5 off=0,15,0 mask=6 count=0
+list entries 320

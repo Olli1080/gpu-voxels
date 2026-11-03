@@ -5,6 +5,7 @@ gvl_add_test(test_vulkan
   SOURCES
     vulkan_fixture.cpp
     test_context.cpp
+    test_cuda_parity.cpp
     test_bit_voxel_map.cpp
     test_buffer.cpp
     test_device_address.cpp
@@ -46,7 +47,8 @@ gvl_add_test(test_vulkan
   LIBS gpu_voxels_vulkan
   DEFINITIONS
     "GVL_TEST_SHADER_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/shaders\""
-    "GVL_TEST_MODEL_DIR=\"${CMAKE_SOURCE_DIR}/packages/gpu_voxels/models\"")
+    "GVL_TEST_MODEL_DIR=\"${CMAKE_SOURCE_DIR}/packages/gpu_voxels/models\""
+    "GVL_TEST_PARITY_DIR=\"${CMAKE_SOURCE_DIR}/tests/cuda_parity/golden\"")
 
 gvl_add_shaders(test_vulkan
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders"

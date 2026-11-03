@@ -164,7 +164,7 @@ namespace gpu_voxels {
 			while (i < this_list_size)
 			{
 				const OtherVoxel* other_voxel = (other_map + this_id_list[i]) + voxelmap::getVoxelIndexSigned(other_map_dim, offset);
-				if (other_voxel >= other_map && other_voxel <= max_index)
+				if (voxelmap::isInsideAfterOffset(this_id_list[i], other_map_dim, offset) && other_voxel >= other_map && other_voxel <= max_index)
 				{
 					const bool collision = collider.collide(this_voxel_list[i], *other_voxel);
 					if (collision) // store collision info
@@ -225,7 +225,7 @@ namespace gpu_voxels {
 			while (i < this_list_size)
 			{
 				const VoxelType* other_voxel = (other_map + this_id_list[i]) + voxelmap::getVoxelIndexSigned(other_map_dim, offset);
-				if (other_voxel >= other_map && other_voxel <= max_index)
+				if (voxelmap::isInsideAfterOffset(this_id_list[i], other_map_dim, offset) && other_voxel >= other_map && other_voxel <= max_index)
 				{
 					if (other_voxel->isOccupied(col_threshold))
 					{
@@ -299,7 +299,7 @@ namespace gpu_voxels {
 			while (i < this_list_size)
 			{
 				const VoxelType* other_voxel = (other_map + this_id_list[i]) + voxelmap::getVoxelIndexSigned(other_map_dim, offset);
-				if (other_voxel >= other_map && other_voxel <= max_index)
+				if (voxelmap::isInsideAfterOffset(this_id_list[i], other_map_dim, offset) && other_voxel >= other_map && other_voxel <= max_index)
 				{
 					if (other_voxel->isOccupied(col_threshold))
 					{

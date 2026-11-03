@@ -6,6 +6,9 @@ option(GVL_BACKEND_CUDA "Build the CUDA backend (requires the CUDA toolkit and n
 option(GVL_BACKEND_VULKAN
        "Vulkan backend: currently only locates the Vulkan dependencies (runtime not implemented yet)" OFF)
 
+# ---- CUDA architectures (default: every architecture of the toolkit, as before; "89" builds only the RTX 4090) ----
+set(GVL_CUDA_ARCHITECTURES "all" CACHE STRING "CUDA_ARCHITECTURES of the gpu_voxels targets (all, native or a list such as 89)")
+
 # ---- Optional third-party features of the CUDA backend ---------------------
 option(GVL_WITH_PCL "Build PCL point cloud file support (pcd) into gpu_voxels_helpers" ON)
 option(GVL_WITH_KINECT "Build OpenNI2 Kinect support into gpu_voxels_helpers (needs GVL_WITH_PCL)" ON)

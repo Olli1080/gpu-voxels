@@ -70,6 +70,17 @@ namespace gpu_voxels
 			return offset.z() * (int32_t)dimensions.x() * (int32_t)dimensions.y() + offset.y() * (int32_t)dimensions.x() + offset.x();
 		}
 
+		//! True if the voxel with the linear index \a id, moved by \a offset, still lies inside the map on every axis.
+		//! Adding the offset to the linear index alone (getVoxelIndexSigned) wraps across rows and slices at the map border.
+		__host__ __device__      __forceinline__
+			bool isInsideAfterOffset(const uint32_t id, const Vector3ui& dimensions, const Vector3i& offset)
+		{
+			const int64_t x = int64_t(id % dimensions.x()) + offset.x();
+			const int64_t y = int64_t((id / dimensions.x()) % dimensions.y()) + offset.y();
+			const int64_t z = int64_t(id / dimensions.x() / dimensions.y()) + offset.z();
+			return x >= 0 && y >= 0 && z >= 0 && x < int64_t(dimensions.x()) && y < int64_t(dimensions.y()) && z < int64_t(dimensions.z());
+		}
+
 		template<class Voxel>
 		__device__ __host__     __forceinline__
 		Voxel getVoxel(const thrust::device_vector<Voxel>& voxelmap, const Vector3ui& dimensions,

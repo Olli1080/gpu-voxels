@@ -44,6 +44,10 @@
 | K37 | In a probabilistic tree an occupied leaf of a **build** has the status STATIC only (CUDA `setOccupied`), a leaf set by an **insert** UNKNOWN | DYNAMIC (CUDA `_updateStatus`); other bits differ too (a build marks every node STATIC, an insert DYNAMIC). A tree grown by inserts equals the fresh build in structure and occupancy values and gives the same collisions, not in these status bits | CUDA semantics (read, not run) | Kept as in CUDA; `check_tree` ignores STATIC / DYNAMIC for the probabilistic status rule; tests compare with a mask - see [vulkan_octree_dynamic.md](architecture/vulkan_octree_dynamic.md) | read 2026-10-31 |
 | K38 | A subtree that an insert created and a higher hard insert cut before the next propagate keeps fresh, unexpanded nodes with NEEDS_UPDATE: nothing visits it (CUDA propagate starts at flagged nodes with PART) | CUDA semantics (read, not run) | Kept as in CUDA; `check_tree` and `pending_update_count` only look at nodes reachable through PART nodes; the dump still lists the stale nodes - see [S6d design](../Analysis/2026-10-31_s6d_design.md) | measured 2026-10-31 (reference and GPU agree) |
 
+| K39 | CUDA `BitVoxelList::collideWithTypes` (bit and prob. map) cannot launch on the RTX 4090 as built: the kernel uses 80 registers per thread and is launched with 1024 threads (81 920 > 65 536 registers per block), `too many resources requested for launch (701)`, result 0 collisions and empty types, silently (log line only); Debug and Release | CUDA (measured 2026-11-03) | Build the CUDA side with `-DCMAKE_CUDA_FLAGS=-maxrregcount=64` for comparisons; a fix upstream would be `__launch_bounds__` or a smaller block (not done, Q1) | [cuda_parity](../Analysis/2026-11-03_cuda_parity.md) |
+
+| K40 | CUDA list x map collisions added the offset to the linear voxel index: a moved voxel in another row or slice counted, only the ends of the voxel array were checked (`collideWith`, `collideWithTypes`, `collideWithTypeMask` of lists) | CUDA (measured 2026-11-03) | **Fixed in the CUDA kernels of this fork** on 2026-11-03 (`isInsideAfterOffset`); not fixed: list x list offset and voxel map x voxel map offset (same pattern, no Vulkan counterpart) | [cuda_parity](../Analysis/2026-11-03_cuda_parity.md) |
+
 Add new rows at the end with the next number; move a row to "Resolved" in a section below when fixed (keep the history).
 
 
@@ -51,6 +55,7 @@ Add new rows at the end with the next number; move a row to "Resolved" in a sect
 | # | Resolution |
 |---|---|
 | K7 | 2026-10-30: the submodule was bumped to `d4c0a46cb8` (2026-10-28) with the user's approval (Q10); the manifest still has no `builtin-baseline`, versions are those of that registry snapshot |
+| K1 | 2026-10-31: the machine changed (i9-14900K, RTX 4090, CUDA 12.8); 2026-11-03: the CUDA targets build and run here (Ninja + MSVC toolset 14.44, [build route](../Analysis/2026-11-03_cuda_parity.md)) |
 | K17 | 2026-10-30: resolved by the bump, msys2 packages download again; the `PKG_CONFIG` stub and `VCPKG_KEEP_ENV_VARS` are no longer needed |
 | K14 | 2026-10-23: the code packs 3 x 10 bit (mask 0x3ff, uninitialised 1023); only the header comment says 9 bit. The Vulkan `DistanceVoxelMap` keeps 3 x 10 bit (user decision) |
 | K15 | 2026-10-22: Vulkan SDK 1.4.363.0 installed; `VK_LAYER_KHRONOS_validation` present (see K16 for shell caveats) |

@@ -108,14 +108,25 @@ namespace gvl_test::collision_model
 		return static_cast<int>(-127.0 + p * 254.0);
 	}
 
-	inline Expected model(const std::vector<Entry>& entries, const MapView& map, Mode mode, Offset3i offset, float threshold, const BitVector256& mask)
+	/// `linear_offset` = CUDA's rule (the offset is added to the linear index: it wraps across rows and slices, and only the ends of the voxel array
+	/// are checked); the default is the three-dimensional rule of the Vulkan classes.
+	inline Expected model(const std::vector<Entry>& entries, const MapView& map, Mode mode, Offset3i offset, float threshold, const BitVector256& mask,
+		bool linear_offset = false)
 	{
 		Expected e;
 		for (const Entry& entry : entries)
 		{
 			BitVector256 bits = entry.bits;
-			const int64_t x = int64_t(entry.c.x) + offset.x, y = int64_t(entry.c.y) + offset.y, z = int64_t(entry.c.z) + offset.z;
-			const bool inside = x >= 0 && y >= 0 && z >= 0 && x < map.dims.x && y < map.dims.y && z < map.dims.z;
+			int64_t x = int64_t(entry.c.x) + offset.x, y = int64_t(entry.c.y) + offset.y, z = int64_t(entry.c.z) + offset.z;
+			bool inside = x >= 0 && y >= 0 && z >= 0 && x < map.dims.x && y < map.dims.y && z < map.dims.z;
+			if (linear_offset)
+			{
+				const int64_t index = int64_t(map.index(entry.c)) + (int64_t(offset.z) * map.dims.y + offset.y) * map.dims.x + offset.x;
+				inside = index >= 0 && index < int64_t(map.dims.voxel_count());
+				x = index % map.dims.x;
+				y = (index / map.dims.x) % map.dims.y;
+				z = index / map.dims.x / map.dims.y;
+			}
 			bool collides = false;
 			if (inside)
 			{
