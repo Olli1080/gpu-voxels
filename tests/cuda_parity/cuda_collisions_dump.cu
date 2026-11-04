@@ -1,6 +1,7 @@
 // CUDA parity, scenarios 1 to 5 (list x map collisions, list merges, map x map collisions, prob. map inserts, sensor data): runs the calls of parity_inputs.h on the CUDA GpuVoxels and prints one line per call.
 // The output is stored in tests/cuda_parity/golden/collisions_cuda.txt and compared by tests/vulkan/test_cuda_parity.cpp.
 // Usage: cuda_collisions_dump > collisions_cuda.txt
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <vector>
@@ -244,6 +245,24 @@ int main(int argc, char* argv[])
 			std::string line = list_edge_line(i, list_entries(morton));
 			line.replace(0, 7, "mortonneg"); // "listneg" -> "mortonneg"
 			std::printf("%s\n", line.c_str());
+		}
+	}
+	// scenario 5e: the same edge points into the CUDA octree (GvlNTree::insertPointCloud, kernel_toVoxels), one point per call into a fresh tree; the cubes are read back
+	{
+		const auto edge_points = octree_edge_points();
+		for (std::size_t i = 0; i < edge_points.size(); ++i)
+		{
+			gvl->delMap("octneg");
+			gvl->addMap(MT_BITVECTOR_OCTREE, "octneg");
+			auto* tree = gvl->getMap("octneg")->as<NTree::GvlNTreeDet>();
+			tree->insertPointCloud(std::vector<Vector3f>{ Vector3f(edge_points[i][0], edge_points[i][1], edge_points[i][2]) }, eBVM_OCCUPIED);
+			std::vector<Vector3f> cubes;
+			tree->extractCubes(cubes);
+			// NTree::extractCubes returns the cube position plus m_resolution / 2 where m_resolution is in millimetres (1000 here): voxel + 500 (not + 0.5 voxel)
+			std::vector<std::array<long long, 3>> voxels;
+			for (const Vector3f& c : cubes)
+				voxels.push_back({ std::llround(static_cast<double>(c.x()) - 500.0), std::llround(static_cast<double>(c.y()) - 500.0), std::llround(static_cast<double>(c.z()) - 500.0) });
+			std::printf("%s\n", octree_line(i, voxels).c_str());
 		}
 	}
 	gvl.reset();

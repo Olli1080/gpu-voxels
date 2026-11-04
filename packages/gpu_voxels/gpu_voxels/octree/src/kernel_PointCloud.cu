@@ -185,10 +185,18 @@ namespace gpu_voxels
 			for (voxel_count i = id; i < num_points; i += numThreads)
 			{
 				Vector3f pointf = input_points[i];
+				// convert to meter and discrete in voxel: floor(c / side) like the voxel maps. A negative or NaN coordinate (or one that does not fit into
+				// uint32_t) becomes 0xFFFFFFFF, which the tree does not contain and drops like every id above its grid. static_cast<uint32_t> of a negative
+				// float saturates to 0 on the GPU and put such points into voxel 0 (K44).
+				const auto axis = [voxel_side_length](const float c) -> uint32_t
+				{
+					const float f = floorf(c / voxel_side_length);
+					return (f >= 0.0f && f < 4294967296.0f) ? static_cast<uint32_t>(f) : 0xFFFFFFFFu; // false for NaN as well
+				};
 				Vector3ui voxel;
-				voxel.x() = static_cast<uint32_t>(pointf.x() / voxel_side_length); // convert to meter and discrete in voxel
-				voxel.y() = static_cast<uint32_t>(pointf.y() / voxel_side_length);  // convert to meter and discrete in voxel
-				voxel.z() = static_cast<uint32_t>(pointf.z() / voxel_side_length);  // convert to meter and discrete in voxel
+				voxel.x() = axis(pointf.x());
+				voxel.y() = axis(pointf.y());
+				voxel.z() = axis(pointf.z());
 				output_voxels[i] = voxel;
 			}
 		}

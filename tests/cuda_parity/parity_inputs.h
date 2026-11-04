@@ -534,6 +534,28 @@ namespace gvl_parity
 		return text + "]";
 	}
 
+	/// The edge points for the octree (grid of 2^14 voxels per axis, not 16): the points above plus a point with -1 < c < 0 (floor says outside,
+	/// truncation said voxel 0), points far beyond 16 but inside the grid, the last voxel of the grid and the first one outside it.
+	inline std::vector<std::array<float, 3>> octree_edge_points()
+	{
+		auto points = pointcloud_edge_points();
+		points.push_back({ -0.25f, 5.5f, 5.5f });
+		points.push_back({ 20.5f, 5.5f, 5.5f });
+		points.push_back({ 16383.5f, 0.5f, 0.5f });
+		points.push_back({ 5.5f, 16384.5f, 5.5f });
+		points.push_back({ 5.5f, 5.5f, 20000.5f });
+		return points;
+	}
+
+	/// Result of an octree insert of one point as text: the voxels (level 0 cubes) as x,y,z.
+	inline std::string octree_line(std::size_t index, const std::vector<std::array<long long, 3>>& voxels)
+	{
+		std::string text = "octneg " + std::to_string(index) + " n=" + std::to_string(voxels.size()) + " [";
+		for (std::size_t i = 0; i < voxels.size(); ++i)
+			text += (i ? ";" : "") + std::to_string(voxels[i][0]) + "," + std::to_string(voxels[i][1]) + "," + std::to_string(voxels[i][2]);
+		return text + "]";
+	}
+
 	/// What the unfixed CUDA did with such a point: every negative or NaN coordinate became voxel 0 on its axis.
 	inline std::array<float, 3> cuda_saturated_point(std::array<float, 3> p)
 	{

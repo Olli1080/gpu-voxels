@@ -3,6 +3,7 @@
 // every differing line. Method and results: Agent/Analysis/2026-11-03_cuda_parity.md
 #include "vulkan_fixture.h"
 
+#include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -11,6 +12,8 @@
 #include <vector>
 
 #include <gpu_voxels/vulkan/GpuVoxels.h>
+#include <gpu_voxels/vulkan/Morton.h>
+#include <gpu_voxels/vulkan/Octree.h>
 
 #include "../cuda_parity/parity_inputs.h"
 #include "list_collision_model.h"
@@ -352,6 +355,35 @@ TEST_F(VulkanTest, CudaParityPointCloudNegativeCoordinates)
 		EXPECT_EQ(as_list(morton_golden[i]), list_golden[i]);
 		EXPECT_EQ(as_list(morton_unfixed[i]), list_unfixed[i]);
 	}
+}
+
+// K44 for the octree: GvlNTree::insertPointCloud (kernel_toVoxels) converted with a truncating cast, so negative and NaN coordinates became voxel 0 (and
+// -1 < c < 0 as well). One point per call into a fresh tree, the voxels of the level 0 cubes read back. The fixed CUDA equals Vulkan::Octree::insert_point_cloud
+// (floor, dropped when outside the 2^14 grid) with the raw points; the original CUDA (negative_coordinates_cuda_unfixed.txt) equals it with the saturated points.
+TEST_F(VulkanTest, CudaParityOctreePointCloudNegativeCoordinates)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "octneg " });
+	const std::vector<std::string> unfixed = read_lines("negative_coordinates_cuda_unfixed.txt", { "octneg " });
+	const auto points = gvl_parity::octree_edge_points();
+	ASSERT_EQ(golden.size(), points.size());
+	ASSERT_EQ(unfixed.size(), points.size());
+
+	for (const bool saturate : { false, true })
+		for (std::size_t i = 0; i < points.size(); ++i)
+		{
+			const auto p = saturate ? gvl_parity::cuda_saturated_point(points[i]) : points[i];
+			Octree tree(ctx(), OctreeKind::Deterministic, 1.0f);
+			tree.insert_point_cloud(std::vector<Point3f>{ { p[0], p[1], p[2] } });
+			std::vector<std::array<long long, 3>> voxels;
+			for (const OctreeCube& cube : tree.extract())
+			{
+				if (cube.level != 0 || (cube.status & 4) == 0)
+					continue; // extract() also emits the inner nodes on the path and the free / unknown siblings of the voxel; CUDA's extractCubes returns the occupied cubes
+				const auto c = morton::decode60(cube.id);
+				voxels.push_back({ c.x, c.y, c.z });
+			}
+			EXPECT_EQ(gvl_parity::octree_line(i, voxels), saturate ? unfixed[i] : golden[i]) << (saturate ? "unfixed CUDA vs Vulkan with saturated points" : "fixed CUDA vs Vulkan") << ", point " << i;
+		}
 }
 
 // Scenario 3: voxel map x voxel map collisions with an offset (CUDA BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset); K41 made them
