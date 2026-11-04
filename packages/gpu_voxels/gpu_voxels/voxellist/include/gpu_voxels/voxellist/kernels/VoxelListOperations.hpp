@@ -47,7 +47,7 @@ namespace gpu_voxels {
 		extern __shared__ int dynamic_shared_mem[];
 
 		// MapVoxelID lists: mapToVoxelsOrOutside turns negative / NaN coordinates into 0xFFFFFFFF, which remove_out_of_bounds() drops (K44;
-		// mapToVoxels would put them into voxel 0). The octree list kernels below still use mapToVoxels.
+		// mapToVoxels would put them into voxel 0). The Morton (OctreeVoxelID) list kernels below do the same.
 		template<class Voxel>
 		__global__
 		void kernelInsertGlobalPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
@@ -359,7 +359,7 @@ namespace gpu_voxels {
 			new_voxel.insert(voxel_meaning);
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < sizePoints; i += blockDim.x * gridDim.x)
 			{
-				const Vector3ui integer_coordinates = voxelmap::mapToVoxels(voxel_side_length, points[i]);
+				const Vector3ui integer_coordinates = voxelmap::mapToVoxelsOrOutside(voxel_side_length, points[i]);
 				coord_list[i + offset_new_points] = integer_coordinates;
 				voxel_list[i + offset_new_points] = new_voxel;
 				id_list[i + offset_new_points] = NTree::morton_code60(integer_coordinates);
@@ -397,7 +397,7 @@ namespace gpu_voxels {
 				Voxel new_voxel{};
 				new_voxel.insert(voxel_meaning);
 				//printf("Inserting a voxel with meaning %d \n", voxel_meanings[sub_cloud]);
-				const Vector3ui integer_coordinates = voxelmap::mapToVoxels(voxel_side_length,
+				const Vector3ui integer_coordinates = voxelmap::mapToVoxelsOrOutside(voxel_side_length,
 				                                                            meta_point_cloud->clouds_base_addresses[0][i]);
 
 				coord_list[i + offset_new_points] = integer_coordinates;
@@ -431,7 +431,7 @@ namespace gpu_voxels {
 				Voxel new_voxel{};
 				new_voxel.insert(voxel_meanings[sub_cloud]);
 				//printf("Inserting a voxel with meaning %d \n", voxel_meanings[sub_cloud]);
-				const Vector3ui integer_coordinates = voxelmap::mapToVoxels(voxel_side_length,
+				const Vector3ui integer_coordinates = voxelmap::mapToVoxelsOrOutside(voxel_side_length,
 				                                                            meta_point_cloud->clouds_base_addresses[0][i]);
 
 				coord_list[i + offset_new_points] = integer_coordinates;

@@ -38,7 +38,8 @@ namespace
 	}
 
 	/// The entries of a bit list in list order (sorted by id).
-	std::vector<ListEntry> list_entries(voxellist::BitVectorVoxelList& list)
+	template <class List>
+	std::vector<ListEntry> list_entries(List& list)
 	{
 		const size_t n = list.getDimensions().x();
 		thrust::host_vector<Vector3ui> coords;
@@ -55,6 +56,7 @@ namespace
 
 int main(int argc, char* argv[])
 {
+	std::setvbuf(stdout, nullptr, _IONBF, 0); // keep the lines printed so far if a scenario crashes
 	icl_core::logging::initialize(argc, argv);
 	GpuVoxelsSharedPtr gvl = GpuVoxels::getInstance();
 	gvl->initialize(kDim, kDim, kDim, 1.0f);
@@ -229,6 +231,19 @@ int main(int argc, char* argv[])
 			gvl->addMap(MT_BITVECTOR_VOXELLIST, "listneg");
 			insert(gvl, "listneg", std::vector<PointSet>{ PointSet{ 1, { edge_points[i] } } });
 			std::printf("%s\n", list_edge_line(i, list_entries(*gvl->getMap("listneg")->as<voxellist::BitVectorVoxelList>())).c_str());
+		}
+	}
+	// scenario 5d: the same edge points into a Morton coded voxel list (OctreeVoxelID lists), one point per call into a fresh list
+	{
+		const auto edge_points = pointcloud_edge_points();
+		for (std::size_t i = 0; i < edge_points.size(); ++i)
+		{
+			// GpuVoxels::addMap does not implement this map type ("NOT YET IMPLEMENTED"): the list is created directly
+			voxellist::BitVectorMortonVoxelList morton(Vector3ui(kDim, kDim, kDim), 1.0f, MT_BITVECTOR_MORTON_VOXELLIST);
+			morton.insertPointCloud(std::vector<Vector3f>{ Vector3f(edge_points[i][0], edge_points[i][1], edge_points[i][2]) }, BitVoxelMeaning(1));
+			std::string line = list_edge_line(i, list_entries(morton));
+			line.replace(0, 7, "mortonneg"); // "listneg" -> "mortonneg"
+			std::printf("%s\n", line.c_str());
 		}
 	}
 	gvl.reset();

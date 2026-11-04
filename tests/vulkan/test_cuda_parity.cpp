@@ -339,6 +339,19 @@ TEST_F(VulkanTest, CudaParityPointCloudNegativeCoordinates)
 			EXPECT_EQ(gvl_parity::list_edge_line(i, entries), saturate ? list_unfixed[i] : list_golden[i]) << (saturate ? "unfixed CUDA list" : "fixed CUDA list");
 		}
 	}
+
+	// CUDA's Morton coded lists (OctreeVoxelID, created directly: GpuVoxels::addMap does not implement the type) had the same defect and are fixed the same way.
+	// Vulkan has no Morton list; their entries (coordinates and bits) must equal those of the map-id list line by line, before and after the fix.
+	const std::vector<std::string> morton_golden = read_lines("collisions_cuda.txt", { "mortonneg " });
+	const std::vector<std::string> morton_unfixed = read_lines("negative_coordinates_cuda_unfixed.txt", { "mortonneg " });
+	ASSERT_EQ(morton_golden.size(), points.size());
+	ASSERT_EQ(morton_unfixed.size(), points.size());
+	const auto as_list = [](std::string line) { return "listneg" + line.substr(std::string("mortonneg").size()); };
+	for (std::size_t i = 0; i < points.size(); ++i)
+	{
+		EXPECT_EQ(as_list(morton_golden[i]), list_golden[i]);
+		EXPECT_EQ(as_list(morton_unfixed[i]), list_unfixed[i]);
+	}
 }
 
 // Scenario 3: voxel map x voxel map collisions with an offset (CUDA BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset); K41 made them
