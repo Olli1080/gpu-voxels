@@ -1,4 +1,4 @@
-// CUDA parity, scenarios 1 to 4 (list x map collisions, list merges, map x map collisions, prob. map inserts): runs the calls of parity_inputs.h on the CUDA GpuVoxels and prints one line per call.
+// CUDA parity, scenarios 1 to 5 (list x map collisions, list merges, map x map collisions, prob. map inserts, sensor data): runs the calls of parity_inputs.h on the CUDA GpuVoxels and prints one line per call.
 // The output is stored in tests/cuda_parity/golden/collisions_cuda.txt and compared by tests/vulkan/test_cuda_parity.cpp.
 // Usage: cuda_collisions_dump > collisions_cuda.txt
 #include <cstdio>
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 		std::printf("%s\n", merge_line(c, list_entries(*target->as<voxellist::BitVectorVoxelList>())).c_str());
 	}
 
-	// scenario 4: probabilistic map, insertPointCloud with swept volume meanings (one call each); insertSensorData does not launch in this CUDA build (K41)
+	// scenario 4: probabilistic map, insertPointCloud with swept volume meanings (one call each)
 	gvl->addMap(MT_PROBAB_VOXELMAP, "prob4");
 	{
 		const auto values = [&]()
@@ -177,6 +177,31 @@ int main(int argc, char* argv[])
 			hash = hash_occupancy(values);
 		}
 		std::printf("%s\n", map_line(c, count, hash).c_str());
+	}
+	// scenario 5: ProbVoxelMap::insertSensorData, one measurement per call, a fresh map for every group; the whole map is printed after every call
+	gvl->addMap(MT_BITVECTOR_VOXELMAP, "robot5");
+	insert(gvl, "robot5", sensor_robot_sets());
+	for (const SensorGroup& group : sensor_groups())
+	{
+		gvl->delMap("sens5");
+		gvl->addMap(MT_PROBAB_VOXELMAP, "sens5");
+		auto* map = gvl->getMap("sens5")->as<voxelmap::ProbVoxelMap>();
+		auto* robot = gvl->getMap("robot5")->as<voxelmap::BitVectorVoxelMap>();
+		for (std::size_t i = 0; i < group.calls.size(); ++i)
+		{
+			const SensorCall& c = group.calls[i];
+			PointCloud cloud(std::vector<Vector3f>{ Vector3f(c.hit[0], c.hit[1], c.hit[2]) });
+			const bool cut = c.robot_bit >= 0;
+			map->insertSensorData<BIT_VECTOR_LENGTH>(cloud, Vector3f(c.pose[0], c.pose[1], c.pose[2]), c.raycast, cut, BitVoxelMeaning(cut ? c.robot_bit : 0),
+				cut ? robot->getDeviceDataPtr() : nullptr);
+			const size_t n = static_cast<size_t>(kDim) * kDim * kDim;
+			std::vector<ProbabilisticVoxel> host(n);
+			HANDLE_CUDA_ERROR(cudaMemcpy(host.data(), map->getDeviceDataPtr(), n * sizeof(ProbabilisticVoxel), cudaMemcpyDeviceToHost));
+			std::vector<int> values;
+			for (const ProbabilisticVoxel& v : host)
+				values.push_back(static_cast<int>(v.getOccupancy()));
+			std::printf("%s\n", prob_line(sensor_label(group.name, i, c), values).c_str());
+		}
 	}
 	gvl.reset();
 	return 0;

@@ -1,4 +1,4 @@
-# Hand-written mutation runner (CUDA parity, scenarios 1, 3 and 4: list x map collisions, map x map collisions, prob. map inserts): one mutation at a time, build, run only the parity test, restore.
+# Hand-written mutation runner (CUDA parity, scenarios 1, 3, 4 and 5: list x map collisions, map x map collisions, prob. map inserts, sensor data): one mutation at a time, build, run only the parity test, restore.
 # The parity test must notice every change of the collision semantics, because the golden file comes from a CUDA run.
 # Usage: python mutate_cuda_parity.py [name prefixes, comma separated]
 # Method: Agent/knowledge_base/mutation_testing.md. Run one runner at a time on build/verify-vk. Rebuild before using the executable afterwards.
@@ -9,6 +9,7 @@ PA = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/prob_apply_accumulate
 PC = root + 'packages/gpu_voxels/gpu_voxels/vulkan/src/ProbVoxelMap.cpp'
 BC = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/bit_voxel_collide.comp'
 PCO = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/prob_collide.comp'
+PR = root + 'packages/gpu_voxels/gpu_voxels/vulkan/shaders/prob_ray.glsl'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
 MUT = [
@@ -27,6 +28,15 @@ MUT = [
     ('P11 map x map bit: colliding voxel is not marked', BC, "mine[base + meaning_word(BVM_COLLISION)] |= meaning_mask(BVM_COLLISION);", "mine[base + meaning_word(BVM_COLLISION)] |= 0u;"),
     ('P12 map x map prob: this map needs value > threshold', PCO, "if (value < pc.threshold_this)", "if (value <= pc.threshold_this)"),
     ('P13 map x map prob: other map needs value > threshold', PCO, "other_occupied = int(other[i]) >= pc.threshold_other;", "other_occupied = int(other[i]) > pc.threshold_other;"),
+    # scenario 5 (insertSensorData: ray casting and robot cut), prob_ray.glsl
+    ('S1 sensor: robot cut ignored', PR, "if (pc.cut_robot != 0u)", "if (pc.cut_robot != 0u && false)"),
+    ('S2 sensor: robot bit taken from the wrong position', PR, ">> (pc.robot_bit & 31u)) & 1u", ">> 5u) & 1u"),
+    ('S3 sensor: robot bit always in word 0', PR, "(pc.robot_bit >> 5u)", "0u"),
+    ('S4 sensor: robot map looked up at the sensor voxel', PR, "const uint word = voxel_id(hit, dim) * WORDS_PER_VOXEL", "const uint word = voxel_id(origin, dim) * WORDS_PER_VOXEL"),
+    ('S5 sensor: ray ends one voxel early (the hit voxel is not freed)', PR, "int n = 1 + d.x + d.y + d.z;", "int n = d.x + d.y + d.z;"),
+    ('S6 sensor: walk order changed (tie breaks towards y / z)', PR, "if (error_xy > 0 && error_xz > 0)", "if (error_xy >= 0 && error_xz > 0)"),
+    ('S7 sensor: ray casting also without the flag', PR, "if (pc.raycast != 0u)", "if (true)"),
+    ('S8 sensor: sensor voxel outside the map is not checked', PR, "pc.require_origin != 0u &&", "false &&"),
 ]
 
 TESTS = 'VulkanTest.CudaParity*'

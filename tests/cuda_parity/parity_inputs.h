@@ -10,6 +10,7 @@
 #include <set>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -371,6 +372,149 @@ namespace gvl_parity
 		std::snprintf(text, sizeof text, "prob %s unknown=%zu positive=%zu negative=%zu hash=%016llx values=", what.c_str(), unknown, positive, negative,
 			static_cast<unsigned long long>(hash_occupancy(values)));
 		return text + values_text;
+	}
+
+	// ---- scenario 5: ProbVoxelMap::insertSensorData (CUDA) / insert_sensor_data (Vulkan), ray casting and the robot cut ----
+	// One measurement per call: CUDA runs one thread per measurement without atomics, and every ray visits the sensor voxel, so several rays in one call lose
+	// updates (K42) and would not be a defined input. Every group starts with a fresh map; within a group the calls accumulate (saturation at +-127 included).
+
+	struct SensorCall
+	{
+		std::array<float, 3> pose;
+		std::array<float, 3> hit;
+		bool raycast;
+		int robot_bit; ///< -1: no robot cut; otherwise the bit of the robot map that marks the robot (cut_real_robot with this robot_voxel_meaning)
+	};
+
+	struct SensorGroup
+	{
+		std::string name;
+		std::vector<SensorCall> calls;
+	};
+
+	/// The robot map: bit 5 in x, y, z = 0..7, bit 7 in x, y = 8..15, z = 0..7 and bit 40 (second 32-bit word) in x = 0..7, y = 8..15, z = 0..7 (512 voxels each, voxel centres).
+	inline std::vector<PointSet> sensor_robot_sets()
+	{
+		PointSet a{ 5, {} }, b{ 7, {} }, c{ 40, {} };
+		for (int z = 0; z < 8; ++z)
+			for (int y = 0; y < 8; ++y)
+				for (int x = 0; x < 8; ++x)
+				{
+					a.points.push_back({ x + 0.5f, y + 0.5f, z + 0.5f });
+					b.points.push_back({ x + 8.5f, y + 8.5f, z + 0.5f });
+					c.points.push_back({ x + 0.5f, y + 8.5f, z + 0.5f });
+				}
+		return { a, b, c };
+	}
+
+	inline std::vector<SensorGroup> sensor_groups()
+	{
+		Lcg rng(50);
+		const auto centre = [&rng](int lo, int hi) { return static_cast<float>(lo + static_cast<int>(rng.next() % static_cast<uint32_t>(hi - lo))) + 0.5f; };
+		const auto fraction = [&rng]() { return static_cast<float>(rng.next() % 1600) / 100.0f; }; // 0.00 .. 15.99
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		const float inf = std::numeric_limits<float>::infinity();
+		std::vector<SensorGroup> groups;
+
+		// A: four sensor poses (voxel centre and not), hits at voxel centres and at arbitrary positions, with and without ray casting
+		{
+			SensorGroup g{ "rays", {} };
+			const std::vector<std::array<float, 3>> poses{ { 0.5f, 0.5f, 0.5f }, { 8.25f, 8.75f, 8.5f }, { 15.5f, 3.5f, 9.5f }, { 2.5f, 14.5f, 7.5f } };
+			for (const bool raycast : { true, false })
+				for (const auto& pose : poses)
+					for (int i = 0; i < 10; ++i)
+					{
+						const std::array<float, 3> hit = i % 2 == 0 ? std::array<float, 3>{ centre(0, 16), centre(0, 16), centre(0, 16) } : std::array<float, 3>{ fraction(), fraction(), fraction() };
+						g.calls.push_back({ pose, hit, raycast, -1 });
+					}
+			groups.push_back(g);
+		}
+		// B: special rays: hit in the sensor voxel (also off centre), neighbour, along an axis, corner to corner in both directions
+		{
+			SensorGroup g{ "special", {} };
+			const std::array<float, 3> p{ 5.5f, 5.5f, 5.5f };
+			const std::vector<std::pair<std::array<float, 3>, std::array<float, 3>>> rays{ { p, p }, { p, { 5.9f, 5.1f, 5.2f } }, { p, { 6.5f, 5.5f, 5.5f } }, { p, { 5.5f, 5.5f, 0.5f } },
+				{ p, { 0.5f, 5.5f, 5.5f } }, { p, { 15.5f, 15.5f, 15.5f } }, { p, { 0.5f, 0.5f, 0.5f } }, { { 0.5f, 0.5f, 0.5f }, { 15.5f, 15.5f, 15.5f } }, { { 15.5f, 15.5f, 15.5f }, { 0.5f, 0.5f, 0.5f } },
+				{ { 0.5f, 15.5f, 0.5f }, { 15.5f, 0.5f, 15.5f } }, { { 3.5f, 3.5f, 3.5f }, { 4.5f, 12.5f, 7.5f } } };
+			for (const bool raycast : { true, false })
+				for (const auto& [pose, hit] : rays)
+					g.calls.push_back({ pose, hit, raycast, -1 });
+			groups.push_back(g);
+		}
+		// C: measurements and sensor poses beyond the upper border, NaN hits and infinity: dropped by CUDA and Vulkan alike
+		{
+			SensorGroup g{ "outside", {} };
+			const std::array<float, 3> in{ 5.5f, 5.5f, 5.5f };
+			const std::vector<std::array<float, 3>> hits{ { 16.5f, 5.5f, 5.5f }, { 5.5f, 16.0f, 5.5f }, { 5.5f, 5.5f, 1e9f }, { nan, 5.5f, 5.5f }, { 5.5f, inf, 5.5f }, { 5.5f, 5.5f, 20.5f } };
+			const std::vector<std::array<float, 3>> poses{ { 16.5f, 5.5f, 5.5f }, { 5.5f, 5.5f, 16.0f }, { 5.5f, inf, 5.5f } };
+			for (const bool raycast : { true, false })
+			{
+				for (const auto& hit : hits)
+					g.calls.push_back({ in, hit, raycast, -1 });
+				for (const auto& pose : poses)
+					g.calls.push_back({ pose, { 9.5f, 9.5f, 9.5f }, raycast, -1 });
+			}
+			groups.push_back(g);
+		}
+		// C2: negative coordinates, -infinity and a NaN sensor pose. CUDA converts floor(c / side) to uint32 on the GPU, which saturates: these become voxel 0 on
+		// that axis (they are NOT dropped); Vulkan drops them (K44). The test compares CUDA with Vulkan fed the clamped coordinates (0.5) instead.
+		{
+			SensorGroup g{ "negative", {} };
+			const std::array<float, 3> in{ 5.5f, 5.5f, 5.5f };
+			const std::vector<std::array<float, 3>> hits{ { -0.5f, 5.5f, 5.5f }, { 5.5f, -0.01f, 5.5f }, { 5.5f, 5.5f, -inf }, { -7.5f, -7.5f, -7.5f }, { -0.5f, 12.5f, 3.5f } };
+			const std::vector<std::array<float, 3>> poses{ { -0.5f, 5.5f, 5.5f }, { nan, 5.5f, 5.5f }, { 5.5f, -inf, 5.5f }, { -3.5f, -3.5f, 14.5f } };
+			for (const bool raycast : { true, false })
+			{
+				for (const auto& hit : hits)
+					g.calls.push_back({ in, hit, raycast, -1 });
+				for (const auto& pose : poses)
+					g.calls.push_back({ pose, { 9.5f, 9.5f, 9.5f }, raycast, -1 });
+			}
+			groups.push_back(g);
+		}
+		// D: robot cut: hits inside the bit 5, bit 7 and bit 40 blocks and outside all, cut by bit 5, 7, 40 and a bit that no voxel has
+		{
+			SensorGroup g{ "robot", {} };
+			const std::array<float, 3> pose{ 12.5f, 4.5f, 12.5f };
+			for (const bool raycast : { true, false })
+				for (const int bit : { 5, 7, 9, 40 })
+					for (int i = 0; i < 16; ++i)
+					{
+						std::array<float, 3> hit;
+						if (i < 4)
+							hit = { centre(0, 8), centre(0, 8), centre(0, 8) }; // bit 5 block
+						else if (i < 8)
+							hit = { centre(8, 16), centre(8, 16), centre(0, 8) }; // bit 7 block
+						else if (i < 12)
+							hit = { centre(0, 8), centre(8, 16), centre(0, 8) }; // bit 40 block
+						else
+							hit = { centre(0, 16), centre(0, 16), centre(8, 16) }; // above all blocks
+						g.calls.push_back({ pose, hit, raycast, bit });
+					}
+			// the ray crosses the robot but the hit does not: not cut
+			g.calls.push_back({ { 0.5f, 0.5f, 0.5f }, { 12.5f, 12.5f, 12.5f }, true, 5 });
+			groups.push_back(g);
+		}
+		return groups;
+	}
+
+	/// What CUDA does with negative and NaN coordinates (measured, group "negative"): the GPU conversion of floor(c / side) to uint32 saturates, so a negative
+	/// coordinate (-inf included) and a NaN sensor pose coordinate become voxel 0 on that axis. A NaN hit is dropped by CUDA's isnan check, as in Vulkan.
+	inline SensorCall cuda_saturated(SensorCall c)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (c.hit[i] < 0.0f)
+				c.hit[i] = 0.5f;
+			if (!(c.pose[i] >= 0.0f))
+				c.pose[i] = 0.5f;
+		}
+		return c;
+	}
+
+	inline std::string sensor_label(const std::string& group, std::size_t index, const SensorCall& c)
+	{
+		return "sensor " + group + " " + std::to_string(index) + " ray=" + (c.raycast ? "1" : "0") + " robot=" + std::to_string(c.robot_bit);
 	}
 }
 

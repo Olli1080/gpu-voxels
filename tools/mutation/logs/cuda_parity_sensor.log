@@ -1,0 +1,9 @@
+S1 sensor: robot cut ignored : KILLED
+S2 sensor: robot bit taken from the wrong position : KILLED
+S3 sensor: robot bit always in word 0 : KILLED
+S4 sensor: robot map looked up at the sensor voxel : KILLED
+S5 sensor: ray ends one voxel early (the hit voxel is not freed) : KILLED
+S6 sensor: walk order changed (tie breaks towards y / z) : KILLED
+S7 sensor: ray casting also without the flag : KILLED
+S8 sensor: sensor voxel outside the map is not checked : KILLED
+restored

@@ -220,6 +220,72 @@ TEST_F(VulkanTest, CudaParityProbMap)
 	EXPECT_EQ(different, 0u);
 }
 
+// Scenario 5: ProbVoxelMap::insertSensorData (CUDA) against insert_sensor_data (Vulkan), one measurement per call (several rays in one CUDA call lose updates,
+// K42), a fresh map per group, the whole map after every call (tests/cuda_parity/parity_inputs.h sensor_groups()).
+namespace
+{
+	/// `saturate`: feed the group "negative" with the coordinates CUDA effectively uses (gvl_parity::cuda_saturated); otherwise Vulkan gets the raw input.
+	std::vector<std::string> sensor_vulkan_lines(GpuVoxels& gvl, UpdateMode mode, bool saturate)
+	{
+		std::vector<std::string> lines;
+		gvl.del_map("robot5");
+		gvl.add_map(MT_BITVECTOR_VOXELMAP, "robot5");
+		insert(gvl, "robot5", gvl_parity::sensor_robot_sets());
+		const BitVoxelMap& robot = *gvl.get_map("robot5")->as<BitVoxelMap>();
+		for (const gvl_parity::SensorGroup& group : gvl_parity::sensor_groups())
+		{
+			gvl.del_map("sens5");
+			gvl.add_map(MT_PROBAB_VOXELMAP, "sens5");
+			ProbVoxelMap& map = *gvl.get_map("sens5")->as<ProbVoxelMap>();
+			UpdateOptions options;
+			options.mode = mode;
+			for (std::size_t i = 0; i < group.calls.size(); ++i)
+			{
+				const gvl_parity::SensorCall& c = group.calls[i];
+				const gvl_parity::SensorCall used = saturate && group.name == "negative" ? gvl_parity::cuda_saturated(c) : c;
+				const std::vector<Point3f> hit{ { used.hit[0], used.hit[1], used.hit[2] } };
+				const bool cut = c.robot_bit >= 0;
+				map.insert_sensor_data(hit, { used.pose[0], used.pose[1], used.pose[2] }, c.raycast, cut ? &robot : nullptr, static_cast<uint8_t>(cut ? c.robot_bit : 0), options);
+				std::vector<int> values;
+				for (const int8_t v : map.download_occupancy())
+					values.push_back(v);
+				lines.push_back(gvl_parity::prob_line(gvl_parity::sensor_label(group.name, i, c), values));
+			}
+		}
+		return lines;
+	}
+}
+
+TEST_F(VulkanTest, CudaParitySensorData)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "prob sensor " });
+	ASSERT_GT(golden.size(), 150u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+	for (const UpdateMode mode : { UpdateMode::Accumulate, UpdateMode::Atomic, UpdateMode::Sequential })
+	{
+		// 1. Vulkan fed with the coordinates CUDA effectively uses: equal to CUDA in every line (rays, special, outside, negative, robot)
+		const std::vector<std::string> mine = sensor_vulkan_lines(gvl, mode, true);
+		ASSERT_EQ(mine.size(), golden.size());
+		std::size_t different = 0;
+		for (std::size_t i = 0; i < mine.size(); ++i)
+			if (mine[i] != golden[i] && different++ < 40)
+				ADD_FAILURE() << "mode " << static_cast<int>(mode) << ": Vulkan differs from CUDA:\nCUDA:   " << golden[i] << "\nVulkan: " << mine[i];
+		EXPECT_EQ(different, 0u) << "mode " << static_cast<int>(mode);
+
+		// 2. Vulkan fed with the raw input: equal everywhere except in the group "negative", where it drops what CUDA puts into voxel 0 (K44)
+		const std::vector<std::string> raw = sensor_vulkan_lines(gvl, mode, false);
+		ASSERT_EQ(raw.size(), golden.size());
+		std::size_t other_groups = 0, negative_group = 0;
+		for (std::size_t i = 0; i < raw.size(); ++i)
+			if (raw[i] != golden[i])
+				++(golden[i].rfind("prob sensor negative ", 0) == 0 ? negative_group : other_groups);
+		EXPECT_EQ(other_groups, 0u) << "mode " << static_cast<int>(mode);
+		EXPECT_GT(negative_group, 15u) << "mode " << static_cast<int>(mode) << ": the documented difference to CUDA (negative coordinates) disappeared";
+	}
+}
+
 // Scenario 3: voxel map x voxel map collisions with an offset (CUDA BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset); K41 made them
 // unusable until the kernel host functions were fixed). Vulkan has no map x map offset, so the offset lines are compared with a host model of the 3D rule
 // that CUDA now implements (the voxel at c of the other map meets the voxel at c + offset of this map, a voxel that leaves the map does not collide); the
