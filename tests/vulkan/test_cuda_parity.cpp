@@ -314,6 +314,31 @@ TEST_F(VulkanTest, CudaParityPointCloudNegativeCoordinates)
 			EXPECT_EQ(line, saturate ? unfixed[i] : golden[i]) << (saturate ? "unfixed CUDA vs Vulkan with saturated points" : "fixed CUDA vs Vulkan");
 		}
 	}
+
+	// the same points into a fresh voxel list each (CUDA lists took them as well: kernelInsertGlobalPointCloud of the MapVoxelID lists)
+	const std::vector<std::string> list_golden = read_lines("collisions_cuda.txt", { "listneg " });
+	const std::vector<std::string> list_unfixed = read_lines("negative_coordinates_cuda_unfixed.txt", { "listneg " });
+	ASSERT_EQ(list_golden.size(), points.size());
+	ASSERT_EQ(list_unfixed.size(), points.size());
+	for (const bool saturate : { false, true })
+	{
+		GpuVoxels gvl(ctx());
+		gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+		for (std::size_t i = 0; i < points.size(); ++i)
+		{
+			gvl.del_map("listneg");
+			ASSERT_NE(gvl.add_map(MT_BITVECTOR_VOXELLIST, "listneg"), nullptr);
+			const auto p = saturate ? gvl_parity::cuda_saturated_point(points[i]) : points[i];
+			gvl.insert_point_cloud_into_map(std::vector<Point3f>{ { p[0], p[1], p[2] } }, "listneg", 1);
+			const BitVoxelList& list = *gvl.get_map("listneg")->as<BitVoxelList>();
+			const auto coordinates = list.download_coordinates();
+			const auto vectors = list.download_bit_vectors();
+			std::vector<gvl_parity::ListEntry> entries;
+			for (std::size_t e = 0; e < coordinates.size(); ++e)
+				entries.push_back({ coordinates[e].x, coordinates[e].y, coordinates[e].z, set_bits(vectors[e]) });
+			EXPECT_EQ(gvl_parity::list_edge_line(i, entries), saturate ? list_unfixed[i] : list_golden[i]) << (saturate ? "unfixed CUDA list" : "fixed CUDA list");
+		}
+	}
 }
 
 // Scenario 3: voxel map x voxel map collisions with an offset (CUDA BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset); K41 made them

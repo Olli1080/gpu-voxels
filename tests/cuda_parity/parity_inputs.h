@@ -521,6 +521,19 @@ namespace gvl_parity
 		return { { -0.5f, 5.5f, 5.5f }, { 5.5f, -0.01f, 5.5f }, { 5.5f, 5.5f, -inf }, { nan, 9.5f, 9.5f }, { -7.5f, -7.5f, -7.5f }, { 16.5f, 5.5f, 5.5f }, { 5.5f, inf, 5.5f }, { 3.5f, 3.5f, 3.5f }, { 12.5f, 1.5f, 7.5f } };
 	}
 
+	/// A list after inserting one edge point into a fresh list (insertPointCloud, meaning 1): the entries as text, e.g. "n=1 [0,5,5:1]".
+	inline std::string list_edge_line(std::size_t index, const std::vector<ListEntry>& entries)
+	{
+		std::string text = "listneg " + std::to_string(index) + " n=" + std::to_string(entries.size()) + " [";
+		for (std::size_t i = 0; i < entries.size(); ++i)
+		{
+			text += (i ? ";" : "") + std::to_string(entries[i].x) + "," + std::to_string(entries[i].y) + "," + std::to_string(entries[i].z) + ":";
+			for (std::size_t b = 0; b < entries[i].bits.size(); ++b)
+				text += (b ? "+" : "") + std::to_string(entries[i].bits[b]);
+		}
+		return text + "]";
+	}
+
 	/// What the unfixed CUDA did with such a point: every negative or NaN coordinate became voxel 0 on its axis.
 	inline std::array<float, 3> cuda_saturated_point(std::array<float, 3> p)
 	{

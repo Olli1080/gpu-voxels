@@ -220,6 +220,17 @@ int main(int argc, char* argv[])
 			std::printf("%s\n", prob_line("pcneg " + std::to_string(i), values).c_str());
 		}
 	}
+	// scenario 5c: voxel list insertPointCloud with the same edge points (K44 for lists), one point per call into a fresh list
+	{
+		const auto edge_points = pointcloud_edge_points();
+		for (std::size_t i = 0; i < edge_points.size(); ++i)
+		{
+			gvl->delMap("listneg");
+			gvl->addMap(MT_BITVECTOR_VOXELLIST, "listneg");
+			insert(gvl, "listneg", std::vector<PointSet>{ PointSet{ 1, { edge_points[i] } } });
+			std::printf("%s\n", list_edge_line(i, list_entries(*gvl->getMap("listneg")->as<voxellist::BitVectorVoxelList>())).c_str());
+		}
+	}
 	gvl.reset();
 	return 0;
 }

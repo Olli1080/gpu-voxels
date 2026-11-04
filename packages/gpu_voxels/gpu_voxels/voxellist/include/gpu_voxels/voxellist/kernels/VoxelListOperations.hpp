@@ -46,6 +46,8 @@ namespace gpu_voxels {
 		// used to avoid "non-empty default constructor" problems in shared memory arrays
 		extern __shared__ int dynamic_shared_mem[];
 
+		// MapVoxelID lists: mapToVoxelsOrOutside turns negative / NaN coordinates into 0xFFFFFFFF, which remove_out_of_bounds() drops (K44;
+		// mapToVoxels would put them into voxel 0). The octree list kernels below still use mapToVoxels.
 		template<class Voxel>
 		__global__
 		void kernelInsertGlobalPointCloud(MapVoxelID* id_list, Vector3ui* coord_list, Voxel* voxel_list,
@@ -59,7 +61,7 @@ namespace gpu_voxels {
 			new_voxel.insert(voxel_meaning);
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < sizePoints; i += blockDim.x * gridDim.x)
 			{
-				Vector3ui uint_coords = voxelmap::mapToVoxels(voxel_side_length, points[i]);
+				Vector3ui uint_coords = voxelmap::mapToVoxelsOrOutside(voxel_side_length, points[i]);
 				coord_list[i + offset_new_points] = uint_coords;
 				voxel_list[i + offset_new_points] = new_voxel;
 				id_list[i + offset_new_points] = voxelmap::getVoxelIndexUnsigned(ref_map_dim, uint_coords);
@@ -102,7 +104,7 @@ namespace gpu_voxels {
 				new_voxel.insert(voxel_meaning);
 				Vector3ui uint_coords;
 				//printf("Inserting a voxel with meaning %d \n", voxel_meanings[sub_cloud]);
-				uint_coords = voxelmap::mapToVoxels(voxel_side_length,
+				uint_coords = voxelmap::mapToVoxelsOrOutside(voxel_side_length,
 					meta_point_cloud->clouds_base_addresses[0][i]);
 
 				coord_list[i + offset_new_points] = uint_coords;
@@ -136,7 +138,7 @@ namespace gpu_voxels {
 				Voxel new_voxel{};
 				new_voxel.insert(voxel_meanings[sub_cloud]);
 				//printf("Inserting a voxel with meaning %d \n", voxel_meanings[sub_cloud]);
-				Vector3ui uint_coords = voxelmap::mapToVoxels(voxel_side_length,
+				Vector3ui uint_coords = voxelmap::mapToVoxelsOrOutside(voxel_side_length,
 				                                              meta_point_cloud->clouds_base_addresses[0][i]);
 
 				coord_list[i + offset_new_points] = uint_coords;

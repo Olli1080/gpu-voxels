@@ -25,3 +25,12 @@ prob pcneg 5 unknown=4091 positive=5 negative=0 hash=fc371455e3d23e6d values=72:
 prob pcneg 6 unknown=4091 positive=5 negative=0 hash=fc371455e3d23e6d values=72:5
 prob pcneg 7 unknown=4090 positive=6 negative=0 hash=64a5b6c5ff5ce175 values=72:6
 prob pcneg 8 unknown=4089 positive=7 negative=0 hash=86ec88b76c1049bd values=72:7
+listneg 0 n=1 [0,5,5:1]
+listneg 1 n=1 [5,0,5:1]
+listneg 2 n=1 [5,5,0:1]
+listneg 3 n=1 [0,9,9:1]
+listneg 4 n=1 [0,0,0:1]
+listneg 5 n=0 []
+listneg 6 n=0 []
+listneg 7 n=1 [3,3,3:1]
+listneg 8 n=1 [12,1,7:1]
