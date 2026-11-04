@@ -219,6 +219,8 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t viewer_extract_prob_comp_words;
 	extern const uint32_t viewer_extract_list_comp[];
 	extern const std::size_t viewer_extract_list_comp_words;
+	extern const uint32_t viewer_extract_octree_comp[];
+	extern const std::size_t viewer_extract_octree_comp_words;
 	extern const uint32_t viewer_cube_vert[];
 	extern const std::size_t viewer_cube_vert_words;
 	extern const uint32_t viewer_cube_frag[];

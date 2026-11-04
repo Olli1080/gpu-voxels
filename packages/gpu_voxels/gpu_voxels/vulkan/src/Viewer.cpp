@@ -15,6 +15,7 @@
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
+#include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
@@ -30,6 +31,7 @@ namespace gpu_voxels::vulkan
 		struct BitPush { uint32_t dim_x, dim_y, dim_z, capacity; float side; };
 		struct ProbPush { uint32_t dim_x, dim_y, dim_z, capacity; float side; int32_t min_value; };
 		struct ListPush { uint32_t count, capacity; float side; };
+		struct OctreePush { uint32_t count, capacity; float side; uint32_t probabilistic; int32_t min_value; uint32_t occupied_colour, free_colour; };
 		struct FinalizePush { uint32_t capacity; };
 
 		/// Matches the push constant block of viewer_cube.vert / .frag.
@@ -167,7 +169,8 @@ namespace gpu_voxels::vulkan
 			: finalize(context, GVL_SHADER_SPAN(viewer_finalize_comp), 1, sizeof(FinalizePush)),
 			  bit(context, GVL_SHADER_SPAN(viewer_extract_bit_comp), 4, sizeof(BitPush)),
 			  prob(context, GVL_SHADER_SPAN(viewer_extract_prob_comp), 3, sizeof(ProbPush)),
-			  list(context, GVL_SHADER_SPAN(viewer_extract_list_comp), 5, sizeof(ListPush))
+			  list(context, GVL_SHADER_SPAN(viewer_extract_list_comp), 5, sizeof(ListPush)),
+			  octree(context, GVL_SHADER_SPAN(viewer_extract_octree_comp), 3, sizeof(OctreePush))
 		{
 		}
 
@@ -175,6 +178,7 @@ namespace gpu_voxels::vulkan
 		ComputePipeline bit;
 		ComputePipeline prob;
 		ComputePipeline list;
+		ComputePipeline octree;
 	};
 
 	CubeExtractor::CubeExtractor(Context& context)
@@ -220,6 +224,39 @@ namespace gpu_voxels::vulkan
 			const ListPush push{ count, out.capacity(), list.voxel_side_length() };
 			batch.dispatch(kernels_->list, { &list.coordinates_buffer(), &list.voxel_buffer(), &palette_buffer_, &out.instances(), &out.arguments() },
 				group_count(context_, count), push);
+			batch.barrier();
+		}
+		batch.dispatch(kernels_->finalize, { &out.arguments() }, 1, FinalizePush{ out.capacity() });
+		batch.submit_and_wait();
+	}
+
+	void CubeExtractor::extract(const Octree& tree, const OctreeDisplay& display, CubeBuffer& out)
+	{
+		const float side = display.side_length != 0.0f ? display.side_length : tree.voxel_side_length();
+		if (!(side > 0.0f) || !std::isfinite(side))
+			throw VulkanError("CubeExtractor: an octree needs a voxel side length (OctreeDisplay::side_length or Octree::set_voxel_side_length)");
+		const bool probabilistic = tree.kind() == OctreeKind::Probabilistic;
+
+		OctreeExtractOptions options;
+		options.min_level = display.min_level;
+		if (!probabilistic)
+		{
+			// the host selects the statuses that have a visible colour, the kernel gives them the colour (same rule: occupied before free)
+			options.status_selection.resize(256);
+			for (uint32_t status = 0; status < 256; ++status)
+			{
+				const uint32_t colour = (status & octree_format::kOccupied) ? display.occupied_colour : (status & octree_format::kFree) ? display.free_colour : 0u;
+				options.status_selection[status] = (colour >> 24) != 0 ? 1 : 0;
+			}
+		}
+		const OctreeDeviceCubes cubes = tree.extract_to_device(options);
+
+		CommandBatch batch(context_);
+		batch.fill(out.arguments(), 0);
+		if (cubes.count > 0)
+		{
+			const OctreePush push{ cubes.count, out.capacity(), side, probabilistic ? 1u : 0u, display.min_value, display.occupied_colour, display.free_colour };
+			batch.dispatch(kernels_->octree, { cubes.records.get(), &out.instances(), &out.arguments() }, group_count(context_, cubes.count), push);
 			batch.barrier();
 		}
 		batch.dispatch(kernels_->finalize, { &out.arguments() }, 1, FinalizePush{ out.capacity() });

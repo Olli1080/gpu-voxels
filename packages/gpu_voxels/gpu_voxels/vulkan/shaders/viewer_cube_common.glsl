@@ -17,3 +17,11 @@ const uint ARG_FIRST_VERTEX = 2u;
 const uint ARG_FIRST_INSTANCE = 3u;
 const uint ARG_FOUND = 4u;
 const uint CUBE_VERTEX_COUNT = 36u;
+
+// Colour of a probabilistic occupancy (int8 log-odds): blue (-127) over green to red (+127).
+uint gradient(int value)
+{
+    const float t = clamp(float(value + 127) / 254.0, 0.0, 1.0);
+    const vec3 c = clamp(vec3(1.5 - abs(4.0 * t - 3.0), 1.5 - abs(4.0 * t - 2.0), 1.5 - abs(4.0 * t - 1.0)), 0.0, 1.0);
+    return packUnorm4x8(vec4(c, 1.0));
+}

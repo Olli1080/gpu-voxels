@@ -54,6 +54,14 @@ namespace gpu_voxels::vulkan
 		friend bool operator==(const OctreeNode&, const OctreeNode&) = default;
 	};
 
+	/// The cubes of Octree::extract_to_device(), left on the GPU: `count` records of 16 bytes (word 0 / 1 = Morton prefix id low / high,
+	/// word 2 = level | status << 8 | occupancy << 16, word 3 = 0). `records` is null when there are no cubes.
+	struct OctreeDeviceCubes
+	{
+		std::unique_ptr<DeviceBuffer> records;
+		uint32_t count = 0;
+	};
+
 	/// Result of find(): the node where the lookup stopped.
 	struct OctreeLookup
 	{
@@ -365,6 +373,9 @@ namespace gpu_voxels::vulkan
 		[[nodiscard]] std::vector<OctreeLookup> find(std::span<const uint64_t> morton_ids) const;
 		/// Cubes of the tree on the GPU (rules of the CUDA extract kernel); the order of the result is unspecified.
 		[[nodiscard]] std::vector<OctreeCube> extract(const OctreeExtractOptions& options = {}) const;
+		/// The same cubes without the read back: they stay in a device buffer (the in-process viewer turns them into instances there, Viewer.h).
+		/// \throws VulkanError for the same invalid options as extract().
+		[[nodiscard]] OctreeDeviceCubes extract_to_device(const OctreeExtractOptions& options = {}) const;
 
 		/// All nodes reachable from the root, ordered by (level, id); read back to the host and walked there.
 		[[nodiscard]] std::vector<OctreeNode> dump() const;

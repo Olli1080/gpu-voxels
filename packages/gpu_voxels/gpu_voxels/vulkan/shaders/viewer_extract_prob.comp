@@ -9,13 +9,6 @@ layout(std430, set = 0, binding = 1) writeonly buffer Instances { CubeInstance i
 layout(std430, set = 0, binding = 2) buffer Args { uint args[]; };
 layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint capacity; float side; int min_value; } pc;
 
-uint gradient(int value)
-{
-    const float t = clamp(float(value + 127) / 254.0, 0.0, 1.0);
-    const vec3 c = clamp(vec3(1.5 - abs(4.0 * t - 3.0), 1.5 - abs(4.0 * t - 2.0), 1.5 - abs(4.0 * t - 1.0)), 0.0, 1.0);
-    return packUnorm4x8(vec4(c, 1.0));
-}
-
 void main()
 {
     const uint voxel_count = pc.dim_x * pc.dim_y * pc.dim_z;

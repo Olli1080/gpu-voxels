@@ -1787,6 +1787,22 @@ namespace gpu_voxels::vulkan
 
 		std::vector<OctreeCube> extract(const OctreeExtractOptions& options) const
 		{
+			const OctreeDeviceCubes device = extract_device(options);
+			if (device.count == 0)
+				return {};
+			const uint32_t total = device.count;
+			const auto raw = device.records->download_vector<uint32_t>(uint64_t(total) * 4);
+			std::vector<OctreeCube> cubes(total);
+			for (uint32_t i = 0; i < total; ++i)
+			{
+				const uint32_t w = raw[4 * i + 2];
+				cubes[i] = OctreeCube{ w & 255u, (uint64_t(raw[4 * i + 1]) << 32) | raw[4 * i], static_cast<uint8_t>(w >> 8), static_cast<int8_t>(w >> 16) };
+			}
+			return cubes;
+		}
+
+		OctreeDeviceCubes extract_device(const OctreeExtractOptions& options) const
+		{
 			if (options.min_level >= kRootLevel)
 				throw VulkanError("Octree::extract: min_level must be in 0..13");
 			if (!options.status_selection.empty() && options.status_selection.size() != 256)
@@ -1848,18 +1864,11 @@ namespace gpu_voxels::vulkan
 			const uint32_t total = traverse(dummy, 0);
 			if (total == 0)
 				return {};
-			DeviceBuffer out(context, uint64_t(total) * 16);
-			const uint32_t written = traverse(out, total);
+			auto out = std::make_unique<DeviceBuffer>(context, uint64_t(total) * 16);
+			const uint32_t written = traverse(*out, total);
 			if (written != total)
 				throw VulkanError("Octree::extract: the second pass found a different number of nodes");
-			const auto raw = out.download_vector<uint32_t>(uint64_t(total) * 4);
-			std::vector<OctreeCube> cubes(total);
-			for (uint32_t i = 0; i < total; ++i)
-			{
-				const uint32_t w = raw[4 * i + 2];
-				cubes[i] = OctreeCube{ w & 255u, (uint64_t(raw[4 * i + 1]) << 32) | raw[4 * i], static_cast<uint8_t>(w >> 8), static_cast<int8_t>(w >> 16) };
-			}
-			return cubes;
+			return OctreeDeviceCubes{ std::move(out), total };
 		}
 	};
 
@@ -2109,6 +2118,7 @@ namespace gpu_voxels::vulkan
 
 	std::vector<OctreeLookup> Octree::find(std::span<const uint64_t> morton_ids) const { return impl_->find(morton_ids); }
 	std::vector<OctreeCube> Octree::extract(const OctreeExtractOptions& options) const { return impl_->extract(options); }
+	OctreeDeviceCubes Octree::extract_to_device(const OctreeExtractOptions& options) const { return impl_->extract_device(options); }
 
 	std::vector<OctreeNode> Octree::dump() const
 	{

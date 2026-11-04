@@ -12,6 +12,8 @@ FRAG = VK + 'shaders/viewer_cube.frag'
 EB = VK + 'shaders/viewer_extract_bit.comp'
 EP = VK + 'shaders/viewer_extract_prob.comp'
 EL = VK + 'shaders/viewer_extract_list.comp'
+EO = VK + 'shaders/viewer_extract_octree.comp'
+CMN = VK + 'shaders/viewer_cube_common.glsl'
 FIN = VK + 'shaders/viewer_finalize.comp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
@@ -30,6 +32,23 @@ MUT = [
     ('V12 cube vertex: normal sign inverted', VERT, "normal[axis] = sign_;", "normal[axis] = -sign_;"),
     ('V13 cube vertex: the face has no extent along its axis', VERT, "local[axis] = sign_ > 0.0 ? 1.0 : 0.0;", "local[axis] = 0.0;"),
     ('V14 cube fragment: ambient light 0.30', FRAG, "0.35 + 0.65 * diffuse", "0.30 + 0.65 * diffuse"),
+    # octree path (2026-11-04): kernel viewer_extract_octree.comp and CubeExtractor::extract(Octree)
+    ('V15 octree kernel: the position is not scaled by the level', EO, "vec4(vec3(c) * edge, edge)", "vec4(vec3(c) * pc.side, edge)"),
+    ('V16 octree kernel: the edge ignores the level', EO, "const float edge = float(1u << level) * pc.side;", "const float edge = pc.side;"),
+    ('V17 octree kernel: a node with occupied and free bits is drawn free', EO, "else if ((status & STATUS_OCCUPIED) != 0u)",
+     "else if ((status & STATUS_OCCUPIED) != 0u && (status & STATUS_FREE) == 0u)"),
+    ('V18 octree kernel: unknown nodes are drawn', EO, "if (occupancy == -128 || occupancy < pc.min_value)", "if (occupancy < pc.min_value)"),
+    ('V19 octree kernel: threshold exclusive', EO, "if (occupancy == -128 || occupancy < pc.min_value)", "if (occupancy == -128 || occupancy <= pc.min_value)"),
+    ('V20 octree kernel: the Morton id is cut to 32 bits', EO, "morton_decode60(id)", "morton_decode60(id & 0xFFFFFFFFul)"),
+    ('V21 octree kernel: the occupancy is not sign extended', EO, "const int occupancy = bitfieldExtract(int(word), 16, 8);", "const int occupancy = int((word >> 16u) & 255u);"),
+    ('V22 octree host: free nodes are never selected', VW, "(status & octree_format::kFree) ? display.free_colour : 0u", "(status & octree_format::kFree) ? 0u : 0u"),
+    ('V23 octree host: occupied nodes get the free colour in the selection', VW, "(status & octree_format::kOccupied) ? display.occupied_colour", "(status & octree_format::kOccupied) ? display.free_colour"),
+    ('V24 octree host: the minimum level is not passed on', VW, "options.min_level = display.min_level;", "options.min_level = 0;"),
+    ('V25 octree host: the side length of the tree wins over the display', VW, "display.side_length != 0.0f ? display.side_length : tree.voxel_side_length()",
+     "tree.voxel_side_length() > 0.0f ? tree.voxel_side_length() : display.side_length"),
+    ('V26 octree host: a probabilistic tree is processed as a deterministic one', VW, "probabilistic ? 1u : 0u, display.min_value", "0u, display.min_value"),
+    ('V27 octree host: the last cube is not converted', VW, "OctreePush push{ cubes.count, out.capacity()", "OctreePush push{ cubes.count - 1, out.capacity()"),
+    ('V28 probabilistic gradient: scale 255 instead of 254', CMN, "float(value + 127) / 254.0", "float(value + 127) / 255.0"),
 ]
 
 TESTS = 'Viewer*'

@@ -183,6 +183,7 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/viewer_cube.vert
     shaders/viewer_extract_bit.comp
     shaders/viewer_extract_list.comp
+    shaders/viewer_extract_octree.comp
     shaders/viewer_extract_prob.comp
     shaders/viewer_finalize.comp)
 

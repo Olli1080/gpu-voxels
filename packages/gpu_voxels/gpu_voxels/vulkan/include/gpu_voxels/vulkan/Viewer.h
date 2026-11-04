@@ -9,7 +9,7 @@
  *         CUDA version shared device pointers with a separate process through CUDA IPC handles; see Agent/knowledge_base/architecture/visualization_and_ipc.md).
  *
  * Pieces:
- *   CubeExtractor  compute kernels: BitVoxelMap / ProbVoxelMap / bit VoxelList -> CubeBuffer (a rewrite replaces the previous content)
+ *   CubeExtractor  compute kernels: BitVoxelMap / ProbVoxelMap / bit VoxelList / Octree -> CubeBuffer (a rewrite replaces the previous content)
  *   VoxelRenderer  graphics pipeline (dynamic rendering, no render pass objects) that draws CubeBuffers into any colour + depth attachment
  *   OffscreenTarget  colour + depth image with a read back of the pixels (tests, screenshots, headless use)
  * The window / swapchain part is ViewerWindow.h.
@@ -34,6 +34,7 @@ namespace gpu_voxels::vulkan
 {
 	class BitVoxelList;
 	class BitVoxelMap;
+	class Octree;
 	class ProbVoxelMap;
 
 	/// Packs a colour as the viewer shaders read it (red in the lowest byte, alpha in the highest).
@@ -58,6 +59,23 @@ namespace gpu_voxels::vulkan
 	{
 		/// Voxels with an occupancy (int8 log-odds, -127 .. 127) of at least this value are drawn; unknown voxels (-128) never. The colour is a
 		/// gradient from blue (-127) over green to red (+127).
+		int min_value = 1;
+	};
+
+	/// What is drawn of an octree. A node is a cube of 2^level voxels per side at its Morton position; uniform nodes (no children) are drawn as one big
+	/// cube, so a mostly empty or mostly full tree needs few cubes.
+	struct OctreeDisplay
+	{
+		/// Nodes on this level or above are not refined further: a refined node is drawn as one cube that stands for its whole subtree (0..13; 0 = every
+		/// voxel as exact as the tree stores it). Deterministic tree: such a cube is occupied if any voxel in it is, else free if any is; probabilistic
+		/// tree: it has the largest occupancy below it.
+		uint32_t min_level = 0;
+		/// Edge of a voxel in metres; 0 = Octree::voxel_side_length() (which must then be set).
+		float side_length = 0.0f;
+		/// Deterministic tree: colour (pack_colour) of occupied cubes and of free ones; alpha 0 hides them (free space is hidden by default).
+		uint32_t occupied_colour = pack_colour(235, 140, 40);
+		uint32_t free_colour = 0;
+		/// Probabilistic tree: nodes with a known occupancy of at least this value are drawn in the gradient colour (as ProbDisplay).
 		int min_value = 1;
 	};
 
@@ -106,6 +124,10 @@ namespace gpu_voxels::vulkan
 		void extract(const BitVoxelMap& map, const BitPalette& palette, CubeBuffer& out);
 		void extract(const ProbVoxelMap& map, const ProbDisplay& display, CubeBuffer& out);
 		void extract(const BitVoxelList& list, const BitPalette& palette, CubeBuffer& out);
+		/// Same for an octree: the nodes are extracted by the octree kernels into a temporary device buffer (Octree::extract_to_device, a few submissions
+		/// with small read backs of counters, no read back of the nodes) and turned into instances. Propagate pending inserts first (statuses are only
+		/// consistent after Octree::propagate()). \throws VulkanError if neither the display nor the tree has a side length, for min_level > 13.
+		void extract(const Octree& tree, const OctreeDisplay& display, CubeBuffer& out);
 
 	private:
 		struct Kernels;

@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <set>
 #include <string>
 #include <tuple>
@@ -16,10 +17,13 @@
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/ImageFile.h>
+#include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/OrbitCamera.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
+
+#include "../reference/octree_reference.h"
 
 using namespace gpu_voxels::vulkan;
 
@@ -761,4 +765,353 @@ TEST_F(ViewerTest, AnOrbitCameraLooksAtItsTarget)
 	camera.pitch_degrees = 89.0f;
 	target.render(renderer, camera.camera(), buffers, flat_black());
 	EXPECT_EQ(pixel(target.read_rgba(), 80, 40, 30), pixel_of(BitPalette::defaults().colour[5]));
+}
+
+// ---- octree ----------------------------------------------------------------------------------------------------------------------------------
+
+namespace
+{
+	namespace ref = gvl_reference::octree;
+
+	/// The cube of a node: the Morton decoded coordinates of the id on its level, 2^level voxels per side.
+	Cube octree_cube(uint32_t level, uint64_t id, float side, uint32_t colour)
+	{
+		const ref::Voxel c = ref::unmorton(id);
+		const float edge = static_cast<float>(1u << level) * side;
+		return { static_cast<float>(c.x) * edge, static_cast<float>(c.y) * edge, static_cast<float>(c.z) * edge, edge, colour };
+	}
+
+	/// Gradient colour of a probabilistic occupancy, as the map test computes it.
+	uint32_t gradient_colour(int value)
+	{
+		const float t = static_cast<float>(value + 127) / 254.0f;
+		const auto channel = [](float v) { return std::clamp(v, 0.0f, 1.0f); };
+		const auto byte = [&](float v) { return static_cast<uint8_t>(std::lround(channel(v) * 255.0f)); };
+		return pack_colour(byte(1.5f - std::fabs(4.0f * t - 3.0f)), byte(1.5f - std::fabs(4.0f * t - 2.0f)), byte(1.5f - std::fabs(4.0f * t - 1.0f)));
+	}
+
+	/// Same position and size exactly, colours within one step per channel (the GPU rounds the gradient).
+	void expect_equal_near_colour(const std::vector<Cube>& actual, const std::vector<Cube>& expected)
+	{
+		const auto a = sorted(actual);
+		const auto e = sorted(expected);
+		ASSERT_EQ(a.size(), e.size());
+		for (std::size_t i = 0; i < a.size(); ++i)
+		{
+			EXPECT_EQ(a[i].x, e[i].x) << i;
+			EXPECT_EQ(a[i].y, e[i].y) << i;
+			EXPECT_EQ(a[i].z, e[i].z) << i;
+			EXPECT_EQ(a[i].size, e[i].size) << i;
+			EXPECT_TRUE(near(pixel_of(a[i].colour), pixel_of(e[i].colour), 1)) << i;
+		}
+	}
+
+	/// Voxels with big aligned blocks (uniform nodes on levels 1, 2 and 3), scattered voxels and one in the far corner of the 2^14 grid.
+	std::vector<ref::Voxel> octree_test_voxels()
+	{
+		std::vector<ref::Voxel> voxels;
+		const auto block = [&](uint32_t x0, uint32_t y0, uint32_t z0, uint32_t n)
+		{
+			for (uint32_t z = 0; z < n; ++z)
+				for (uint32_t y = 0; y < n; ++y)
+					for (uint32_t x = 0; x < n; ++x)
+						voxels.push_back({ x0 + x, y0 + y, z0 + z });
+		};
+		block(8, 8, 8, 8);
+		block(32, 0, 16, 4);
+		block(100, 70, 4, 2);
+		std::mt19937_64 rng(11);
+		std::uniform_int_distribution<uint32_t> any(0, 127);
+		for (int i = 0; i < 300; ++i)
+			voxels.push_back({ any(rng), any(rng), any(rng) });
+		voxels.push_back({ 16383, 16383, 16383 });
+		return voxels;
+	}
+
+	std::vector<OctreeVoxel> to_octree_voxels(const std::vector<ref::Voxel>& voxels)
+	{
+		std::vector<OctreeVoxel> out;
+		for (const auto& v : voxels)
+			out.push_back({ v.x, v.y, v.z });
+		return out;
+	}
+
+	std::vector<uint64_t> morton_ids(const std::vector<ref::Voxel>& voxels, std::size_t begin, std::size_t end)
+	{
+		std::vector<uint64_t> ids;
+		for (std::size_t i = begin; i < end && i < voxels.size(); ++i)
+			ids.push_back(ref::morton(voxels[i].x, voxels[i].y, voxels[i].z));
+		return ids;
+	}
+}
+
+TEST_F(ViewerTest, ExtractsTheCubesOfADeterministicOctree)
+{
+	const auto voxels = octree_test_voxels();
+	const float side = 0.25f;
+	Octree tree(ctx(), OctreeKind::Deterministic, side);
+	tree.build(to_octree_voxels(voxels));
+	const ref::OctreeReference reference(ref::Kind::Deterministic, voxels);
+
+	std::vector<uint8_t> occupied(256);
+	for (uint32_t s = 0; s < 256; ++s)
+		occupied[s] = (s & 4u) ? 1 : 0;
+
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 100000);
+	OctreeDisplay display;
+	for (const uint32_t min_level : { 0u, 1u, 3u, 6u, 13u })
+	{
+		SCOPED_TRACE("min_level " + std::to_string(min_level));
+		display.min_level = min_level;
+		extractor.extract(tree, display, cubes);
+		std::vector<Cube> expected;
+		for (const auto& n : reference.extract(occupied, min_level))
+			expected.push_back(octree_cube(n.level, n.id, side, display.occupied_colour));
+		ASSERT_FALSE(expected.empty());
+		EXPECT_EQ(cubes.found(), expected.size());
+		expect_equal(cubes.download(), expected);
+	}
+
+	// on the finest level the cubes cover exactly the occupied voxels, and the aligned blocks are single big cubes
+	display.min_level = 0;
+	extractor.extract(tree, display, cubes);
+	std::uint64_t volume = 0;
+	std::set<int> edges;
+	for (const Cube& c : cubes.download())
+	{
+		const double voxels_per_edge = static_cast<double>(c.size) / side;
+		volume += static_cast<std::uint64_t>(std::llround(voxels_per_edge * voxels_per_edge * voxels_per_edge));
+		edges.insert(static_cast<int>(std::lround(voxels_per_edge)));
+	}
+	EXPECT_EQ(volume, reference.voxel_count());
+	for (const int edge : { 1, 2, 4, 8 })
+		EXPECT_TRUE(edges.count(edge)) << "a cube of " << edge << " voxels per side";
+}
+
+TEST_F(ViewerTest, ExtractsTheKnownNodesOfAProbabilisticOctree)
+{
+	const auto voxels = octree_test_voxels();
+	const float side = 0.3f;
+	Octree tree(ctx(), OctreeKind::Probabilistic, side);
+	tree.build(to_octree_voxels(voxels));
+	// a mix of occupancies: 127 (untouched), -127 (free inserts, also new voxels), 0 (a free insert followed by an occupied one); the test does not depend
+	// on which voxel ends up with which value, the expected cubes come from Octree::extract
+	tree.insert_ids(morton_ids(voxels, 0, 200), OctreeDatum::Free);
+	tree.insert_ids(morton_ids(voxels, 90, 200), OctreeDatum::Occupied);
+	tree.insert_ids(std::vector<uint64_t>{ ref::morton(500, 500, 500), ref::morton(501, 500, 500) }, OctreeDatum::Free);
+	ASSERT_NO_THROW(tree.check_tree());
+
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 100000);
+	for (const uint32_t min_level : { 0u, 2u })
+		for (const int min_value : { 1, 0, -127, 100, 127 })
+		{
+			SCOPED_TRACE("min_level " + std::to_string(min_level) + ", min_value " + std::to_string(min_value));
+			OctreeExtractOptions options;
+			options.min_level = min_level;
+			std::vector<Cube> expected;
+			std::set<int> values;
+			for (const OctreeCube& n : tree.extract(options))
+				if (n.occupancy != -128 && n.occupancy >= min_value)
+				{
+					expected.push_back(octree_cube(n.level, n.id, side, gradient_colour(n.occupancy)));
+					values.insert(n.occupancy);
+				}
+			ASSERT_FALSE(expected.empty());
+			OctreeDisplay display;
+			display.min_level = min_level;
+			display.min_value = min_value;
+			extractor.extract(tree, display, cubes);
+			expect_equal_near_colour(cubes.download(), expected);
+			if (min_level == 0 && min_value == -127)
+				EXPECT_GE(values.size(), 3u) << "-127, 0 and 127 are all present, found: " << [&] { std::string s; for (int v : values) s += std::to_string(v) + " "; return s; }();
+		}
+	// a threshold below -128 still hides the unknown nodes (the fillers of the tree)
+	OctreeDisplay everything;
+	everything.min_value = -1000;
+	extractor.extract(tree, everything, cubes);
+	OctreeExtractOptions all;
+	std::size_t known = 0;
+	for (const OctreeCube& n : tree.extract(all))
+		known += n.occupancy != -128 ? 1 : 0;
+	ASSERT_GT(tree.extract(all).size(), known) << "the tree has unknown nodes";
+	EXPECT_EQ(cubes.count(), known);
+}
+
+TEST_F(ViewerTest, FreeNodesOfADeterministicOctreeAreDrawnOnRequest)
+{
+	const float side = 0.5f;
+	Octree tree(ctx(), OctreeKind::Deterministic, side);
+	std::vector<OctreeVoxel> occupied;
+	for (uint32_t i = 0; i < 20; ++i)
+		occupied.push_back({ 40 + 3 * i, 40 + i, 40 });
+	occupied.push_back({ 0, 0, 0 });
+	tree.build(occupied);
+	tree.insert_nodes(3, std::vector<uint64_t>{ ref::morton(10, 11, 12), ref::morton(30, 3, 3) }, OctreeDatum::Free);   // two free cubes of 8 voxels per side
+	tree.insert_ids(std::vector<uint64_t>{ ref::morton(100, 100, 100), ref::morton(1, 0, 0), ref::morton(8, 8, 8) }, OctreeDatum::Free);
+	ASSERT_NO_THROW(tree.check_tree());
+
+	const uint32_t red = pack_colour(220, 30, 30), blue = pack_colour(30, 60, 200);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 1000);
+	for (const uint32_t min_level : { 0u, 1u })
+	{
+		SCOPED_TRACE("min_level " + std::to_string(min_level));
+		OctreeExtractOptions options;
+		options.min_level = min_level;
+		const auto nodes = tree.extract(options);
+		std::vector<Cube> both, only_occupied, only_free;
+		for (const OctreeCube& n : nodes)
+		{
+			if (n.status & octree_format::kOccupied)
+			{
+				both.push_back(octree_cube(n.level, n.id, side, red));
+				only_occupied.push_back(octree_cube(n.level, n.id, side, red));
+			}
+			else if (n.status & octree_format::kFree)
+			{
+				both.push_back(octree_cube(n.level, n.id, side, blue));
+				only_free.push_back(octree_cube(n.level, n.id, side, blue));
+			}
+		}
+		ASSERT_FALSE(only_occupied.empty());
+		ASSERT_FALSE(only_free.empty());
+
+		OctreeDisplay display;
+		display.min_level = min_level;
+		display.occupied_colour = red;
+		extractor.extract(tree, display, cubes);          // free space is hidden by default
+		expect_equal(cubes.download(), only_occupied);
+		display.free_colour = blue;
+		extractor.extract(tree, display, cubes);
+		expect_equal(cubes.download(), both);
+		display.occupied_colour = pack_colour(1, 2, 3, 0); // alpha 0 hides occupied
+		extractor.extract(tree, display, cubes);
+		expect_equal(cubes.download(), only_free);
+		if (min_level == 0)
+		{
+			const auto free_cubes = cubes.download();
+			EXPECT_EQ(std::count_if(free_cubes.begin(), free_cubes.end(), [&](const Cube& c) { return c.size == 8.0f * side; }), 2) << "the two free cubes of level 3";
+		}
+	}
+}
+
+TEST_F(ViewerTest, ARefinedOctreeNodeOnTheMinimumLevelStandsForItsWholeSubtree)
+{
+	const float side = 1.0f;
+	Octree tree(ctx(), OctreeKind::Deterministic, side);
+	tree.build(std::vector<OctreeVoxel>{ { 0, 0, 0 } });
+	// level 1 node (0,0,0): occupied and free voxels; level 1 node (4,4,4): only a free voxel
+	tree.insert_ids(std::vector<uint64_t>{ ref::morton(1, 0, 0), ref::morton(8, 8, 8) }, OctreeDatum::Free);
+
+	const uint32_t red = pack_colour(220, 30, 30), blue = pack_colour(30, 60, 200);
+	OctreeDisplay display;
+	display.min_level = 1;
+	display.occupied_colour = red;
+	display.free_colour = blue;
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 100);
+	extractor.extract(tree, display, cubes);
+	// the mixed node is occupied (once, not also free), the node with only a free voxel (and unknown ones) is free
+	expect_equal(cubes.download(), std::vector<Cube>{ { 0.0f, 0.0f, 0.0f, 2.0f, red }, { 8.0f, 8.0f, 8.0f, 2.0f, blue } });
+	// on the finest level the free voxel of the mixed node is drawn on its own
+	display.min_level = 0;
+	extractor.extract(tree, display, cubes);
+	expect_equal(cubes.download(), std::vector<Cube>{ { 0.0f, 0.0f, 0.0f, 1.0f, red }, { 1.0f, 0.0f, 0.0f, 1.0f, blue }, { 8.0f, 8.0f, 8.0f, 1.0f, blue } });
+}
+
+TEST_F(ViewerTest, OctreeExtractionHandlesCapacityEmptyTreesAndTheSideLength)
+{
+	Octree tree(ctx(), OctreeKind::Deterministic);   // no side length
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 4);
+	OctreeDisplay display;
+	EXPECT_THROW(extractor.extract(tree, display, cubes), VulkanError) << "neither the display nor the tree has a side length";
+	display.side_length = -1.0f;
+	EXPECT_THROW(extractor.extract(tree, display, cubes), VulkanError);
+	display.side_length = std::nanf("");
+	EXPECT_THROW(extractor.extract(tree, display, cubes), VulkanError);
+
+	display.side_length = 0.5f;
+	extractor.extract(tree, display, cubes);   // an empty tree
+	EXPECT_EQ(cubes.count(), 0u);
+	EXPECT_EQ(cubes.found(), 0u);
+
+	std::vector<OctreeVoxel> far_apart;
+	for (uint32_t i = 0; i < 10; ++i)
+		far_apart.push_back({ 100 * i, 50 * i, 20 * i });
+	tree.build(far_apart);
+	extractor.extract(tree, display, cubes);
+	EXPECT_EQ(cubes.found(), 10u);
+	EXPECT_EQ(cubes.count(), 4u);
+	EXPECT_EQ(cubes.dropped(), 6u);
+	for (const Cube& c : cubes.download())
+		EXPECT_EQ(c.size, 0.5f);
+
+	// the side length of the display wins, 0 takes the one of the tree
+	tree.set_voxel_side_length(2.0f);
+	display.side_length = 0.0f;
+	CubeBuffer large(ctx(), 100);
+	extractor.extract(tree, display, large);
+	for (const Cube& c : large.download())
+		EXPECT_EQ(c.size, 2.0f);
+	display.side_length = 0.25f;
+	extractor.extract(tree, display, large);
+	for (const Cube& c : large.download())
+		EXPECT_EQ(c.size, 0.25f);
+
+	display.min_level = 14;
+	EXPECT_THROW(extractor.extract(tree, display, large), VulkanError);
+	display.min_level = 0;
+	// a second extraction replaces the content
+	tree.clear();
+	extractor.extract(tree, display, large);
+	EXPECT_EQ(large.count(), 0u);
+	EXPECT_EQ(large.found(), 0u);
+}
+
+TEST_F(ViewerTest, ABigOctreeNodeIsDrawnAsOneCube)
+{
+	const float side = 0.5f;
+	Octree tree(ctx(), OctreeKind::Deterministic, side);
+	std::vector<OctreeVoxel> block;
+	for (uint32_t z = 4; z < 8; ++z)
+		for (uint32_t y = 4; y < 8; ++y)
+			for (uint32_t x = 4; x < 8; ++x)
+				block.push_back({ x, y, z });
+	tree.build(block);
+
+	OctreeDisplay display;
+	display.occupied_colour = pack_colour(200, 50, 50);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 10);
+	extractor.extract(tree, display, cubes);
+	expect_equal(cubes.download(), std::vector<Cube>{ { 2.0f, 2.0f, 2.0f, 2.0f, display.occupied_colour } });
+
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	constexpr uint32_t w = 128, h = 96;
+	OffscreenTarget target(ctx(), w, h);
+	ViewerCamera camera;
+	camera.eye = { 3.0f, 3.0f, 10.0f };
+	camera.target = { 3.0f, 3.0f, 4.0f };
+	const CubeBuffer* buffers[] = { &cubes };
+	target.render(renderer, camera, buffers, flat_black());
+	const auto image = target.read_rgba();
+	// the front face is the square (2..4) x (2..4) at z = 4
+	const auto lo = project(camera, w, h, { 2.0f, 4.0f, 4.0f });
+	const auto hi = project(camera, w, h, { 4.0f, 2.0f, 4.0f });
+	ASSERT_LT(lo[0], hi[0]);
+	ASSERT_LT(lo[1], hi[1]);
+	const Pixel colour = pixel_of(display.occupied_colour);
+	for (const float fx : { 0.5f, 0.1f, 0.9f })
+		for (const float fy : { 0.5f, 0.1f, 0.9f })
+			EXPECT_EQ(pixel(image, w, static_cast<int>(lo[0] + (hi[0] - lo[0]) * fx), static_cast<int>(lo[1] + (hi[1] - lo[1]) * fy)), colour) << fx << "," << fy;
+	EXPECT_EQ(pixel(image, w, int(lo[0]) - 3, int(lo[1]) + 5), (Pixel{ 0, 0, 0, 255 }));
+	EXPECT_EQ(pixel(image, w, int(hi[0]) + 3, int(hi[1]) - 5), (Pixel{ 0, 0, 0, 255 }));
+	std::size_t covered = 0;
+	for (uint32_t y = 0; y < h; ++y)
+		for (uint32_t x = 0; x < w; ++x)
+			covered += pixel(image, w, int(x), int(y)) == colour ? 1 : 0;
+	EXPECT_NEAR(double(covered), double(hi[0] - lo[0]) * double(hi[1] - lo[1]), 2.0 * (double(hi[0] - lo[0]) + double(hi[1] - lo[1])));
 }

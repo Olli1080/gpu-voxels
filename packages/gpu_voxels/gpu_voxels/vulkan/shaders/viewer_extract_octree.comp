@@ -1,0 +1,64 @@
+#version 450
+// Cubes of an octree: the records of Octree::extract_to_device (16 bytes: Morton prefix id low / high, level | status << 8 | occupancy << 16, 0) become
+// instances. A node of `level` with the id I covers the voxels [c * 2^level, (c + 1) * 2^level) per axis, c = the Morton decoded coordinates of I.
+//  * deterministic tree: a node with the OCCUPIED bit is drawn in `occupied_colour`, otherwise a node with the FREE bit in `free_colour`;
+//    alpha 0 hides a colour. (The host already selected the statuses; a refined node on min_level carries the OR of its children, so occupied wins.)
+//  * probabilistic tree: known nodes (not -128) with an occupancy >= min_value, gradient colour.
+#extension GL_ARB_gpu_shader_int64 : require
+#extension GL_GOOGLE_include_directive : require
+#include "viewer_cube_common.glsl"
+#include "morton.glsl"
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Records { uint records[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Instances { CubeInstance instances[]; };
+layout(std430, set = 0, binding = 2) buffer Args { uint args[]; };
+layout(push_constant) uniform Push
+{
+    uint count;
+    uint capacity;
+    float side;
+    uint probabilistic;
+    int min_value;
+    uint occupied_colour;
+    uint free_colour;
+} pc;
+
+const uint STATUS_FREE = 1u;
+const uint STATUS_OCCUPIED = 4u;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        const uint word = records[4u * i + 2u];
+        const uint level = word & 255u;
+        const uint status = (word >> 8u) & 255u;
+        const int occupancy = bitfieldExtract(int(word), 16, 8);
+        uint colour = 0u;
+        if (pc.probabilistic != 0u)
+        {
+            if (occupancy == -128 || occupancy < pc.min_value)
+                continue;
+            colour = gradient(occupancy);
+        }
+        else if ((status & STATUS_OCCUPIED) != 0u)
+            colour = pc.occupied_colour;
+        else if ((status & STATUS_FREE) != 0u)
+            colour = pc.free_colour;
+        if ((colour >> 24u) == 0u)
+            continue;
+        const uint64_t id = packUint2x32(uvec2(records[4u * i], records[4u * i + 1u]));
+        const uvec3 c = morton_decode60(id);
+        const float edge = float(1u << level) * pc.side;
+        const uint slot = atomicAdd(args[ARG_FOUND], 1u);
+        if (slot < pc.capacity)
+        {
+            instances[slot].pos_size = vec4(vec3(c) * edge, edge);
+            instances[slot].rgba = colour;
+            instances[slot].pad0 = 0u;
+            instances[slot].pad1 = 0u;
+            instances[slot].pad2 = 0u;
+        }
+    }
+}

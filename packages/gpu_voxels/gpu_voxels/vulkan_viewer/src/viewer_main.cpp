@@ -6,7 +6,7 @@
 /*!\file
  * \brief  gvl_viewer: shows a demo scene or a point cloud file in an in-process Vulkan window (or renders it to a PNG without a window).
  *
- *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob]
+ *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob] [--octree [--level <N>]]
  *              [--png <out.png> [--size <W>x<H>]] [--frames <N>] [--no-vsync] [--validation]
  *
  * Mouse: left button rotates, right / middle button pans, wheel zooms. Keys: S toggles the shading, R resets the camera, ESC closes.
@@ -22,6 +22,7 @@
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/ImageFile.h>
+#include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/PointCloudFile.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
@@ -36,6 +37,8 @@ namespace
 		std::string points_file;
 		float side = 0.05f;
 		bool prob = false;
+		bool octree = false;   ///< show the points as an octree (deterministic, with --prob probabilistic) instead of a voxel map
+		uint32_t level = 0;    ///< --octree: nodes of this level are drawn as one cube
 		std::string png;
 		uint32_t width = 1280, height = 720;
 		uint64_t frames = 0; ///< 0 = until the window is closed
@@ -56,6 +59,8 @@ namespace
 				return argv[++i];
 			};
 			if (arg == "--points") a.points_file = value();
+			else if (arg == "--octree") a.octree = true;
+			else if (arg == "--level") a.level = static_cast<uint32_t>(std::stoul(value()));
 			else if (arg == "--side") a.side = std::stof(value());
 			else if (arg == "--prob") a.prob = true;
 			else if (arg == "--png") a.png = value();
@@ -116,6 +121,8 @@ namespace
 	{
 		std::unique_ptr<BitVoxelMap> bit_map;
 		std::unique_ptr<ProbVoxelMap> prob_map;
+		std::unique_ptr<Octree> octree;
+		OctreeDisplay octree_display;
 		std::array<float, 3> box_min{}, box_max{};
 	};
 
@@ -133,7 +140,13 @@ namespace
 		const Dim3ui dims{ cells(max.x), cells(max.y), cells(max.z) };
 		Scene scene;
 		scene.box_max = { static_cast<float>(dims.x) * a.side, static_cast<float>(dims.y) * a.side, static_cast<float>(dims.z) * a.side };
-		if (a.prob)
+		if (a.octree)
+		{
+			scene.octree = std::make_unique<Octree>(context, a.prob ? OctreeKind::Probabilistic : OctreeKind::Deterministic, a.side);
+			scene.octree->insert_point_cloud(points, eBVM_OCCUPIED);
+			scene.octree_display.min_level = a.level;
+		}
+		else if (a.prob)
 		{
 			scene.prob_map = std::make_unique<ProbVoxelMap>(context, dims, a.side);
 			scene.prob_map->insert_point_cloud(points, eBVM_OCCUPIED);
@@ -148,7 +161,9 @@ namespace
 
 	void extract(CubeExtractor& extractor, const Scene& scene, CubeBuffer& cubes)
 	{
-		if (scene.prob_map)
+		if (scene.octree)
+			extractor.extract(*scene.octree, scene.octree_display, cubes);
+		else if (scene.prob_map)
 			extractor.extract(*scene.prob_map, ProbDisplay{}, cubes);
 		else
 			extractor.extract(*scene.bit_map, BitPalette::defaults(), cubes);
