@@ -550,19 +550,10 @@ namespace gpu_voxels
 		{
 			std::scoped_lock lock(this->m_mutex, other->m_mutex);
 
-			Voxel* dev_data_with_offset = nullptr;
-			if (offset != Vector3i::Zero())
-			{
-				// We take the base adress of this voxelmap and add the offset that we want to shift the other map.
-				dev_data_with_offset = getVoxelPtrSignedOffset(m_dev_data.data().get(), m_dim, offset);
-			}
-			else 
-			{
-				dev_data_with_offset = m_dev_data.data().get();
-			}
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-			kernelCollideVoxelMapsDebug<<<m_blocks, m_threads>>>(dev_data_with_offset, m_dev_data.size(), other->getConstDeviceDataPtr(),
-				collider, m_dev_collision_check_results_counter.data().get());
+			// The offset is applied per axis inside the kernel (a voxel that would leave the map does not collide).
+			kernelCollideVoxelMapsDebug<<<m_blocks, m_threads>>>(m_dev_data.data().get(), m_dev_data.size(), other->getConstDeviceDataPtr(),
+				collider, m_dev_collision_check_results_counter.data().get(), m_dim, offset);
 			CHECK_CUDA_ERROR();
 			HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
 			m_collision_check_results_counter = m_dev_collision_check_results_counter;

@@ -257,6 +257,99 @@ namespace gvl_parity
 		return h;
 	}
 
+	// ---- scenario 3: voxel map x voxel map collisions with an offset (BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset)) ----
+	// A collision marks the voxel of the map it is called on (eBVM_COLLISION), so every call starts with fresh maps and the whole marked map is compared.
+
+	/// `count` random voxel centres that are all different (CUDA loses all but one update of a probabilistic voxel hit twice in one call, K42).
+	inline PointSet distinct_set(Lcg& rng, int meaning, int count)
+	{
+		PointSet set{ meaning, {} };
+		std::set<std::array<int, 3>> used;
+		while (static_cast<int>(set.points.size()) < count)
+		{
+			const PointSet one = random_set(rng, meaning, 1);
+			const std::array<int, 3> voxel{ static_cast<int>(one.points[0][0]), static_cast<int>(one.points[0][1]), static_cast<int>(one.points[0][2]) };
+			if (used.insert(voxel).second)
+				set.points.push_back(one.points[0]);
+		}
+		return set;
+	}
+
+	/// The map the collision is called on (`this`, side 0) and the map it is called with (`other`, side 1), as bit map or probabilistic map.
+	inline std::vector<PointSet> map_sets(bool prob, int side)
+	{
+		Lcg rng(prob ? 30 + side : 40 + side);
+		std::vector<PointSet> sets;
+		if (!prob)
+			for (const int meaning : { 1, 5, 40, 130, 0 })
+				sets.push_back(distinct_set(rng, meaning, 160));
+		else
+		{
+			// occupied twice at the same voxels (72 + 72: the voxels saturate at 127, so that threshold 1.0 finds collisions), then +71, -29, free, +1, unknown
+			Lcg again = rng;
+			sets.push_back(distinct_set(rng, 1, 160));
+			sets.push_back(distinct_set(again, 1, 160));
+			for (const int meaning : { 200, 100, 0, 130, 3 })
+				sets.push_back(distinct_set(rng, meaning, 160));
+		}
+		return sets;
+	}
+
+	struct MapCall
+	{
+		bool this_prob;
+		bool other_prob;
+		float threshold;
+		std::array<int, 3> offset;
+	};
+
+	inline std::vector<MapCall> map_calls()
+	{
+		const std::vector<std::array<int, 3>> offsets{ { 0, 0, 0 }, { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 },
+			{ 3, 2, 1 }, { 15, 0, 0 }, { -15, 0, 0 }, { 0, 15, 0 }, { -3, -3, -3 }, { 5, 5, 5 }, { 16, 0, 0 }, { 0, 0, -20 } };
+		std::vector<MapCall> out;
+		for (const bool this_prob : { false, true })
+			for (const bool other_prob : { false, true })
+				for (const float threshold : { 1.0f, 0.5f, 0.0f })
+				{
+					if (!this_prob && !other_prob && threshold != 1.0f)
+						continue; // two bit maps: the threshold has no meaning
+					for (const auto& offset : offsets)
+						out.push_back({ this_prob, other_prob, threshold, offset });
+				}
+		return out;
+	}
+
+	/// FNV-1a over a bit map: for every voxel the number of set bits and the set bits.
+	inline uint64_t hash_bit_map(const std::vector<std::vector<int>>& voxels)
+	{
+		uint64_t h = 14695981039346656037ULL;
+		const auto add = [&h](uint32_t v)
+		{
+			for (int i = 0; i < 4; ++i)
+			{
+				h ^= (v >> (8 * i)) & 0xFFu;
+				h *= 1099511628211ULL;
+			}
+		};
+		for (const auto& bits : voxels)
+		{
+			add(static_cast<uint32_t>(bits.size()));
+			for (const int b : bits)
+				add(static_cast<uint32_t>(b));
+		}
+		return h;
+	}
+
+	/// `after_hash` = hash of the map the call was made on after the call (marked voxels included).
+	inline std::string map_line(const MapCall& c, uint64_t count, uint64_t after_hash)
+	{
+		char text[200];
+		std::snprintf(text, sizeof text, "mapmap %s x %s thr=%.1f off=%d,%d,%d count=%llu hash=%016llx", c.this_prob ? "prob" : "bit", c.other_prob ? "prob" : "bit",
+			static_cast<double>(c.threshold), c.offset[0], c.offset[1], c.offset[2], static_cast<unsigned long long>(count), static_cast<unsigned long long>(after_hash));
+		return text;
+	}
+
 	inline std::string prob_line(const std::string& what, const std::vector<int>& values)
 	{
 		std::size_t unknown = 0, positive = 0, negative = 0;

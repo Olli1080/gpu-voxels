@@ -1,0 +1,5 @@
+P10 map x map bit: FREE counts as occupied in the other map : KILLED
+P11 map x map bit: colliding voxel is not marked : KILLED
+P12 map x map prob: this map needs value > threshold : KILLED
+P13 map x map prob: other map needs value > threshold : KILLED
+restored

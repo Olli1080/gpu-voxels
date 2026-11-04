@@ -1,4 +1,4 @@
-// CUDA parity, scenario 1 (list x map collisions): runs the calls of parity_inputs.h on the CUDA GpuVoxels and prints one line per call.
+// CUDA parity, scenarios 1 to 4 (list x map collisions, list merges, map x map collisions, prob. map inserts): runs the calls of parity_inputs.h on the CUDA GpuVoxels and prints one line per call.
 // The output is stored in tests/cuda_parity/golden/collisions_cuda.txt and compared by tests/vulkan/test_cuda_parity.cpp.
 // Usage: cuda_collisions_dump > collisions_cuda.txt
 #include <cstdio>
@@ -137,6 +137,46 @@ int main(int argc, char* argv[])
 			insert(gvl, "prob4", std::vector<PointSet>{ set });
 			std::printf("%s\n", prob_line("dup meaning=" + std::to_string(set.meaning) + " points=" + std::to_string(set.points.size()), values()).c_str());
 		}
+	}
+
+	// scenario 3: voxel map x voxel map collisions with an offset (fresh maps for every call; the marked map is read back)
+	for (const MapCall& c : map_calls())
+	{
+		for (const char* name : { "ma", "mb" })
+			gvl->delMap(name);
+		gvl->addMap(c.this_prob ? MT_PROBAB_VOXELMAP : MT_BITVECTOR_VOXELMAP, "ma");
+		gvl->addMap(c.other_prob ? MT_PROBAB_VOXELMAP : MT_BITVECTOR_VOXELMAP, "mb");
+		insert(gvl, "ma", map_sets(c.this_prob, 0));
+		insert(gvl, "mb", map_sets(c.other_prob, 1));
+		const Vector3i offset(c.offset[0], c.offset[1], c.offset[2]);
+		const size_t n = static_cast<size_t>(kDim) * kDim * kDim;
+		size_t count = 0;
+		uint64_t hash = 0;
+		if (!c.this_prob)
+		{
+			auto* a = gvl->getMap("ma")->as<voxelmap::BitVectorVoxelMap>();
+			count = c.other_prob ? a->collideWith(gvl->getMap("mb")->as<voxelmap::ProbVoxelMap>(), c.threshold, offset)
+			                     : a->collideWith(gvl->getMap("mb")->as<voxelmap::BitVectorVoxelMap>(), c.threshold, offset);
+			std::vector<BitVectorVoxel> host(n);
+			HANDLE_CUDA_ERROR(cudaMemcpy(host.data(), a->getDeviceDataPtr(), n * sizeof(BitVectorVoxel), cudaMemcpyDeviceToHost));
+			std::vector<std::vector<int>> voxels;
+			for (const BitVectorVoxel& v : host)
+				voxels.push_back(set_bits(v));
+			hash = hash_bit_map(voxels);
+		}
+		else
+		{
+			auto* a = gvl->getMap("ma")->as<voxelmap::ProbVoxelMap>();
+			count = c.other_prob ? a->collideWith(gvl->getMap("mb")->as<voxelmap::ProbVoxelMap>(), c.threshold, offset)
+			                     : a->collideWith(gvl->getMap("mb")->as<voxelmap::BitVectorVoxelMap>(), c.threshold, offset);
+			std::vector<ProbabilisticVoxel> host(n);
+			HANDLE_CUDA_ERROR(cudaMemcpy(host.data(), a->getDeviceDataPtr(), n * sizeof(ProbabilisticVoxel), cudaMemcpyDeviceToHost));
+			std::vector<int> values;
+			for (const ProbabilisticVoxel& v : host)
+				values.push_back(static_cast<int>(v.getOccupancy()));
+			hash = hash_occupancy(values);
+		}
+		std::printf("%s\n", map_line(c, count, hash).c_str());
 	}
 	gvl.reset();
 	return 0;

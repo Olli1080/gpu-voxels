@@ -1,6 +1,7 @@
 #include "ProbVoxelMap.h"
 
 #include <gpu_voxels/voxelmap/TemplateVoxelMap.hpp>
+#include <gpu_voxels/voxelmap/BitVoxelMap.h>
 #include <gpu_voxels/voxel/BitVoxel.h>
 
 namespace gpu_voxels {
@@ -39,8 +40,9 @@ namespace gpu_voxels {
         size_t ProbVoxelMap::collideWith(const BitVectorVoxelMap* map, float coll_threshold, const Vector3i& offset)
         {
             DefaultCollider collider(coll_threshold);
-            return collisionCheckWithCounterRelativeTransform((TemplateVoxelMap*)map, collider, offset); //does the locking
-
+            // Inside ProbVoxelMap the name TemplateVoxelMap is the injected class name of the base, i.e. TemplateVoxelMap<ProbabilisticVoxel>:
+            // the former C-style cast `(TemplateVoxelMap*)map` made the voxels of the bit map count as probabilistic voxels (K43).
+            return collisionCheckWithCounterRelativeTransform(static_cast<const TemplateVoxelMap<BitVectorVoxel>*>(map), collider, offset); //does the locking
         }
 
         size_t ProbVoxelMap::collideWith(const ProbVoxelMap* map, float coll_threshold, const Vector3i& offset)

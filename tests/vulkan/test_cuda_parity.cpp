@@ -220,6 +220,168 @@ TEST_F(VulkanTest, CudaParityProbMap)
 	EXPECT_EQ(different, 0u);
 }
 
+// Scenario 3: voxel map x voxel map collisions with an offset (CUDA BitVoxelMap / ProbVoxelMap::collideWith(map, threshold, offset); K41 made them
+// unusable until the kernel host functions were fixed). Vulkan has no map x map offset, so the offset lines are compared with a host model of the 3D rule
+// that CUDA now implements (the voxel at c of the other map meets the voxel at c + offset of this map, a voxel that leaves the map does not collide); the
+// lines with offset 0 are also run on the Vulkan classes. The model must reproduce the unfixed CUDA run (linear offset) with the linear rule as well.
+namespace
+{
+	struct MapMapResult
+	{
+		uint64_t count = 0;
+		uint64_t hash = 0;
+	};
+
+	/// CUDA rule of kernelCollideVoxelMapsDebug + DefaultCollider; `linear` = the original (offset added to the linear index, only the ends of the array checked).
+	MapMapResult map_map_model(const gvl_parity::MapCall& c, const MapView& self, const MapView& other, bool linear)
+	{
+		const int level = level_of(c.threshold);
+		const auto occupied = [&](const MapView& m, bool prob, Coord3ui at) { return prob ? m.occupancy_at(at) >= level : m.bit_occupied(at); };
+		const uint64_t voxels = self.dims.voxel_count();
+		std::vector<char> marked(voxels, 0);
+		MapMapResult r;
+		for (uint32_t z = 0; z < self.dims.z; ++z)
+			for (uint32_t y = 0; y < self.dims.y; ++y)
+				for (uint32_t x = 0; x < self.dims.x; ++x)
+				{
+					const int64_t linear_index = int64_t(other.index({ x, y, z })) + (int64_t(c.offset[2]) * self.dims.y + c.offset[1]) * self.dims.x + c.offset[0];
+					const int64_t tx = int64_t(x) + c.offset[0], ty = int64_t(y) + c.offset[1], tz = int64_t(z) + c.offset[2];
+					const bool inside = linear ? (linear_index >= 0 && linear_index < int64_t(voxels))
+					                           : (tx >= 0 && ty >= 0 && tz >= 0 && tx < self.dims.x && ty < self.dims.y && tz < self.dims.z);
+					if (!inside)
+						continue;
+					const Coord3ui target = linear ? Coord3ui{ uint32_t(linear_index % self.dims.x), uint32_t(linear_index / self.dims.x % self.dims.y), uint32_t(linear_index / self.dims.x / self.dims.y) }
+					                               : Coord3ui{ uint32_t(tx), uint32_t(ty), uint32_t(tz) };
+					if (occupied(self, c.this_prob, target) && occupied(other, c.other_prob, { x, y, z }))
+					{
+						++r.count;
+						marked[self.index(target)] = 1;
+					}
+				}
+		if (!c.this_prob)
+		{
+			std::vector<std::vector<int>> out(voxels);
+			for (uint64_t i = 0; i < voxels; ++i)
+			{
+				BitVector256 v{};
+				for (int w = 0; w < 8; ++w)
+					v[w] = self.bit_words[i * 8 + w];
+				if (marked[i])
+					v[0] |= 1u << 2; // eBVM_COLLISION
+				out[i] = set_bits(v);
+			}
+			r.hash = gvl_parity::hash_bit_map(out);
+		}
+		else
+		{
+			std::vector<int> out(voxels);
+			for (uint64_t i = 0; i < voxels; ++i)
+				out[i] = marked[i] ? std::min(127, self.occupancy[i] + 72) : self.occupancy[i]; // insert(eBVM_COLLISION): one occupied update (+72), clamped
+			r.hash = gvl_parity::hash_occupancy(out);
+		}
+		return r;
+	}
+
+	std::string map_map_text(const gvl_parity::MapCall& c, const MapMapResult& r) { return gvl_parity::map_line(c, r.count, r.hash); }
+
+	/// The same line from the Vulkan classes (offset 0 only).
+	std::string map_map_vulkan(GpuVoxels& gvl, const gvl_parity::MapCall& c)
+	{
+		MapMapResult r;
+		if (!c.this_prob)
+		{
+			BitVoxelMap& a = *gvl.get_map("ma")->as<BitVoxelMap>();
+			r.count = c.other_prob ? a.collide_with(*gvl.get_map("mb")->as<ProbVoxelMap>(), c.threshold) : a.collide_with(*gvl.get_map("mb")->as<BitVoxelMap>());
+			const auto words = a.download_words();
+			std::vector<std::vector<int>> voxels;
+			for (std::size_t i = 0; i < words.size() / 8; ++i)
+			{
+				BitVector256 v{};
+				for (int w = 0; w < 8; ++w)
+					v[w] = words[i * 8 + w];
+				voxels.push_back(set_bits(v));
+			}
+			r.hash = gvl_parity::hash_bit_map(voxels);
+		}
+		else
+		{
+			ProbVoxelMap& a = *gvl.get_map("ma")->as<ProbVoxelMap>();
+			r.count = c.other_prob ? a.collide_with(*gvl.get_map("mb")->as<ProbVoxelMap>(), c.threshold) : a.collide_with(*gvl.get_map("mb")->as<BitVoxelMap>(), c.threshold);
+			std::vector<int> values;
+			for (const int8_t v : a.download_occupancy())
+				values.push_back(v);
+			r.hash = gvl_parity::hash_occupancy(values);
+		}
+		return map_map_text(c, r);
+	}
+}
+
+TEST_F(VulkanTest, CudaParityMapMapCollisions)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "mapmap " });
+	// The recording of the original CUDA only has the lines of a bit map as the map the call is made on ("bit x ..."): the original kernel read
+	// outside the allocation for every voxel that the linear offset moved out of the array (garbage next to the allocation decides there), which a model
+	// cannot reproduce for probabilistic maps (zero bytes count as occupancy 0), and the original ProbVoxelMap::collideWith(BitVectorVoxelMap*) read the
+	// bit map as probabilistic voxels (K43).
+	const std::vector<std::string> unfixed = read_lines("collisions_cuda_unfixed_border.txt", { "mapmap " }); // CUDA as upstream: linear offset
+	ASSERT_EQ(golden.size(), gvl_parity::map_calls().size()) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+
+	GpuVoxels gvl(ctx());
+	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+	std::vector<std::string> model_3d, model_linear, golden_with_unfixed, vulkan_zero, golden_zero;
+	std::size_t index = 0;
+	for (const gvl_parity::MapCall& c : gvl_parity::map_calls())
+	{
+		for (const char* name : { "ma", "mb" })
+			gvl.del_map(name);
+		ASSERT_NE(gvl.add_map(c.this_prob ? MT_PROBAB_VOXELMAP : MT_BITVECTOR_VOXELMAP, "ma"), nullptr);
+		ASSERT_NE(gvl.add_map(c.other_prob ? MT_PROBAB_VOXELMAP : MT_BITVECTOR_VOXELMAP, "mb"), nullptr);
+		insert(gvl, "ma", gvl_parity::map_sets(c.this_prob, 0));
+		insert(gvl, "mb", gvl_parity::map_sets(c.other_prob, 1));
+		const GpuVoxelsMapSharedPtr a = gvl.get_map("ma"), b = gvl.get_map("mb");
+		const MapView self = c.this_prob ? view_of(*a->as<ProbVoxelMap>()) : view_of(*a->as<BitVoxelMap>());
+		const MapView other = c.other_prob ? view_of(*b->as<ProbVoxelMap>()) : view_of(*b->as<BitVoxelMap>());
+		model_3d.push_back(map_map_text(c, map_map_model(c, self, other, false)));
+		if (!c.this_prob)
+		{
+			model_linear.push_back(map_map_text(c, map_map_model(c, self, other, true)));
+			golden_with_unfixed.push_back(golden[index]);
+		}
+		if (c.offset == std::array<int, 3>{ 0, 0, 0 })
+		{
+			vulkan_zero.push_back(map_map_vulkan(gvl, c));
+			golden_zero.push_back(golden[index]);
+		}
+		++index;
+	}
+
+	std::size_t vs_model = 0, vs_unfixed = 0, vs_vulkan = 0, border_lines = 0, nonzero = 0;
+	for (std::size_t i = 0; i < golden.size(); ++i)
+	{
+		if (golden[i] != model_3d[i] && vs_model++ < 20)
+			ADD_FAILURE() << "CUDA (3D offset) differs from the model:\nCUDA:  " << golden[i] << "\nmodel: " << model_3d[i];
+		nonzero += golden[i].find(" count=0 ") == std::string::npos ? 1 : 0;
+	}
+	ASSERT_EQ(unfixed.size(), model_linear.size());
+	for (std::size_t i = 0; i < unfixed.size(); ++i)
+	{
+		if (unfixed[i] != model_linear[i] && vs_unfixed++ < 20)
+			ADD_FAILURE() << "CUDA before the border fix differs from the linear offset model:\nCUDA:  " << unfixed[i] << "\nmodel: " << model_linear[i];
+		border_lines += unfixed[i] != golden_with_unfixed[i] ? 1 : 0;
+	}
+	ASSERT_EQ(vulkan_zero.size(), golden_zero.size());
+	for (std::size_t i = 0; i < golden_zero.size(); ++i)
+		if (vulkan_zero[i] != golden_zero[i] && vs_vulkan++ < 20)
+			ADD_FAILURE() << "Vulkan differs from CUDA:\nCUDA:   " << golden_zero[i] << "\nVulkan: " << vulkan_zero[i];
+	std::cout << "[parity] " << golden.size() << " map x map lines (" << vulkan_zero.size() << " also on the Vulkan classes); the border fix of CUDA changed "
+	          << border_lines << ", " << nonzero << " lines have collisions\n";
+	EXPECT_EQ(vs_model, 0u);
+	EXPECT_EQ(vs_unfixed, 0u);
+	EXPECT_EQ(vs_vulkan, 0u);
+	EXPECT_GT(border_lines, 40u) << "the scenario must exercise the border";
+	EXPECT_GT(nonzero, 100u) << "the scenario must produce collisions";
+}
+
 // A voxel that is hit twice (or four times) in one insert_point_cloud call: Vulkan applies every update (the sum, clamped), CUDA applies exactly one
 // (the voxel update of the kernel is not an atomic read-modify-write, the other updates of the call are lost). Documented difference, K42: the CUDA
 // golden lines show 72 for two +72 updates and -10 for four -10 updates, Vulkan 127 and -40.

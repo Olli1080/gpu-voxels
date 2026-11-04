@@ -450,7 +450,7 @@ namespace gpu_voxels
 		template<class Voxel, class OtherVoxel, class Collider>
 		__global__
 		void kernelCollideVoxelMapsDebug(Voxel* voxelmap, uint32_t voxelmap_size, const OtherVoxel* other_map,
-			Collider collider, uint16_t* results);
+			Collider collider, uint16_t* results, Vector3ui dimensions, Vector3i offset);
 
 		/*!
 		 * Inserts pointcloud with global coordinates.

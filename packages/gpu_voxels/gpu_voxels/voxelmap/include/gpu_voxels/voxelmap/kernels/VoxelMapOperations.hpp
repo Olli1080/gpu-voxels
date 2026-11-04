@@ -42,9 +42,13 @@
 namespace gpu_voxels {
 	namespace voxelmap {
 
+		// Note for all kernels in this file: by-value parameters must carry the same top-level const as in the declaration in VoxelMapOperations.h.
+		// nvcc builds the template __wrapper__device_stub_<kernel> once from the declaration and once from the definition; if they differ in a
+		// top-level const, these are two different templates and the host function of the kernel calls the placeholder one
+		// (cudaLaunchKernel(NULL, ...), "invalid device function") instead of the launch code that nvcc supplies (K41).
 		template<class Voxel>
 		__global__
-		void kernelClearVoxelMap(Voxel* voxelmap, const uint32_t voxelmap_size)
+		void kernelClearVoxelMap(Voxel* voxelmap, uint32_t voxelmap_size)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size; i += gridDim.x * blockDim.x)
 				voxelmap[i] = Voxel();
@@ -52,7 +56,7 @@ namespace gpu_voxels {
 
 		template<std::size_t bit_length>
 		__global__
-		void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, const uint32_t voxelmap_size, const uint32_t bit_index)
+		void kernelClearVoxelMap(BitVoxel<bit_length>* voxelmap, uint32_t voxelmap_size, uint32_t bit_index)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size; i += gridDim.x * blockDim.x)
 			{
@@ -85,7 +89,7 @@ namespace gpu_voxels {
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
 		__global__
-		void kernelCollideVoxelMaps(Voxel* voxelmap, const uint32_t voxelmap_size, OtherVoxel* other_map,
+		void kernelCollideVoxelMaps(Voxel* voxelmap, uint32_t voxelmap_size, OtherVoxel* other_map,
 			Collider collider, bool* results)
 		{
 			__shared__ bool cache[cMAX_THREADS_PER_BLOCK];
@@ -133,8 +137,8 @@ namespace gpu_voxels {
 		 */
 		template<class Voxel, class OtherVoxel, class Collider>
 		__global__
-		void kernelCollideVoxelMapsDebug(Voxel* voxelmap, const uint32_t voxelmap_size, const OtherVoxel* other_map,
-			Collider collider, uint16_t* results)
+		void kernelCollideVoxelMapsDebug(Voxel* voxelmap, uint32_t voxelmap_size, const OtherVoxel* other_map,
+			Collider collider, uint16_t* results, Vector3ui dimensions, Vector3i offset)
 		{
 			//#define DISABLE_STORING_OF_COLLISIONS
 			__shared__ uint16_t cache[cMAX_THREADS_PER_BLOCK];
@@ -144,16 +148,22 @@ namespace gpu_voxels {
 
 			while (i < voxelmap_size)
 			{
-				// todo / note: at the moment collision check is only used for DYNAMIC and SWEPT VOLUME meaning, static is used for debugging
-				const bool collision = collider.collide(voxelmap[i], other_map[i]);
-				if (collision) // store collision info
+				// The voxel i of the other map meets the voxel of this map that lies `offset` further. The offset used to be added to the linear
+				// index of this map, which wrapped across rows and slices and read (and marked) voxels outside the allocation; now it is applied per axis.
+				if (isInsideAfterOffset(i, dimensions, offset))
 				{
+					const uint32_t this_index = i + getVoxelIndexSigned(dimensions, offset);
+					// todo / note: at the moment collision check is only used for DYNAMIC and SWEPT VOLUME meaning, static is used for debugging
+					const bool collision = collider.collide(voxelmap[this_index], other_map[i]);
+					if (collision) // store collision info
+					{
 #ifndef DISABLE_STORING_OF_COLLISIONS
-					//      other_map[i].occupancy = 255;
-					//      other_map[i].insert(eBVM_COLLISION); // sets m_occupancy = MAX_PROBABILITY for prob voxels
-					voxelmap[i].insert(eBVM_COLLISION); // sets m_occupancy = MAX_PROBABILITY for prob voxels
+						//      other_map[i].occupancy = 255;
+						//      other_map[i].insert(eBVM_COLLISION); // sets m_occupancy = MAX_PROBABILITY for prob voxels
+						voxelmap[this_index].insert(eBVM_COLLISION); // sets m_occupancy = MAX_PROBABILITY for prob voxels
 #endif
-					cache[cache_index] += 1;
+						cache[cache_index] += 1;
+					}
 				}
 				i += blockDim.x * gridDim.x;
 			}
@@ -188,9 +198,9 @@ namespace gpu_voxels {
 
 		template<std::size_t length, class OtherVoxel, class Collider>
 		__global__
-		void kernelCollideVoxelMapsBitvector(BitVoxel<length>* voxelmap, const uint32_t voxelmap_size,
+		void kernelCollideVoxelMapsBitvector(BitVoxel<length>* voxelmap, uint32_t voxelmap_size,
 			const OtherVoxel* other_map, Collider collider,
-			BitVector<length>* results, uint16_t* num_collisions, const uint16_t sv_offset)
+			BitVector<length>* results, uint16_t* num_collisions, uint16_t sv_offset)
 		{
 			extern __shared__ BitVector<length> cache[]; //[cMAX_THREADS_PER_BLOCK];
 			__shared__ uint16_t cache_num[cMAX_THREADS_PER_BLOCK];
@@ -421,7 +431,7 @@ namespace gpu_voxels {
 		template<class Voxel>
 		__global__
 		void kernelInsertMetaPointCloud(Voxel* voxelmap, const MetaPointCloudStruct* meta_point_cloud,
-			BitVoxelMeaning* voxel_meanings, const Vector3ui map_dim,
+			BitVoxelMeaning* voxel_meanings, Vector3ui map_dim,
 			float voxel_side_length,
 			bool* points_outside_map)
 		{
@@ -539,10 +549,10 @@ namespace gpu_voxels {
 		 */
 		template<std::size_t length, class RayCasting>
 		__global__
-			void kernelInsertSensorData(ProbabilisticVoxel* voxelmap, const uint32_t voxelmap_size,
-				const Vector3ui dimensions, const float voxel_side_length, const Vector3f sensor_pose,
-				const Vector3f* sensor_data, const size_t num_points, const bool cut_real_robot,
-				BitVoxel<length>* robotmap, const uint32_t bit_index, RayCasting rayCaster)
+			void kernelInsertSensorData(ProbabilisticVoxel* voxelmap, uint32_t voxelmap_size,
+				Vector3ui dimensions, float voxel_side_length, Vector3f sensor_pose,
+				const Vector3f* sensor_data, size_t num_points, bool cut_real_robot,
+				BitVoxel<length>* robotmap, uint32_t bit_index, RayCasting rayCaster)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size && i < num_points;
 				i += gridDim.x * blockDim.x)
@@ -588,7 +598,7 @@ namespace gpu_voxels {
 		template<std::size_t length>
 		__global__
 			void kernelShiftBitVector(BitVoxel<length>* voxelmap,
-				const uint32_t voxelmap_size, uint8_t shift_size)
+				uint32_t voxelmap_size, uint8_t shift_size)
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelmap_size; i += gridDim.x * blockDim.x)
 			{
