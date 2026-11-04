@@ -26,7 +26,7 @@
 #include <vector>
 
 #include <gpu_voxels/vulkan/GpuVoxels.h>
-#include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
 
 namespace gpu_voxels::vulkan
 {

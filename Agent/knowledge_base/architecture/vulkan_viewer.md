@@ -1,21 +1,22 @@
 # Vulkan viewer: in-process, no second process, no Boost.Interprocess
 
 - **Date:** 2026-11-04. **Request** (user): "vulkan viewer ohne boost ipc". Q6 ("viewer later") is lifted for this part; examples, ROS, Kinect and the URDF robot stay out of scope.
+- **Libraries (split 2026-11-05):** `gpu_voxels_vulkan` (maps, lists, octree, façade, no viewer code) <- `gpu_voxels_vulkan_view` (the viewer core, headers `gpu_voxels/vulkan_view/`, option `GVL_VULKAN_VIEW`, no window system, works headless) <- `gpu_voxels_vulkan_viewer` (window with GLFW) <- the program `gvl_viewer` (option `GVL_VULKAN_VIEWER`, which needs `GVL_VULKAN_VIEW`). The core library holds only generic hooks the viewer uses: `Octree::extract_to_device`, the graphics options of the `Context` and the `visualize_*` hooks of the `GpuVoxels`; tinyxml2 and the viewer shaders belong to `gpu_voxels_vulkan_view`. Tests: `test_vulkan_view` (viewer core, 44 cases), `test_vulkan_viewer_window` (window), `test_vulkan` has no viewer test any more.
 - **Status:** first version, *Tested* (not Parity: there is nothing to compare, the CUDA viewer is a separate OpenGL program that was never built here). Maps, bit lists, probabilistic maps and octrees (deterministic and probabilistic, 2026-11-04, user: "octree") can be shown, and so can primitive arrays (spheres and cuboids, 2026-11-04, user: "weiter mit features") robots (the points of the links in their current pose) and, as named layers of a façade, all of them together (`ViewerScene`).
 - **Why in-process:** the CUDA viewer is a second process (`gpu_visualization`, OpenGL) that opens `cudaIpcMemHandle_t` handles passed through Boost.Interprocess shared memory ([visualization_and_ipc.md](visualization_and_ipc.md)). Vulkan has no such handle that the old design could use, and a copy of the voxels through shared memory is slow. Here the viewer lives in the program: it reads the **device buffers of the maps of the same `Context`** directly, so nothing is copied to the host and nothing is shared between processes.
 
 ## Parts
 | Part | Where | What |
 |---|---|---|
-| `CubeExtractor`, `CubeBuffer`, `BitPalette`, `ProbDisplay` | `vulkan/Viewer.h`, `src/Viewer.cpp`, `shaders/viewer_extract_*.comp`, `viewer_finalize.comp` | compute kernels turn a `BitVoxelMap`, `ProbVoxelMap` or `BitVoxelList` into a list of cubes on the GPU |
+| `CubeExtractor`, `CubeBuffer`, `BitPalette`, `ProbDisplay` | `vulkan_view/Viewer.h`, `src/Viewer.cpp`, `shaders/viewer_extract_*.comp`, `viewer_finalize.comp` | compute kernels turn a `BitVoxelMap`, `ProbVoxelMap` or `BitVoxelList` into a list of cubes on the GPU |
 | `VoxelRenderer` | same | graphics pipeline (dynamic rendering, no render pass objects), one indirect draw per `CubeBuffer`; `shaders/viewer_cube.vert/.frag` |
 | `OffscreenTarget` | same | colour + depth image with read back of the pixels: tests, screenshots, headless use |
 | `CubeExtractor::extract(Octree, OctreeDisplay)` | `vulkan/Viewer.h`, `shaders/viewer_extract_octree.comp`, `Octree::extract_to_device` | octree nodes -> cubes without a host copy, see "Octree" below |
 | `CubeBuffer::assign`, `CubeKind`, `extract(PrimitiveArray)` | `vulkan/Viewer.h`, `shaders/viewer_sphere.frag` | primitives (host data) -> cubes or spheres, see "Primitives" below |
-| `ViewerScene` | `vulkan/ViewerScene.h`, `src/ViewerScene.cpp` | layers of one `GpuVoxels`, visualization hooks, see "Scene" below |
-| `ViewerConfig`, `show_layers` | `vulkan/ViewerConfig.h`, `src/ViewerConfig.cpp` (tinyxml2), `vulkan_viewer/viewer_style_example.xml` | XML style file of the layers and the window, see "Style file" below |
-| `OrbitCamera`, `OrbitController` | `vulkan/OrbitCamera.h` | camera around a target (z up), mouse rotate / pan / zoom as pure maths |
-| `encode_png`, `write_png` | `vulkan/ImageFile.h` | PNG writer (stored deflate blocks, no dependency) for screenshots |
+| `ViewerScene` | `vulkan_view/ViewerScene.h`, `src/ViewerScene.cpp` | layers of one `GpuVoxels`, visualization hooks, see "Scene" below |
+| `ViewerConfig`, `show_layers` | `vulkan_view/ViewerConfig.h`, `src/ViewerConfig.cpp` (tinyxml2), `vulkan_viewer/viewer_style_example.xml` | XML style file of the layers and the window, see "Style file" below |
+| `OrbitCamera`, `OrbitController` | `vulkan_view/OrbitCamera.h` | camera around a target (z up), mouse rotate / pan / zoom as pure maths |
+| `encode_png`, `write_png` | `vulkan_view/ImageFile.h` | PNG writer (stored deflate blocks, no dependency) for screenshots |
 | `ViewerWindow` | `vulkan_viewer/` (library `gpu_voxels_vulkan_viewer`, needs GLFW) | window, surface, swapchain, depth buffers, frame loop, input |
 | `gvl_viewer` | `vulkan_viewer/src/viewer_main.cpp` | program: demo scene or a point cloud file, window or `--png` |
 
@@ -46,7 +47,7 @@
 - Mouse: left drag rotates, right / middle drag pans, wheel zooms. Keys: S shading, R / Home home camera (`set_home_camera()`), ESC closes, arrows rotate (with shift they pan), Page up / Page down / + / - zoom (these also while held down); other keys go to `set_key_handler`. `set_title` changes the window title (`gvl_viewer --facade` lists its layers there). `handle_key(key, mods, repeat)` is what the GLFW callback calls and what the tests press. `gvl_viewer --points file.xyz|.pcd|.binvox [--side m] [--prob] [--png out.png --size WxH] [--frames N] [--no-vsync] [--validation]`.
 
 ## Build
-- CMake option `GVL_VULKAN_VIEWER` (default ON with `GVL_BACKEND_VULKAN`): library `gpu_voxels_vulkan_viewer`, program `gvl_viewer`, test `test_vulkan_viewer_window`; vcpkg feature `vulkan-viewer` = `glfw3`. The viewer **core** (`Viewer.h`, `OrbitCamera.h`, `ImageFile.h`) is part of `gpu_voxels_vulkan` and needs no window system.
+- CMake options (default ON with `GVL_BACKEND_VULKAN`): `GVL_VULKAN_VIEW` = library `gpu_voxels_vulkan_view` and test `test_vulkan_view`; `GVL_VULKAN_VIEWER` = library `gpu_voxels_vulkan_viewer`, program `gvl_viewer` and test `test_vulkan_viewer_window` (CMake stops if it is on while `GVL_VULKAN_VIEW` is off); vcpkg feature `vulkan-viewer` = `glfw3`. The viewer **core** (`Viewer.h`, `ViewerScene.h`, `ViewerConfig.h`, `OrbitCamera.h`, `ImageFile.h`) is `gpu_voxels_vulkan_view` and needs no window system.
 - **`boost-interprocess` is no longer a base dependency** of `vcpkg.json` (nothing that is built used it); it moved to the legacy `viewer` feature together with the old OpenGL viewer.
 
 ## Verification

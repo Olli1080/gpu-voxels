@@ -1,5 +1,5 @@
 # Window part of the in-process Vulkan viewer (GLFW) and the gvl_viewer program. The viewer core (extraction of cubes, renderer, offscreen target, orbit
-# camera) is part of gpu_voxels_vulkan and needs no window system. No separate viewer process, no Boost.Interprocess.
+# camera, scene, style file) is gpu_voxels_vulkan_view and needs no window system. No separate viewer process, no Boost.Interprocess.
 project(gpu_voxels_vulkan_viewer
   LANGUAGES CXX
 )
@@ -23,7 +23,7 @@ target_sources(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-    gpu_voxels_vulkan
+    gpu_voxels_vulkan_view
   PRIVATE
     glfw
     GPUOpen::VulkanMemoryAllocator

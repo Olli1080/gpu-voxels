@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-#include <gpu_voxels/vulkan/ViewerScene.h>
+#include <gpu_voxels/vulkan_view/ViewerScene.h>
 
 namespace gpu_voxels::vulkan
 {

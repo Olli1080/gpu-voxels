@@ -36,8 +36,8 @@
 #include <string>
 #include <vector>
 
-#include <gpu_voxels/vulkan/OrbitCamera.h>
-#include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan_view/OrbitCamera.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
 
 struct GLFWwindow;
 

@@ -12,7 +12,7 @@
 
 #include <array>
 
-#include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
 
 namespace gpu_voxels::vulkan
 {

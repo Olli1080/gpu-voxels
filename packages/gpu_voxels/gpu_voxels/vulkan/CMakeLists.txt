@@ -29,11 +29,6 @@ target_sources(${PROJECT_NAME}
     src/ProbVoxelMap.cpp
     src/PrimitiveArray.cpp
     src/Primitives.cpp
-    src/ImageFile.cpp
-    src/OrbitCamera.cpp
-    src/Viewer.cpp
-    src/ViewerConfig.cpp
-    src/ViewerScene.cpp
     src/vma_impl.cpp
   PUBLIC FILE_SET HEADERS
   BASE_DIRS ${INCLUDE_DIR}
@@ -57,16 +52,9 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h
-    ${INCLUDE_DIR}/ImageFile.h
-    ${INCLUDE_DIR}/OrbitCamera.h
-    ${INCLUDE_DIR}/Viewer.h
-    ${INCLUDE_DIR}/ViewerConfig.h
-    ${INCLUDE_DIR}/ViewerScene.h
     ${INCLUDE_DIR}/vulkan_types.h
     ${INCLUDE_DIR}/vulkan_common.h
 )
-
-find_package(tinyxml2 CONFIG REQUIRED)
 
 # Vulkan::Vulkan: loader + headers (vulkan.hpp). VMA is an implementation detail of the .cpp files.
 target_link_libraries(${PROJECT_NAME}
@@ -76,7 +64,6 @@ target_link_libraries(${PROJECT_NAME}
     gpu_voxels_logging
   PRIVATE
     GPUOpen::VulkanMemoryAllocator
-    tinyxml2::tinyxml2
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
@@ -185,16 +172,7 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/radix_scatter.comp
     shaders/radix_scatter64.comp
     shaders/scan_add.comp
-    shaders/scan_blocks.comp
-    shaders/viewer_cube.frag
-    shaders/viewer_cube.vert
-    shaders/viewer_extract_bit.comp
-    shaders/viewer_extract_list.comp
-    shaders/viewer_extract_octree.comp
-    shaders/viewer_extract_points.comp
-    shaders/viewer_extract_prob.comp
-    shaders/viewer_finalize.comp
-    shaders/viewer_sphere.frag)
+    shaders/scan_blocks.comp)
 
 install(
   TARGETS

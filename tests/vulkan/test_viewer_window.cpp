@@ -12,8 +12,8 @@
 #include <string>
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
-#include <gpu_voxels/vulkan/ImageFile.h>
-#include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan_view/ImageFile.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
 #include <gpu_voxels/vulkan_viewer/ViewerWindow.h>
 
 using namespace gpu_voxels::vulkan;

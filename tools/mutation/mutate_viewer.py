@@ -6,20 +6,21 @@
 import subprocess, os, sys
 root = os.environ.get('GVL_ROOT', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))).replace(chr(92), '/') + '/'
 VK = root + 'packages/gpu_voxels/gpu_voxels/vulkan/'
-VW = VK + 'src/Viewer.cpp'
-VERT = VK + 'shaders/viewer_cube.vert'
-FRAG = VK + 'shaders/viewer_cube.frag'
-EB = VK + 'shaders/viewer_extract_bit.comp'
-EP = VK + 'shaders/viewer_extract_prob.comp'
-EL = VK + 'shaders/viewer_extract_list.comp'
-EO = VK + 'shaders/viewer_extract_octree.comp'
-CMN = VK + 'shaders/viewer_cube_common.glsl'
-FIN = VK + 'shaders/viewer_finalize.comp'
-SPF = VK + 'shaders/viewer_sphere.frag'
-SCN = VK + 'src/ViewerScene.cpp'
+VV = root + 'packages/gpu_voxels/gpu_voxels/vulkan_view/'
+VW = VV + 'src/Viewer.cpp'
+VERT = VV + 'shaders/viewer_cube.vert'
+FRAG = VV + 'shaders/viewer_cube.frag'
+EB = VV + 'shaders/viewer_extract_bit.comp'
+EP = VV + 'shaders/viewer_extract_prob.comp'
+EL = VV + 'shaders/viewer_extract_list.comp'
+EO = VV + 'shaders/viewer_extract_octree.comp'
+CMN = VV + 'shaders/viewer_cube_common.glsl'
+FIN = VV + 'shaders/viewer_finalize.comp'
+SPF = VV + 'shaders/viewer_sphere.frag'
+SCN = VV + 'src/ViewerScene.cpp'
 GV = VK + 'src/GpuVoxels.cpp'
-EPT = VK + 'shaders/viewer_extract_points.comp'
-VCF = VK + 'src/ViewerConfig.cpp'
+EPT = VV + 'shaders/viewer_extract_points.comp'
+VCF = VV + 'src/ViewerConfig.cpp'
 VWIN = root + 'packages/gpu_voxels/gpu_voxels/vulkan_viewer/src/ViewerWindow.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
@@ -146,7 +147,7 @@ try:
             continue
         open(path, 'w', encoding='utf-8', newline='').write(text.replace(old, new).replace('\n', nl))
         window = name.startswith('W')
-        target = 'test_vulkan_viewer_window' if window else 'test_vulkan'
+        target = 'test_vulkan_viewer_window' if window else 'test_vulkan_view'
         b = subprocess.run(['cmake', '--build', root + 'build/verify-vk', '--config', 'Debug', '--target', target, '--parallel'],
                            env=env, capture_output=True, text=True)
         if b.returncode != 0:

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- Style file for `gvl_viewer --facade --config viewer_style_example.xml`. The format is described in ViewerConfig.h (gpu_voxels/vulkan/ViewerConfig.h):
+<!-- Style file for `gvl_viewer --facade --config viewer_style_example.xml`. The format is described in ViewerConfig.h (gpu_voxels/vulkan_view/ViewerConfig.h):
      colours are #rrggbb or #rrggbbaa (alpha 0 or "none" hides), unknown elements and attributes are errors. The layers are those of the demo. -->
 <viewer>
   <window background="#0b1220" shaded="true"/>

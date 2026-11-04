@@ -5,7 +5,7 @@
 
 #include <gpu_voxels/vulkan_viewer/ViewerWindow.h>
 
-#include <gpu_voxels/vulkan/ImageFile.h>
+#include <gpu_voxels/vulkan_view/ImageFile.h>
 
 #include <algorithm>
 #include <array>

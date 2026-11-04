@@ -19,14 +19,14 @@
 #include <vector>
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
-#include <gpu_voxels/vulkan/ImageFile.h>
+#include <gpu_voxels/vulkan_view/ImageFile.h>
 #include <gpu_voxels/vulkan/Octree.h>
-#include <gpu_voxels/vulkan/OrbitCamera.h>
+#include <gpu_voxels/vulkan_view/OrbitCamera.h>
 #include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
-#include <gpu_voxels/vulkan/Viewer.h>
-#include <gpu_voxels/vulkan/ViewerConfig.h>
-#include <gpu_voxels/vulkan/ViewerScene.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
+#include <gpu_voxels/vulkan_view/ViewerConfig.h>
+#include <gpu_voxels/vulkan_view/ViewerScene.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
 #include "../reference/octree_reference.h"

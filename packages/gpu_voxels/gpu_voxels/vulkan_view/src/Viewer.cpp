@@ -3,7 +3,7 @@
 // Licensed under the CDDL (see LICENSE.txt in the top directory).
 // -- END LICENSE BLOCK ------------------------------------------------
 
-#include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan_view/Viewer.h>
 
 #include <algorithm>
 #include <cmath>
