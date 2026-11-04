@@ -1,0 +1,49 @@
+#version 450
+// Cubes of the points of a MetaPointCloud (robot links in world coordinates): one cube per finite point, coloured by the sub cloud the point belongs to
+// (alpha 0 hides a sub cloud). snap = 1: the cube of the voxel that contains the point (what the robot would occupy in a map of this side length), otherwise
+// a cube of `edge` metres centred on the point.
+#extension GL_GOOGLE_include_directive : enable
+#include "viewer_cube_common.glsl"
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Points { float points[]; };      // packed x, y, z
+layout(std430, set = 0, binding = 1) readonly buffer Offsets { uint offsets[]; };     // num_clouds + 1 ascending offsets (in points)
+layout(std430, set = 0, binding = 2) readonly buffer Colours { uint colours[]; };     // one per sub cloud
+layout(std430, set = 0, binding = 3) writeonly buffer Instances { CubeInstance instances[]; };
+layout(std430, set = 0, binding = 4) buffer Args { uint args[]; };
+layout(push_constant) uniform Push { uint count; uint capacity; float side; uint num_clouds; uint snap; float edge; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        const vec3 p = vec3(points[3u * i], points[3u * i + 1u], points[3u * i + 2u]);
+        if (any(isnan(p)) || any(isinf(p)))
+            continue;
+        // the sub cloud: the last one that starts at or before the point (empty sub clouds share their start with the next one)
+        uint lo = 0u;
+        uint hi = pc.num_clouds;
+        while (lo + 1u < hi)
+        {
+            const uint mid = (lo + hi) / 2u;
+            if (offsets[mid] <= i)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        const uint colour = colours[lo];
+        if ((colour >> 24u) == 0u)
+            continue;
+        const uint slot = atomicAdd(args[ARG_FOUND], 1u);
+        if (slot < pc.capacity)
+        {
+            const bool snap = pc.snap != 0u;
+            const vec3 corner = snap ? floor(p / pc.side) * pc.side : p - vec3(0.5 * pc.edge);
+            instances[slot].pos_size = vec4(corner, snap ? pc.side : pc.edge);
+            instances[slot].rgba = colour;
+            instances[slot].pad0 = 0u;
+            instances[slot].pad1 = 0u;
+            instances[slot].pad2 = 0u;
+        }
+    }
+}

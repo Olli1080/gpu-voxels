@@ -4,7 +4,7 @@
 // -- END LICENSE BLOCK ------------------------------------------------
 
 /*!\file
- * \brief  The viewer side of the façade: named layers (maps, bit lists, octrees, primitive arrays of one GpuVoxels) with a CubeBuffer each, shown or hidden
+ * \brief  The viewer side of the façade: named layers (maps, bit lists, octrees, primitive arrays and robots of one GpuVoxels) with a CubeBuffer each, shown or hidden
  *         one by one. It is what a window draws (ViewerWindow::draw(scene.buffers())) or an OffscreenTarget renders. Registers itself as the visualization
  *         hook of the GpuVoxels, so code written for the CUDA library (`gvl->visualizeMap("name")`) shows the map without further changes.
  *
@@ -53,17 +53,25 @@ namespace gpu_voxels::vulkan
 		bool show_map(const std::string& map_name, const MapStyle& style = {});
 		/// Show the named primitive array in one colour (pack_colour): spheres as spheres, cuboids as cubes. \return false for an unknown name.
 		bool show_primitives(const std::string& array_name, uint32_t colour = pack_colour(90, 150, 255));
-		/// Remove the layer of a map / primitive array. \return false if there was none.
+		/// Show the named robot: the points of its links in the current pose (KinematicChain::transformed_clouds), one colour per link with a cloud
+		/// (RobotDisplay). The pose is read at every extraction: after set_robot_configuration call refresh() or refresh_layer(). CUDA has no
+		/// visualize call for robots (it shows them as voxels in a map after insert_robot_into_map); this layer draws them directly. \return false for an unknown name.
+		bool show_robot(const std::string& robot_name, const RobotDisplay& style = {});
+		/// Remove the layer of a map / primitive array / robot. \return false if there was none.
 		bool remove_map(const std::string& map_name);
 		bool remove_primitives(const std::string& array_name);
+		bool remove_robot(const std::string& robot_name);
 
 		/// Extract every layer again (the maps changed). Hidden layers are skipped (they are extracted when they are shown again).
 		void refresh();
+		/// Extract one layer again (index as in layers()), also when it is hidden. \return false for an index that does not exist.
+		bool refresh_layer(std::size_t index);
 
+		enum class LayerKind { Map, Primitives, Robot };
 		struct LayerInfo
 		{
 			std::string name;
-			bool primitives = false;   ///< a primitive array (names of maps and arrays are separate)
+			LayerKind kind = LayerKind::Map;   ///< names of maps, primitive arrays and robots are separate
 			bool visible = true;
 			uint32_t cubes = 0;        ///< cubes stored at the last extraction
 			uint32_t dropped = 0;      ///< cubes that did not fit into the layer
@@ -74,6 +82,8 @@ namespace gpu_voxels::vulkan
 		bool set_visible(std::size_t index, bool visible);
 		bool toggle_visible(std::size_t index);
 
+		/// The cubes of a layer (index as in layers()) also when it is hidden; null for an index that does not exist.
+		[[nodiscard]] const CubeBuffer* layer_buffer(std::size_t index) const;
 		/// The buffers of the visible layers in drawing order (valid until a layer is added or removed).
 		[[nodiscard]] std::vector<const CubeBuffer*> buffers() const;
 		/// The volume of the GpuVoxels in metres: from the origin to dimensions * voxel side length (for the first camera position).
@@ -82,7 +92,7 @@ namespace gpu_voxels::vulkan
 	private:
 		struct Layer;
 		void extract(Layer& layer);
-		Layer* find(const std::string& name, bool primitives);
+		Layer* find(const std::string& name, LayerKind kind);
 		bool hook_map(const std::string& name, bool force_repaint);
 		bool hook_primitives(const std::string& name, bool force_repaint);
 

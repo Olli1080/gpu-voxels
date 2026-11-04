@@ -1,0 +1,12 @@
+V46 points kernel: a point on the start of a sub cloud belongs to the previous one : KILLED
+V47 points kernel: points that are not finite are drawn : KILLED
+V48 points kernel: hidden sub clouds are drawn : KILLED
+V49 points kernel: centred cubes are snapped : KILLED
+V50 points kernel: the voxel is truncated, not floored : KILLED
+V51 robot host: the colours are not used round robin : KILLED
+V52 robot host: every sub cloud gets the first hue : KILLED
+V53 robot scene: the cubes use a side length of 1 : KILLED
+V54 robot scene: refresh_layer skips hidden layers : KILLED
+V55 robot host: the point size is not checked : KILLED
+V56 robot host: the side length is not checked : KILLED
+restored

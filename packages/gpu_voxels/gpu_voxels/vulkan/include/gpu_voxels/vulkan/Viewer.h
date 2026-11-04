@@ -34,6 +34,7 @@ namespace gpu_voxels::vulkan
 {
 	class BitVoxelList;
 	class BitVoxelMap;
+	class MetaPointCloud;
 	class Octree;
 	class PrimitiveArray;
 	class ProbVoxelMap;
@@ -82,6 +83,17 @@ namespace gpu_voxels::vulkan
 
 	/// How the renderer draws the instances of a CubeBuffer: as cubes, or as the spheres inscribed in them (ray cast per pixel, correct depth).
 	enum class CubeKind : uint32_t { Cube = 0, Sphere = 1 };
+
+	/// How the points of a MetaPointCloud (the links of a robot) are drawn.
+	struct RobotDisplay
+	{
+		/// Colour (pack_colour) of every sub cloud, used round robin; alpha 0 hides a sub cloud. Empty = a distinct hue per sub cloud.
+		std::vector<uint32_t> colours;
+		/// true: every point becomes the cube of the voxel that contains it (the voxels the robot occupies in a map of that voxel size);
+		/// false: a cube of `point_size` metres centred on the point.
+		bool snap_to_voxels = true;
+		float point_size = 0.02f;
+	};
 
 	/// A list of cubes on the GPU (instance records of 32 bytes) and the arguments of the indirect draw that draws them.
 	class CubeBuffer
@@ -141,6 +153,10 @@ namespace gpu_voxels::vulkan
 		/// Spheres / cuboids of a primitive array (host data, written with CubeBuffer::assign): the cube of a primitive is [centre - radius, centre + radius] * side,
 		/// the buffer gets the kind Sphere for spheres and Cube for cuboids. `colour` is a pack_colour value.
 		void extract(const PrimitiveArray& array, uint32_t colour, CubeBuffer& out);
+		/// Points of a MetaPointCloud (robot links, see KinematicChain::transformed_clouds) in world coordinates; points that are not finite are skipped.
+		/// \param voxel_side_length edge of a voxel in metres (> 0, finite) for snap_to_voxels
+		/// \throws VulkanError for a side length or point size that is not positive and finite
+		void extract(const MetaPointCloud& clouds, float voxel_side_length, const RobotDisplay& display, CubeBuffer& out);
 
 	private:
 		struct Kernels;

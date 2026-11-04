@@ -12,10 +12,12 @@ namespace gpu_voxels::vulkan
 	struct ViewerScene::Layer
 	{
 		std::string name;
-		bool primitives = false;
+		LayerKind kind = LayerKind::Map;
 		bool visible = true;
 		GpuVoxelsMapSharedPtr map;
 		PrimitiveArraySharedPtr array;
+		KinematicChainSharedPtr robot;
+		RobotDisplay robot_style;
 		MapStyle style;
 		uint32_t colour = 0;
 		std::unique_ptr<CubeBuffer> cubes;
@@ -43,19 +45,24 @@ namespace gpu_voxels::vulkan
 		voxels_.set_visualization_hooks({}, {});
 	}
 
-	ViewerScene::Layer* ViewerScene::find(const std::string& name, bool primitives)
+	ViewerScene::Layer* ViewerScene::find(const std::string& name, LayerKind kind)
 	{
 		for (auto& layer : layers_)
-			if (layer->primitives == primitives && layer->name == name)
+			if (layer->kind == kind && layer->name == name)
 				return layer.get();
 		return nullptr;
 	}
 
 	void ViewerScene::extract(Layer& layer)
 	{
-		if (layer.primitives)
+		if (layer.kind == LayerKind::Primitives)
 		{
 			extractor_.extract(*layer.array, layer.colour, *layer.cubes);
+			return;
+		}
+		if (layer.kind == LayerKind::Robot)
+		{
+			extractor_.extract(layer.robot->transformed_clouds(), voxels_.voxel_side_length(), layer.robot_style, *layer.cubes);
 			return;
 		}
 		GpuVoxelsMap& map = *layer.map;
@@ -85,7 +92,7 @@ namespace gpu_voxels::vulkan
 		layer->style = style;
 		layer->cubes = std::make_unique<CubeBuffer>(voxels_.context(), capacity_);
 		extract(*layer);
-		if (Layer* existing = find(map_name, false))
+		if (Layer* existing = find(map_name, LayerKind::Map))
 			*existing = std::move(*layer);
 		else
 			layers_.push_back(std::move(layer));
@@ -99,12 +106,31 @@ namespace gpu_voxels::vulkan
 			return false;
 		auto layer = std::make_unique<Layer>();
 		layer->name = array_name;
-		layer->primitives = true;
+		layer->kind = LayerKind::Primitives;
 		layer->array = array;
 		layer->colour = colour;
 		layer->cubes = std::make_unique<CubeBuffer>(voxels_.context(), capacity_);
 		extract(*layer);
-		if (Layer* existing = find(array_name, true))
+		if (Layer* existing = find(array_name, LayerKind::Primitives))
+			*existing = std::move(*layer);
+		else
+			layers_.push_back(std::move(layer));
+		return true;
+	}
+
+	bool ViewerScene::show_robot(const std::string& robot_name, const RobotDisplay& style)
+	{
+		const KinematicChainSharedPtr robot = voxels_.get_robot(robot_name);
+		if (!robot)
+			return false;
+		auto layer = std::make_unique<Layer>();
+		layer->name = robot_name;
+		layer->kind = LayerKind::Robot;
+		layer->robot = robot;
+		layer->robot_style = style;
+		layer->cubes = std::make_unique<CubeBuffer>(voxels_.context(), capacity_);
+		extract(*layer);
+		if (Layer* existing = find(robot_name, LayerKind::Robot))
 			*existing = std::move(*layer);
 		else
 			layers_.push_back(std::move(layer));
@@ -113,7 +139,7 @@ namespace gpu_voxels::vulkan
 
 	bool ViewerScene::remove_map(const std::string& map_name)
 	{
-		const auto it = std::find_if(layers_.begin(), layers_.end(), [&](const auto& l) { return !l->primitives && l->name == map_name; });
+		const auto it = std::find_if(layers_.begin(), layers_.end(), [&](const auto& l) { return l->kind == LayerKind::Map && l->name == map_name; });
 		if (it == layers_.end())
 			return false;
 		layers_.erase(it);
@@ -122,7 +148,16 @@ namespace gpu_voxels::vulkan
 
 	bool ViewerScene::remove_primitives(const std::string& array_name)
 	{
-		const auto it = std::find_if(layers_.begin(), layers_.end(), [&](const auto& l) { return l->primitives && l->name == array_name; });
+		const auto it = std::find_if(layers_.begin(), layers_.end(), [&](const auto& l) { return l->kind == LayerKind::Primitives && l->name == array_name; });
+		if (it == layers_.end())
+			return false;
+		layers_.erase(it);
+		return true;
+	}
+
+	bool ViewerScene::remove_robot(const std::string& robot_name)
+	{
+		const auto it = std::find_if(layers_.begin(), layers_.end(), [&](const auto& l) { return l->kind == LayerKind::Robot && l->name == robot_name; });
 		if (it == layers_.end())
 			return false;
 		layers_.erase(it);
@@ -136,11 +171,24 @@ namespace gpu_voxels::vulkan
 				extract(*layer);
 	}
 
+	const CubeBuffer* ViewerScene::layer_buffer(std::size_t index) const
+	{
+		return index < layers_.size() ? layers_[index]->cubes.get() : nullptr;
+	}
+
+	bool ViewerScene::refresh_layer(std::size_t index)
+	{
+		if (index >= layers_.size())
+			return false;
+		extract(*layers_[index]);
+		return true;
+	}
+
 	std::vector<ViewerScene::LayerInfo> ViewerScene::layers() const
 	{
 		std::vector<LayerInfo> result;
 		for (const auto& layer : layers_)
-			result.push_back({ layer->name, layer->primitives, layer->visible, layer->cubes->count(), layer->cubes->dropped() });
+			result.push_back({ layer->name, layer->kind, layer->visible, layer->cubes->count(), layer->cubes->dropped() });
 		return result;
 	}
 
@@ -178,7 +226,7 @@ namespace gpu_voxels::vulkan
 
 	bool ViewerScene::hook_map(const std::string& name, bool force_repaint)
 	{
-		if (Layer* layer = find(name, false))
+		if (Layer* layer = find(name, LayerKind::Map))
 		{
 			if (force_repaint && layer->visible)
 				extract(*layer);
@@ -189,7 +237,7 @@ namespace gpu_voxels::vulkan
 
 	bool ViewerScene::hook_primitives(const std::string& name, bool force_repaint)
 	{
-		if (Layer* layer = find(name, true))
+		if (Layer* layer = find(name, LayerKind::Primitives))
 		{
 			if (force_repaint && layer->visible)
 				extract(*layer);

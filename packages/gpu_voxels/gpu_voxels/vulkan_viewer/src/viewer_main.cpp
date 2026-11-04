@@ -10,7 +10,7 @@
  *              [--png <out.png> [--size <W>x<H>]] [--frames <N>] [--no-vsync] [--validation]
  *
  * --facade shows a GpuVoxels scene through the visualization hooks (visualize_map, visualize_primitives_array): a bit map, an octree, moving spheres and
- * cuboids as layers; the keys 1 .. 4 show / hide them.
+ * cuboids and a three link robot as layers; the keys 1 .. 5 show / hide them.
  *
  * Mouse: left button rotates, right / middle button pans, wheel zooms. Keys: S toggles the shading, R resets the camera, ESC closes.
  */
@@ -206,14 +206,41 @@ namespace
 		};
 		move_spheres(0.0);
 
+		// a robot with three links (the first has no geometry): clouds along the local x axis of the two arms, which swing with the frames
+		{
+			std::vector<Point3f> arm;
+			for (int i = 0; i <= 30; ++i)
+				arm.push_back({ 0.03f * static_cast<float>(i), 0.0f, 0.0f });
+			std::vector<Point3f> arm2;
+			for (int i = 0; i <= 20; ++i)
+				arm2.push_back({ 0.03f * static_cast<float>(i), 0.0f, 0.0f });
+			const std::vector<std::vector<Point3f>> sub_clouds{ arm, arm2 };
+			const MetaPointCloud clouds(context, std::span<const std::vector<Point3f>>(sub_clouds));
+			std::vector<DHParameters> dh(3);
+			dh[0].d = 0.7f;
+			dh[1].a = 0.9f;
+			dh[2].a = 0.6f;
+			gvl.add_robot("arm", DHConvention::Classic, std::vector<std::string>{ "base", "upper", "lower" }, dh, clouds, std::vector<std::string>{ "upper", "lower" });
+			Matrix4f base;
+			base(0, 3) = 1.2f;
+			base(1, 3) = 3.0f;
+			gvl.set_robot_base_transformation("arm", base);
+		}
+
 		ViewerScene scene(gvl, 1u << 21);
 		for (const char* name : { "environment", "octree" })
 			gvl.visualize_map(name);
 		gvl.visualize_primitives_array("spheres");
 		gvl.visualize_primitives_array("cuboids");
+		RobotDisplay robot_style;
+		robot_style.snap_to_voxels = false;   // the points as small cubes, not the voxels of the 5 cm grid
+		robot_style.point_size = 0.07f;
+		robot_style.colours = { pack_colour(240, 200, 40), pack_colour(230, 60, 200) };
+		scene.show_robot("arm", robot_style);
+		const std::size_t robot_layer = scene.layer_count() - 1;
 		const auto layers = scene.layers();
 		for (std::size_t i = 0; i < layers.size(); ++i)
-			std::cout << "layer " << i + 1 << ": " << layers[i].name << (layers[i].primitives ? " (primitives)" : "") << ", " << layers[i].cubes << " cubes\n";
+			std::cout << "layer " << i + 1 << ": " << layers[i].name << (layers[i].kind == ViewerScene::LayerKind::Primitives ? " (primitives)" : layers[i].kind == ViewerScene::LayerKind::Robot ? " (robot)" : "") << ", " << layers[i].cubes << " cubes\n";
 
 		OrbitCamera camera;
 		camera.frame({ 0.0f, 0.0f, 0.0f }, scene.world_size());
@@ -244,6 +271,9 @@ namespace
 			window.poll_events();
 			move_spheres(static_cast<double>(window.frames_presented()) * 0.02);
 			gvl.visualize_primitives_array("spheres", true);   // extracts the new positions
+			const float swing = static_cast<float>(window.frames_presented()) * 0.02f;
+			gvl.set_robot_configuration("arm", { { "upper", 0.8f * std::sin(swing) }, { "lower", 1.0f * std::sin(1.7f * swing) } });
+			scene.refresh_layer(robot_layer);   // the robot is read in its new pose
 			const auto buffers = scene.buffers();
 			window.draw(buffers);
 		}

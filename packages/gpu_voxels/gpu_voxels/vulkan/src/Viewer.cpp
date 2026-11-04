@@ -16,6 +16,7 @@
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
+#include <gpu_voxels/vulkan/MetaPointCloud.h>
 #include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
@@ -34,6 +35,7 @@ namespace gpu_voxels::vulkan
 		struct ProbPush { uint32_t dim_x, dim_y, dim_z, capacity; float side; int32_t min_value; };
 		struct ListPush { uint32_t count, capacity; float side; };
 		struct OctreePush { uint32_t count, capacity; float side; uint32_t probabilistic; int32_t min_value; uint32_t occupied_colour, free_colour; };
+		struct PointsPush { uint32_t count, capacity; float side; uint32_t num_clouds, snap; float edge; };
 		struct FinalizePush { uint32_t capacity; };
 
 		/// Matches the push constant block of viewer_cube.vert / .frag.
@@ -195,7 +197,8 @@ namespace gpu_voxels::vulkan
 			  bit(context, GVL_SHADER_SPAN(viewer_extract_bit_comp), 4, sizeof(BitPush)),
 			  prob(context, GVL_SHADER_SPAN(viewer_extract_prob_comp), 3, sizeof(ProbPush)),
 			  list(context, GVL_SHADER_SPAN(viewer_extract_list_comp), 5, sizeof(ListPush)),
-			  octree(context, GVL_SHADER_SPAN(viewer_extract_octree_comp), 3, sizeof(OctreePush))
+			  octree(context, GVL_SHADER_SPAN(viewer_extract_octree_comp), 3, sizeof(OctreePush)),
+			  points(context, GVL_SHADER_SPAN(viewer_extract_points_comp), 5, sizeof(PointsPush))
 		{
 		}
 
@@ -204,6 +207,7 @@ namespace gpu_voxels::vulkan
 		ComputePipeline prob;
 		ComputePipeline list;
 		ComputePipeline octree;
+		ComputePipeline points;
 	};
 
 	CubeExtractor::CubeExtractor(Context& context)
@@ -286,6 +290,36 @@ namespace gpu_voxels::vulkan
 		{
 			const OctreePush push{ cubes.count, out.capacity(), side, probabilistic ? 1u : 0u, display.min_value, display.occupied_colour, display.free_colour };
 			batch.dispatch(kernels_->octree, { cubes.records.get(), &out.instances(), &out.arguments() }, group_count(context_, cubes.count), push);
+			batch.barrier();
+		}
+		batch.dispatch(kernels_->finalize, { &out.arguments() }, 1, FinalizePush{ out.capacity() });
+		batch.submit_and_wait();
+	}
+
+	void CubeExtractor::extract(const MetaPointCloud& clouds, float voxel_side_length, const RobotDisplay& display, CubeBuffer& out)
+	{
+		if (!(voxel_side_length > 0.0f) || !std::isfinite(voxel_side_length))
+			throw VulkanError("CubeExtractor: the voxel side length of a point cloud must be positive and finite");
+		if (!(display.point_size > 0.0f) || !std::isfinite(display.point_size))
+			throw VulkanError("CubeExtractor: RobotDisplay::point_size must be positive and finite");
+		out.set_kind(CubeKind::Cube);
+		const uint32_t count = clouds.accumulated_size();
+		const uint32_t num_clouds = clouds.num_clouds();
+		// the offsets and colours are tiny; they live as long as the batch (submit_and_wait below)
+		std::vector<uint32_t> colours(std::max<uint32_t>(num_clouds, 1), 0u);
+		const BitPalette hues = BitPalette::defaults();
+		for (uint32_t k = 0; k < num_clouds; ++k)
+			colours[k] = display.colours.empty() ? hues.colour[1 + k % 255] : display.colours[k % display.colours.size()];
+		DeviceBuffer offsets_buffer(context_, std::max<std::size_t>(clouds.offsets().size(), 1) * sizeof(uint32_t));
+		DeviceBuffer colours_buffer(context_, colours.size() * sizeof(uint32_t));
+		offsets_buffer.upload(clouds.offsets().data(), clouds.offsets().size() * sizeof(uint32_t));
+		colours_buffer.upload(colours.data(), colours.size() * sizeof(uint32_t));
+		CommandBatch batch(context_);
+		batch.fill(out.arguments(), 0);
+		if (count > 0 && num_clouds > 0)
+		{
+			const PointsPush push{ count, out.capacity(), voxel_side_length, num_clouds, display.snap_to_voxels ? 1u : 0u, display.point_size };
+			batch.dispatch(kernels_->points, { &clouds.points(), &offsets_buffer, &colours_buffer, &out.instances(), &out.arguments() }, group_count(context_, count), push);
 			batch.barrier();
 		}
 		batch.dispatch(kernels_->finalize, { &out.arguments() }, 1, FinalizePush{ out.capacity() });

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <random>
 #include <set>
@@ -94,7 +95,7 @@ namespace
 
 	std::vector<Cube> sorted(std::vector<Cube> cubes)
 	{
-		std::sort(cubes.begin(), cubes.end(), [](const Cube& a, const Cube& b) { return std::tie(a.z, a.y, a.x) < std::tie(b.z, b.y, b.x); });
+		std::sort(cubes.begin(), cubes.end(), [](const Cube& a, const Cube& b) { return std::tie(a.z, a.y, a.x, a.size, a.colour) < std::tie(b.z, b.y, b.x, b.size, b.colour); });
 		return cubes;
 	}
 
@@ -1343,7 +1344,7 @@ TEST_F(ViewerTest, ASceneShowsTheMapsListsAndOctreesOfAFacade)
 	EXPECT_EQ(info[4].name, "prob_octree");
 	for (const auto& layer : info)
 	{
-		EXPECT_FALSE(layer.primitives);
+		EXPECT_EQ(layer.kind, ViewerScene::LayerKind::Map);
 		EXPECT_TRUE(layer.visible);
 		EXPECT_EQ(layer.cubes, 2u) << layer.name;
 		EXPECT_EQ(layer.dropped, 0u);
@@ -1385,7 +1386,7 @@ TEST_F(ViewerTest, ASceneShowsPrimitivesAndRefreshesWhenTheyChange)
 	EXPECT_TRUE(scene.show_primitives("spheres", pack_colour(1, 2, 3)));
 	EXPECT_TRUE(scene.show_primitives("cuboids"));
 	ASSERT_EQ(scene.layer_count(), 2u);
-	EXPECT_TRUE(scene.layers()[0].primitives);
+	EXPECT_EQ(scene.layers()[0].kind, ViewerScene::LayerKind::Primitives);
 	const auto buffers = scene.buffers();
 	EXPECT_EQ(buffers[0]->kind(), CubeKind::Sphere);
 	EXPECT_EQ(buffers[1]->kind(), CubeKind::Cube);
@@ -1435,7 +1436,7 @@ TEST_F(ViewerTest, TheVisualizeCallsOfTheFacadeShowTheLayers)
 		EXPECT_TRUE(f.gvl.visualize_primitives_array("spheres"));
 		EXPECT_FALSE(f.gvl.visualize_primitives_array("unknown"));
 		EXPECT_EQ(scene.layer_count(), 2u);
-		EXPECT_TRUE(scene.layers()[1].primitives);
+		EXPECT_EQ(scene.layers()[1].kind, ViewerScene::LayerKind::Primitives);
 	}
 	EXPECT_FALSE(f.gvl.visualize_map("bit")) << "the scene is gone, so is its hook";
 	EXPECT_FALSE(f.gvl.visualize_primitives_array("spheres"));
@@ -1518,4 +1519,176 @@ TEST_F(ViewerTest, ASceneIsRenderedLayerByLayer)
 	scene.toggle_visible(1);
 	image = render();
 	EXPECT_EQ(pixel(image, w, int(sphere_centre[0]), int(sphere_centre[1])), pixel_of(sphere_colour));
+}
+
+// ---- robots (points of a MetaPointCloud) -----------------------------------------------------------------------------------------------------
+
+namespace
+{
+	/// Host model: the cube of the voxel of every finite point (or a cube centred on it), coloured by the sub cloud; colours with alpha 0 hide a sub cloud.
+	std::vector<Cube> robot_cubes(const MetaPointCloud& clouds, float side, const std::vector<uint32_t>& colour_of_cloud, bool snap = true, float point_size = 0.0f)
+	{
+		std::vector<Cube> cubes;
+		for (uint32_t k = 0; k < clouds.num_clouds(); ++k)
+		{
+			if ((colour_of_cloud[k] >> 24) == 0)
+				continue;
+			for (const Point3f& p : clouds.download_cloud(k))
+			{
+				if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z))
+					continue;
+				if (snap)
+					cubes.push_back({ std::floor(p.x / side) * side, std::floor(p.y / side) * side, std::floor(p.z / side) * side, side, colour_of_cloud[k] });
+				else
+					cubes.push_back({ p.x - 0.5f * point_size, p.y - 0.5f * point_size, p.z - 0.5f * point_size, point_size, colour_of_cloud[k] });
+			}
+		}
+		return cubes;
+	}
+
+	std::vector<std::vector<Point3f>> random_clouds(std::mt19937& rng)
+	{
+		std::uniform_real_distribution<float> coordinate(-1.0f, 3.0f);
+		const auto cloud = [&](int n)
+		{
+			std::vector<Point3f> points;
+			for (int i = 0; i < n; ++i)
+				points.push_back({ coordinate(rng), coordinate(rng), coordinate(rng) });
+			return points;
+		};
+		auto first = cloud(50);
+		first.push_back({ std::nanf(""), 1.0f, 1.0f });
+		first.push_back({ 1.0f, std::numeric_limits<float>::infinity(), 1.0f });
+		return { first, {}, cloud(30), cloud(20) };
+	}
+}
+
+TEST_F(ViewerTest, ExtractsThePointsOfAMetaPointCloudAsCubes)
+{
+	std::mt19937 rng(5);
+	const auto sub_clouds = random_clouds(rng);
+	const MetaPointCloud clouds(ctx(), std::span<const std::vector<Point3f>>(sub_clouds));   // sub cloud 1 is empty
+	const float side = 0.25f;
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 1000);
+
+	// default: one hue per sub cloud
+	const BitPalette hues = BitPalette::defaults();
+	const std::vector<uint32_t> default_colours{ hues.colour[1], hues.colour[2], hues.colour[3], hues.colour[4] };
+	extractor.extract(clouds, side, RobotDisplay{}, cubes);
+	EXPECT_EQ(cubes.kind(), CubeKind::Cube);
+	const auto expected = robot_cubes(clouds, side, default_colours);
+	ASSERT_EQ(expected.size(), 100u) << "50 + 30 + 20 finite points";
+	EXPECT_EQ(cubes.found(), 100u);
+	expect_equal(cubes.download(), expected);
+
+	// colours are used round robin; alpha 0 hides a sub cloud
+	RobotDisplay display;
+	display.colours = { pack_colour(1, 2, 3), 0u };
+	extractor.extract(clouds, side, display, cubes);
+	const std::vector<uint32_t> round_robin{ display.colours[0], display.colours[1], display.colours[0], display.colours[1] };
+	expect_equal(cubes.download(), robot_cubes(clouds, side, round_robin));
+	EXPECT_EQ(cubes.count(), 80u) << "sub clouds 0 and 2";
+
+	// not snapped: a cube of point_size centred on the point
+	display = {};
+	display.snap_to_voxels = false;
+	display.point_size = 0.125f;
+	extractor.extract(clouds, side, display, cubes);
+	expect_equal(cubes.download(), robot_cubes(clouds, side, default_colours, false, 0.125f));
+
+	// capacity, empty clouds, invalid arguments
+	CubeBuffer small(ctx(), 10);
+	extractor.extract(clouds, side, RobotDisplay{}, small);
+	EXPECT_EQ(small.found(), 100u);
+	EXPECT_EQ(small.count(), 10u);
+	const MetaPointCloud none(ctx(), std::span<const uint32_t>(std::vector<uint32_t>{ 0, 0 }));
+	extractor.extract(none, side, RobotDisplay{}, small);
+	EXPECT_EQ(small.count(), 0u);
+	EXPECT_EQ(small.found(), 0u);
+	EXPECT_THROW(extractor.extract(clouds, 0.0f, RobotDisplay{}, cubes), VulkanError);
+	EXPECT_THROW(extractor.extract(clouds, std::nanf(""), RobotDisplay{}, cubes), VulkanError);
+	display = {};
+	display.point_size = 0.0f;
+	EXPECT_THROW(extractor.extract(clouds, side, display, cubes), VulkanError);
+}
+
+namespace
+{
+	/// Three links: a base without cloud, an upper arm and a lower arm with clouds along their local x axis.
+	struct RobotFixture
+	{
+		explicit RobotFixture(Context& context) : gvl(context)
+		{
+			gvl.initialize({ 16, 16, 16 }, 0.25f);
+			const std::vector<std::string> names{ "base", "upper", "lower" };
+			std::vector<DHParameters> dh(3);
+			dh[0].d = 0.5f;
+			dh[1].a = 1.0f;
+			dh[2].a = 0.75f;
+			std::vector<Point3f> arm;
+			for (int i = 0; i <= 12; ++i)
+				arm.push_back({ 0.0625f * static_cast<float>(i), 0.0f, 0.0f });
+			const std::vector<std::vector<Point3f>> sub_clouds{ arm, arm };
+			const MetaPointCloud clouds(context, std::span<const std::vector<Point3f>>(sub_clouds));
+			EXPECT_TRUE(gvl.add_robot("r", DHConvention::Classic, names, dh, clouds, std::vector<std::string>{ "upper", "lower" }));
+		}
+		GpuVoxels gvl;
+	};
+}
+
+TEST_F(ViewerTest, ASceneShowsARobotInItsCurrentPose)
+{
+	RobotFixture f(ctx());
+	ViewerScene scene(f.gvl, 1000);
+	EXPECT_FALSE(scene.show_robot("nothing"));
+	ASSERT_TRUE(scene.show_robot("r"));
+	ASSERT_EQ(scene.layer_count(), 1u);
+	EXPECT_EQ(scene.layers()[0].kind, ViewerScene::LayerKind::Robot);
+	const BitPalette hues = BitPalette::defaults();
+	const std::vector<uint32_t> colours{ hues.colour[1], hues.colour[2] };
+	const auto robot = f.gvl.get_robot("r");
+	const auto before = robot_cubes(robot->transformed_clouds(), 0.25f, colours);
+	ASSERT_EQ(before.size(), 26u);
+	expect_equal(cubes_of(*scene.buffers()[0]), before);
+	EXPECT_EQ(scene.buffers()[0]->kind(), CubeKind::Cube);
+
+	// the robot moves; the layer shows the old pose until it is refreshed
+	ASSERT_TRUE(f.gvl.set_robot_configuration("r", { { "upper", 1.0f }, { "lower", -0.5f } }));
+	expect_equal(cubes_of(*scene.buffers()[0]), before);
+	scene.refresh();
+	const auto after = robot_cubes(robot->transformed_clouds(), 0.25f, colours);
+	ASSERT_EQ(after.size(), 26u);
+	{
+		const auto a = sorted(after), b = sorted(before);
+		bool moved = false;
+		for (std::size_t i = 0; i < a.size(); ++i)
+			moved = moved || a[i].x != b[i].x || a[i].y != b[i].y || a[i].z != b[i].z;
+		EXPECT_TRUE(moved) << "the pose changed";
+	}
+	expect_equal(cubes_of(*scene.buffers()[0]), after);
+
+	// a hidden layer is not refreshed by refresh(), refresh_layer() does it
+	ASSERT_TRUE(scene.set_visible(0, false));
+	ASSERT_TRUE(f.gvl.set_robot_configuration("r", { { "upper", 0.0f }, { "lower", 0.0f } }));
+	scene.refresh();
+	ASSERT_NE(scene.layer_buffer(0), nullptr);
+	expect_equal(cubes_of(*scene.layer_buffer(0)), after);
+	EXPECT_TRUE(scene.refresh_layer(0));
+	expect_equal(cubes_of(*scene.layer_buffer(0)), before);
+	EXPECT_FALSE(scene.refresh_layer(5));
+	EXPECT_EQ(scene.layer_buffer(5), nullptr);
+	EXPECT_TRUE(scene.buffers().empty());
+
+	// another style replaces the layer in its place: one colour for both links, cubes centred on the points
+	RobotDisplay style;
+	style.colours = { pack_colour(9, 8, 7) };
+	style.snap_to_voxels = false;
+	style.point_size = 0.1f;
+	ASSERT_TRUE(scene.show_robot("r", style));
+	ASSERT_EQ(scene.layer_count(), 1u);
+	expect_equal(cubes_of(*scene.buffers()[0]), robot_cubes(robot->transformed_clouds(), 0.25f, { style.colours[0], style.colours[0] }, false, 0.1f));
+	EXPECT_TRUE(scene.remove_robot("r"));
+	EXPECT_FALSE(scene.remove_robot("r"));
+	EXPECT_EQ(scene.layer_count(), 0u);
 }

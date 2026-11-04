@@ -18,6 +18,7 @@ FIN = VK + 'shaders/viewer_finalize.comp'
 SPF = VK + 'shaders/viewer_sphere.frag'
 SCN = VK + 'src/ViewerScene.cpp'
 GV = VK + 'src/GpuVoxels.cpp'
+EPT = VK + 'shaders/viewer_extract_points.comp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
 MUT = [
@@ -70,6 +71,18 @@ MUT = [
     ('V43 scene: buffers() includes hidden layers', SCN, "			if (layer->visible)\n				result.push_back(layer->cubes.get());", "			if (true)\n				result.push_back(layer->cubes.get());"),
     ('V44 scene: the hooks stay after the scene is gone', SCN, "		voxels_.set_visualization_hooks({}, {});", "		(void)0;"),
     ('V45 facade: the hook result is ignored', GV, "return visualize_map_hook_ ? visualize_map_hook_(map_name, force_repaint) : false;", "return false;"),
+    # robots (points of a MetaPointCloud), 2026-11-04
+    ('V46 points kernel: a point on the start of a sub cloud belongs to the previous one', EPT, "if (offsets[mid] <= i)", "if (offsets[mid] < i)"),
+    ('V47 points kernel: points that are not finite are drawn', EPT, "if (any(isnan(p)) || any(isinf(p)))", "if (false)"),
+    ('V48 points kernel: hidden sub clouds are drawn', EPT, "if ((colour >> 24u) == 0u)", "if (false)"),
+    ('V49 points kernel: centred cubes are snapped', EPT, "snap ? floor(p / pc.side) * pc.side : p - vec3(0.5 * pc.edge)", "floor(p / pc.side) * pc.side"),
+    ('V50 points kernel: the voxel is truncated, not floored', EPT, "floor(p / pc.side) * pc.side : p", "trunc(p / pc.side) * pc.side : p"),
+    ('V51 robot host: the colours are not used round robin', VW, "display.colours[k % display.colours.size()]", "display.colours[0]"),
+    ('V52 robot host: every sub cloud gets the first hue', VW, "hues.colour[1 + k % 255]", "hues.colour[1]"),
+    ('V53 robot scene: the cubes use a side length of 1', SCN, "voxels_.voxel_side_length(), layer.robot_style", "1.0f, layer.robot_style"),
+    ('V54 robot scene: refresh_layer skips hidden layers', SCN, "		extract(*layers_[index]);", "		if (layers_[index]->visible) extract(*layers_[index]);"),
+    ('V55 robot host: the point size is not checked', VW, "if (!(display.point_size > 0.0f) || !std::isfinite(display.point_size))", "if (false)"),
+    ('V56 robot host: the side length is not checked', VW, "if (!(voxel_side_length > 0.0f) || !std::isfinite(voxel_side_length))\n			throw VulkanError(\"CubeExtractor: the voxel side length of a point cloud", "if (false)\n			throw VulkanError(\"CubeExtractor: the voxel side length of a point cloud"),
 ]
 
 TESTS = 'Viewer*'
