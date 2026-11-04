@@ -1692,3 +1692,62 @@ TEST_F(ViewerTest, ASceneShowsARobotInItsCurrentPose)
 	EXPECT_FALSE(scene.remove_robot("r"));
 	EXPECT_EQ(scene.layer_count(), 0u);
 }
+
+TEST_F(ViewerTest, CollidingOctreeNodesGetTheirOwnColour)
+{
+	const auto voxels = octree_test_voxels();
+	const float side = 0.25f;
+	const uint32_t red = pack_colour(250, 10, 10);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 100000);
+	for (const OctreeKind kind : { OctreeKind::Deterministic, OctreeKind::Probabilistic })
+	{
+		SCOPED_TRACE(kind == OctreeKind::Deterministic ? "deterministic" : "probabilistic");
+		Octree tree(ctx(), kind, side);
+		tree.build(to_octree_voxels(voxels));
+		// probes: the first 120 voxels (a part of the big block among them) and two empty places
+		std::vector<uint64_t> probes = morton_ids(voxels, 0, 120);
+		probes.push_back(ref::morton(500, 500, 500));
+		probes.push_back(ref::morton(900, 100, 50));
+		ASSERT_GT(tree.collide_with_ids(probes).collisions, 0u);
+
+		for (const uint32_t min_level : { 0u, 2u })
+		{
+			SCOPED_TRACE("min_level " + std::to_string(min_level));
+			OctreeExtractOptions options;
+			options.min_level = min_level;
+			OctreeDisplay display;
+			display.min_level = min_level;
+			std::vector<Cube> plain, highlighted;
+			std::size_t flagged = 0;
+			for (const OctreeCube& n : tree.extract(options))
+			{
+				const bool drawn = kind == OctreeKind::Deterministic ? (n.status & octree_format::kOccupied) != 0 : (n.occupancy != -128 && n.occupancy >= 1);
+				if (!drawn)
+					continue;
+				const uint32_t colour = kind == OctreeKind::Deterministic ? display.occupied_colour : gradient_colour(n.occupancy);
+				const bool collides = (n.status & octree_format::kCollision) != 0;
+				flagged += collides ? 1 : 0;
+				plain.push_back(octree_cube(n.level, n.id, side, colour));
+				highlighted.push_back(octree_cube(n.level, n.id, side, collides ? red : colour));
+			}
+			ASSERT_GT(flagged, 0u);
+			ASSERT_LT(flagged, plain.size());
+
+			extractor.extract(tree, display, cubes);   // not highlighted by default
+			expect_equal_near_colour(cubes.download(), plain);
+			display.collision_colour = red;
+			extractor.extract(tree, display, cubes);
+			expect_equal_near_colour(cubes.download(), highlighted);
+			display.collision_colour = pack_colour(250, 10, 10, 0);   // alpha 0: off
+			extractor.extract(tree, display, cubes);
+			expect_equal_near_colour(cubes.download(), plain);
+		}
+		tree.clear_collision_flags();
+		OctreeDisplay display;
+		display.collision_colour = red;
+		extractor.extract(tree, display, cubes);
+		for (const Cube& c : cubes.download())
+			EXPECT_NE(c.colour, red) << "no flags, no highlight";
+	}
+}

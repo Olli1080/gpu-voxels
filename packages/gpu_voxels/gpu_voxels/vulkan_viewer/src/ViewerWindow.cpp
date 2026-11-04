@@ -170,21 +170,56 @@ namespace gpu_voxels::vulkan
 			self->controller_.cursor(static_cast<float>(x), static_cast<float>(y), static_cast<float>(window_height));
 		});
 		glfwSetScrollCallback(window_, [](GLFWwindow* w, double, double dy) { static_cast<ViewerWindow*>(glfwGetWindowUserPointer(w))->controller_.scroll(static_cast<float>(dy)); });
-		glfwSetKeyCallback(window_, [](GLFWwindow* w, int key, int, int action, int)
+		glfwSetKeyCallback(window_, [](GLFWwindow* w, int key, int, int action, int mods)
 		{
-			if (action != GLFW_PRESS)
+			if (action != GLFW_PRESS && action != GLFW_REPEAT)
 				return;
-			static_cast<ViewerWindow*>(glfwGetWindowUserPointer(w))->handle_key(key);
+			static_cast<ViewerWindow*>(glfwGetWindowUserPointer(w))->handle_key(key, mods, action == GLFW_REPEAT);
 		});
 	}
 
-	void ViewerWindow::handle_key(int key)
+	void ViewerWindow::set_title(const std::string& title)
 	{
+		options_.title = title;
+		glfwSetWindowTitle(window_, title.c_str());
+	}
+
+	void ViewerWindow::handle_key(int key, int mods, bool repeat)
+	{
+		// camera keys (also while held down)
+		constexpr float kRotateStep = 15.0f, kPanStep = 20.0f;
+		const bool pan = (mods & GLFW_MOD_SHIFT) != 0;
+		const float viewport_height = static_cast<float>(std::max(extent_.height, 1u));
+		float dx = 0.0f, dy = 0.0f;
+		if (key == GLFW_KEY_LEFT) dx = -1.0f;
+		else if (key == GLFW_KEY_RIGHT) dx = 1.0f;
+		else if (key == GLFW_KEY_UP) dy = -1.0f;
+		else if (key == GLFW_KEY_DOWN) dy = 1.0f;
+		if (dx != 0.0f || dy != 0.0f)
+		{
+			if (pan)
+				camera_.pan(dx * kPanStep, dy * kPanStep, viewport_height);
+			else
+				camera_.rotate(dx * kRotateStep, dy * kRotateStep);
+			return;
+		}
+		if (key == GLFW_KEY_PAGE_UP || key == GLFW_KEY_EQUAL || key == GLFW_KEY_KP_ADD)
+		{
+			camera_.zoom(1.0f);
+			return;
+		}
+		if (key == GLFW_KEY_PAGE_DOWN || key == GLFW_KEY_MINUS || key == GLFW_KEY_KP_SUBTRACT)
+		{
+			camera_.zoom(-1.0f);
+			return;
+		}
+		if (repeat)
+			return;
 		if (key == GLFW_KEY_ESCAPE)
 			glfwSetWindowShouldClose(window_, GLFW_TRUE);
 		else if (key == GLFW_KEY_S)
 			render_options_.shaded = !render_options_.shaded;
-		else if (key == GLFW_KEY_R)
+		else if (key == GLFW_KEY_R || key == GLFW_KEY_HOME)
 			camera_ = initial_camera_;
 		else if (key_handler_)
 			key_handler_(key);

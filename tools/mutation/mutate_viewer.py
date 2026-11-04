@@ -19,6 +19,7 @@ SPF = VK + 'shaders/viewer_sphere.frag'
 SCN = VK + 'src/ViewerScene.cpp'
 GV = VK + 'src/GpuVoxels.cpp'
 EPT = VK + 'shaders/viewer_extract_points.comp'
+VWIN = root + 'packages/gpu_voxels/gpu_voxels/vulkan_viewer/src/ViewerWindow.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
 MUT = [
@@ -83,6 +84,20 @@ MUT = [
     ('V54 robot scene: refresh_layer skips hidden layers', SCN, "		extract(*layers_[index]);", "		if (layers_[index]->visible) extract(*layers_[index]);"),
     ('V55 robot host: the point size is not checked', VW, "if (!(display.point_size > 0.0f) || !std::isfinite(display.point_size))", "if (false)"),
     ('V56 robot host: the side length is not checked', VW, "if (!(voxel_side_length > 0.0f) || !std::isfinite(voxel_side_length))\n			throw VulkanError(\"CubeExtractor: the voxel side length of a point cloud", "if (false)\n			throw VulkanError(\"CubeExtractor: the voxel side length of a point cloud"),
+    # collision highlight of the octree (2026-11-04)
+    ('V57 octree kernel: colliding nodes keep their colour', EO, "            colour = pc.collision_colour;", "            colour = colour;"),
+    ('V58 octree kernel: a collision colour with alpha 0 is used', EO, "if ((status & STATUS_COLLISION) != 0u && (pc.collision_colour >> 24u) != 0u)", "if ((status & STATUS_COLLISION) != 0u)"),
+    ('V59 octree kernel: the collision bit is the STATIC bit', EO, "const uint STATUS_COLLISION = 32u;", "const uint STATUS_COLLISION = 64u;"),
+    # window (run on test_vulkan_viewer_window)
+    ('W01 window: shift does not pan', VWIN, "const bool pan = (mods & GLFW_MOD_SHIFT) != 0;", "const bool pan = false;"),
+    ('W02 window: the rotation step is 10 pixels', VWIN, "kRotateStep = 15.0f", "kRotateStep = 10.0f"),
+    ('W03 window: Page up zooms out', VWIN, "			camera_.zoom(1.0f);", "			camera_.zoom(-1.0f);"),
+    ('W04 window: held keys act like pressed ones', VWIN, "		if (repeat)\n			return;\n", ""),
+    ('W05 window: Home does not reset the camera', VWIN, "key == GLFW_KEY_R || key == GLFW_KEY_HOME", "key == GLFW_KEY_R"),
+    ('W06 window: the title is not stored', VWIN, "		options_.title = title;\n", ""),
+    ('W07 window: S does not toggle the shading', VWIN, "render_options_.shaded = !render_options_.shaded;", "render_options_.shaded = true;"),
+    ('W08 window: ESC does not close', VWIN, "			glfwSetWindowShouldClose(window_, GLFW_TRUE);", "			(void)0;"),
+    ('W09 window: unused keys are not forwarded', VWIN, "else if (key_handler_)", "else if (false)"),
 ]
 
 TESTS = 'Viewer*'
@@ -107,14 +122,16 @@ try:
             print(name, ': PATTERN COUNT', text.count(old), flush=True)
             continue
         open(path, 'w', encoding='utf-8', newline='').write(text.replace(old, new).replace('\n', nl))
-        b = subprocess.run(['cmake', '--build', root + 'build/verify-vk', '--config', 'Debug', '--target', 'test_vulkan', '--parallel'],
+        window = name.startswith('W')
+        target = 'test_vulkan_viewer_window' if window else 'test_vulkan'
+        b = subprocess.run(['cmake', '--build', root + 'build/verify-vk', '--config', 'Debug', '--target', target, '--parallel'],
                            env=env, capture_output=True, text=True)
         if b.returncode != 0:
             print(name, ': BUILD FAILED', flush=True)
             open(path, 'w', encoding='utf-8', newline='').write(orig)
             continue
         try:
-            r = subprocess.run([root + 'build/verify-vk/tests/vulkan/Debug/test_vulkan.exe', '--gtest_filter=' + TESTS],
+            r = subprocess.run([root + 'build/verify-vk/tests/vulkan/Debug/' + target + '.exe', '--gtest_filter=' + ('*' if window else TESTS)],
                                env=env, capture_output=True, text=True, timeout=600)
             verdict = 'SURVIVED' if r.returncode == 0 else 'KILLED'
         except subprocess.TimeoutExpired:

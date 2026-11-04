@@ -4,6 +4,7 @@
 //  * deterministic tree: a node with the OCCUPIED bit is drawn in `occupied_colour`, otherwise a node with the FREE bit in `free_colour`;
 //    alpha 0 hides a colour. (The host already selected the statuses; a refined node on min_level carries the OR of its children, so occupied wins.)
 //  * probabilistic tree: known nodes (not -128) with an occupancy >= min_value, gradient colour.
+//  * a node with the COLLISION bit takes `collision_colour` instead when that is visible (alpha != 0), in both kinds of tree.
 #extension GL_ARB_gpu_shader_int64 : require
 #extension GL_GOOGLE_include_directive : require
 #include "viewer_cube_common.glsl"
@@ -21,10 +22,12 @@ layout(push_constant) uniform Push
     int min_value;
     uint occupied_colour;
     uint free_colour;
+    uint collision_colour;
 } pc;
 
 const uint STATUS_FREE = 1u;
 const uint STATUS_OCCUPIED = 4u;
+const uint STATUS_COLLISION = 32u;
 
 void main()
 {
@@ -48,6 +51,8 @@ void main()
             colour = pc.free_colour;
         if ((colour >> 24u) == 0u)
             continue;
+        if ((status & STATUS_COLLISION) != 0u && (pc.collision_colour >> 24u) != 0u)
+            colour = pc.collision_colour;
         const uint64_t id = packUint2x32(uvec2(records[4u * i], records[4u * i + 1u]));
         const uvec3 c = morton_decode60(id);
         const float edge = float(1u << level) * pc.side;

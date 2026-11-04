@@ -261,10 +261,19 @@ namespace
 		ViewerWindow window(context, options);
 		window.camera() = camera;
 		window.set_home_camera();
+		const auto show_layers = [&]
+		{
+			std::string title = "gvl_viewer - layers (keys 1 .. 5):";
+			const auto info = scene.layers();
+			for (std::size_t i = 0; i < info.size(); ++i)
+				title += " " + std::to_string(i + 1) + (info[i].visible ? " " : " (off) ") + info[i].name + ";";
+			window.set_title(title);
+		};
+		show_layers();
 		window.set_key_handler([&](int key)
 		{
-			if (key >= '1' && key <= '9')
-				scene.toggle_visible(static_cast<std::size_t>(key - '1'));
+			if (key >= '1' && key <= '9' && scene.toggle_visible(static_cast<std::size_t>(key - '1')))
+				show_layers();
 		});
 		while (!window.should_close() && (a.frames == 0 || window.frames_presented() < a.frames))
 		{

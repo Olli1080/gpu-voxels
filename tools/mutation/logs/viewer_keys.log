@@ -1,0 +1,13 @@
+V57 octree kernel: colliding nodes keep their colour : KILLED
+V58 octree kernel: a collision colour with alpha 0 is used : KILLED
+V59 octree kernel: the collision bit is the STATIC bit : KILLED
+W01 window: shift does not pan : KILLED
+W02 window: the rotation step is 10 pixels : KILLED
+W03 window: Page up zooms out : KILLED
+W04 window: held keys act like pressed ones : KILLED
+W05 window: Home does not reset the camera : KILLED
+W06 window: the title is not stored : KILLED
+W07 window: S does not toggle the shading : KILLED
+W08 window: ESC does not close : KILLED
+W09 window: unused keys are not forwarded : KILLED
+restored

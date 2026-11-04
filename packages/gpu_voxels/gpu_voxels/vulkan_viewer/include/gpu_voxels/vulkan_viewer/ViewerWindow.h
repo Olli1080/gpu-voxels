@@ -68,7 +68,7 @@ namespace gpu_voxels::vulkan
 
 		[[nodiscard]] bool should_close() const;
 		void request_close();
-		/// Process the window events (mouse and keys move the camera; ESC closes, S toggles the shading, R resets the camera, other keys go to the key handler).
+		/// Process the window events (mouse and keys move the camera, see handle_key; ESC closes, S toggles the shading, R resets the camera, other keys go to the key handler).
 		void poll_events();
 
 		[[nodiscard]] OrbitCamera& camera() { return camera_; }
@@ -77,8 +77,13 @@ namespace gpu_voxels::vulkan
 		[[nodiscard]] RenderOptions& render_options() { return render_options_; }
 		/// Called with the GLFW key code (GLFW_KEY_1 = '1', ...) when a key is pressed that the window does not use itself (ESC, S, R). Empty = none.
 		void set_key_handler(std::function<void(int key)> handler) { key_handler_ = std::move(handler); }
-		/// What the key callback of the window does with a pressed key; public so that tests can press keys.
-		void handle_key(int key);
+		/// What the key callback of the window does with a key; public so that tests can press keys. `mods` are the GLFW modifier bits (1 = shift),
+		/// `repeat` is a key that is held down (GLFW_REPEAT): only the camera keys react to it. Camera keys: the arrows rotate (with shift they pan),
+		/// Page up / Page down / + / - (also on the keypad) zoom, Home = R.
+		void handle_key(int key, int mods = 0, bool repeat = false);
+		/// The window title (GLFW); the viewer programs show their layers in it.
+		void set_title(const std::string& title);
+		[[nodiscard]] const std::string& title() const { return options_.title; }
 
 		/// Draw one frame of the cubes and present it. Returns false if no frame was presented (window minimised, swapchain out of date: the swapchain is
 		/// recreated and the next call draws).

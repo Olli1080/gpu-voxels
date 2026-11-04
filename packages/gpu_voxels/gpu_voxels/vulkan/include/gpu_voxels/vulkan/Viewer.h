@@ -79,6 +79,9 @@ namespace gpu_voxels::vulkan
 		uint32_t free_colour = 0;
 		/// Probabilistic tree: nodes with a known occupancy of at least this value are drawn in the gradient colour (as ProbDisplay).
 		int min_value = 1;
+		/// Nodes with the COLLISION status bit (set by Octree::collide_with, cleared by clear_collision_flags) are drawn in this colour instead of their own
+		/// (both kinds of tree, only nodes that are drawn at all); alpha 0 = not highlighted. A refined node on min_level shows the flag of the node itself, not of its subtree.
+		uint32_t collision_colour = 0;
 	};
 
 	/// How the renderer draws the instances of a CubeBuffer: as cubes, or as the spheres inscribed in them (ray cast per pixel, correct depth).

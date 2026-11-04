@@ -34,7 +34,7 @@ namespace gpu_voxels::vulkan
 		struct BitPush { uint32_t dim_x, dim_y, dim_z, capacity; float side; };
 		struct ProbPush { uint32_t dim_x, dim_y, dim_z, capacity; float side; int32_t min_value; };
 		struct ListPush { uint32_t count, capacity; float side; };
-		struct OctreePush { uint32_t count, capacity; float side; uint32_t probabilistic; int32_t min_value; uint32_t occupied_colour, free_colour; };
+		struct OctreePush { uint32_t count, capacity; float side; uint32_t probabilistic; int32_t min_value; uint32_t occupied_colour, free_colour, collision_colour; };
 		struct PointsPush { uint32_t count, capacity; float side; uint32_t num_clouds, snap; float edge; };
 		struct FinalizePush { uint32_t capacity; };
 
@@ -278,7 +278,9 @@ namespace gpu_voxels::vulkan
 			options.status_selection.resize(256);
 			for (uint32_t status = 0; status < 256; ++status)
 			{
-				const uint32_t colour = (status & octree_format::kOccupied) ? display.occupied_colour : (status & octree_format::kFree) ? display.free_colour : 0u;
+				uint32_t colour = (status & octree_format::kOccupied) ? display.occupied_colour : (status & octree_format::kFree) ? display.free_colour : 0u;
+				if ((colour >> 24) != 0 && (status & octree_format::kCollision) && (display.collision_colour >> 24) != 0)
+					colour = display.collision_colour;
 				options.status_selection[status] = (colour >> 24) != 0 ? 1 : 0;
 			}
 		}
@@ -288,7 +290,7 @@ namespace gpu_voxels::vulkan
 		batch.fill(out.arguments(), 0);
 		if (cubes.count > 0)
 		{
-			const OctreePush push{ cubes.count, out.capacity(), side, probabilistic ? 1u : 0u, display.min_value, display.occupied_colour, display.free_colour };
+			const OctreePush push{ cubes.count, out.capacity(), side, probabilistic ? 1u : 0u, display.min_value, display.occupied_colour, display.free_colour, display.collision_colour };
 			batch.dispatch(kernels_->octree, { cubes.records.get(), &out.instances(), &out.arguments() }, group_count(context_, cubes.count), push);
 			batch.barrier();
 		}

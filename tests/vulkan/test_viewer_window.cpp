@@ -185,3 +185,77 @@ TEST_F(ViewerWindowTest, KeysControlTheWindowAndTheRestGoToTheHandler)
 	ViewerWindow plain(ctx(), hidden());
 	EXPECT_NO_THROW(plain.handle_key(49));
 }
+
+namespace
+{
+	bool same_camera(const OrbitCamera& a, const OrbitCamera& b)
+	{
+		return a.target == b.target && a.distance == b.distance && a.yaw_degrees == b.yaw_degrees && a.pitch_degrees == b.pitch_degrees;
+	}
+}
+
+TEST_F(ViewerWindowTest, TheKeyboardMovesTheCamera)
+{
+	// GLFW key codes: RIGHT 262, LEFT 263, DOWN 264, UP 265, PAGE_UP 266, PAGE_DOWN 267, HOME 268, MINUS 45, EQUAL 61, KP_SUBTRACT 333, KP_ADD 334, S 83, ESC 256
+	ViewerWindow window(ctx(), hidden(320, 240));
+	std::vector<int> forwarded;
+	window.set_key_handler([&](int key) { forwarded.push_back(key); });
+	window.camera().target = { 1.0f, 2.0f, 3.0f };
+	window.camera().distance = 8.0f;
+	window.set_home_camera();
+	OrbitCamera expected = window.camera();
+	const float height = static_cast<float>(window.extent().height);
+	ASSERT_GT(height, 0.0f);
+
+	window.handle_key(263);
+	expected.rotate(-15.0f, 0.0f);
+	EXPECT_TRUE(same_camera(window.camera(), expected)) << "left";
+	window.handle_key(262);
+	expected.rotate(15.0f, 0.0f);
+	window.handle_key(265);
+	expected.rotate(0.0f, -15.0f);
+	window.handle_key(264, 0, true);   // held down
+	expected.rotate(0.0f, 15.0f);
+	EXPECT_TRUE(same_camera(window.camera(), expected)) << "right, up, down";
+	// shift pans
+	window.handle_key(263, 1);
+	expected.pan(-20.0f, 0.0f, height);
+	window.handle_key(265, 1);
+	expected.pan(0.0f, -20.0f, height);
+	EXPECT_TRUE(same_camera(window.camera(), expected)) << "shift + arrows";
+	EXPECT_NE(window.camera().target, (std::array<float, 3>{ 1.0f, 2.0f, 3.0f }));
+	// zoom: Page up / + / keypad + closer, Page down / - / keypad - farther
+	for (const int key : { 266, 61, 334 })
+	{
+		window.handle_key(key);
+		expected.zoom(1.0f);
+		EXPECT_TRUE(same_camera(window.camera(), expected)) << key;
+	}
+	for (const int key : { 267, 45, 333 })
+	{
+		window.handle_key(key, 0, true);
+		expected.zoom(-1.0f);
+		EXPECT_TRUE(same_camera(window.camera(), expected)) << key;
+	}
+	EXPECT_TRUE(forwarded.empty()) << "camera keys are not forwarded";
+	// a held key does not toggle, close or reset anything
+	window.handle_key(83, 0, true);
+	EXPECT_TRUE(window.render_options().shaded);
+	window.handle_key(256, 0, true);
+	EXPECT_FALSE(window.should_close());
+	window.handle_key(268, 0, true);
+	EXPECT_FALSE(same_camera(window.camera(), OrbitCamera{ window.camera().target, 8.0f, window.camera().yaw_degrees, window.camera().pitch_degrees })) << "still moved";
+	// Home returns to the home camera, like R
+	window.handle_key(268);
+	EXPECT_EQ(window.camera().distance, 8.0f);
+	EXPECT_EQ(window.camera().target, (std::array<float, 3>{ 1.0f, 2.0f, 3.0f }));
+	EXPECT_EQ(window.camera().yaw_degrees, OrbitCamera{}.yaw_degrees);
+	EXPECT_EQ(window.camera().pitch_degrees, OrbitCamera{}.pitch_degrees);
+	// other keys still reach the handler
+	window.handle_key(49);
+	EXPECT_EQ(forwarded, (std::vector<int>{ 49 }));
+
+	EXPECT_EQ(window.title(), ViewerWindowOptions{}.title);
+	window.set_title("layers: 1 map");
+	EXPECT_EQ(window.title(), "layers: 1 map");
+}
