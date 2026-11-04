@@ -258,7 +258,7 @@ namespace gpu_voxels {
 		{
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < sizePoints; i += blockDim.x * gridDim.x)
 			{
-				const Vector3ui uint_coords = mapToVoxels(voxel_side_length, points[i]);
+				const Vector3ui uint_coords = mapToVoxelsOrOutside(voxel_side_length, points[i]);
 				//check if point is in the range of the voxel map
 				if (uint_coords.x() < map_dim.x() && uint_coords.y() < map_dim.y()
 					&& uint_coords.z() < map_dim.z())
@@ -395,7 +395,7 @@ namespace gpu_voxels {
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < meta_point_cloud->accumulated_cloud_size;
 				i += blockDim.x * gridDim.x)
 			{
-				const Vector3ui uint_coords = mapToVoxels(voxel_side_length,
+				const Vector3ui uint_coords = mapToVoxelsOrOutside(voxel_side_length,
 					meta_point_cloud->clouds_base_addresses[0][i]);
 
 				//        printf("Point @(%f,%f,%f)\n",
@@ -449,7 +449,7 @@ namespace gpu_voxels {
 				}
 
 
-				const Vector3ui uint_coords = mapToVoxels(voxel_side_length,
+				const Vector3ui uint_coords = mapToVoxelsOrOutside(voxel_side_length,
 					meta_point_cloud->clouds_base_addresses[0][i]);
 
 				//        printf("Point @(%f,%f,%f)\n",
@@ -559,8 +559,8 @@ namespace gpu_voxels {
 			{
 				if (!(isnan(sensor_data[i].x()) || isnan(sensor_data[i].y()) || isnan(sensor_data[i].z())))
 				{
-					const Vector3ui integer_coordinates = mapToVoxels(voxel_side_length, sensor_data[i]);
-					const Vector3ui sensor_coordinates = mapToVoxels(voxel_side_length, sensor_pose);
+					const Vector3ui integer_coordinates = mapToVoxelsOrOutside(voxel_side_length, sensor_data[i]);
+					const Vector3ui sensor_coordinates = mapToVoxelsOrOutside(voxel_side_length, sensor_pose);
 
 					/* both data and sensor coordinates must
 					 be within boundaries for raycasting to work */

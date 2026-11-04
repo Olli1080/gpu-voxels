@@ -145,6 +145,25 @@ namespace gpu_voxels
 			return uint_coords;
 		}
 
+		//! Like mapToVoxels, for kernels that drop points outside of the map (check `coords < dimensions`): a negative or NaN
+		//! coordinate and one that does not fit into uint32_t become 0xFFFFFFFF, which no map contains. mapToVoxels itself converts
+		//! with static_cast<uint32_t>, which saturates on the GPU: a negative coordinate (also -inf) or NaN became voxel 0 and
+		//! the point was inserted at the border instead of being dropped (K44). Do not use it where a list stores the coordinates.
+		__device__ __host__     __forceinline__
+			Vector3ui mapToVoxelsOrOutside(const float voxel_side_length, const Vector3f& coordinates)
+		{
+			const auto axis = [voxel_side_length](const float c) -> uint32_t
+			{
+				const float f = floor(c / voxel_side_length);
+				return (f >= 0.0f && f < 4294967296.0f) ? static_cast<uint32_t>(f) : 0xFFFFFFFFu; // false for NaN as well
+			};
+			Vector3ui uint_coords;
+			uint_coords.x() = axis(coordinates.x());
+			uint_coords.y() = axis(coordinates.y());
+			uint_coords.z() = axis(coordinates.z());
+			return uint_coords;
+		}
+
 		//! Partitioning of continuous data into voxels. Maps float coordinates to dicrete voxel coordinates.
 		__device__ __host__     __forceinline__
 			Vector3ui mapToVoxels(const float voxel_side_length, const Vector3f& coordinates)

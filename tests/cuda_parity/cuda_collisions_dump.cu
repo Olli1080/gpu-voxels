@@ -203,6 +203,23 @@ int main(int argc, char* argv[])
 			std::printf("%s\n", prob_line(sensor_label(group.name, i, c), values).c_str());
 		}
 	}
+	// scenario 5b: insertPointCloud with negative, NaN and infinite coordinates (K44), one point per call on one map
+	{
+		gvl->addMap(MT_PROBAB_VOXELMAP, "pcneg");
+		auto* map = gvl->getMap("pcneg")->as<voxelmap::ProbVoxelMap>();
+		const auto edge_points = pointcloud_edge_points();
+		for (std::size_t i = 0; i < edge_points.size(); ++i)
+		{
+			insert(gvl, "pcneg", std::vector<PointSet>{ PointSet{ 1, { edge_points[i] } } });
+			const size_t n = static_cast<size_t>(kDim) * kDim * kDim;
+			std::vector<ProbabilisticVoxel> host(n);
+			HANDLE_CUDA_ERROR(cudaMemcpy(host.data(), map->getDeviceDataPtr(), n * sizeof(ProbabilisticVoxel), cudaMemcpyDeviceToHost));
+			std::vector<int> values;
+			for (const ProbabilisticVoxel& v : host)
+				values.push_back(static_cast<int>(v.getOccupancy()));
+			std::printf("%s\n", prob_line("pcneg " + std::to_string(i), values).c_str());
+		}
+	}
 	gvl.reset();
 	return 0;
 }

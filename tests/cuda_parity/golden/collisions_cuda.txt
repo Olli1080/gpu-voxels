@@ -754,24 +754,24 @@ prob sensor outside 14 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59
 prob sensor outside 15 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
 prob sensor outside 16 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
 prob sensor outside 17 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
-prob sensor negative 0 ray=1 robot=-1 unknown=4090 positive=1 negative=5 hash=834da4f49cb1148d values=-10:5,62:1
-prob sensor negative 1 ray=1 robot=-1 unknown=4085 positive=2 negative=9 hash=ce77f5f0635195c1 values=-20:1,-10:8,62:2
-prob sensor negative 2 ray=1 robot=-1 unknown=4080 positive=3 negative=13 hash=f1ac3712abd9c591 values=-30:1,-10:12,62:3
-prob sensor negative 3 ray=1 robot=-1 unknown=4066 positive=4 negative=26 hash=c9c2a5a0c256e5a9 values=-40:1,-20:1,-10:24,62:4
-prob sensor negative 4 ray=1 robot=-1 unknown=4052 positive=5 negative=39 hash=3a6f7f31f176f137 values=-50:1,-20:1,-10:37,62:5
-prob sensor negative 5 ray=1 robot=-1 unknown=4036 positive=6 negative=54 hash=0b09b20abe2c9787 values=-50:1,-20:2,-10:51,52:1,62:5
-prob sensor negative 6 ray=1 robot=-1 unknown=4036 positive=6 negative=54 hash=746cc9b402fa5e3f values=-50:1,-30:1,-20:16,-10:36,42:1,62:4,124:1
-prob sensor negative 7 ray=1 robot=-1 unknown=4023 positive=6 negative=67 hash=c8a03e3da44a2978 values=-50:1,-30:3,-20:15,-10:48,42:1,52:1,62:3,127:1
-prob sensor negative 8 ray=1 robot=-1 unknown=4002 positive=6 negative=88 hash=963dcc715a0e78ca values=-50:1,-40:1,-30:3,-20:14,-10:69,42:1,52:1,62:3,127:1
-prob sensor negative 9 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=d3c053cb9719d742 values=-50:1,-40:1,-30:3,-20:14,-10:69,52:1,62:3,114:1,127:1
-prob sensor negative 10 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=786b038528544cea values=-50:1,-40:1,-30:3,-20:14,-10:69,62:3,114:1,124:1,127:1
-prob sensor negative 11 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=38bf91b521e77c31 values=-50:1,-40:1,-30:3,-20:14,-10:69,62:2,114:1,124:1,127:2
-prob sensor negative 12 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=734313fb1f41c618 values=-50:1,-40:1,-30:3,-20:14,-10:69,62:1,114:1,124:1,127:3
-prob sensor negative 13 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=5ec7f11cfeb76a95 values=-50:1,-40:1,-30:3,-20:14,-10:69,114:1,124:1,127:4
-prob sensor negative 14 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=5ec7f11cfeb76a95 values=-50:1,-40:1,-30:3,-20:14,-10:69,114:1,124:1,127:4
-prob sensor negative 15 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=5ec7f11cfeb76a95 values=-50:1,-40:1,-30:3,-20:14,-10:69,114:1,124:1,127:4
-prob sensor negative 16 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=5ec7f11cfeb76a95 values=-50:1,-40:1,-30:3,-20:14,-10:69,114:1,124:1,127:4
-prob sensor negative 17 ray=0 robot=-1 unknown=4002 positive=6 negative=88 hash=5ec7f11cfeb76a95 values=-50:1,-40:1,-30:3,-20:14,-10:69,114:1,124:1,127:4
+prob sensor negative 0 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 1 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 2 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 3 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 4 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 5 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 6 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 7 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 8 ray=1 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 9 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 10 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 11 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 12 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 13 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 14 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 15 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 16 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob sensor negative 17 ray=0 robot=-1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
 prob sensor robot 0 ray=1 robot=5 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
 prob sensor robot 1 ray=1 robot=5 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
 prob sensor robot 2 ray=1 robot=5 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
@@ -901,3 +901,12 @@ prob sensor robot 125 ray=0 robot=40 unknown=3486 positive=99 negative=511 hash=
 prob sensor robot 126 ray=0 robot=40 unknown=3485 positive=100 negative=511 hash=ecc7fec176e5ead9 values=-127:5,-120:1,-90:1,-80:4,-78:1,-70:3,-60:2,-50:2,-40:13,-30:32,-20:75,-10:372,42:2,52:6,62:46,72:44,124:1,127:1
 prob sensor robot 127 ray=0 robot=40 unknown=3484 positive=101 negative=511 hash=b7b37a2ce6469ec1 values=-127:5,-120:1,-90:1,-80:4,-78:1,-70:3,-60:2,-50:2,-40:13,-30:32,-20:75,-10:372,42:2,52:6,62:46,72:45,124:1,127:1
 prob sensor robot 128 ray=1 robot=5 unknown=3465 positive=102 negative=529 hash=d38e7b32b163820b values=-127:5,-120:1,-90:1,-80:4,-78:1,-70:3,-60:2,-50:2,-40:15,-30:31,-20:86,-10:378,42:2,52:8,62:46,72:44,124:1,127:1
+prob pcneg 0 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 1 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 2 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 3 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 4 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 5 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 6 unknown=4096 positive=0 negative=0 hash=59ee8fbcec3b6325 values=
+prob pcneg 7 unknown=4095 positive=1 negative=0 hash=dce8335aa0d331fd values=72:1
+prob pcneg 8 unknown=4094 positive=2 negative=0 hash=b6323fe62c03f135 values=72:2

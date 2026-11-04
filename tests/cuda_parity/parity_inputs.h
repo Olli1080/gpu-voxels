@@ -512,6 +512,24 @@ namespace gvl_parity
 		return c;
 	}
 
+	/// Points for insertPointCloud (one point per call, meaning 1, cumulative on one map): the same question as the group "negative" for the point cloud kernel.
+	/// Negative coordinates, -inf and NaN, one point beyond the border, and two ordinary points.
+	inline std::vector<std::array<float, 3>> pointcloud_edge_points()
+	{
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		const float inf = std::numeric_limits<float>::infinity();
+		return { { -0.5f, 5.5f, 5.5f }, { 5.5f, -0.01f, 5.5f }, { 5.5f, 5.5f, -inf }, { nan, 9.5f, 9.5f }, { -7.5f, -7.5f, -7.5f }, { 16.5f, 5.5f, 5.5f }, { 5.5f, inf, 5.5f }, { 3.5f, 3.5f, 3.5f }, { 12.5f, 1.5f, 7.5f } };
+	}
+
+	/// What the unfixed CUDA did with such a point: every negative or NaN coordinate became voxel 0 on its axis.
+	inline std::array<float, 3> cuda_saturated_point(std::array<float, 3> p)
+	{
+		for (float& c : p)
+			if (!(c >= 0.0f))
+				c = 0.5f;
+		return p;
+	}
+
 	inline std::string sensor_label(const std::string& group, std::size_t index, const SensorCall& c)
 	{
 		return "sensor " + group + " " + std::to_string(index) + " ray=" + (c.raycast ? "1" : "0") + " robot=" + std::to_string(c.robot_bit);

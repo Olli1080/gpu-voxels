@@ -259,14 +259,16 @@ namespace
 TEST_F(VulkanTest, CudaParitySensorData)
 {
 	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "prob sensor " });
+	const std::vector<std::string> unfixed = read_lines("negative_coordinates_cuda_unfixed.txt", { "prob sensor negative " }); // CUDA before K44 was fixed
 	ASSERT_GT(golden.size(), 150u) << "golden file missing: " << GVL_TEST_PARITY_DIR;
+	ASSERT_EQ(unfixed.size(), 18u);
 
 	GpuVoxels gvl(ctx());
 	gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
 	for (const UpdateMode mode : { UpdateMode::Accumulate, UpdateMode::Atomic, UpdateMode::Sequential })
 	{
-		// 1. Vulkan fed with the coordinates CUDA effectively uses: equal to CUDA in every line (rays, special, outside, negative, robot)
-		const std::vector<std::string> mine = sensor_vulkan_lines(gvl, mode, true);
+		// 1. Vulkan equals CUDA in every line (rays, special, outside, negative, robot); K44: CUDA drops negative coordinates now, as Vulkan does
+		const std::vector<std::string> mine = sensor_vulkan_lines(gvl, mode, false);
 		ASSERT_EQ(mine.size(), golden.size());
 		std::size_t different = 0;
 		for (std::size_t i = 0; i < mine.size(); ++i)
@@ -274,15 +276,43 @@ TEST_F(VulkanTest, CudaParitySensorData)
 				ADD_FAILURE() << "mode " << static_cast<int>(mode) << ": Vulkan differs from CUDA:\nCUDA:   " << golden[i] << "\nVulkan: " << mine[i];
 		EXPECT_EQ(different, 0u) << "mode " << static_cast<int>(mode);
 
-		// 2. Vulkan fed with the raw input: equal everywhere except in the group "negative", where it drops what CUDA puts into voxel 0 (K44)
-		const std::vector<std::string> raw = sensor_vulkan_lines(gvl, mode, false);
-		ASSERT_EQ(raw.size(), golden.size());
-		std::size_t other_groups = 0, negative_group = 0;
-		for (std::size_t i = 0; i < raw.size(); ++i)
-			if (raw[i] != golden[i])
-				++(golden[i].rfind("prob sensor negative ", 0) == 0 ? negative_group : other_groups);
-		EXPECT_EQ(other_groups, 0u) << "mode " << static_cast<int>(mode);
-		EXPECT_GT(negative_group, 15u) << "mode " << static_cast<int>(mode) << ": the documented difference to CUDA (negative coordinates) disappeared";
+		// 2. The original CUDA (negative coordinates and a NaN pose became voxel 0) equals Vulkan fed with those saturated coordinates
+		const std::vector<std::string> saturated = sensor_vulkan_lines(gvl, mode, true);
+		std::vector<std::string> negative;
+		for (const std::string& line : saturated)
+			if (line.rfind("prob sensor negative ", 0) == 0)
+				negative.push_back(line);
+		ASSERT_EQ(negative.size(), unfixed.size());
+		for (std::size_t i = 0; i < negative.size(); ++i)
+			EXPECT_EQ(negative[i], unfixed[i]) << "mode " << static_cast<int>(mode);
+	}
+}
+
+// K44 for insert_point_cloud: negative, NaN and infinite coordinates, one point per call (gvl_parity::pointcloud_edge_points). The original CUDA put the
+// negative and NaN points into voxel 0 of that axis (negative_coordinates_cuda_unfixed.txt); the fixed CUDA drops them like Vulkan (collisions_cuda.txt).
+TEST_F(VulkanTest, CudaParityPointCloudNegativeCoordinates)
+{
+	const std::vector<std::string> golden = read_lines("collisions_cuda.txt", { "prob pcneg " });
+	const std::vector<std::string> unfixed = read_lines("negative_coordinates_cuda_unfixed.txt", { "prob pcneg " });
+	const auto points = gvl_parity::pointcloud_edge_points();
+	ASSERT_EQ(golden.size(), points.size());
+	ASSERT_EQ(unfixed.size(), points.size());
+
+	for (const bool saturate : { false, true })
+	{
+		GpuVoxels gvl(ctx());
+		gvl.initialize({ gvl_parity::kDim, gvl_parity::kDim, gvl_parity::kDim }, 1.0f);
+		ASSERT_NE(gvl.add_map(MT_PROBAB_VOXELMAP, "pcneg"), nullptr);
+		for (std::size_t i = 0; i < points.size(); ++i)
+		{
+			const auto p = saturate ? gvl_parity::cuda_saturated_point(points[i]) : points[i];
+			gvl.insert_point_cloud_into_map(std::vector<Point3f>{ { p[0], p[1], p[2] } }, "pcneg", 1); // false for a point outside of the map: not an error here
+			std::vector<int> values;
+			for (const int8_t v : gvl.get_map("pcneg")->as<ProbVoxelMap>()->download_occupancy())
+				values.push_back(v);
+			const std::string line = gvl_parity::prob_line("pcneg " + std::to_string(i), values);
+			EXPECT_EQ(line, saturate ? unfixed[i] : golden[i]) << (saturate ? "unfixed CUDA vs Vulkan with saturated points" : "fixed CUDA vs Vulkan");
+		}
 	}
 }
 

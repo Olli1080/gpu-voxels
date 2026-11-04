@@ -42,7 +42,7 @@ namespace gpu_voxels {
 
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < sizePoints; i += blockDim.x * gridDim.x)
 			{
-				const Vector3ui uint_coords = mapToVoxels(voxel_side_length, points[i]);
+				const Vector3ui uint_coords = mapToVoxelsOrOutside(voxel_side_length, points[i]);
 				//check if point is in the range of the voxel map
 				if (uint_coords.x() < map_dim.x() && uint_coords.y() < map_dim.y()
 					&& uint_coords.z() < map_dim.z())
@@ -97,7 +97,7 @@ namespace gpu_voxels {
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < meta_point_cloud->accumulated_cloud_size;
 				i += blockDim.x * gridDim.x)
 			{
-				const Vector3ui uint_coordinates = mapToVoxels(voxel_side_length,
+				const Vector3ui uint_coordinates = mapToVoxelsOrOutside(voxel_side_length,
 					meta_point_cloud->clouds_base_addresses[0][i]);
 
 				//        printf("Point @(%f,%f,%f)\n",
@@ -146,7 +146,7 @@ namespace gpu_voxels {
 			for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < sub_cloud_upper_bound;
 				i += blockDim.x * gridDim.x)
 			{
-				Vector3ui uint_coords = mapToVoxels(voxel_side_length, meta_point_cloud->clouds_base_addresses[sub_cloud][i]);
+				Vector3ui uint_coords = mapToVoxelsOrOutside(voxel_side_length, meta_point_cloud->clouds_base_addresses[sub_cloud][i]);
 
 				//        printf("Point @(%f,%f,%f)\n",
 				//               meta_point_cloud->clouds_base_addresses[0][i].x,
@@ -212,7 +212,7 @@ namespace gpu_voxels {
 				}
 
 
-				const Vector3ui uint_coordinates = mapToVoxels(voxel_side_length,
+				const Vector3ui uint_coordinates = mapToVoxelsOrOutside(voxel_side_length,
 					meta_point_cloud->clouds_base_addresses[0][i]);
 
 				//        printf("Point @(%f,%f,%f)\n",
