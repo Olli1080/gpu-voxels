@@ -1,0 +1,15 @@
+V15 octree kernel: the position is not scaled by the level : KILLED
+V16 octree kernel: the edge ignores the level : KILLED
+V17 octree kernel: a node with occupied and free bits is drawn free : KILLED
+V18 octree kernel: unknown nodes are drawn : KILLED
+V19 octree kernel: threshold exclusive : KILLED
+V20 octree kernel: the Morton id is cut to 32 bits : KILLED
+V21 octree kernel: the occupancy is not sign extended : KILLED
+V22 octree host: free nodes are never selected : KILLED
+V23 octree host: occupied nodes get the free colour in the selection : KILLED
+V24 octree host: the minimum level is not passed on : KILLED
+V25 octree host: the side length of the tree wins over the display : KILLED
+V26 octree host: a probabilistic tree is processed as a deterministic one : KILLED
+V27 octree host: the last cube is not converted : KILLED
+V28 probabilistic gradient: scale 255 instead of 254 : KILLED
+restored
