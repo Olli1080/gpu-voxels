@@ -32,6 +32,7 @@ target_sources(${PROJECT_NAME}
     src/ImageFile.cpp
     src/OrbitCamera.cpp
     src/Viewer.cpp
+    src/ViewerConfig.cpp
     src/ViewerScene.cpp
     src/vma_impl.cpp
   PUBLIC FILE_SET HEADERS
@@ -59,10 +60,13 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/ImageFile.h
     ${INCLUDE_DIR}/OrbitCamera.h
     ${INCLUDE_DIR}/Viewer.h
+    ${INCLUDE_DIR}/ViewerConfig.h
     ${INCLUDE_DIR}/ViewerScene.h
     ${INCLUDE_DIR}/vulkan_types.h
     ${INCLUDE_DIR}/vulkan_common.h
 )
+
+find_package(tinyxml2 CONFIG REQUIRED)
 
 # Vulkan::Vulkan: loader + headers (vulkan.hpp). VMA is an implementation detail of the .cpp files.
 target_link_libraries(${PROJECT_NAME}
@@ -72,6 +76,7 @@ target_link_libraries(${PROJECT_NAME}
     gpu_voxels_logging
   PRIVATE
     GPUOpen::VulkanMemoryAllocator
+    tinyxml2::tinyxml2
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

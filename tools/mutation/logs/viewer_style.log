@@ -1,0 +1,22 @@
+V60 style file: colours are read as decimal : KILLED
+V61 style file: six digit colours are transparent : KILLED
+V62 style file: red and blue are swapped : KILLED
+V63 style file: unknown attributes are accepted : KILLED
+V64 style file: unknown elements are accepted : KILLED
+V65 style file: duplicate layers are accepted : KILLED
+V66 style file: duplicate meanings are accepted : KILLED
+V67 style file: default="hidden" is ignored : KILLED
+V68 style file: min_level up to 14 : KILLED
+V69 style file: colour and hidden together are accepted : KILLED
+V70 style file: layers that fail are not reported : KILLED
+V71 style file: the alpha of the background is dropped : KILLED
+V72 style file: shaded is not applied : KILLED
+V73 style file: errors name line 0 : KILLED
+V74 style file: the keyword none is not a colour : KILLED
+W10 screenshot: not taken with the camera of the window : PATTERN COUNT 2
+W11 screenshot: the render options of the window are ignored : PATTERN COUNT 2
+W12 screenshot: the counter does not count : KILLED
+W13 screenshot: an error message is never cleared : KILLED
+W14 screenshot: key P does nothing : KILLED
+W15 screenshot: the file name does not count up : KILLED
+restored

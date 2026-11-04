@@ -29,6 +29,7 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <span>
@@ -79,8 +80,15 @@ namespace gpu_voxels::vulkan
 		void set_key_handler(std::function<void(int key)> handler) { key_handler_ = std::move(handler); }
 		/// What the key callback of the window does with a key; public so that tests can press keys. `mods` are the GLFW modifier bits (1 = shift),
 		/// `repeat` is a key that is held down (GLFW_REPEAT): only the camera keys react to it. Camera keys: the arrows rotate (with shift they pan),
-		/// Page up / Page down / + / - (also on the keypad) zoom, Home = R.
+		/// Page up / Page down / + / - (also on the keypad) zoom, Home = R, P = screenshot.
 		void handle_key(int key, int mods = 0, bool repeat = false);
+		/// Save the next drawn frame as a PNG file (key P writes gvl_screenshot_<n>.png into the working directory). The scene is rendered again into an image of
+		/// the size of the window with the same camera and options, so the file shows what the window shows. A file that cannot be written does not stop the
+		/// frame loop: screenshot_error() tells why, screenshots_written() does not count it.
+		void request_screenshot(std::filesystem::path file);
+		[[nodiscard]] uint32_t screenshots_written() const { return screenshots_written_; }
+		/// Empty after a successful screenshot; the message of the last failure otherwise.
+		[[nodiscard]] const std::string& screenshot_error() const { return screenshot_error_; }
 		/// The window title (GLFW); the viewer programs show their layers in it.
 		void set_title(const std::string& title);
 		[[nodiscard]] const std::string& title() const { return options_.title; }
@@ -101,6 +109,7 @@ namespace gpu_voxels::vulkan
 	private:
 		struct Impl;
 		void create_swapchain();
+		void take_screenshot(std::span<const CubeBuffer* const> buffers);
 		void destroy_swapchain();
 
 		Context& context_;
@@ -111,6 +120,9 @@ namespace gpu_voxels::vulkan
 		OrbitController controller_;
 		RenderOptions render_options_;
 		std::function<void(int)> key_handler_;
+		std::filesystem::path pending_screenshot_;
+		uint32_t screenshots_written_ = 0;
+		std::string screenshot_error_;
 		vk::Extent2D extent_{};
 		vk::Format format_ = vk::Format::eUndefined;
 		uint64_t frames_presented_ = 0;

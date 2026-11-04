@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- Style file for `gvl_viewer --facade --config viewer_style_example.xml`. The format is described in ViewerConfig.h (gpu_voxels/vulkan/ViewerConfig.h):
+     colours are #rrggbb or #rrggbbaa (alpha 0 or "none" hides), unknown elements and attributes are errors. The layers are those of the demo. -->
+<viewer>
+  <window background="#0b1220" shaded="true"/>
+
+  <!-- the bit map: only meaning 1 (the points of the scene) in a warm grey -->
+  <layer name="environment" type="map">
+    <palette default="hidden">
+      <meaning id="1" colour="#c8b89a"/>
+    </palette>
+  </layer>
+
+  <!-- the octree box: occupied cubes in red, one level coarser than the voxels -->
+  <layer name="octree" type="map">
+    <octree min_level="1" occupied="#e04040" collision="#ffff00"/>
+  </layer>
+
+  <layer name="spheres" type="primitives" colour="#40c0ff"/>
+  <layer name="cuboids" type="primitives" colour="#80ff80"/>
+
+  <!-- the robot as small cubes centred on the points, one colour per link -->
+  <layer name="arm" type="robot" snap_to_voxels="false" point_size="0.07">
+    <colour>#ffd028</colour>
+    <colour>#ff40d0</colour>
+  </layer>
+</viewer>

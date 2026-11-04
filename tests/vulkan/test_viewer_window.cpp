@@ -5,6 +5,9 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 
@@ -258,4 +261,79 @@ TEST_F(ViewerWindowTest, TheKeyboardMovesTheCamera)
 	EXPECT_EQ(window.title(), ViewerWindowOptions{}.title);
 	window.set_title("layers: 1 map");
 	EXPECT_EQ(window.title(), "layers: 1 map");
+}
+
+namespace
+{
+	std::vector<uint8_t> read_file(const std::filesystem::path& file)
+	{
+		std::ifstream in(file, std::ios::binary);
+		return std::vector<uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+	}
+}
+
+TEST_F(ViewerWindowTest, AScreenshotShowsWhatTheWindowShows)
+{
+	BitVoxelMap map(ctx(), { 16, 16, 16 }, 1.0f);
+	map.insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 }, { 8, 8, 8 }, { 14, 3, 9 } }, 5);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 1000);
+	extractor.extract(map, BitPalette::defaults(), cubes);
+	const CubeBuffer* buffers[] = { &cubes };
+
+	ViewerWindow window(ctx(), hidden(200, 150));
+	window.camera().frame({ 0, 0, 0 }, { 16, 16, 16 });
+	const std::filesystem::path file = std::filesystem::temp_directory_path() / "gvl_window_screenshot_test.png";
+	std::filesystem::remove(file);
+
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	const auto expected_file = [&]
+	{
+		OffscreenTarget target(ctx(), window.extent().width, window.extent().height);
+		target.render(renderer, window.camera().camera(), buffers, window.render_options());
+		return encode_png(window.extent().width, window.extent().height, target.read_rgba());
+	};
+
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_FALSE(std::filesystem::exists(file)) << "nothing without a request";
+	window.request_screenshot(file);
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_EQ(window.screenshots_written(), 1u);
+	EXPECT_TRUE(window.screenshot_error().empty());
+	EXPECT_EQ(read_file(file), expected_file()) << "the file is the rendered scene of the window camera";
+	std::filesystem::remove(file);
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_FALSE(std::filesystem::exists(file)) << "one request, one file";
+
+	// the options and the camera of the moment are used
+	window.handle_key(83);   // S: no shading
+	window.camera().yaw_degrees += 40.0f;
+	window.request_screenshot(file);
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_EQ(window.screenshots_written(), 2u);
+	EXPECT_EQ(read_file(file), expected_file());
+	std::filesystem::remove(file);
+
+	// a file that cannot be written does not stop the loop
+	window.request_screenshot(std::filesystem::temp_directory_path() / "gvl_no_such_directory_for_screenshots" / "x.png");
+	EXPECT_TRUE(window.draw(buffers));
+	EXPECT_EQ(window.screenshots_written(), 2u);
+	EXPECT_FALSE(window.screenshot_error().empty());
+	window.request_screenshot(file);
+	EXPECT_TRUE(window.draw(buffers));
+	EXPECT_EQ(window.screenshots_written(), 3u);
+	EXPECT_TRUE(window.screenshot_error().empty()) << "a later success clears the message";
+	std::filesystem::remove(file);
+
+	// key P: gvl_screenshot_<n>.png in the working directory, n counts the files written
+	const std::filesystem::path by_key = std::filesystem::current_path() / "gvl_screenshot_4.png";
+	std::filesystem::remove(by_key);
+	window.handle_key(80, 0, true);   // held down: no request
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_FALSE(std::filesystem::exists(by_key));
+	window.handle_key(80);
+	ASSERT_TRUE(window.draw(buffers));
+	EXPECT_TRUE(std::filesystem::exists(by_key));
+	EXPECT_EQ(window.screenshots_written(), 4u);
+	std::filesystem::remove(by_key);
 }

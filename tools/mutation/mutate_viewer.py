@@ -19,6 +19,7 @@ SPF = VK + 'shaders/viewer_sphere.frag'
 SCN = VK + 'src/ViewerScene.cpp'
 GV = VK + 'src/GpuVoxels.cpp'
 EPT = VK + 'shaders/viewer_extract_points.comp'
+VCF = VK + 'src/ViewerConfig.cpp'
 VWIN = root + 'packages/gpu_voxels/gpu_voxels/vulkan_viewer/src/ViewerWindow.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
@@ -98,6 +99,28 @@ MUT = [
     ('W07 window: S does not toggle the shading', VWIN, "render_options_.shaded = !render_options_.shaded;", "render_options_.shaded = true;"),
     ('W08 window: ESC does not close', VWIN, "			glfwSetWindowShouldClose(window_, GLFW_TRUE);", "			(void)0;"),
     ('W09 window: unused keys are not forwarded', VWIN, "else if (key_handler_)", "else if (false)"),
+    # style file (V60 ..) and screenshots (W10 ..), 2026-11-05
+    ('V60 style file: colours are read as decimal', VCF, r'''text.data() + 3 + i * 2, value, 16);''', r'''text.data() + 3 + i * 2, value, 10);'''),
+    ('V61 style file: six digit colours are transparent', VCF, r'''uint32_t channels[4] = { 0, 0, 0, 255 };''', r'''uint32_t channels[4] = { 0, 0, 0, 0 };'''),
+    ('V62 style file: red and blue are swapped', VCF, r'''return pack_colour(static_cast<uint8_t>(channels[0]), static_cast<uint8_t>(channels[1]), static_cast<uint8_t>(channels[2])''', r'''return pack_colour(static_cast<uint8_t>(channels[2]), static_cast<uint8_t>(channels[1]), static_cast<uint8_t>(channels[0])'''),
+    ('V63 style file: unknown attributes are accepted', VCF, r'''fail(&element, std::string("unknown attribute '") + a->Name() + "' of <" + element.Name() + ">");''', r'''(void)0;'''),
+    ('V64 style file: unknown elements are accepted', VCF, r'''fail(c, std::string("unknown element <") + c->Name() + "> inside <" + element.Name() + ">");''', r'''(void)0;'''),
+    ('V65 style file: duplicate layers are accepted', VCF, r'''if (!seen.insert({ static_cast<int>(layer.kind), layer.name }).second)''', r'''if (false)'''),
+    ('V66 style file: duplicate meanings are accepted', VCF, r'''if (!seen.insert(id).second)''', r'''if (false)'''),
+    ('V67 style file: default="hidden" is ignored', VCF, r'''palette = BitPalette{};''', r'''(void)0;'''),
+    ('V68 style file: min_level up to 14', VCF, r'''parse_int(element, "min_level", *v, 0, 13)''', r'''parse_int(element, "min_level", *v, 0, 14)'''),
+    ('V69 style file: colour and hidden together are accepted', VCF, r'''if (colour.has_value() == hidden.has_value())''', r'''if (false)'''),
+    ('V70 style file: layers that fail are not reported', VCF, r'''failed.push_back(prefix + layer.name);''', r'''(void)prefix;'''),
+    ('V71 style file: the alpha of the background is dropped', VCF, r'''static_cast<float>(c >> 24) / 255.0f''', r'''1.0f'''),
+    ('V72 style file: shaded is not applied', VCF, r'''options.shaded = *shaded;''', r'''(void)0;'''),
+    ('V73 style file: errors name line 0', VCF, r'''element ? element->GetLineNum() : 0''', r'''0'''),
+    ('V74 style file: the keyword none is not a colour', VCF, r'''if (text == "none")''', r'''if (false)'''),
+    ('W10 screenshot: not taken with the camera of the window', VWIN, r'''shot_renderer, camera_.camera(), buffers, render_options_);''', r'''shot_renderer, OrbitCamera{}.camera(), buffers, render_options_);'''),
+    ('W11 screenshot: the render options of the window are ignored', VWIN, r'''shot_renderer, camera_.camera(), buffers, render_options_);''', r'''shot_renderer, camera_.camera(), buffers, RenderOptions{});'''),
+    ('W12 screenshot: the counter does not count', VWIN, r'''++screenshots_written_;''', r'''(void)0;'''),
+    ('W13 screenshot: an error message is never cleared', VWIN, r'''screenshot_error_.clear();''', r'''(void)0;'''),
+    ('W14 screenshot: key P does nothing', VWIN, r'''else if (key == GLFW_KEY_P)''', r'''else if (false)'''),
+    ('W15 screenshot: the file name does not count up', VWIN, r'''std::to_string(screenshots_written_ + 1)''', r'''std::to_string(screenshots_written_)'''),
 ]
 
 TESTS = 'Viewer*'

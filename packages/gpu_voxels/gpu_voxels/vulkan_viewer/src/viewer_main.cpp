@@ -6,11 +6,12 @@
 /*!\file
  * \brief  gvl_viewer: shows a demo scene or a point cloud file in an in-process Vulkan window (or renders it to a PNG without a window).
  *
- *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob] [--octree [--level <N>]] [--facade]
+ *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob] [--octree [--level <N>]] [--facade [--config <style.xml>]]
  *              [--png <out.png> [--size <W>x<H>]] [--frames <N>] [--no-vsync] [--validation]
  *
  * --facade shows a GpuVoxels scene through the visualization hooks (visualize_map, visualize_primitives_array): a bit map, an octree, moving spheres and
- * cuboids and a three link robot as layers; the keys 1 .. 5 show / hide them.
+ * cuboids and a three link robot as layers; the keys 1 .. 5 show / hide them, P saves a screenshot. --config reads the styles of the layers and the window
+ * settings from a style file (see ViewerConfig.h; the layers of the demo are environment, octree, spheres, cuboids and arm).
  *
  * Mouse: left button rotates, right / middle button pans, wheel zooms. Keys: S toggles the shading, R resets the camera, ESC closes.
  */
@@ -30,6 +31,7 @@
 #include <gpu_voxels/vulkan/PointCloudFile.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan/ViewerConfig.h>
 #include <gpu_voxels/vulkan/ViewerScene.h>
 #include <gpu_voxels/vulkan_viewer/ViewerWindow.h>
 
@@ -43,6 +45,7 @@ namespace
 		float side = 0.05f;
 		bool prob = false;
 		bool facade = false;   ///< layers of a GpuVoxels through ViewerScene and the visualize_* calls
+		std::string config_file; ///< --facade: style file of the layers and the window
 		bool octree = false;   ///< show the points as an octree (deterministic, with --prob probabilistic) instead of a voxel map
 		uint32_t level = 0;    ///< --octree: nodes of this level are drawn as one cube
 		std::string png;
@@ -67,6 +70,7 @@ namespace
 			if (arg == "--points") a.points_file = value();
 			else if (arg == "--octree") a.octree = true;
 			else if (arg == "--facade") a.facade = true;
+			else if (arg == "--config") a.config_file = value();
 			else if (arg == "--level") a.level = static_cast<uint32_t>(std::stoul(value()));
 			else if (arg == "--side") a.side = std::stof(value());
 			else if (arg == "--prob") a.prob = true;
@@ -228,16 +232,31 @@ namespace
 		}
 
 		ViewerScene scene(gvl, 1u << 21);
-		for (const char* name : { "environment", "octree" })
-			gvl.visualize_map(name);
-		gvl.visualize_primitives_array("spheres");
-		gvl.visualize_primitives_array("cuboids");
-		RobotDisplay robot_style;
-		robot_style.snap_to_voxels = false;   // the points as small cubes, not the voxels of the 5 cm grid
-		robot_style.point_size = 0.07f;
-		robot_style.colours = { pack_colour(240, 200, 40), pack_colour(230, 60, 200) };
-		scene.show_robot("arm", robot_style);
-		const std::size_t robot_layer = scene.layer_count() - 1;
+		RenderOptions render_options;
+		std::size_t robot_layer = scene.layer_count();   // none
+		if (!a.config_file.empty())
+		{
+			const ViewerConfig config = load_viewer_config(a.config_file);
+			for (const std::string& name : show_layers(scene, config))
+				std::cout << "not shown: " << name << "\n";
+			config.apply(render_options);
+		}
+		else
+		{
+			// the same through the calls CUDA programs make
+			for (const char* name : { "environment", "octree" })
+				gvl.visualize_map(name);
+			gvl.visualize_primitives_array("spheres");
+			gvl.visualize_primitives_array("cuboids");
+			RobotDisplay robot_style;
+			robot_style.snap_to_voxels = false;   // the points as small cubes, not the voxels of the 5 cm grid
+			robot_style.point_size = 0.07f;
+			robot_style.colours = { pack_colour(240, 200, 40), pack_colour(230, 60, 200) };
+			scene.show_robot("arm", robot_style);
+		}
+		for (std::size_t i = 0; i < scene.layer_count(); ++i)
+			if (scene.layers()[i].kind == ViewerScene::LayerKind::Robot)
+				robot_layer = i;
 		const auto layers = scene.layers();
 		for (std::size_t i = 0; i < layers.size(); ++i)
 			std::cout << "layer " << i + 1 << ": " << layers[i].name << (layers[i].kind == ViewerScene::LayerKind::Primitives ? " (primitives)" : layers[i].kind == ViewerScene::LayerKind::Robot ? " (robot)" : "") << ", " << layers[i].cubes << " cubes\n";
@@ -249,7 +268,7 @@ namespace
 			VoxelRenderer renderer(context, OffscreenTarget::kColourFormat);
 			OffscreenTarget target(context, a.width, a.height);
 			const auto buffers = scene.buffers();
-			target.render(renderer, camera.camera(), buffers);
+			target.render(renderer, camera.camera(), buffers, render_options);
 			write_png(a.png, a.width, a.height, target.read_rgba());
 			std::cout << "wrote " << a.png << "\n";
 			return 0;
@@ -261,7 +280,8 @@ namespace
 		ViewerWindow window(context, options);
 		window.camera() = camera;
 		window.set_home_camera();
-		const auto show_layers = [&]
+		window.render_options() = render_options;
+		const auto update_title = [&]
 		{
 			std::string title = "gvl_viewer - layers (keys 1 .. 5):";
 			const auto info = scene.layers();
@@ -269,11 +289,11 @@ namespace
 				title += " " + std::to_string(i + 1) + (info[i].visible ? " " : " (off) ") + info[i].name + ";";
 			window.set_title(title);
 		};
-		show_layers();
+		update_title();
 		window.set_key_handler([&](int key)
 		{
 			if (key >= '1' && key <= '9' && scene.toggle_visible(static_cast<std::size_t>(key - '1')))
-				show_layers();
+				update_title();
 		});
 		while (!window.should_close() && (a.frames == 0 || window.frames_presented() < a.frames))
 		{
@@ -281,8 +301,11 @@ namespace
 			move_spheres(static_cast<double>(window.frames_presented()) * 0.02);
 			gvl.visualize_primitives_array("spheres", true);   // extracts the new positions
 			const float swing = static_cast<float>(window.frames_presented()) * 0.02f;
-			gvl.set_robot_configuration("arm", { { "upper", 0.8f * std::sin(swing) }, { "lower", 1.0f * std::sin(1.7f * swing) } });
-			scene.refresh_layer(robot_layer);   // the robot is read in its new pose
+			if (robot_layer < scene.layer_count())
+			{
+				gvl.set_robot_configuration("arm", { { "upper", 0.8f * std::sin(swing) }, { "lower", 1.0f * std::sin(1.7f * swing) } });
+				scene.refresh_layer(robot_layer);   // the robot is read in its new pose
+			}
 			const auto buffers = scene.buffers();
 			window.draw(buffers);
 		}

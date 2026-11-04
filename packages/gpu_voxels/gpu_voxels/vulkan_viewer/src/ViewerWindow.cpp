@@ -5,6 +5,8 @@
 
 #include <gpu_voxels/vulkan_viewer/ViewerWindow.h>
 
+#include <gpu_voxels/vulkan/ImageFile.h>
+
 #include <algorithm>
 #include <array>
 #include <mutex>
@@ -61,6 +63,9 @@ namespace gpu_voxels::vulkan
 		};
 		std::array<Depth, kFramesInFlight> depth;
 		std::unique_ptr<VoxelRenderer> renderer;
+		/// screenshots: rendered offscreen with the same camera (created at the first screenshot, the target follows the window size)
+		std::unique_ptr<VoxelRenderer> shot_renderer;
+		std::unique_ptr<OffscreenTarget> shot_target;
 		std::array<Frame, kFramesInFlight> frames;
 		uint32_t frame_index = 0;
 		bool needs_recreate = false;
@@ -221,6 +226,8 @@ namespace gpu_voxels::vulkan
 			render_options_.shaded = !render_options_.shaded;
 		else if (key == GLFW_KEY_R || key == GLFW_KEY_HOME)
 			camera_ = initial_camera_;
+		else if (key == GLFW_KEY_P)
+			request_screenshot("gvl_screenshot_" + std::to_string(screenshots_written_ + 1) + ".png");
 		else if (key_handler_)
 			key_handler_(key);
 	}
@@ -377,6 +384,32 @@ namespace gpu_voxels::vulkan
 		impl_->swapchain.reset();
 	}
 
+	void ViewerWindow::request_screenshot(std::filesystem::path file)
+	{
+		pending_screenshot_ = std::move(file);
+	}
+
+	void ViewerWindow::take_screenshot(std::span<const CubeBuffer* const> buffers)
+	{
+		const std::filesystem::path file = std::move(pending_screenshot_);
+		pending_screenshot_.clear();
+		try
+		{
+			if (!impl_->shot_renderer)
+				impl_->shot_renderer = std::make_unique<VoxelRenderer>(context_, OffscreenTarget::kColourFormat, OffscreenTarget::kDepthFormat);
+			if (!impl_->shot_target || impl_->shot_target->width() != extent_.width || impl_->shot_target->height() != extent_.height)
+				impl_->shot_target = std::make_unique<OffscreenTarget>(context_, extent_.width, extent_.height);
+			impl_->shot_target->render(*impl_->shot_renderer, camera_.camera(), buffers, render_options_);
+			write_png(file, extent_.width, extent_.height, impl_->shot_target->read_rgba());
+			++screenshots_written_;
+			screenshot_error_.clear();
+		}
+		catch (const std::exception& e)
+		{
+			screenshot_error_ = e.what();
+		}
+	}
+
 	bool ViewerWindow::draw(std::span<const CubeBuffer* const> buffers)
 	{
 		const auto size = framebuffer_size();
@@ -388,6 +421,8 @@ namespace gpu_voxels::vulkan
 			if (extent_.width == 0)
 				return false;
 		}
+		if (!pending_screenshot_.empty())
+			take_screenshot(buffers);
 
 		const vk::Device device = context_.device();
 		auto& frame = impl_->frames[impl_->frame_index];

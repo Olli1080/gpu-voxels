@@ -7,6 +7,8 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -23,6 +25,7 @@
 #include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan/ViewerConfig.h>
 #include <gpu_voxels/vulkan/ViewerScene.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
@@ -1750,4 +1753,231 @@ TEST_F(ViewerTest, CollidingOctreeNodesGetTheirOwnColour)
 		for (const Cube& c : cubes.download())
 			EXPECT_NE(c.colour, red) << "no flags, no highlight";
 	}
+}
+
+// ---- style file (XML) ------------------------------------------------------------------------------------------------------------------------
+
+namespace
+{
+	void expect_config_error(const std::string& xml, const std::string& text)
+	{
+		try
+		{
+			(void)parse_viewer_config(xml);
+			ADD_FAILURE() << "no exception for: " << xml;
+		}
+		catch (const VulkanError& e)
+		{
+			const std::string message = e.what();
+			EXPECT_NE(message.find(text), std::string::npos) << "message was: " << message << " (for: " << xml << ")";
+			EXPECT_NE(message.find("ViewerConfig: line "), std::string::npos) << message;
+		}
+	}
+
+	const char* kFullConfig = R"(<?xml version="1.0"?>
+<viewer>
+  <window background="#102030" shaded="false"/>
+  <layer name="environment" type="map">
+    <palette default="hidden">
+      <meaning id="1" colour="#2aa84a"/>
+      <meaning id="7" colour="#11223380"/>
+      <meaning id="40" hidden="true"/>
+    </palette>
+  </layer>
+  <layer name="occupancy" type="map"><prob min_value="10"/></layer>
+  <layer name="tree" type="map">
+    <octree min_level="2" side_length="0.05" occupied="#010203" free="#a0b0c0d0" collision="#ff0000" min_value="-5"/>
+  </layer>
+  <layer name="spheres" type="primitives" colour="#5a96ff"/>
+  <layer name="arm" type="robot" snap_to_voxels="false" point_size="0.07">
+    <colour>#f0c828</colour>
+    <colour>none</colour>
+  </layer>
+  <layer name="spheres" type="map"/>
+</viewer>)";
+}
+
+TEST(ViewerConfigTest, ReadsEveryKindOfLayerAndTheWindowSettings)
+{
+	const ViewerConfig config = parse_viewer_config(kFullConfig);
+	ASSERT_EQ(config.layers.size(), 6u);
+	ASSERT_TRUE(config.background.has_value());
+	EXPECT_NEAR((*config.background)[0], 16.0f / 255.0f, 1e-6f);
+	EXPECT_NEAR((*config.background)[1], 32.0f / 255.0f, 1e-6f);
+	EXPECT_NEAR((*config.background)[2], 48.0f / 255.0f, 1e-6f);
+	EXPECT_EQ((*config.background)[3], 1.0f);
+	EXPECT_EQ(config.shaded, std::optional<bool>(false));
+	RenderOptions options;
+	config.apply(options);
+	EXPECT_EQ(options.clear_colour, *config.background);
+	EXPECT_FALSE(options.shaded);
+
+	const auto& environment = config.layers[0];
+	EXPECT_EQ(environment.name, "environment");
+	EXPECT_EQ(environment.kind, ViewerScene::LayerKind::Map);
+	EXPECT_EQ(environment.map.palette.colour[1], pack_colour(0x2a, 0xa8, 0x4a));
+	EXPECT_EQ(environment.map.palette.colour[7], pack_colour(0x11, 0x22, 0x33, 0x80));
+	EXPECT_EQ(environment.map.palette.colour[40], 0u);
+	EXPECT_EQ(environment.map.palette.colour[2], 0u) << "default hidden: only the listed meanings";
+	EXPECT_EQ(config.layers[1].map.prob.min_value, 10);
+	const OctreeDisplay& tree = config.layers[2].map.octree;
+	EXPECT_EQ(tree.min_level, 2u);
+	EXPECT_EQ(tree.side_length, 0.05f);
+	EXPECT_EQ(tree.occupied_colour, pack_colour(1, 2, 3));
+	EXPECT_EQ(tree.free_colour, pack_colour(0xa0, 0xb0, 0xc0, 0xd0));
+	EXPECT_EQ(tree.collision_colour, pack_colour(255, 0, 0));
+	EXPECT_EQ(tree.min_value, -5);
+	EXPECT_EQ(config.layers[3].kind, ViewerScene::LayerKind::Primitives);
+	EXPECT_EQ(config.layers[3].colour, pack_colour(0x5a, 0x96, 0xff));
+	const auto& arm = config.layers[4];
+	EXPECT_EQ(arm.kind, ViewerScene::LayerKind::Robot);
+	EXPECT_FALSE(arm.robot.snap_to_voxels);
+	EXPECT_EQ(arm.robot.point_size, 0.07f);
+	EXPECT_EQ(arm.robot.colours, (std::vector<uint32_t>{ pack_colour(0xf0, 0xc8, 0x28), 0u }));
+	EXPECT_EQ(config.layers[5].kind, ViewerScene::LayerKind::Map) << "a map and a primitive array may have the same name";
+}
+
+TEST(ViewerConfigTest, DefaultsAreTheDefaultsOfTheStyles)
+{
+	const ViewerConfig empty = parse_viewer_config("<viewer/>");
+	EXPECT_TRUE(empty.layers.empty());
+	EXPECT_FALSE(empty.background.has_value());
+	EXPECT_FALSE(empty.shaded.has_value());
+	RenderOptions options, untouched;
+	empty.apply(options);
+	EXPECT_EQ(options.clear_colour, untouched.clear_colour);
+	EXPECT_EQ(options.shaded, untouched.shaded);
+
+	const ViewerConfig config = parse_viewer_config(R"(<viewer>
+		<layer name="m" type="map"/><layer name="p" type="primitives"/><layer name="r" type="robot"/>
+		<layer name="h" type="map"><palette default="hues"/></layer></viewer>)");
+	ASSERT_EQ(config.layers.size(), 4u);
+	EXPECT_EQ(config.layers[0].map.palette.colour, BitPalette::defaults().colour);
+	EXPECT_EQ(config.layers[3].map.palette.colour, BitPalette::defaults().colour);
+	EXPECT_EQ(config.layers[0].map.prob.min_value, ProbDisplay{}.min_value);
+	EXPECT_EQ(config.layers[0].map.octree.occupied_colour, OctreeDisplay{}.occupied_colour);
+	EXPECT_EQ(config.layers[1].colour, ViewerLayerConfig{}.colour);
+	EXPECT_TRUE(config.layers[2].robot.colours.empty());
+	EXPECT_TRUE(config.layers[2].robot.snap_to_voxels);
+	// the colour of a window background keeps its alpha
+	const ViewerConfig translucent = parse_viewer_config(R"(<viewer><window background="#ff000080"/></viewer>)");
+	EXPECT_NEAR((*translucent.background)[3], 128.0f / 255.0f, 1e-6f);
+}
+
+TEST(ViewerConfigTest, MistakesAreErrorsWithTheLineNumber)
+{
+	expect_config_error("<viewer><layer", "line");
+	expect_config_error("<scene/>", "the root element must be <viewer>");
+	expect_config_error("<viewer foo=\"1\"/>", "unknown attribute 'foo'");
+	expect_config_error("<viewer><camera/></viewer>", "unknown element <camera>");
+	expect_config_error("<viewer><window/><window/></viewer>", "<window> appears twice");
+	expect_config_error("<viewer><window colour=\"#000000\"/></viewer>", "unknown attribute 'colour'");
+	expect_config_error("<viewer><layer type=\"map\"/></viewer>", "needs the attribute 'name'");
+	expect_config_error("<viewer><layer name=\"\" type=\"map\"/></viewer>", "needs the attribute 'name'");
+	expect_config_error("<viewer><layer name=\"a\"/></viewer>", "needs the attribute 'type'");
+	expect_config_error("<viewer><layer name=\"a\" type=\"mesh\"/></viewer>", "'type' must be map, primitives or robot");
+	expect_config_error("<viewer>\n<layer name=\"a\" type=\"map\"/>\n<layer name=\"a\" type=\"map\"/></viewer>", "layer 'a' of this type is listed twice");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\" colour=\"#000000\"/></viewer>", "only belongs to a layer of type primitives");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\" point_size=\"1\"/></viewer>", "only belongs to a layer of type robot");
+	expect_config_error("<viewer><layer name=\"a\" type=\"primitives\"><palette/></layer></viewer>", "unknown element <palette>");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><colour/></layer></viewer>", "unknown element <colour>");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette/><palette/></layer></viewer>", "<palette> appears twice");
+	// colours
+	for (const char* bad : { "red", "#12345", "#1234567", "#gg0000", "ff0000", "#ff00000g", "" })
+		expect_config_error(std::string("<viewer><layer name=\"a\" type=\"primitives\" colour=\"") + bad + "\"/></viewer>", "is not a colour");
+	// palette
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette default=\"all\"/></layer></viewer>", "'default' must be hues or hidden");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning colour=\"#000000\"/></palette></layer></viewer>", "needs the attribute 'id'");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"256\" hidden=\"true\"/></palette></layer></viewer>", "from 0 to 255");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"x\" hidden=\"true\"/></palette></layer></viewer>", "'id' must be an integer");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"1\"/></palette></layer></viewer>", "exactly one of 'colour' and 'hidden'");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"1\" colour=\"#000000\" hidden=\"true\"/></palette></layer></viewer>", "exactly one of");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"1\" hidden=\"false\"/></palette></layer></viewer>", "says nothing");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"1\" hidden=\"yes\"/></palette></layer></viewer>", "must be true or false");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><palette><meaning id=\"1\" hidden=\"true\"/><meaning id=\"1\" hidden=\"true\"/></palette></layer></viewer>", "meaning 1 is listed twice");
+	// numbers
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><octree min_level=\"14\"/></layer></viewer>", "from 0 to 13");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><octree side_length=\"-1\"/></layer></viewer>", "must not be negative");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><octree side_length=\"abc\"/></layer></viewer>", "must be a number");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><octree side_length=\"nan\"/></layer></viewer>", "must be a number");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><octree depth=\"1\"/></layer></viewer>", "unknown attribute 'depth'");
+	expect_config_error("<viewer><layer name=\"a\" type=\"map\"><prob min_value=\"5000\"/></layer></viewer>", "from -1000 to 1000");
+	expect_config_error("<viewer><layer name=\"a\" type=\"robot\" point_size=\"0\"/></viewer>", "'point_size' must be positive");
+	expect_config_error("<viewer><layer name=\"a\" type=\"robot\" snap_to_voxels=\"1\"/></viewer>", "must be true or false");
+	expect_config_error("<viewer><layer name=\"a\" type=\"robot\"><colour>blue</colour></layer></viewer>", "is not a colour");
+	expect_config_error("<viewer><layer name=\"a\" type=\"robot\"><colour/></layer></viewer>", "is not a colour");
+	expect_config_error("<viewer><window shaded=\"maybe\"/></viewer>", "must be true or false");
+	expect_config_error("<viewer><window background=\"black\"/></viewer>", "is not a colour");
+	// the line number points at the element
+	try
+	{
+		(void)parse_viewer_config("<viewer>\n\n<layer name=\"a\" type=\"mesh\"/></viewer>");
+		ADD_FAILURE();
+	}
+	catch (const VulkanError& e)
+	{
+		EXPECT_NE(std::string(e.what()).find("line 3"), std::string::npos) << e.what();
+	}
+}
+
+TEST(ViewerConfigTest, ALoadedFileIsParsedAndAMissingOneIsAnError)
+{
+	const auto file = std::filesystem::temp_directory_path() / "gvl_viewer_config_test.xml";
+	{
+		std::ofstream out(file, std::ios::binary);
+		out << kFullConfig;
+	}
+	const ViewerConfig config = load_viewer_config(file);
+	EXPECT_EQ(config.layers.size(), 6u);
+	std::filesystem::remove(file);
+	EXPECT_THROW((void)load_viewer_config(file), VulkanError);
+}
+
+TEST_F(ViewerTest, TheLayersOfAStyleFileAreShownWithTheirStyles)
+{
+	SceneFixture f(ctx());
+	const auto bit = f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "bit");
+	bit->insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 }, { 2, 2, 2 } }, 5);
+	bit->insert_coordinate_list(std::vector<Coord3ui>{ { 3, 3, 3 } }, 7);
+	f.gvl.add_map(MT_PROBAB_VOXELMAP, "prob")->insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 } }, eBVM_OCCUPIED);
+	f.gvl.add_map(MT_BITVECTOR_OCTREE, "octree")->insert_coordinate_list(std::vector<Coord3ui>{ { 4, 4, 4 } }, eBVM_OCCUPIED);
+	f.gvl.add_map(MT_DISTANCE_VOXELMAP, "distance");
+	f.gvl.add_primitives(ePRIM_SPHERE, "spheres");
+	f.gvl.modify_primitives("spheres", std::vector<Point4f>{ { 2.0f, 2.0f, 2.0f, 1.0f } });
+	RobotFixture robot_fixture(ctx());   // a second façade with a robot: the scene below uses the first one, the robot layer must fail there
+
+	const ViewerConfig config = parse_viewer_config(R"(<viewer>
+		<layer name="bit" type="map"><palette default="hidden"><meaning id="7" colour="#010203"/></palette></layer>
+		<layer name="prob" type="map"><prob min_value="1000"/></layer>
+		<layer name="octree" type="map"><octree occupied="#0a0b0c"/></layer>
+		<layer name="spheres" type="primitives" colour="#040506"/>
+		<layer name="ghost" type="map"/>
+		<layer name="distance" type="map"/>
+		<layer name="ghost" type="primitives"/>
+		<layer name="arm" type="robot"/>
+	</viewer>)");
+	ViewerScene scene(f.gvl, 100);
+	const auto failed = show_layers(scene, config);
+	EXPECT_EQ(failed, (std::vector<std::string>{ "map:ghost", "map:distance", "primitives:ghost", "robot:arm" }));
+	ASSERT_EQ(scene.layer_count(), 4u);
+	const auto buffers = scene.buffers();
+	expect_equal(cubes_of(*buffers[0]), std::vector<Cube>{ { 1.5f, 1.5f, 1.5f, 0.5f, pack_colour(1, 2, 3) } });
+	EXPECT_EQ(buffers[1]->count(), 0u) << "the threshold of the style file is above every occupancy";
+	expect_equal(cubes_of(*buffers[2]), std::vector<Cube>{ { 2.0f, 2.0f, 2.0f, 0.5f, pack_colour(10, 11, 12) } });
+	ASSERT_EQ(buffers[3]->count(), 1u);
+	EXPECT_EQ(cubes_of(*buffers[3])[0].colour, pack_colour(4, 5, 6));
+	EXPECT_EQ(buffers[3]->kind(), CubeKind::Sphere);
+}
+
+TEST(ViewerConfigTest, TheExampleStyleFileOfGvlViewerIsValid)
+{
+	const auto file = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "packages" / "gpu_voxels" / "gpu_voxels" / "vulkan_viewer" / "viewer_style_example.xml";
+	const ViewerConfig config = load_viewer_config(file);
+	ASSERT_EQ(config.layers.size(), 5u);
+	EXPECT_EQ(config.layers[0].name, "environment");
+	EXPECT_EQ(config.layers[1].map.octree.min_level, 1u);
+	EXPECT_EQ(config.layers[2].kind, ViewerScene::LayerKind::Primitives);
+	EXPECT_EQ(config.layers[4].kind, ViewerScene::LayerKind::Robot);
+	EXPECT_EQ(config.layers[4].robot.colours.size(), 2u);
+	EXPECT_TRUE(config.background.has_value());
 }
