@@ -16,6 +16,9 @@ endif()
 
 if(GVL_BACKEND_VULKAN)
   add_subdirectory(gpu_voxels/vulkan)
+  if(GVL_VULKAN_VIEWER)
+    add_subdirectory(gpu_voxels/vulkan_viewer)
+  endif()
 endif()
 
 include(CMakePackageConfigHelpers)

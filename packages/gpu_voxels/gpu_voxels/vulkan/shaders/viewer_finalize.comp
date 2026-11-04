@@ -1,0 +1,15 @@
+#version 450
+// After the extraction: instanceCount = min(found, capacity), so that an indirect draw never reads beyond the instance buffer. Run with one invocation.
+#extension GL_GOOGLE_include_directive : enable
+#include "viewer_cube_common.glsl"
+layout(local_size_x = 1) in;
+layout(std430, set = 0, binding = 0) buffer Args { uint args[]; };
+layout(push_constant) uniform Push { uint capacity; } pc;
+
+void main()
+{
+    args[ARG_VERTEX_COUNT] = CUBE_VERTEX_COUNT;
+    args[ARG_INSTANCE_COUNT] = min(args[ARG_FOUND], pc.capacity);
+    args[ARG_FIRST_VERTEX] = 0u;
+    args[ARG_FIRST_INSTANCE] = 0u;
+}

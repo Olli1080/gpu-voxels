@@ -1,0 +1,41 @@
+#version 450
+// Cubes of a ProbVoxelMap: every voxel that is known (not -128) and has an occupancy >= min_value. The colour is a blue (-127) to red (+127) gradient.
+// One word per voxel holds the sign extended int8.
+#extension GL_GOOGLE_include_directive : enable
+#include "viewer_cube_common.glsl"
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Voxels { uint voxels[]; };
+layout(std430, set = 0, binding = 1) writeonly buffer Instances { CubeInstance instances[]; };
+layout(std430, set = 0, binding = 2) buffer Args { uint args[]; };
+layout(push_constant) uniform Push { uint dim_x; uint dim_y; uint dim_z; uint capacity; float side; int min_value; } pc;
+
+uint gradient(int value)
+{
+    const float t = clamp(float(value + 127) / 254.0, 0.0, 1.0);
+    const vec3 c = clamp(vec3(1.5 - abs(4.0 * t - 3.0), 1.5 - abs(4.0 * t - 2.0), 1.5 - abs(4.0 * t - 1.0)), 0.0, 1.0);
+    return packUnorm4x8(vec4(c, 1.0));
+}
+
+void main()
+{
+    const uint voxel_count = pc.dim_x * pc.dim_y * pc.dim_z;
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < voxel_count; i += stride)
+    {
+        const int value = int(voxels[i]);
+        if (value == -128 || value < pc.min_value)
+            continue;
+        const uint x = i % pc.dim_x;
+        const uint y = (i / pc.dim_x) % pc.dim_y;
+        const uint z = i / (pc.dim_x * pc.dim_y);
+        const uint slot = atomicAdd(args[ARG_FOUND], 1u);
+        if (slot < pc.capacity)
+        {
+            instances[slot].pos_size = vec4(vec3(x, y, z) * pc.side, pc.side);
+            instances[slot].rgba = gradient(value);
+            instances[slot].pad0 = 0u;
+            instances[slot].pad1 = 0u;
+            instances[slot].pad2 = 0u;
+        }
+    }
+}

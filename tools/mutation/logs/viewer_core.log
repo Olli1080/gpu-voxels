@@ -1,0 +1,15 @@
+V1 pipeline: depth test always passes : KILLED
+V2 camera: y axis not flipped for Vulkan : KILLED
+V3 camera: depth range halved : KILLED
+V4 renderer: always shaded : KILLED
+V5 finalize: instanceCount not limited by the capacity : KILLED
+V6 bit map: only the first word of a voxel is read : KILLED
+V7 bit map: y taken modulo dim_z : KILLED
+V8 bit map: palette index shifted by one : KILLED
+V9 prob map: threshold exclusive : KILLED
+V10 prob map: unknown voxels are drawn : SURVIVED
+V11 list: coordinates not scaled by the side length : KILLED
+V12 cube vertex: normal sign inverted : KILLED
+V13 cube vertex: the face has no extent along its axis : KILLED
+V14 cube fragment: ambient light 0.30 : KILLED
+restored

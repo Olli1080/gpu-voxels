@@ -1,0 +1,43 @@
+#version 450
+// Cubes of a bit voxel list: one cube per entry that has a visible meaning (palette colour of the lowest such meaning). The cube is at the entry's
+// coordinates times the side length of the list's reference map.
+#extension GL_GOOGLE_include_directive : enable
+#include "viewer_cube_common.glsl"
+layout(local_size_x = 64) in;
+layout(std430, set = 0, binding = 0) readonly buffer Coordinates { uint coordinates[]; }; // 3 words per entry
+layout(std430, set = 0, binding = 1) readonly buffer Payload { uint payload[]; };         // 8 words per entry
+layout(std430, set = 0, binding = 2) readonly buffer Palette { uint palette[]; };
+layout(std430, set = 0, binding = 3) writeonly buffer Instances { CubeInstance instances[]; };
+layout(std430, set = 0, binding = 4) buffer Args { uint args[]; };
+layout(push_constant) uniform Push { uint count; uint capacity; float side; } pc;
+
+void main()
+{
+    const uint stride = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    for (uint i = gl_GlobalInvocationID.x; i < pc.count; i += stride)
+    {
+        uint colour = 0u;
+        for (uint w = 0u; w < 8u && colour == 0u; ++w)
+        {
+            uint bits = payload[i * 8u + w];
+            while (bits != 0u && colour == 0u)
+            {
+                const uint c = palette[w * 32u + uint(findLSB(bits))];
+                if ((c >> 24u) != 0u)
+                    colour = c;
+                bits &= bits - 1u;
+            }
+        }
+        if (colour == 0u)
+            continue;
+        const uint slot = atomicAdd(args[ARG_FOUND], 1u);
+        if (slot < pc.capacity)
+        {
+            instances[slot].pos_size = vec4(vec3(coordinates[3u * i], coordinates[3u * i + 1u], coordinates[3u * i + 2u]) * pc.side, pc.side);
+            instances[slot].rgba = colour;
+            instances[slot].pad0 = 0u;
+            instances[slot].pad1 = 0u;
+            instances[slot].pad2 = 0u;
+        }
+    }
+}

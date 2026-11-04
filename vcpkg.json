@@ -2,7 +2,6 @@
     "name": "gpu-voxels",
     "description": "GPU-Voxels: volumetric collision detection on the GPU (CUDA backend; Vulkan backend in preparation)",
     "dependencies": [
-        "boost-interprocess",
         "tinyxml2",
         "zlib"
     ],
@@ -44,11 +43,18 @@
             ]
         },
         "viewer": {
-            "description": "Legacy OpenGL viewer (packages/gpu_visualization) - currently not part of the CMake build",
+            "description": "Legacy OpenGL viewer and its Boost.Interprocess provider interface (packages/gpu_visualization, vis_interface) - currently not part of the CMake build",
             "dependencies": [
+                "boost-interprocess",
                 "freeglut",
                 "glew",
                 "glm"
+            ]
+        },
+        "vulkan-viewer": {
+            "description": "Window of the in-process Vulkan viewer (GVL_VULKAN_VIEWER): GLFW. No separate viewer process and no Boost.Interprocess.",
+            "dependencies": [
+                "glfw3"
             ]
         }
     }

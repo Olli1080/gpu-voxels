@@ -51,8 +51,17 @@ namespace gpu_voxels::vulkan
 			}
 		}
 
-		/// Index of the compute queue family (a family without graphics is preferred), or -1.
-		int find_compute_queue_family(vk::PhysicalDevice pd)
+		/// What the queue family of the Context must offer.
+		struct QueueRequest
+		{
+			vk::Instance instance;
+			bool graphics = false;
+			const std::function<bool(vk::Instance, vk::PhysicalDevice, uint32_t)>* filter = nullptr;
+		};
+
+		/// Index of the compute queue family (a family without graphics is preferred unless graphics is requested, then a family with graphics and
+		/// compute that passes the filter), or -1.
+		int find_compute_queue_family(vk::PhysicalDevice pd, const QueueRequest& request)
 		{
 			const auto families = pd.getQueueFamilyProperties();
 			int best = -1;
@@ -60,6 +69,14 @@ namespace gpu_voxels::vulkan
 			{
 				if (!(families[i].queueFlags & vk::QueueFlagBits::eCompute))
 					continue;
+				if (request.graphics)
+				{
+					if (!(families[i].queueFlags & vk::QueueFlagBits::eGraphics))
+						continue;
+					if (request.filter && *request.filter && !(*request.filter)(request.instance, pd, i))
+						continue;
+					return static_cast<int>(i);
+				}
 				if (!(families[i].queueFlags & vk::QueueFlagBits::eGraphics))
 					return static_cast<int>(i);
 				if (best < 0)
@@ -68,7 +85,21 @@ namespace gpu_voxels::vulkan
 			return best;
 		}
 
-		bool device_meets_requirements(vk::PhysicalDevice pd, std::string& why_not)
+		bool has_device_extensions(vk::PhysicalDevice pd, const std::vector<std::string>& names, std::string& missing)
+		{
+			if (names.empty())
+				return true;
+			const auto available = pd.enumerateDeviceExtensionProperties();
+			for (const std::string& name : names)
+				if (!has_extension(available, name.c_str()))
+				{
+					missing = name;
+					return false;
+				}
+			return true;
+		}
+
+		bool device_meets_requirements(vk::PhysicalDevice pd, const QueueRequest& request, const std::vector<std::string>& device_extensions, std::string& why_not)
 		{
 			const auto props = pd.getProperties();
 			if (props.apiVersion < VK_API_VERSION_1_3)
@@ -76,9 +107,14 @@ namespace gpu_voxels::vulkan
 				why_not = "Vulkan API version < 1.3";
 				return false;
 			}
-			if (find_compute_queue_family(pd) < 0)
+			if (find_compute_queue_family(pd, request) < 0)
 			{
-				why_not = "no compute queue";
+				why_not = request.graphics ? "no queue family with graphics and compute (and the presentation filter)" : "no compute queue";
+				return false;
+			}
+			if (std::string missing; !has_device_extensions(pd, device_extensions, missing))
+			{
+				why_not = "device extension " + missing + " not supported";
 				return false;
 			}
 			const auto chain = pd.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features>();
@@ -95,7 +131,7 @@ namespace gpu_voxels::vulkan
 			return true;
 		}
 
-		vk::PhysicalDevice select_physical_device(vk::Instance instance, int requested_index)
+		vk::PhysicalDevice select_physical_device(vk::Instance instance, int requested_index, const QueueRequest& request, const std::vector<std::string>& device_extensions)
 		{
 			const auto devices = instance.enumeratePhysicalDevices();
 			if (devices.empty())
@@ -109,7 +145,7 @@ namespace gpu_voxels::vulkan
 				if (static_cast<std::size_t>(requested_index) >= devices.size())
 					throw NoDeviceError("Vulkan device index " + std::to_string(requested_index) + " out of range");
 				std::string why;
-				if (!device_meets_requirements(devices[requested_index], why))
+				if (!device_meets_requirements(devices[requested_index], request, device_extensions, why))
 					throw NoDeviceError("Requested Vulkan device does not meet the requirements: " + why);
 				return devices[requested_index];
 			}
@@ -121,7 +157,7 @@ namespace gpu_voxels::vulkan
 			{
 				std::string why;
 				const auto props = d.getProperties();
-				if (!device_meets_requirements(d, why))
+				if (!device_meets_requirements(d, request, device_extensions, why))
 				{
 					reasons += std::string(props.deviceName.data()) + ": " + why + "; ";
 					continue;
@@ -230,6 +266,9 @@ namespace gpu_voxels::vulkan
 				LOGGING_WARNING_C(VulkanLog, Context, "Vulkan validation layer not available; running unvalidated." << endl);
 		}
 
+		for (const std::string& name : create_info.instance_extensions)
+			extensions.push_back(name.c_str());
+
 		vk::ApplicationInfo app_info{};
 		app_info.setPApplicationName(create_info.application_name.c_str())
 			.setPEngineName("gpu_voxels")
@@ -281,7 +320,11 @@ namespace gpu_voxels::vulkan
 		}
 
 		// ---- physical device, logical device, queue ----
-		physical_device_ = select_physical_device(*instance_, create_info.device_index);
+		QueueRequest queue_request;
+		queue_request.instance = *instance_;
+		queue_request.graphics = create_info.enable_graphics;
+		queue_request.filter = &create_info.queue_family_filter;
+		physical_device_ = select_physical_device(*instance_, create_info.device_index, queue_request, create_info.device_extensions);
 		const auto props2 = physical_device_.getProperties2<vk::PhysicalDeviceProperties2,
 			vk::PhysicalDeviceVulkan11Properties, vk::PhysicalDeviceSubgroupSizeControlProperties>();
 		const auto& props = props2.get<vk::PhysicalDeviceProperties2>().properties;
@@ -295,7 +338,8 @@ namespace gpu_voxels::vulkan
 		info_.device_id = props.deviceID;
 		info_.api_version = props.apiVersion;
 		info_.driver_version = props.driverVersion;
-		info_.queue_family = static_cast<uint32_t>(find_compute_queue_family(physical_device_));
+		info_.queue_family = static_cast<uint32_t>(find_compute_queue_family(physical_device_, queue_request));
+		info_.graphics = create_info.enable_graphics;
 		info_.subgroup_size = props11.subgroupSize;
 		info_.min_subgroup_size = props_sg.minSubgroupSize;
 		info_.max_subgroup_size = props_sg.maxSubgroupSize;
@@ -311,7 +355,7 @@ namespace gpu_voxels::vulkan
 		}
 
 		vk::PhysicalDeviceVulkan13Features features13{};
-		features13.setSynchronization2(true);
+		features13.setSynchronization2(true).setDynamicRendering(create_info.enable_graphics); // dynamic rendering is core 1.3: no render pass objects in the viewer
 		vk::PhysicalDeviceVulkan12Features features12{};
 		features12.setBufferDeviceAddress(info_.buffer_device_address); // optional: only enabled when supported
 		features13.setPNext(&features12);
@@ -322,8 +366,11 @@ namespace gpu_voxels::vulkan
 		const float priority = 1.0f;
 		vk::DeviceQueueCreateInfo queue_info{};
 		queue_info.setQueueFamilyIndex(info_.queue_family).setQueueCount(1).setPQueuePriorities(&priority);
+		std::vector<const char*> device_extension_names;
+		for (const std::string& name : create_info.device_extensions)
+			device_extension_names.push_back(name.c_str());
 		vk::DeviceCreateInfo device_info{};
-		device_info.setQueueCreateInfos(queue_info).setPNext(&features2);
+		device_info.setQueueCreateInfos(queue_info).setPEnabledExtensionNames(device_extension_names).setPNext(&features2);
 		device_ = physical_device_.createDeviceUnique(device_info);
 		queue_ = device_->getQueue(info_.queue_family, 0);
 
@@ -372,6 +419,18 @@ namespace gpu_voxels::vulkan
 		record(cb);
 		cb.end();
 		submit_and_wait(cb);
+	}
+
+	void Context::submit(const vk::SubmitInfo2& info, vk::Fence fence)
+	{
+		std::lock_guard lock(queue_mutex_);
+		queue_.submit2(info, fence);
+	}
+
+	vk::Result Context::present(const vk::PresentInfoKHR& info)
+	{
+		std::lock_guard lock(queue_mutex_);
+		return static_cast<vk::Result>(vkQueuePresentKHR(static_cast<VkQueue>(queue_), reinterpret_cast<const VkPresentInfoKHR*>(&info)));
 	}
 
 	void Context::submit_and_wait(vk::CommandBuffer command_buffer)

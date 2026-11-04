@@ -1,0 +1,52 @@
+# Vulkan viewer: in-process, no second process, no Boost.Interprocess
+
+- **Date:** 2026-11-04. **Request** (user): "vulkan viewer ohne boost ipc". Q6 ("viewer later") is lifted for this part; examples, ROS, Kinect and the URDF robot stay out of scope.
+- **Status:** first version, *Tested* (not Parity: there is nothing to compare, the CUDA viewer is a separate OpenGL program that was never built here). Maps, bit lists and probabilistic maps can be shown; octrees, primitive arrays and robots cannot yet.
+- **Why in-process:** the CUDA viewer is a second process (`gpu_visualization`, OpenGL) that opens `cudaIpcMemHandle_t` handles passed through Boost.Interprocess shared memory ([visualization_and_ipc.md](visualization_and_ipc.md)). Vulkan has no such handle that the old design could use, and a copy of the voxels through shared memory is slow. Here the viewer lives in the program: it reads the **device buffers of the maps of the same `Context`** directly, so nothing is copied to the host and nothing is shared between processes.
+
+## Parts
+| Part | Where | What |
+|---|---|---|
+| `CubeExtractor`, `CubeBuffer`, `BitPalette`, `ProbDisplay` | `vulkan/Viewer.h`, `src/Viewer.cpp`, `shaders/viewer_extract_*.comp`, `viewer_finalize.comp` | compute kernels turn a `BitVoxelMap`, `ProbVoxelMap` or `BitVoxelList` into a list of cubes on the GPU |
+| `VoxelRenderer` | same | graphics pipeline (dynamic rendering, no render pass objects), one indirect draw per `CubeBuffer`; `shaders/viewer_cube.vert/.frag` |
+| `OffscreenTarget` | same | colour + depth image with read back of the pixels: tests, screenshots, headless use |
+| `OrbitCamera`, `OrbitController` | `vulkan/OrbitCamera.h` | camera around a target (z up), mouse rotate / pan / zoom as pure maths |
+| `encode_png`, `write_png` | `vulkan/ImageFile.h` | PNG writer (stored deflate blocks, no dependency) for screenshots |
+| `ViewerWindow` | `vulkan_viewer/` (library `gpu_voxels_vulkan_viewer`, needs GLFW) | window, surface, swapchain, depth buffers, frame loop, input |
+| `gvl_viewer` | `vulkan_viewer/src/viewer_main.cpp` | program: demo scene or a point cloud file, window or `--png` |
+
+## Data flow
+1. `CubeExtractor::extract(map, palette, cubes)`: one blocking submission: zero the argument buffer, extraction kernel (one thread per voxel / entry, `atomicAdd` on the found counter, write the instance if the slot is below the capacity), barrier, `viewer_finalize` sets `instanceCount = min(found, capacity)` so that an indirect draw never reads beyond the buffer.
+2. A `CubeBuffer` holds the instances (32 bytes: minimum corner, edge length, packed colour, padding) and 5 words of arguments (the four words of `VkDrawIndirectCommand` plus the number found). `count()`, `found()`, `dropped()`, `download()` read them back (tests, tools).
+3. `VoxelRenderer::record(...)` draws every buffer with `vkCmdDrawIndirect` (36 vertices per cube). The vertex shader reads its instance through the **buffer device address** in the push constants (80 bytes: view-projection, address, shading flag): no vertex buffer and no descriptor set. Faces are drawn without culling, the depth test hides the back faces. The device must have `bufferDeviceAddress` (the octree already needs it); the renderer throws otherwise.
+4. Whenever a map changes the program calls `extract` again; nothing else is needed, the window draws what the buffer holds.
+
+## What is shown
+- **Bit map / bit list:** a voxel is drawn in the colour of its **lowest meaning with a visible colour**; `BitPalette::defaults()` hides meaning 0 (eBVM_FREE) and gives every other meaning a distinct golden-angle hue; `hide(m)` / `set(m, colour)` change it. Voxel c is the cube [c, c + 1) * side.
+- **Probabilistic map:** voxels with a known value (not -128) and a value >= `ProbDisplay::min_value` (default 1 = more likely occupied than free), blue (-127) over green to red (+127).
+- **Capacity:** `CubeBuffer(context, capacity)`, 32 bytes per cube; cubes beyond it are counted (`found()`), not stored. The demo uses 4 M cubes (128 MB).
+- **Shading:** one fixed directional light (ambient 0.35); `RenderOptions::shaded = false` gives the exact palette colour (tests).
+- Missing against the CUDA viewer: octrees, primitive arrays, robots, per-type layers and the XML configuration (colours per map type), a text overlay. `GpuVoxels::visualize_map` still returns `false` (the viewer is not wired into the façade).
+
+## Window
+- `ViewerWindow::context_requirements(base)` initialises GLFW and returns `base` plus the instance extensions GLFW needs, `VK_KHR_swapchain`, `enable_graphics` and a queue family filter (`glfwGetPhysicalDevicePresentationSupport`). The `Context` must be created from it, because the maps and the window share the one device and queue.
+- `Context` got for this: `ContextCreateInfo::enable_graphics / instance_extensions / device_extensions / queue_family_filter`, the dynamic rendering feature, `DeviceInfo::graphics`, and `Context::submit` / `present` (serialised with every other use of the queue). Without `enable_graphics` nothing changes (compute-only family preferred as before).
+- Swapchain B8G8R8A8_UNORM, FIFO (or MAILBOX / IMMEDIATE with `vsync = false`), two frames in flight with a fence, an image-available semaphore and a command buffer each, one render-finished semaphore per swapchain image, recreated when the window size changes or the swapchain is out of date, nothing drawn while minimised.
+- **Finding while building it (validation layer):** the first version used one depth image for both frames in flight; the layout transition of the second frame is a write-after-write hazard against the first one. Now there is one depth image per frame in flight. The offscreen path has no such problem (one submission at a time).
+- Mouse: left drag rotates, right / middle drag pans, wheel zooms. Keys: S shading, R home camera (`set_home_camera()`), ESC closes. `gvl_viewer --points file.xyz|.pcd|.binvox [--side m] [--prob] [--png out.png --size WxH] [--frames N] [--no-vsync] [--validation]`.
+
+## Build
+- CMake option `GVL_VULKAN_VIEWER` (default ON with `GVL_BACKEND_VULKAN`): library `gpu_voxels_vulkan_viewer`, program `gvl_viewer`, test `test_vulkan_viewer_window`; vcpkg feature `vulkan-viewer` = `glfw3`. The viewer **core** (`Viewer.h`, `OrbitCamera.h`, `ImageFile.h`) is part of `gpu_voxels_vulkan` and needs no window system.
+- **`boost-interprocess` is no longer a base dependency** of `vcpkg.json` (nothing that is built used it); it moved to the legacy `viewer` feature together with the old OpenGL viewer.
+
+## Verification
+- `test_viewer.cpp` (in `test_vulkan`, 19 cases incl. camera, controller and PNG): extraction of all three sources against host models (random content, 40x30x20 voxels, 256 meanings, capacity overflow, thresholds, unknown voxels); rendering on an offscreen image: the pixels at the **projection of a cube computed on the host** have its colour, the ones outside its silhouette the clear colour, the covered area equals the projected square, the nearer cube wins from both sides, three distinct shades on a cube seen from a corner, several buffers in one image, an orbit camera looks at its target (also at pitch 89). Validation errors fail every case.
+- `test_viewer_window.cpp` (own executable, 5 cases, hidden GLFW windows, skipped without a window system): frames are presented, the swapchain follows `resize`, two windows on one context, a compute-only context is refused, `context_requirements` merges.
+- Mutation checks: [mutate_viewer.py](../../../tools/mutation/mutate_viewer.py) 14 mutations of the camera matrix, the pipeline state, the extraction kernels and the cube shaders, log [viewer_core.log](../../../tools/mutation/logs/viewer_core.log): 14 killed (V10 "unknown voxels are drawn" survived the first tests because the default threshold hides them anyway; a test with a threshold below -128 closed it). The shared depth image of the window was re-introduced by hand: the window tests fail with the validation error.
+- Looked at: `gvl_viewer --png` demo scene (ground plate, sphere, column, noise, 7906 cubes) renders as expected. Run: `gvl_viewer --frames 200 --validation` on the RTX 4090 without validation errors.
+
+## Not verified / open
+- A person has not looked at the live window or used the mouse: the GLFW callbacks (button numbers, cursor, scroll, keys) are not exercised by tests, only the controller they feed. Please try `gvl_viewer`.
+- Only the RTX 4090 and Windows were used; no Intel UHD run, no Linux / Wayland, no high DPI handling (the framebuffer size is used, the cursor positions are window coordinates).
+- Octree, primitive array, robot display, the façade hook `visualize_map`, colour configuration and a Pan / zoom with the keyboard are not implemented.
+- The dormant OpenGL + Boost.Interprocess viewer (`packages/gpu_visualization`, `vis_interface`) is untouched and still not built.

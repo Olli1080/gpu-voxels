@@ -43,6 +43,7 @@ gvl_add_test(test_vulkan
     test_prob_sensor.cpp
     test_prob_voxel_map.cpp
     test_voxel_list.cpp
+    test_viewer.cpp
     test_voxel_list_ops.cpp
   LIBS gpu_voxels_vulkan
   DEFINITIONS
@@ -61,3 +62,10 @@ gvl_add_shaders(test_vulkan
     shaders/morton_check.comp
     shaders/scale_copy.comp
     shaders/int64_mix.comp)
+
+# Window of the in-process viewer (GLFW, hidden windows): skipped at run time without a window system.
+if(GVL_VULKAN_VIEWER)
+  gvl_add_test(test_vulkan_viewer_window
+    SOURCES test_viewer_window.cpp
+    LIBS gpu_voxels_vulkan_viewer)
+endif()

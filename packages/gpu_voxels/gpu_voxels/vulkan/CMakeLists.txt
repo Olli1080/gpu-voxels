@@ -29,6 +29,9 @@ target_sources(${PROJECT_NAME}
     src/ProbVoxelMap.cpp
     src/PrimitiveArray.cpp
     src/Primitives.cpp
+    src/ImageFile.cpp
+    src/OrbitCamera.cpp
+    src/Viewer.cpp
     src/vma_impl.cpp
   PUBLIC FILE_SET HEADERS
   BASE_DIRS ${INCLUDE_DIR}
@@ -52,6 +55,9 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/Primitives.h
     ${INCLUDE_DIR}/ProbVoxelMap.h
     ${INCLUDE_DIR}/VoxelList.h
+    ${INCLUDE_DIR}/ImageFile.h
+    ${INCLUDE_DIR}/OrbitCamera.h
+    ${INCLUDE_DIR}/Viewer.h
     ${INCLUDE_DIR}/vulkan_types.h
     ${INCLUDE_DIR}/vulkan_common.h
 )
@@ -172,7 +178,13 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/radix_scatter.comp
     shaders/radix_scatter64.comp
     shaders/scan_add.comp
-    shaders/scan_blocks.comp)
+    shaders/scan_blocks.comp
+    shaders/viewer_cube.frag
+    shaders/viewer_cube.vert
+    shaders/viewer_extract_bit.comp
+    shaders/viewer_extract_list.comp
+    shaders/viewer_extract_prob.comp
+    shaders/viewer_finalize.comp)
 
 install(
   TARGETS

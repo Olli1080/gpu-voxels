@@ -12,6 +12,9 @@ The payload is **not copied through shared memory**: the provider stores a `cuda
 - Not built: `gpu_visualization` and `vis_interface` are not in the CMake tree (see [library_modules.md](library_modules.md)); `GpuVoxels.cu` includes the `Vis*` headers only under `#ifdef GPUVOXEL_VISUALIZE` (undefined).
 - The viewer sources still use `cudaIpc*`/`cudaGraphics*` (≈ 110 `cuda*` identifier occurrences across viewer + vis_interface, measured) and ICMAKER CMake.
 
+## Vulkan: the in-process viewer (2026-11-04, user: "vulkan viewer ohne boost ipc")
+Option (c) below was built: [vulkan_viewer.md](vulkan_viewer.md). The viewer runs inside the program and reads the device buffers of the maps of the same `Context`; there is no provider / viewer split, no shared memory and no Boost.Interprocess (`boost-interprocess` left the base dependencies of `vcpkg.json`, it only belongs to the legacy `viewer` feature now). The text below describes the CUDA design.
+
 ## Consequences for a Vulkan port
 - CUDA IPC handles cannot be reused. Options: (a) copy cube lists into shared memory (what the earlier attempt did: host-side copies, slower but simple); (b) Vulkan external memory (`VK_KHR_external_memory_win32` / `_fd`) shared with the viewer; (c) in-process viewer (no IPC; earlier plan `IN_PROCESS_VISUALIZATION.md`).
 - The viewer needs a rendering API decision: keep OpenGL (GLUT is long dormant) or move to Vulkan graphics (swapchain, pipelines). That is a *separate* project from the compute port — see [design_options.md](../vulkan_migration/design_options.md).

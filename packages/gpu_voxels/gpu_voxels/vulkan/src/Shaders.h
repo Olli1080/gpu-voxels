@@ -211,6 +211,19 @@ namespace gpu_voxels::vulkan::shaders
 	extern const uint32_t octree_insert_nodes_prob_comp[];
 	extern const std::size_t octree_insert_nodes_prob_comp_words;
 
+	extern const uint32_t viewer_finalize_comp[];
+	extern const std::size_t viewer_finalize_comp_words;
+	extern const uint32_t viewer_extract_bit_comp[];
+	extern const std::size_t viewer_extract_bit_comp_words;
+	extern const uint32_t viewer_extract_prob_comp[];
+	extern const std::size_t viewer_extract_prob_comp_words;
+	extern const uint32_t viewer_extract_list_comp[];
+	extern const std::size_t viewer_extract_list_comp_words;
+	extern const uint32_t viewer_cube_vert[];
+	extern const std::size_t viewer_cube_vert_words;
+	extern const uint32_t viewer_cube_frag[];
+	extern const std::size_t viewer_cube_frag_words;
+
 #define GVL_SHADER_SPAN(name) std::span<const uint32_t>(::gpu_voxels::vulkan::shaders::name, ::gpu_voxels::vulkan::shaders::name##_words)
 }
 

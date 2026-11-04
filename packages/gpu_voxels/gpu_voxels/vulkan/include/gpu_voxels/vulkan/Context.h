@@ -33,6 +33,16 @@ namespace gpu_voxels::vulkan
 		int device_index = -1;
 		/// Use bufferDeviceAddress when the device has it. false switches it off (tests of the fallback path, or to rule it out when debugging).
 		bool enable_buffer_device_address = true;
+		/// Pick a queue family that supports graphics and compute (the viewer renders and extracts on the same queue). false keeps the compute-only
+		/// preference of the voxel kernels (a family without graphics when the device has one).
+		bool enable_graphics = false;
+		/// Extra instance extensions, e.g. the ones a window system library needs for surfaces (glfwGetRequiredInstanceExtensions). Must be available.
+		std::vector<std::string> instance_extensions;
+		/// Extra device extensions, e.g. VK_KHR_swapchain. Must be supported by the chosen device.
+		std::vector<std::string> device_extensions;
+		/// Optional extra requirement for the queue family of a device: called with the instance, the physical device and the family index (e.g. the
+		/// presentation support of a window system). Only used together with enable_graphics.
+		std::function<bool(vk::Instance, vk::PhysicalDevice, uint32_t)> queue_family_filter;
 	};
 
 	/// Properties of the selected device that matter for the voxel kernels.
@@ -54,6 +64,7 @@ namespace gpu_voxels::vulkan
 		/// Optional feature bufferDeviceAddress (core 1.2): enabled whenever the device has it. Needed by the octree (nodes
 		/// hold device addresses of child blocks); DeviceBuffer::device_address() throws without it.
 		bool buffer_device_address = false;
+		bool graphics = false; ///< the queue family also supports graphics (ContextCreateInfo::enable_graphics)
 	};
 
 	struct ValidationState; ///< implementation detail (validation message counters)
@@ -82,6 +93,11 @@ namespace gpu_voxels::vulkan
 		void submit_and_wait(vk::CommandBuffer command_buffer);
 		/// Wait until the device is idle (serialised with submissions).
 		void wait_idle();
+		/// Submit without waiting (the frame loop of the viewer synchronises with its own fences and semaphores). Serialised with every other
+		/// use of the queue of this Context.
+		void submit(const vk::SubmitInfo2& info, vk::Fence fence);
+		/// vkQueuePresentKHR on the queue of this Context (serialised). Returns the VkResult: eErrorOutOfDateKHR and eSuboptimalKHR are results, not exceptions.
+		[[nodiscard]] vk::Result present(const vk::PresentInfoKHR& info);
 
 		// ---- validation results (only meaningful if info().validation_enabled) ----
 		[[nodiscard]] uint32_t validation_error_count() const;

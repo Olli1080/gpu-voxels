@@ -27,6 +27,11 @@ if(GVL_BACKEND_VULKAN)
     message(WARNING "VulkanMemoryAllocator not found: configure through the vcpkg toolchain (feature 'vulkan')")
   endif()
 
+  # Window of the in-process viewer: GLFW (vcpkg port 'glfw3', feature "vulkan-viewer"). The viewer core needs no window system.
+  if(GVL_VULKAN_VIEWER)
+    find_package(glfw3 CONFIG REQUIRED)
+  endif()
+
   # Offline GLSL -> SPIR-V compiler (shaders are compiled at build time).
   find_program(GVL_GLSLANG_VALIDATOR glslangValidator
                HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")

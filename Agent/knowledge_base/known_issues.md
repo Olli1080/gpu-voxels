@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | K1 | `master` cannot be built or run on this machine: no `nvcc`/CUDA toolkit, no NVIDIA GPU (Intel UHD only) | environment | Build/run CUDA targets on another machine; on this one only configure-level checks and Vulkan work are possible | measured 2026-10-22 |
 | K2 | Examples, viewer (`gpu_visualization`), tests, Doxygen still use removed ICMAKER macros ⇒ not part of the build | build | Port CMake to plain targets as a dedicated task; until then they are unbuilt reference code | `build_system.md` |
-| K3 | Visualization compiled out (`GPUVOXEL_VISUALIZE` undefined; `vis_interface` not added) | feature | `visualizeMap()` etc. effectively unavailable on master | `visualization_and_ipc.md` |
+| K3 | Visualization compiled out (`GPUVOXEL_VISUALIZE` undefined; `vis_interface` not added); the Vulkan backend has its own in-process viewer since 2026-11-04 ([vulkan_viewer.md](architecture/vulkan_viewer.md)), not wired into `visualizeMap()` | feature | `visualizeMap()` etc. effectively unavailable on master | `visualization_and_ipc.md` |
 | K4 | URDF robot support disabled (`if(OFF)` in `robot/CMakeLists.txt`); `GpuVoxels::addRobot(urdf)` has no backing target | feature | Old attempt shows a ROS-free route (urdfdom + orocos-kdl) | `reusable_assets.md` |
 | K5 | Circular link dependency voxelmap ⇄ voxellist ⇄ octree (CMake comments "REMOVE THIS LATER") | build/design | Works with CUDA static libs; break it with shared interface headers in any new backend | `library_modules.md` |
 | K6 | Eigen + nvcc incompatibilities (README: "patch available and fixed in Eigen 3.5") | CUDA build | Overlay port `overlay-ports/eigen3` (3.4.0 + 2 patches). Don't delete it while CUDA builds exist | README, `build_system.md` |
