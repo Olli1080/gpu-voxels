@@ -29,6 +29,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string>
@@ -67,13 +68,17 @@ namespace gpu_voxels::vulkan
 
 		[[nodiscard]] bool should_close() const;
 		void request_close();
-		/// Process the window events (mouse and keys move the camera; ESC closes, S toggles the shading, R resets the camera).
+		/// Process the window events (mouse and keys move the camera; ESC closes, S toggles the shading, R resets the camera, other keys go to the key handler).
 		void poll_events();
 
 		[[nodiscard]] OrbitCamera& camera() { return camera_; }
 		/// The camera that key R returns to (the camera at the time of the call; at construction the default).
 		void set_home_camera() { initial_camera_ = camera_; }
 		[[nodiscard]] RenderOptions& render_options() { return render_options_; }
+		/// Called with the GLFW key code (GLFW_KEY_1 = '1', ...) when a key is pressed that the window does not use itself (ESC, S, R). Empty = none.
+		void set_key_handler(std::function<void(int key)> handler) { key_handler_ = std::move(handler); }
+		/// What the key callback of the window does with a pressed key; public so that tests can press keys.
+		void handle_key(int key);
 
 		/// Draw one frame of the cubes and present it. Returns false if no frame was presented (window minimised, swapchain out of date: the swapchain is
 		/// recreated and the next call draws).
@@ -100,6 +105,7 @@ namespace gpu_voxels::vulkan
 		OrbitCamera initial_camera_;
 		OrbitController controller_;
 		RenderOptions render_options_;
+		std::function<void(int)> key_handler_;
 		vk::Extent2D extent_{};
 		vk::Format format_ = vk::Format::eUndefined;
 		uint64_t frames_presented_ = 0;

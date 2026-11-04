@@ -35,6 +35,7 @@ namespace gpu_voxels::vulkan
 	class BitVoxelList;
 	class BitVoxelMap;
 	class Octree;
+	class PrimitiveArray;
 	class ProbVoxelMap;
 
 	/// Packs a colour as the viewer shaders read it (red in the lowest byte, alpha in the highest).
@@ -79,6 +80,9 @@ namespace gpu_voxels::vulkan
 		int min_value = 1;
 	};
 
+	/// How the renderer draws the instances of a CubeBuffer: as cubes, or as the spheres inscribed in them (ray cast per pixel, correct depth).
+	enum class CubeKind : uint32_t { Cube = 0, Sphere = 1 };
+
 	/// A list of cubes on the GPU (instance records of 32 bytes) and the arguments of the indirect draw that draws them.
 	class CubeBuffer
 	{
@@ -100,6 +104,11 @@ namespace gpu_voxels::vulkan
 			uint32_t colour;
 		};
 		[[nodiscard]] std::vector<Cube> download() const;
+		/// Replace the content by these cubes (written from the host: for primitives and tools); cubes beyond the capacity are counted, not stored.
+		/// `kind` tells the renderer how to draw them. Every CubeExtractor::extract resets the kind (maps: Cube, primitive spheres: Sphere).
+		void assign(std::span<const Cube> cubes, CubeKind kind = CubeKind::Cube);
+		[[nodiscard]] CubeKind kind() const { return kind_; }
+		void set_kind(CubeKind kind) { kind_ = kind; }
 
 		[[nodiscard]] const DeviceBuffer& instances() const { return instances_; }
 		[[nodiscard]] const DeviceBuffer& arguments() const { return arguments_; }
@@ -108,6 +117,7 @@ namespace gpu_voxels::vulkan
 
 	private:
 		uint32_t capacity_;
+		CubeKind kind_ = CubeKind::Cube;
 		DeviceBuffer instances_;
 		DeviceBuffer arguments_; ///< VkDrawIndirectCommand (4 words) + the number found
 	};
@@ -128,6 +138,9 @@ namespace gpu_voxels::vulkan
 		/// with small read backs of counters, no read back of the nodes) and turned into instances. Propagate pending inserts first (statuses are only
 		/// consistent after Octree::propagate()). \throws VulkanError if neither the display nor the tree has a side length, for min_level > 13.
 		void extract(const Octree& tree, const OctreeDisplay& display, CubeBuffer& out);
+		/// Spheres / cuboids of a primitive array (host data, written with CubeBuffer::assign): the cube of a primitive is [centre - radius, centre + radius] * side,
+		/// the buffer gets the kind Sphere for spheres and Cube for cuboids. `colour` is a pack_colour value.
+		void extract(const PrimitiveArray& array, uint32_t colour, CubeBuffer& out);
 
 	private:
 		struct Kernels;
@@ -179,7 +192,8 @@ namespace gpu_voxels::vulkan
 		vk::Format colour_format_;
 		vk::Format depth_format_;
 		vk::UniquePipelineLayout layout_;
-		vk::UniquePipeline pipeline_;
+		vk::UniquePipeline pipeline_;         ///< cubes
+		vk::UniquePipeline sphere_pipeline_;  ///< CubeKind::Sphere buffers
 	};
 
 	/// Colour + depth image of a fixed size (R8G8B8A8_UNORM, D32_SFLOAT) to render into without a window.

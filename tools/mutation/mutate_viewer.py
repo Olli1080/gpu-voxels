@@ -15,6 +15,9 @@ EL = VK + 'shaders/viewer_extract_list.comp'
 EO = VK + 'shaders/viewer_extract_octree.comp'
 CMN = VK + 'shaders/viewer_cube_common.glsl'
 FIN = VK + 'shaders/viewer_finalize.comp'
+SPF = VK + 'shaders/viewer_sphere.frag'
+SCN = VK + 'src/ViewerScene.cpp'
+GV = VK + 'src/GpuVoxels.cpp'
 env = dict(os.environ, VULKAN_SDK='C:\\VulkanSDK\\1.4.363.0')
 
 MUT = [
@@ -49,6 +52,24 @@ MUT = [
     ('V26 octree host: a probabilistic tree is processed as a deterministic one', VW, "probabilistic ? 1u : 0u, display.min_value", "0u, display.min_value"),
     ('V27 octree host: the last cube is not converted', VW, "OctreePush push{ cubes.count, out.capacity()", "OctreePush push{ cubes.count - 1, out.capacity()"),
     ('V28 probabilistic gradient: scale 255 instead of 254', CMN, "float(value + 127) / 254.0", "float(value + 127) / 255.0"),
+    # primitives, spheres, scene (2026-11-04)
+    ('V29 sphere shader: no discard when the ray misses', SPF, "    if (discriminant < 0.0)", "    if (false)"),
+    ('V30 sphere shader: the depth of the hit point is not written', SPF, "    gl_FragDepth = clip.z / clip.w;\n", ""),
+    ('V31 sphere shader: radius twice as large', SPF, "v_sphere.w * v_sphere.w)", "4.0 * v_sphere.w * v_sphere.w)"),
+    ('V32 cube vertex: the sphere centre is the minimum corner', VERT, "v_sphere = vec4(inst.pos_size.xyz + 0.5 * inst.pos_size.w, 0.5 * inst.pos_size.w);", "v_sphere = vec4(inst.pos_size.xyz, 0.5 * inst.pos_size.w);"),
+    ('V33 renderer: sphere buffers use the cube pipeline', VW, "buffer->kind() == CubeKind::Sphere ? *sphere_pipeline_ : *pipeline_", "*pipeline_"),
+    ('V34 renderer: the pipeline is bound once', VW, "if (!bound || *bound != buffer->kind())", "if (!bound)"),
+    ('V35 renderer: the eye is the camera target', VW, "push.eye[i] = camera.eye[i];", "push.eye[i] = camera.target[i];"),
+    ('V36 primitives: the cube starts at the centre', VW, "cubes.push_back({ (p.x - p.radius) * side,", "cubes.push_back({ p.x * side,"),
+    ('V37 primitives: spheres get the cube kind', VW, "array.type() == ePRIM_SPHERE ? CubeKind::Sphere : CubeKind::Cube", "CubeKind::Cube"),
+    ('V38 assign: found counts only the stored cubes', VW, "static_cast<uint32_t>(cubes.size()) };", "stored };"),
+    ('V39 primitives: the edge is the radius', VW, "2.0f * p.radius * side, colour", "p.radius * side, colour"),
+    ('V40 scene hook: force_repaint is ignored', SCN, "if (force_repaint && layer->visible)\n				extract(*layer);\n			return true;\n		}\n		return show_map(name);", "if (layer->visible)\n				extract(*layer);\n			return true;\n		}\n		return show_map(name);"),
+    ('V41 scene: a layer shown again is not extracted', SCN, "if (visible && !layer.visible)", "if (false)"),
+    ('V42 scene refresh: hidden layers are extracted too', SCN, "		for (auto& layer : layers_)\n			if (layer->visible)\n				extract(*layer);", "		for (auto& layer : layers_)\n			extract(*layer);"),
+    ('V43 scene: buffers() includes hidden layers', SCN, "			if (layer->visible)\n				result.push_back(layer->cubes.get());", "			if (true)\n				result.push_back(layer->cubes.get());"),
+    ('V44 scene: the hooks stay after the scene is gone', SCN, "		voxels_.set_visualization_hooks({}, {});", "		(void)0;"),
+    ('V45 facade: the hook result is ignored', GV, "return visualize_map_hook_ ? visualize_map_hook_(map_name, force_repaint) : false;", "return false;"),
 ]
 
 TESTS = 'Viewer*'

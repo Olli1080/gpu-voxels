@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <numbers>
+#include <optional>
 
 #include <vk_mem_alloc.h>
 
@@ -16,6 +17,7 @@
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
 #include <gpu_voxels/vulkan/Octree.h>
+#include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
@@ -41,8 +43,9 @@ namespace gpu_voxels::vulkan
 			uint64_t instances;
 			uint32_t shaded;
 			uint32_t pad;
+			float eye[4];
 		};
-		static_assert(sizeof(DrawPush) == 80);
+		static_assert(sizeof(DrawPush) == 96);
 
 		uint32_t group_count(const Context& context, uint64_t items)
 		{
@@ -162,6 +165,28 @@ namespace gpu_voxels::vulkan
 		return cubes;
 	}
 
+	void CubeBuffer::assign(std::span<const Cube> cubes, CubeKind kind)
+	{
+		kind_ = kind;
+		const uint32_t stored = static_cast<uint32_t>(std::min<std::size_t>(cubes.size(), capacity_));
+		if (stored > 0)
+		{
+			std::vector<uint32_t> words(static_cast<std::size_t>(stored) * (kInstanceBytes / 4), 0u);
+			for (uint32_t i = 0; i < stored; ++i)
+			{
+				uint32_t* w = &words[static_cast<std::size_t>(i) * 8];
+				std::memcpy(&w[0], &cubes[i].x, 4);
+				std::memcpy(&w[1], &cubes[i].y, 4);
+				std::memcpy(&w[2], &cubes[i].z, 4);
+				std::memcpy(&w[3], &cubes[i].size, 4);
+				w[4] = cubes[i].colour;
+			}
+			instances_.upload(words.data(), words.size() * sizeof(uint32_t));
+		}
+		const uint32_t arguments[kArgumentWords] = { 36u, stored, 0u, 0u, static_cast<uint32_t>(cubes.size()) };
+		arguments_.upload(arguments, sizeof arguments);
+	}
+
 	// ---------------------------------------------------------------------------------------------
 	struct CubeExtractor::Kernels
 	{
@@ -190,6 +215,7 @@ namespace gpu_voxels::vulkan
 
 	void CubeExtractor::extract(const BitVoxelMap& map, const BitPalette& palette, CubeBuffer& out)
 	{
+		out.set_kind(CubeKind::Cube);
 		const Dim3ui d = map.dimensions();
 		palette_buffer_.upload(palette.colour.data(), sizeof(palette.colour));
 		const BitPush push{ d.x, d.y, d.z, out.capacity(), map.voxel_side_length() };
@@ -203,6 +229,7 @@ namespace gpu_voxels::vulkan
 
 	void CubeExtractor::extract(const ProbVoxelMap& map, const ProbDisplay& display, CubeBuffer& out)
 	{
+		out.set_kind(CubeKind::Cube);
 		const Dim3ui d = map.dimensions();
 		const ProbPush push{ d.x, d.y, d.z, out.capacity(), map.voxel_side_length(), display.min_value };
 		CommandBatch batch(context_);
@@ -215,6 +242,7 @@ namespace gpu_voxels::vulkan
 
 	void CubeExtractor::extract(const BitVoxelList& list, const BitPalette& palette, CubeBuffer& out)
 	{
+		out.set_kind(CubeKind::Cube);
 		const uint32_t count = list.size();
 		palette_buffer_.upload(palette.colour.data(), sizeof(palette.colour));
 		CommandBatch batch(context_);
@@ -232,6 +260,7 @@ namespace gpu_voxels::vulkan
 
 	void CubeExtractor::extract(const Octree& tree, const OctreeDisplay& display, CubeBuffer& out)
 	{
+		out.set_kind(CubeKind::Cube);
 		const float side = display.side_length != 0.0f ? display.side_length : tree.voxel_side_length();
 		if (!(side > 0.0f) || !std::isfinite(side))
 			throw VulkanError("CubeExtractor: an octree needs a voxel side length (OctreeDisplay::side_length or Octree::set_voxel_side_length)");
@@ -261,6 +290,16 @@ namespace gpu_voxels::vulkan
 		}
 		batch.dispatch(kernels_->finalize, { &out.arguments() }, 1, FinalizePush{ out.capacity() });
 		batch.submit_and_wait();
+	}
+
+	void CubeExtractor::extract(const PrimitiveArray& array, uint32_t colour, CubeBuffer& out)
+	{
+		const float side = array.voxel_side_length();
+		std::vector<CubeBuffer::Cube> cubes;
+		cubes.reserve(array.size());
+		for (const PrimitiveEntry& p : array.primitives())
+			cubes.push_back({ (p.x - p.radius) * side, (p.y - p.radius) * side, (p.z - p.radius) * side, 2.0f * p.radius * side, colour });
+		out.assign(cubes, array.type() == ePRIM_SPHERE ? CubeKind::Sphere : CubeKind::Cube);
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -301,42 +340,48 @@ namespace gpu_voxels::vulkan
 		};
 		const auto vertex = make_module(GVL_SHADER_SPAN(viewer_cube_vert));
 		const auto fragment = make_module(GVL_SHADER_SPAN(viewer_cube_frag));
+		const auto sphere_fragment = make_module(GVL_SHADER_SPAN(viewer_sphere_frag));
 
 		const vk::PushConstantRange push_range{ vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(DrawPush) };
 		vk::PipelineLayoutCreateInfo layout_info{};
 		layout_info.setPushConstantRanges(push_range);
 		layout_ = device.createPipelineLayoutUnique(layout_info);
 
-		const std::array<vk::PipelineShaderStageCreateInfo, 2> stages{
-			vk::PipelineShaderStageCreateInfo{ {}, vk::ShaderStageFlagBits::eVertex, *vertex, "main" },
-			vk::PipelineShaderStageCreateInfo{ {}, vk::ShaderStageFlagBits::eFragment, *fragment, "main" } };
-		const vk::PipelineVertexInputStateCreateInfo vertex_input{};
-		const vk::PipelineInputAssemblyStateCreateInfo input_assembly{ {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE };
-		const vk::PipelineViewportStateCreateInfo viewport_state{ {}, 1, nullptr, 1, nullptr };
-		vk::PipelineRasterizationStateCreateInfo raster{};
-		raster.setPolygonMode(vk::PolygonMode::eFill).setCullMode(vk::CullModeFlagBits::eNone).setFrontFace(vk::FrontFace::eCounterClockwise).setLineWidth(1.0f);
-		const vk::PipelineMultisampleStateCreateInfo multisample{ {}, vk::SampleCountFlagBits::e1 };
-		vk::PipelineDepthStencilStateCreateInfo depth_stencil{};
-		depth_stencil.setDepthTestEnable(VK_TRUE).setDepthWriteEnable(VK_TRUE).setDepthCompareOp(vk::CompareOp::eLess);
-		vk::PipelineColorBlendAttachmentState blend_attachment{};
-		blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
-		vk::PipelineColorBlendStateCreateInfo blend{};
-		blend.setAttachments(blend_attachment);
-		const std::array<vk::DynamicState, 2> dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
-		vk::PipelineDynamicStateCreateInfo dynamic{};
-		dynamic.setDynamicStates(dynamic_states);
+		const auto make_pipeline = [&](vk::ShaderModule fragment_module)
+		{
+			const std::array<vk::PipelineShaderStageCreateInfo, 2> stages{
+				vk::PipelineShaderStageCreateInfo{ {}, vk::ShaderStageFlagBits::eVertex, *vertex, "main" },
+				vk::PipelineShaderStageCreateInfo{ {}, vk::ShaderStageFlagBits::eFragment, fragment_module, "main" } };
+			const vk::PipelineVertexInputStateCreateInfo vertex_input{};
+			const vk::PipelineInputAssemblyStateCreateInfo input_assembly{ {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE };
+			const vk::PipelineViewportStateCreateInfo viewport_state{ {}, 1, nullptr, 1, nullptr };
+			vk::PipelineRasterizationStateCreateInfo raster{};
+			raster.setPolygonMode(vk::PolygonMode::eFill).setCullMode(vk::CullModeFlagBits::eNone).setFrontFace(vk::FrontFace::eCounterClockwise).setLineWidth(1.0f);
+			const vk::PipelineMultisampleStateCreateInfo multisample{ {}, vk::SampleCountFlagBits::e1 };
+			vk::PipelineDepthStencilStateCreateInfo depth_stencil{};
+			depth_stencil.setDepthTestEnable(VK_TRUE).setDepthWriteEnable(VK_TRUE).setDepthCompareOp(vk::CompareOp::eLess);
+			vk::PipelineColorBlendAttachmentState blend_attachment{};
+			blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+			vk::PipelineColorBlendStateCreateInfo blend{};
+			blend.setAttachments(blend_attachment);
+			const std::array<vk::DynamicState, 2> dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+			vk::PipelineDynamicStateCreateInfo dynamic{};
+			dynamic.setDynamicStates(dynamic_states);
 
-		vk::PipelineRenderingCreateInfo rendering{};
-		rendering.setColorAttachmentFormats(colour_format_).setDepthAttachmentFormat(depth_format_);
+			vk::PipelineRenderingCreateInfo rendering{};
+			rendering.setColorAttachmentFormats(colour_format_).setDepthAttachmentFormat(depth_format_);
 
-		vk::GraphicsPipelineCreateInfo pipeline_info{};
-		pipeline_info.setStages(stages).setPVertexInputState(&vertex_input).setPInputAssemblyState(&input_assembly).setPViewportState(&viewport_state)
-			.setPRasterizationState(&raster).setPMultisampleState(&multisample).setPDepthStencilState(&depth_stencil).setPColorBlendState(&blend)
-			.setPDynamicState(&dynamic).setLayout(*layout_).setPNext(&rendering);
-		auto result = device.createGraphicsPipelineUnique(nullptr, pipeline_info);
-		if (result.result != vk::Result::eSuccess)
-			throw VulkanError("createGraphicsPipeline failed");
-		pipeline_ = std::move(result.value);
+			vk::GraphicsPipelineCreateInfo pipeline_info{};
+			pipeline_info.setStages(stages).setPVertexInputState(&vertex_input).setPInputAssemblyState(&input_assembly).setPViewportState(&viewport_state)
+				.setPRasterizationState(&raster).setPMultisampleState(&multisample).setPDepthStencilState(&depth_stencil).setPColorBlendState(&blend)
+				.setPDynamicState(&dynamic).setLayout(*layout_).setPNext(&rendering);
+			auto result = device.createGraphicsPipelineUnique(nullptr, pipeline_info);
+			if (result.result != vk::Result::eSuccess)
+				throw VulkanError("createGraphicsPipeline failed");
+			return std::move(result.value);
+		};
+		pipeline_ = make_pipeline(*fragment);
+		sphere_pipeline_ = make_pipeline(*sphere_fragment);
 	}
 
 	VoxelRenderer::~VoxelRenderer() = default;
@@ -354,7 +399,6 @@ namespace gpu_voxels::vulkan
 		rendering.setRenderArea(vk::Rect2D({ 0, 0 }, extent)).setLayerCount(1).setColorAttachments(colour_attachment).setPDepthAttachment(&depth_attachment);
 
 		cb.beginRendering(rendering);
-		cb.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
 		cb.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f));
 		cb.setScissor(0, vk::Rect2D({ 0, 0 }, extent));
 
@@ -362,8 +406,17 @@ namespace gpu_voxels::vulkan
 		const auto view_projection = camera.view_projection(static_cast<float>(extent.width) / static_cast<float>(std::max(extent.height, 1u)));
 		std::memcpy(push.view_proj, view_projection.data(), sizeof push.view_proj);
 		push.shaded = options.shaded ? 1u : 0u;
+		for (std::size_t i = 0; i < 3; ++i)
+			push.eye[i] = camera.eye[i];
+		push.eye[3] = 1.0f;
+		std::optional<CubeKind> bound;
 		for (const CubeBuffer* buffer : buffers)
 		{
+			if (!bound || *bound != buffer->kind())
+			{
+				cb.bindPipeline(vk::PipelineBindPoint::eGraphics, buffer->kind() == CubeKind::Sphere ? *sphere_pipeline_ : *pipeline_);
+				bound = buffer->kind();
+			}
 			push.instances = buffer->instances().device_address();
 			cb.pushConstants(*layout_, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof push, &push);
 			cb.drawIndirect(buffer->arguments().handle(), 0, 1, 4 * sizeof(uint32_t));

@@ -157,3 +157,31 @@ TEST_F(ViewerWindowTest, TheContextRequirementsAreAddedToTheBaseInfo)
 	EXPECT_EQ(std::count(info.instance_extensions.begin(), info.instance_extensions.end(), std::string("VK_KHR_surface")), 1) << "no duplicates";
 	EXPECT_TRUE(static_cast<bool>(info.queue_family_filter));
 }
+
+TEST_F(ViewerWindowTest, KeysControlTheWindowAndTheRestGoToTheHandler)
+{
+	// GLFW key codes: ESC 256, R 82, S 83, '1' 49
+	ViewerWindow window(ctx(), hidden());
+	std::vector<int> forwarded;
+	window.set_key_handler([&](int key) { forwarded.push_back(key); });
+	window.camera().yaw_degrees = 10.0f;
+	window.set_home_camera();
+	window.camera().yaw_degrees = 77.0f;
+	ASSERT_TRUE(window.render_options().shaded);
+	window.handle_key(83);
+	EXPECT_FALSE(window.render_options().shaded);
+	window.handle_key(83);
+	EXPECT_TRUE(window.render_options().shaded);
+	window.handle_key(82);
+	EXPECT_EQ(window.camera().yaw_degrees, 10.0f) << "R returns to the home camera";
+	EXPECT_TRUE(forwarded.empty()) << "the keys of the window are not forwarded";
+	window.handle_key(49);
+	window.handle_key(65);
+	EXPECT_EQ(forwarded, (std::vector<int>{ 49, 65 }));
+	EXPECT_FALSE(window.should_close());
+	window.handle_key(256);
+	EXPECT_TRUE(window.should_close());
+	// without a handler other keys do nothing
+	ViewerWindow plain(ctx(), hidden());
+	EXPECT_NO_THROW(plain.handle_key(49));
+}

@@ -355,7 +355,7 @@ namespace gpu_voxels::vulkan
 		}
 
 		vk::PhysicalDeviceVulkan13Features features13{};
-		features13.setSynchronization2(true).setDynamicRendering(create_info.enable_graphics); // dynamic rendering is core 1.3: no render pass objects in the viewer
+		features13.setSynchronization2(true).setDynamicRendering(create_info.enable_graphics).setShaderDemoteToHelperInvocation(create_info.enable_graphics); // discard of the sphere shader (SPIR-V demote; mandatory in 1.3) // dynamic rendering is core 1.3: no render pass objects in the viewer
 		vk::PhysicalDeviceVulkan12Features features12{};
 		features12.setBufferDeviceAddress(info_.buffer_device_address); // optional: only enabled when supported
 		features13.setPNext(&features12);

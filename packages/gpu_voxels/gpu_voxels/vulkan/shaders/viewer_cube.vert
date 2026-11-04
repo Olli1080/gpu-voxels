@@ -13,10 +13,13 @@ layout(push_constant) uniform Push
     uint64_t instances;
     uint shaded;
     uint pad;
+    vec4 eye;
 } pc;
 
 layout(location = 0) out vec4 v_colour;
 layout(location = 1) out vec3 v_normal;
+layout(location = 2) out vec3 v_world;
+layout(location = 3) flat out vec4 v_sphere;  // centre and radius of the sphere inscribed in the cube (sphere buffers)
 
 // two triangles of a face: the corners 0, 1, 2 and 2, 1, 3 of a quad whose corner q has the coordinates (q & 1, q >> 1)
 const uint QUAD[6] = uint[6](0u, 1u, 2u, 2u, 1u, 3u);
@@ -35,7 +38,10 @@ void main()
     vec3 normal = vec3(0.0);
     normal[axis] = sign_;
 
-    gl_Position = pc.view_proj * vec4(inst.pos_size.xyz + local * inst.pos_size.w, 1.0);
+    const vec3 world = inst.pos_size.xyz + local * inst.pos_size.w;
+    gl_Position = pc.view_proj * vec4(world, 1.0);
+    v_world = world;
+    v_sphere = vec4(inst.pos_size.xyz + 0.5 * inst.pos_size.w, 0.5 * inst.pos_size.w);
     v_colour = unpackUnorm4x8(inst.rgba);
     v_normal = normal;
 }

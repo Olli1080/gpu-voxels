@@ -19,8 +19,10 @@
 #include <gpu_voxels/vulkan/ImageFile.h>
 #include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/OrbitCamera.h>
+#include <gpu_voxels/vulkan/PrimitiveArray.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan/ViewerScene.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
 #include "../reference/octree_reference.h"
@@ -1114,4 +1116,406 @@ TEST_F(ViewerTest, ABigOctreeNodeIsDrawnAsOneCube)
 		for (uint32_t x = 0; x < w; ++x)
 			covered += pixel(image, w, int(x), int(y)) == colour ? 1 : 0;
 	EXPECT_NEAR(double(covered), double(hi[0] - lo[0]) * double(hi[1] - lo[1]), 2.0 * (double(hi[0] - lo[0]) + double(hi[1] - lo[1])));
+}
+
+// ---- primitives ------------------------------------------------------------------------------------------------------------------------------
+
+TEST_F(ViewerTest, ExtractsTheCubesOfAPrimitiveArray)
+{
+	const float side = 0.5f;
+	PrimitiveArray spheres(Dim3ui{ 100, 100, 100 }, side, ePRIM_SPHERE);
+	spheres.set_points(std::vector<Point4f>{ { 1.2f, 2.3f, 3.4f, 1.0f }, { 10.0f, 0.1f, 5.0f, 3.0f }, { 0.0f, 0.0f, 0.0f, 0.0f } });
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 10);
+	const uint32_t colour = pack_colour(10, 20, 250);
+	extractor.extract(spheres, colour, cubes);
+	EXPECT_EQ(cubes.kind(), CubeKind::Sphere);
+	std::vector<Cube> expected;
+	for (const PrimitiveEntry& p : spheres.primitives())
+		expected.push_back({ (p.x - p.radius) * side, (p.y - p.radius) * side, (p.z - p.radius) * side, 2.0f * p.radius * side, colour });
+	ASSERT_EQ(expected.size(), 3u);
+	expect_equal(cubes.download(), expected);
+	// the metric point (1.2, 2.3, 3.4) lies in the voxel (2, 4, 6) of 0.5 m: the sphere of 1 m diameter is centred on that voxel centre (1.25, 2.25, 3.25)
+	EXPECT_EQ(expected[0].size, 1.0f);
+	EXPECT_EQ(expected[0].x, 1.25f - 0.5f);
+	EXPECT_EQ(expected[0].y, 2.25f - 0.5f);
+	EXPECT_EQ(expected[0].z, 3.25f - 0.5f);
+
+	PrimitiveArray cuboids(Dim3ui{ 100, 100, 100 }, side, ePRIM_CUBOID);
+	cuboids.set_points(std::vector<Coord4i>{ { 4, 4, 4, 2 } });
+	extractor.extract(cuboids, colour, cubes);
+	EXPECT_EQ(cubes.kind(), CubeKind::Cube);
+	expect_equal(cubes.download(), std::vector<Cube>{ { 1.75f, 1.75f, 1.75f, 1.0f, colour } });
+
+	// capacity: counted, not stored; an empty array clears the buffer; a map extraction after spheres resets the kind
+	std::vector<Point3f> many;
+	for (int i = 0; i < 25; ++i)
+		many.push_back({ static_cast<float>(i), 1.0f, 1.0f });
+	spheres.set_points(many, 1.0f);
+	extractor.extract(spheres, colour, cubes);
+	EXPECT_EQ(cubes.found(), 25u);
+	EXPECT_EQ(cubes.count(), 10u);
+	EXPECT_EQ(cubes.dropped(), 15u);
+	EXPECT_EQ(cubes.kind(), CubeKind::Sphere);
+	spheres.set_points(std::vector<Point4f>{});
+	extractor.extract(spheres, colour, cubes);
+	EXPECT_EQ(cubes.count(), 0u);
+	EXPECT_EQ(cubes.found(), 0u);
+	extractor.extract(spheres, colour, cubes);
+	BitVoxelMap map(ctx(), { 4, 4, 4 }, 1.0f);
+	extractor.extract(spheres, colour, cubes);
+	ASSERT_EQ(cubes.kind(), CubeKind::Sphere);
+	extractor.extract(map, BitPalette::defaults(), cubes);
+	EXPECT_EQ(cubes.kind(), CubeKind::Cube);
+}
+
+TEST_F(ViewerTest, ASphereIsRoundAndACuboidFillsItsSquare)
+{
+	constexpr uint32_t w = 160, h = 120;
+	const uint32_t colour = pack_colour(30, 200, 60);
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	OffscreenTarget target(ctx(), w, h);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 10);
+	ViewerCamera camera;
+	camera.eye = { 4.5f, 4.5f, 20.0f };
+	camera.target = { 4.5f, 4.5f, 4.5f };
+	const CubeBuffer* buffers[] = { &cubes };
+
+	const auto covered = [&]
+	{
+		const auto image = target.read_rgba();
+		std::size_t n = 0;
+		for (uint32_t y = 0; y < h; ++y)
+			for (uint32_t x = 0; x < w; ++x)
+				n += pixel(image, w, int(x), int(y)) == pixel_of(colour) ? 1 : 0;
+		return n;
+	};
+	// the bounding cube is [2.5, 6.5]^3; its front face z = 6.5
+	const auto lo = project(camera, w, h, { 2.5f, 6.5f, 6.5f });
+	const auto hi = project(camera, w, h, { 6.5f, 2.5f, 6.5f });
+	const auto at = [&](float fx, float fy) { return std::pair{ int(lo[0] + (hi[0] - lo[0]) * fx), int(lo[1] + (hi[1] - lo[1]) * fy) }; };
+
+	PrimitiveArray sphere(Dim3ui{ 20, 20, 20 }, 1.0f, ePRIM_SPHERE);
+	sphere.set_points(std::vector<Point4f>{ { 4.5f, 4.5f, 4.5f, 4.0f } });
+	extractor.extract(sphere, colour, cubes);
+	target.render(renderer, camera, buffers, flat_black());
+	{
+		const auto image = target.read_rgba();
+		const auto [cx, cy] = at(0.5f, 0.5f);
+		EXPECT_EQ(pixel(image, w, cx, cy), pixel_of(colour));
+		for (const auto& [fx, fy] : { std::pair{ 0.04f, 0.04f }, std::pair{ 0.96f, 0.04f }, std::pair{ 0.04f, 0.96f }, std::pair{ 0.96f, 0.96f } })
+		{
+			const auto [px, py] = at(fx, fy);
+			EXPECT_EQ(pixel(image, w, px, py), (Pixel{ 0, 0, 0, 255 })) << "the corner of the bounding cube is empty";
+		}
+		const auto [ex, ey] = at(0.5f, 0.12f);   // inside the circle near its top
+		EXPECT_EQ(pixel(image, w, ex, ey), pixel_of(colour));
+		// area of the silhouette: a circle of the angular radius asin(r / d) at the image centre
+		const double focal = (h / 2.0) / std::tan(30.0 * 3.14159265358979 / 180.0);
+		const double distance = 20.0 - 4.5, radius = 2.0;
+		const double r_px = focal * radius / std::sqrt(distance * distance - radius * radius);
+		EXPECT_NEAR(double(covered()), 3.14159265358979 * r_px * r_px, 0.05 * 3.14159265358979 * r_px * r_px);
+	}
+
+	PrimitiveArray cuboid(Dim3ui{ 20, 20, 20 }, 1.0f, ePRIM_CUBOID);
+	cuboid.set_points(std::vector<Point4f>{ { 4.5f, 4.5f, 4.5f, 4.0f } });
+	extractor.extract(cuboid, colour, cubes);
+	target.render(renderer, camera, buffers, flat_black());
+	const auto image = target.read_rgba();
+	for (const auto& [fx, fy] : { std::pair{ 0.04f, 0.04f }, std::pair{ 0.96f, 0.96f } })
+	{
+		const auto [px, py] = at(fx, fy);
+		EXPECT_EQ(pixel(image, w, px, py), pixel_of(colour)) << "a cuboid fills the corner";
+	}
+	EXPECT_NEAR(double(covered()), double(hi[0] - lo[0]) * double(hi[1] - lo[1]), 2.0 * (double(hi[0] - lo[0]) + double(hi[1] - lo[1])));
+}
+
+TEST_F(ViewerTest, ASphereHasTheDepthOfItsSurfaceNotOfItsBoundingCube)
+{
+	constexpr uint32_t w = 160, h = 120;
+	const uint32_t sphere_colour = pack_colour(30, 200, 60), cube_colour = pack_colour(220, 40, 40);
+	CubeExtractor extractor(ctx());
+	CubeBuffer sphere_buffer(ctx(), 4), cube_buffer(ctx(), 4);
+	PrimitiveArray sphere(Dim3ui{ 20, 20, 20 }, 1.0f, ePRIM_SPHERE);
+	sphere.set_points(std::vector<Point4f>{ { 4.5f, 4.5f, 4.5f, 4.0f } });    // centre (4.5, 4.5, 4.5), radius 2
+	extractor.extract(sphere, sphere_colour, sphere_buffer);
+	// a small cube in front of the surface of the sphere but behind the front face of its bounding cube (the camera looks along +y from y < 0):
+	// at x = z = 4.5 + 1.2 the surface is at y = 4.5 - sqrt(4 - 2 * 1.44) = 4.5 - 1.06, the front face of the bounding cube at y = 2.5, the small cube at y 2.7 .. 3.1
+	CubeBuffer::Cube small{ 5.6f, 2.7f, 5.6f, 0.4f, cube_colour };
+	cube_buffer.assign(std::span<const CubeBuffer::Cube>(&small, 1));
+
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	OffscreenTarget target(ctx(), w, h);
+	ViewerCamera camera;
+	camera.eye = { 4.5f, -20.0f, 4.5f };
+	camera.target = { 4.5f, 4.5f, 4.5f };
+	camera.up = { 0.0f, 0.0f, 1.0f };
+	const auto centre = project(camera, w, h, { 5.8f, 2.7f, 5.8f });
+	// the small cube is drawn BEFORE the sphere: only the depth of the sphere decides
+	const CubeBuffer* order[] = { &cube_buffer, &sphere_buffer };
+	target.render(renderer, camera, order, flat_black());
+	EXPECT_EQ(pixel(target.read_rgba(), w, int(centre[0]), int(centre[1])), pixel_of(cube_colour)) << "the cube in front of the sphere surface stays visible";
+	const CubeBuffer* reversed[] = { &sphere_buffer, &cube_buffer };
+	target.render(renderer, camera, reversed, flat_black());
+	EXPECT_EQ(pixel(target.read_rgba(), w, int(centre[0]), int(centre[1])), pixel_of(cube_colour));
+	// the sphere itself is visible next to it
+	const auto middle = project(camera, w, h, { 4.5f, 2.5f, 4.5f });
+	EXPECT_EQ(pixel(target.read_rgba(), w, int(middle[0]), int(middle[1])), pixel_of(sphere_colour));
+}
+
+TEST_F(ViewerTest, SpheresAreShadedLikeASphere)
+{
+	constexpr uint32_t w = 160, h = 120;
+	const uint32_t colour = pack_colour(200, 200, 200);
+	CubeExtractor extractor(ctx());
+	CubeBuffer cubes(ctx(), 4);
+	PrimitiveArray sphere(Dim3ui{ 20, 20, 20 }, 1.0f, ePRIM_SPHERE);
+	sphere.set_points(std::vector<Point4f>{ { 4.5f, 4.5f, 4.5f, 6.0f } });
+	extractor.extract(sphere, colour, cubes);
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	OffscreenTarget target(ctx(), w, h);
+	ViewerCamera camera;
+	camera.eye = { 4.5f, 4.5f, 30.0f };
+	camera.target = { 4.5f, 4.5f, 4.5f };
+	const CubeBuffer* buffers[] = { &cubes };
+	target.render(renderer, camera, buffers);   // shaded
+	const auto image = target.read_rgba();
+	const auto top_left = project(camera, w, h, { 3.0f, 6.0f, 6.0f }), bottom_right = project(camera, w, h, { 6.0f, 3.0f, 6.0f }), centre = project(camera, w, h, { 4.5f, 4.5f, 7.5f });
+	const Pixel a = pixel(image, w, int(top_left[0]), int(top_left[1])), b = pixel(image, w, int(bottom_right[0]), int(bottom_right[1])), c = pixel(image, w, int(centre[0]), int(centre[1]));
+	// the light comes from -x, +y, +z: the upper left of the sphere is brighter than the lower right, and the surface is not flat
+	EXPECT_GT(a.r, b.r + 20);
+	EXPECT_NE(a, c);
+	EXPECT_NE(b, c);
+}
+
+// ---- scene (layers of a GpuVoxels) -----------------------------------------------------------------------------------------------------------
+
+namespace
+{
+	std::vector<Cube> cubes_of(const CubeBuffer& buffer) { return buffer.download(); }
+
+	/// A 16 x 16 x 16 façade with voxels of 0.5 m.
+	struct SceneFixture
+	{
+		explicit SceneFixture(Context& context) : gvl(context)
+		{
+			gvl.initialize({ 16, 16, 16 }, 0.5f);
+		}
+		GpuVoxels gvl;
+	};
+}
+
+TEST_F(ViewerTest, ASceneShowsTheMapsListsAndOctreesOfAFacade)
+{
+	SceneFixture f(ctx());
+	const std::vector<Coord3ui> voxels{ { 1, 1, 1 }, { 5, 2, 3 } };
+	f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "bit")->insert_coordinate_list(voxels, 5);
+	f.gvl.add_map(MT_BITVECTOR_VOXELLIST, "list")->insert_coordinate_list(voxels, 6);
+	f.gvl.add_map(MT_PROBAB_VOXELMAP, "prob")->insert_coordinate_list(voxels, eBVM_OCCUPIED);
+	f.gvl.add_map(MT_BITVECTOR_OCTREE, "octree")->insert_coordinate_list(voxels, eBVM_OCCUPIED);
+	f.gvl.add_map(MT_PROBAB_OCTREE, "prob_octree")->insert_coordinate_list(voxels, eBVM_OCCUPIED);
+	f.gvl.add_map(MT_COUNTING_VOXELLIST, "counting");
+	f.gvl.add_map(MT_DISTANCE_VOXELMAP, "distance");
+
+	ViewerScene scene(f.gvl, 100);
+	for (const char* name : { "bit", "list", "prob", "octree", "prob_octree" })
+		EXPECT_TRUE(scene.show_map(name)) << name;
+	EXPECT_FALSE(scene.show_map("counting")) << "counts have no meaning to draw";
+	EXPECT_FALSE(scene.show_map("distance"));
+	EXPECT_FALSE(scene.show_map("unknown"));
+	ASSERT_EQ(scene.layer_count(), 5u);
+
+	const std::vector<Cube> at_voxels_bit = [&](uint32_t colour) { return std::vector<Cube>{ { 0.5f, 0.5f, 0.5f, 0.5f, colour }, { 2.5f, 1.0f, 1.5f, 0.5f, colour } }; }(BitPalette::defaults().colour[5]);
+	const auto buffers = scene.buffers();
+	ASSERT_EQ(buffers.size(), 5u);
+	expect_equal(cubes_of(*buffers[0]), at_voxels_bit);
+	expect_equal(cubes_of(*buffers[1]), [&] { auto c = at_voxels_bit; for (auto& x : c) x.colour = BitPalette::defaults().colour[6]; return c; }());
+	EXPECT_EQ(buffers[2]->count(), 2u);
+	EXPECT_EQ(cubes_of(*buffers[2])[0].size, 0.5f);
+	// octrees: the voxels in the voxel size of the façade, deterministic in the orange of the default display
+	expect_equal(cubes_of(*buffers[3]), [&] { auto c = at_voxels_bit; for (auto& x : c) x.colour = OctreeDisplay{}.occupied_colour; return c; }());
+	EXPECT_EQ(buffers[4]->count(), 2u);
+
+	const auto info = scene.layers();
+	ASSERT_EQ(info.size(), 5u);
+	EXPECT_EQ(info[0].name, "bit");
+	EXPECT_EQ(info[4].name, "prob_octree");
+	for (const auto& layer : info)
+	{
+		EXPECT_FALSE(layer.primitives);
+		EXPECT_TRUE(layer.visible);
+		EXPECT_EQ(layer.cubes, 2u) << layer.name;
+		EXPECT_EQ(layer.dropped, 0u);
+	}
+	const auto size = scene.world_size();
+	EXPECT_EQ(size, (std::array<float, 3>{ 8.0f, 8.0f, 8.0f }));
+}
+
+TEST_F(ViewerTest, ASceneUsesTheStyleOfALayer)
+{
+	SceneFixture f(ctx());
+	const auto map = f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "bit");
+	map->insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 } }, 5);
+	map->insert_coordinate_list(std::vector<Coord3ui>{ { 2, 2, 2 } }, 7);
+	ViewerScene scene(f.gvl, 100);
+	MapStyle style;
+	style.palette.hide(5);
+	style.palette.set(7, pack_colour(1, 2, 3));
+	ASSERT_TRUE(scene.show_map("bit", style));
+	expect_equal(cubes_of(*scene.buffers()[0]), std::vector<Cube>{ { 1.0f, 1.0f, 1.0f, 0.5f, pack_colour(1, 2, 3) } });
+	// showing it again replaces the layer in its position
+	f.gvl.add_map(MT_PROBAB_VOXELMAP, "prob");
+	ASSERT_TRUE(scene.show_map("prob"));
+	ASSERT_TRUE(scene.show_map("bit"));
+	ASSERT_EQ(scene.layer_count(), 2u);
+	EXPECT_EQ(scene.layers()[0].name, "bit");
+	EXPECT_EQ(scene.layers()[0].cubes, 2u) << "the default palette shows both meanings";
+}
+
+TEST_F(ViewerTest, ASceneShowsPrimitivesAndRefreshesWhenTheyChange)
+{
+	SceneFixture f(ctx());
+	ASSERT_TRUE(f.gvl.add_primitives(ePRIM_SPHERE, "spheres"));
+	ASSERT_TRUE(f.gvl.add_primitives(ePRIM_CUBOID, "cuboids"));
+	ASSERT_TRUE(f.gvl.modify_primitives("spheres", std::vector<Point4f>{ { 2.0f, 2.0f, 2.0f, 1.0f } }));
+	ASSERT_TRUE(f.gvl.modify_primitives("cuboids", std::vector<Point3f>{ { 1.0f, 1.0f, 1.0f }, { 3.0f, 3.0f, 3.0f } }, 0.5f));
+	ViewerScene scene(f.gvl, 100);
+	EXPECT_FALSE(scene.show_primitives("nothing"));
+	EXPECT_TRUE(scene.show_primitives("spheres", pack_colour(1, 2, 3)));
+	EXPECT_TRUE(scene.show_primitives("cuboids"));
+	ASSERT_EQ(scene.layer_count(), 2u);
+	EXPECT_TRUE(scene.layers()[0].primitives);
+	const auto buffers = scene.buffers();
+	EXPECT_EQ(buffers[0]->kind(), CubeKind::Sphere);
+	EXPECT_EQ(buffers[1]->kind(), CubeKind::Cube);
+	EXPECT_EQ(buffers[0]->count(), 1u);
+	EXPECT_EQ(buffers[1]->count(), 2u);
+	EXPECT_EQ(cubes_of(*buffers[0])[0].colour, pack_colour(1, 2, 3));
+	// the array changes, the scene shows the old content until refresh()
+	ASSERT_TRUE(f.gvl.modify_primitives("spheres", std::vector<Point4f>{ { 2.0f, 2.0f, 2.0f, 1.0f }, { 4.0f, 4.0f, 4.0f, 1.0f }, { 5.0f, 5.0f, 5.0f, 1.0f } }));
+	EXPECT_EQ(scene.buffers()[0]->count(), 1u);
+	scene.refresh();
+	EXPECT_EQ(scene.buffers()[0]->count(), 3u);
+	EXPECT_TRUE(scene.remove_primitives("cuboids"));
+	EXPECT_FALSE(scene.remove_primitives("cuboids"));
+	EXPECT_EQ(scene.layer_count(), 1u);
+	// names of maps and primitive arrays are separate
+	f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "spheres");
+	EXPECT_TRUE(scene.show_map("spheres"));
+	EXPECT_EQ(scene.layer_count(), 2u);
+	EXPECT_FALSE(scene.remove_map("cuboids"));
+	EXPECT_TRUE(scene.remove_map("spheres"));
+	EXPECT_EQ(scene.layer_count(), 1u);
+}
+
+TEST_F(ViewerTest, TheVisualizeCallsOfTheFacadeShowTheLayers)
+{
+	SceneFixture f(ctx());
+	const auto map = f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "bit");
+	map->insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 } }, 5);
+	f.gvl.add_primitives(ePRIM_SPHERE, "spheres");
+	f.gvl.modify_primitives("spheres", std::vector<Point4f>{ { 2.0f, 2.0f, 2.0f, 1.0f } });
+	f.gvl.add_map(MT_DISTANCE_VOXELMAP, "distance");
+	EXPECT_FALSE(f.gvl.visualize_map("bit")) << "no viewer yet";
+	{
+		ViewerScene scene(f.gvl, 100);
+		EXPECT_TRUE(f.gvl.visualize_map("bit"));
+		ASSERT_EQ(scene.layer_count(), 1u);
+		EXPECT_EQ(scene.layers()[0].cubes, 1u);
+		// force_repaint extracts again, without it the layer keeps what it shows
+		map->insert_coordinate_list(std::vector<Coord3ui>{ { 3, 3, 3 } }, 5);
+		EXPECT_TRUE(f.gvl.visualize_map("bit", false));
+		EXPECT_EQ(scene.buffers()[0]->count(), 1u);
+		EXPECT_TRUE(f.gvl.visualize_map("bit", true));
+		EXPECT_EQ(scene.buffers()[0]->count(), 2u);
+		EXPECT_EQ(scene.layer_count(), 1u) << "the same layer";
+		EXPECT_FALSE(f.gvl.visualize_map("distance")) << "a distance map cannot be drawn";
+		EXPECT_FALSE(f.gvl.visualize_map("unknown"));
+		EXPECT_TRUE(f.gvl.visualize_primitives_array("spheres"));
+		EXPECT_FALSE(f.gvl.visualize_primitives_array("unknown"));
+		EXPECT_EQ(scene.layer_count(), 2u);
+		EXPECT_TRUE(scene.layers()[1].primitives);
+	}
+	EXPECT_FALSE(f.gvl.visualize_map("bit")) << "the scene is gone, so is its hook";
+	EXPECT_FALSE(f.gvl.visualize_primitives_array("spheres"));
+}
+
+TEST_F(ViewerTest, LayersCanBeHiddenAndComeBackCurrent)
+{
+	SceneFixture f(ctx());
+	const auto a = f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "a");
+	const auto b = f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "b");
+	a->insert_coordinate_list(std::vector<Coord3ui>{ { 1, 1, 1 } }, 5);
+	b->insert_coordinate_list(std::vector<Coord3ui>{ { 2, 2, 2 } }, 5);
+	ViewerScene scene(f.gvl, 100);
+	ASSERT_TRUE(scene.show_map("a"));
+	ASSERT_TRUE(scene.show_map("b"));
+	const auto both = scene.buffers();
+	ASSERT_EQ(both.size(), 2u);
+	EXPECT_TRUE(scene.toggle_visible(0));
+	ASSERT_EQ(scene.buffers().size(), 1u);
+	EXPECT_EQ(scene.buffers()[0], both[1]);
+	EXPECT_FALSE(scene.layers()[0].visible);
+	EXPECT_FALSE(scene.set_visible(2, false));
+	EXPECT_FALSE(scene.toggle_visible(7));
+	// changes while hidden: refresh skips the layer, showing it extracts again
+	a->insert_coordinate_list(std::vector<Coord3ui>{ { 3, 3, 3 } }, 5);
+	b->insert_coordinate_list(std::vector<Coord3ui>{ { 4, 4, 4 } }, 5);
+	scene.refresh();
+	EXPECT_EQ(both[1]->count(), 2u) << "the visible layer follows";
+	EXPECT_EQ(both[0]->count(), 1u) << "the hidden one was not touched";
+	EXPECT_TRUE(scene.set_visible(0, true));
+	EXPECT_EQ(both[0]->count(), 2u);
+	EXPECT_EQ(scene.buffers().size(), 2u);
+	EXPECT_TRUE(scene.set_visible(0, true)) << "showing a visible layer is harmless";
+	// capacity: the layer counts what did not fit
+	ViewerScene small(f.gvl, 1);
+	ASSERT_TRUE(small.show_map("a"));
+	EXPECT_EQ(small.layers()[0].cubes, 1u);
+	EXPECT_EQ(small.layers()[0].dropped, 1u);
+	EXPECT_THROW(ViewerScene(f.gvl, 0), VulkanError);
+}
+
+TEST_F(ViewerTest, ASceneIsRenderedLayerByLayer)
+{
+	SceneFixture f(ctx());
+	f.gvl.add_map(MT_BITVECTOR_VOXELMAP, "bit")->insert_coordinate_list(std::vector<Coord3ui>{ { 2, 4, 4 } }, 5);
+	f.gvl.add_primitives(ePRIM_SPHERE, "spheres");
+	f.gvl.modify_primitives("spheres", std::vector<Point4f>{ { 5.0f, 2.25f, 2.25f, 1.0f } });
+	ViewerScene scene(f.gvl, 100);
+	const uint32_t sphere_colour = pack_colour(30, 200, 60);
+	ASSERT_TRUE(scene.show_map("bit"));
+	ASSERT_TRUE(scene.show_primitives("spheres", sphere_colour));
+
+	VoxelRenderer renderer(ctx(), OffscreenTarget::kColourFormat);
+	constexpr uint32_t w = 160, h = 120;
+	OffscreenTarget target(ctx(), w, h);
+	ViewerCamera camera;
+	camera.eye = { 3.5f, 2.5f, 14.0f };
+	camera.target = { 3.5f, 2.5f, 1.0f };
+	const auto render = [&]
+	{
+		const auto buffers = scene.buffers();
+		target.render(renderer, camera, buffers, flat_black());
+		return target.read_rgba();
+	};
+	const auto voxel_pixel = project(camera, w, h, { 1.25f, 2.25f, 2.5f });      // front face of the voxel (2, 4, 4) of 0.5 m: x 1 .. 1.5, y 2 .. 2.5, z 2 .. 2.5
+	const auto sphere_pixel = project(camera, w, h, { 2.5f, 1.125f, 1.125f });   // the sphere: metric centre (5, 2.25, 2.25) -> voxel (10, 4, 4), centre (5.25, 2.25, 2.25) m
+	ASSERT_GT(sphere_pixel[0], 0.0f);
+	const Pixel black{ 0, 0, 0, 255 };
+	auto image = render();
+	EXPECT_EQ(pixel(image, w, int(voxel_pixel[0]), int(voxel_pixel[1])), pixel_of(BitPalette::defaults().colour[5]));
+	scene.toggle_visible(0);
+	image = render();
+	EXPECT_EQ(pixel(image, w, int(voxel_pixel[0]), int(voxel_pixel[1])), black) << "the hidden layer is not drawn";
+	scene.toggle_visible(0);
+	scene.toggle_visible(1);
+	image = render();
+	EXPECT_EQ(pixel(image, w, int(voxel_pixel[0]), int(voxel_pixel[1])), pixel_of(BitPalette::defaults().colour[5]));
+	const auto sphere_centre = project(camera, w, h, { 5.25f, 2.25f, 2.25f });
+	EXPECT_EQ(pixel(image, w, int(sphere_centre[0]), int(sphere_centre[1])), black) << "the hidden sphere layer is not drawn";
+	scene.toggle_visible(1);
+	image = render();
+	EXPECT_EQ(pixel(image, w, int(sphere_centre[0]), int(sphere_centre[1])), pixel_of(sphere_colour));
 }

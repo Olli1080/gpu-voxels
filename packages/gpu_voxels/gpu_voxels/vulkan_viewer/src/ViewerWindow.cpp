@@ -174,14 +174,20 @@ namespace gpu_voxels::vulkan
 		{
 			if (action != GLFW_PRESS)
 				return;
-			auto* self = static_cast<ViewerWindow*>(glfwGetWindowUserPointer(w));
-			if (key == GLFW_KEY_ESCAPE)
-				glfwSetWindowShouldClose(w, GLFW_TRUE);
-			else if (key == GLFW_KEY_S)
-				self->render_options_.shaded = !self->render_options_.shaded;
-			else if (key == GLFW_KEY_R)
-				self->camera_ = self->initial_camera_;
+			static_cast<ViewerWindow*>(glfwGetWindowUserPointer(w))->handle_key(key);
 		});
+	}
+
+	void ViewerWindow::handle_key(int key)
+	{
+		if (key == GLFW_KEY_ESCAPE)
+			glfwSetWindowShouldClose(window_, GLFW_TRUE);
+		else if (key == GLFW_KEY_S)
+			render_options_.shaded = !render_options_.shaded;
+		else if (key == GLFW_KEY_R)
+			camera_ = initial_camera_;
+		else if (key_handler_)
+			key_handler_(key);
 	}
 
 	ViewerWindow::~ViewerWindow()

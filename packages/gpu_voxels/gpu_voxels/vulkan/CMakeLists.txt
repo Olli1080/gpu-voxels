@@ -32,6 +32,7 @@ target_sources(${PROJECT_NAME}
     src/ImageFile.cpp
     src/OrbitCamera.cpp
     src/Viewer.cpp
+    src/ViewerScene.cpp
     src/vma_impl.cpp
   PUBLIC FILE_SET HEADERS
   BASE_DIRS ${INCLUDE_DIR}
@@ -58,6 +59,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/ImageFile.h
     ${INCLUDE_DIR}/OrbitCamera.h
     ${INCLUDE_DIR}/Viewer.h
+    ${INCLUDE_DIR}/ViewerScene.h
     ${INCLUDE_DIR}/vulkan_types.h
     ${INCLUDE_DIR}/vulkan_common.h
 )
@@ -185,7 +187,8 @@ gvl_embed_shaders(${PROJECT_NAME}
     shaders/viewer_extract_list.comp
     shaders/viewer_extract_octree.comp
     shaders/viewer_extract_prob.comp
-    shaders/viewer_finalize.comp)
+    shaders/viewer_finalize.comp
+    shaders/viewer_sphere.frag)
 
 install(
   TARGETS

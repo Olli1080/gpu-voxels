@@ -225,6 +225,8 @@ namespace gpu_voxels::vulkan::shaders
 	extern const std::size_t viewer_cube_vert_words;
 	extern const uint32_t viewer_cube_frag[];
 	extern const std::size_t viewer_cube_frag_words;
+	extern const uint32_t viewer_sphere_frag[];
+	extern const std::size_t viewer_sphere_frag_words;
 
 #define GVL_SHADER_SPAN(name) std::span<const uint32_t>(::gpu_voxels::vulkan::shaders::name, ::gpu_voxels::vulkan::shaders::name##_words)
 }

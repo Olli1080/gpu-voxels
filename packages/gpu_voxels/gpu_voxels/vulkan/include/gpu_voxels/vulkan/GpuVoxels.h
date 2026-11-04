@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -254,9 +255,15 @@ namespace gpu_voxels::vulkan
 		/// The array itself (CUDA has no getter; without a viewer it is the only way to look at the content). Empty (and an error log) for an unknown name.
 		[[nodiscard]] PrimitiveArraySharedPtr get_primitives(const std::string& array_name) const;
 
-		/// There is no viewer on Vulkan (decision Q6): always false, like CUDA without GPUVOXEL_VISUALIZE.
+		/// Hand over a map / primitive array to the viewer: false without a viewer (like CUDA without GPUVOXEL_VISUALIZE), and false (and an error log) for an
+		/// unknown name. A viewer registers itself with set_visualization_hooks (the ViewerScene of ViewerScene.h does it); the hook then decides what
+		/// `force_repaint` means and what the result is.
 		bool visualize_map(const std::string& map_name, bool force_repaint = true) const;
 		bool visualize_primitives_array(const std::string& array_name, bool force_repaint = true) const;
+		using VisualizeHook = std::function<bool(const std::string& name, bool force_repaint)>;
+		/// The functions behind visualize_map / visualize_primitives_array; an empty function removes the hook. Not owned: whoever sets them must remove them
+		/// before it dies (ViewerScene does).
+		void set_visualization_hooks(VisualizeHook map_hook, VisualizeHook primitives_hook);
 
 		[[nodiscard]] Dim3ui dimensions() const { return dimensions_; }
 		[[nodiscard]] float voxel_side_length() const { return voxel_side_length_; }
@@ -272,6 +279,7 @@ namespace gpu_voxels::vulkan
 		std::map<std::string, GpuVoxelsMapSharedPtr> maps_; ///< destroyed before the owned context
 		std::map<std::string, KinematicChainSharedPtr> robots_; ///< likewise
 		std::map<std::string, PrimitiveArraySharedPtr> primitives_; ///< host only
+		VisualizeHook visualize_map_hook_, visualize_primitives_hook_;
 	};
 }
 

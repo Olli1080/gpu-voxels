@@ -763,17 +763,29 @@ namespace gpu_voxels::vulkan
 		return true;
 	}
 
-	bool GpuVoxels::visualize_map(const std::string& map_name, bool) const
+	bool GpuVoxels::visualize_map(const std::string& map_name, bool force_repaint) const
 	{
 		if (!maps_.contains(map_name))
+		{
 			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << map_name << "' not found." << endl);
-		return false;
+			return false;
+		}
+		return visualize_map_hook_ ? visualize_map_hook_(map_name, force_repaint) : false;
 	}
 
-	bool GpuVoxels::visualize_primitives_array(const std::string& array_name, bool) const
+	bool GpuVoxels::visualize_primitives_array(const std::string& array_name, bool force_repaint) const
 	{
 		if (!primitives_.contains(array_name))
+		{
 			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives Array with name '" << array_name << "' not found." << endl);
-		return false;
+			return false;
+		}
+		return visualize_primitives_hook_ ? visualize_primitives_hook_(array_name, force_repaint) : false;
+	}
+
+	void GpuVoxels::set_visualization_hooks(VisualizeHook map_hook, VisualizeHook primitives_hook)
+	{
+		visualize_map_hook_ = std::move(map_hook);
+		visualize_primitives_hook_ = std::move(primitives_hook);
 	}
 }

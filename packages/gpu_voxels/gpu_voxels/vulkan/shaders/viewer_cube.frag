@@ -6,6 +6,7 @@ layout(push_constant) uniform Push
     uint64_t instances;
     uint shaded;
     uint pad;
+    vec4 eye;
 } pc;
 
 layout(location = 0) in vec4 v_colour;

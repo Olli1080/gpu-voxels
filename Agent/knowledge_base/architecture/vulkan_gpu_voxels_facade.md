@@ -33,7 +33,7 @@ Not part of this slice: URDF, viewer (later). Primitive arrays, list collisions 
 | `add_map(type, name)` | before `initialize`: throws. Name used: error log + empty pointer (the first map stays). Types not built: throws, nothing is registered |
 | `del_map`, `get_map`, `clear_map(name)`, `clear_map(name, meaning)` | unknown name: error log + `false` / empty. A handle from before `del_map` stays valid |
 | `insert_point_cloud_into_map`, `insert_meta_point_cloud_into_map` (2 overloads) | `false` for an unknown map, else `true`; an optional `uint32_t* outside` receives the number of points not inserted (CUDA loses it) |
-| `visualize_map` | always `false` (no viewer, Q6; CUDA without `GPUVOXEL_VISUALIZE` the same) |
+| `visualize_map` | `false` without a viewer (CUDA without `GPUVOXEL_VISUALIZE` the same); with a `ViewerScene` (2026-11-04, [vulkan_viewer.md](vulkan_viewer.md)) it calls the registered hook (`set_visualization_hooks`): the map becomes a layer, `true` for a displayable map; `visualize_primitives_array` likewise |
 | `dimensions()`, `voxel_side_length()` | what `initialize` stored (CUDA: `getDimensions`, `getVoxelSideLength`) |
 
 Decisions D1 .. D6 of the checklist apply as written: thin handle (D1), unsupported operations throw while unknown names keep CUDA's log + `false` (D2, **not confirmed by the user**), no locking (D3), Vulkan value types in the signatures (D4), code next to the classes (D5), headless smoke tests instead of the viewer examples (D6, S7-5). Logging uses `VulkanLog` (`LOGGING_ERROR_C`).

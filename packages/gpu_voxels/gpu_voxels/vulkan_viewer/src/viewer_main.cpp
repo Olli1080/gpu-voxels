@@ -6,8 +6,11 @@
 /*!\file
  * \brief  gvl_viewer: shows a demo scene or a point cloud file in an in-process Vulkan window (or renders it to a PNG without a window).
  *
- *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob] [--octree [--level <N>]]
+ *   gvl_viewer [--points <file.xyz|.pcd|.binvox>] [--side <metres>] [--prob] [--octree [--level <N>]] [--facade]
  *              [--png <out.png> [--size <W>x<H>]] [--frames <N>] [--no-vsync] [--validation]
+ *
+ * --facade shows a GpuVoxels scene through the visualization hooks (visualize_map, visualize_primitives_array): a bit map, an octree, moving spheres and
+ * cuboids as layers; the keys 1 .. 4 show / hide them.
  *
  * Mouse: left button rotates, right / middle button pans, wheel zooms. Keys: S toggles the shading, R resets the camera, ESC closes.
  */
@@ -21,11 +24,13 @@
 #include <vector>
 
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
+#include <gpu_voxels/vulkan/GpuVoxels.h>
 #include <gpu_voxels/vulkan/ImageFile.h>
 #include <gpu_voxels/vulkan/Octree.h>
 #include <gpu_voxels/vulkan/PointCloudFile.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/Viewer.h>
+#include <gpu_voxels/vulkan/ViewerScene.h>
 #include <gpu_voxels/vulkan_viewer/ViewerWindow.h>
 
 using namespace gpu_voxels::vulkan;
@@ -37,6 +42,7 @@ namespace
 		std::string points_file;
 		float side = 0.05f;
 		bool prob = false;
+		bool facade = false;   ///< layers of a GpuVoxels through ViewerScene and the visualize_* calls
 		bool octree = false;   ///< show the points as an octree (deterministic, with --prob probabilistic) instead of a voxel map
 		uint32_t level = 0;    ///< --octree: nodes of this level are drawn as one cube
 		std::string png;
@@ -60,6 +66,7 @@ namespace
 			};
 			if (arg == "--points") a.points_file = value();
 			else if (arg == "--octree") a.octree = true;
+			else if (arg == "--facade") a.facade = true;
 			else if (arg == "--level") a.level = static_cast<uint32_t>(std::stoul(value()));
 			else if (arg == "--side") a.side = std::stof(value());
 			else if (arg == "--prob") a.prob = true;
@@ -169,8 +176,85 @@ namespace
 			extractor.extract(*scene.bit_map, BitPalette::defaults(), cubes);
 	}
 
+	/// The façade demo: the scene points as a bit map, a box as an octree, spheres that move and cuboids; shown through ViewerScene and the visualize calls.
+	int run_facade(const Arguments& a)
+	{
+		const bool window_mode = a.png.empty();
+		ContextCreateInfo base;
+		base.enable_validation = a.validation;
+		base.enable_graphics = true;
+		Context context(window_mode ? ViewerWindow::context_requirements(base) : base);
+		const auto cells = [&](float metres) { return static_cast<uint32_t>(std::lround(metres / a.side)) + 2; };
+		GpuVoxels gvl(context);
+		gvl.initialize({ cells(4.0f), cells(4.0f), cells(2.0f) }, a.side);
+		gvl.add_map(MT_BITVECTOR_VOXELMAP, "environment");
+		gvl.add_map(MT_BITVECTOR_OCTREE, "octree");
+		gvl.insert_point_cloud_into_map(scene_points(a), "environment", 1);
+		gvl.insert_box_into_map({ 0.2f, 0.2f, 0.0f }, { 0.8f, 0.8f, 0.5f }, "octree", eBVM_OCCUPIED);
+		gvl.add_primitives(ePRIM_SPHERE, "spheres");
+		gvl.add_primitives(ePRIM_CUBOID, "cuboids");
+		gvl.modify_primitives("cuboids", std::vector<Point3f>{ { 3.0f, 0.6f, 0.2f }, { 3.4f, 0.6f, 0.2f }, { 3.2f, 0.6f, 0.6f } }, 0.4f);
+		const auto move_spheres = [&](double angle)
+		{
+			std::vector<Point3f> centres;
+			for (int i = 0; i < 4; ++i)
+			{
+				const double phase = angle + i * 1.5707963;
+				centres.push_back({ static_cast<float>(2.0 + 1.6 * std::cos(phase)), static_cast<float>(2.0 + 1.6 * std::sin(phase)), 1.0f + 0.2f * i });
+			}
+			gvl.modify_primitives("spheres", centres, 0.4f);
+		};
+		move_spheres(0.0);
+
+		ViewerScene scene(gvl, 1u << 21);
+		for (const char* name : { "environment", "octree" })
+			gvl.visualize_map(name);
+		gvl.visualize_primitives_array("spheres");
+		gvl.visualize_primitives_array("cuboids");
+		const auto layers = scene.layers();
+		for (std::size_t i = 0; i < layers.size(); ++i)
+			std::cout << "layer " << i + 1 << ": " << layers[i].name << (layers[i].primitives ? " (primitives)" : "") << ", " << layers[i].cubes << " cubes\n";
+
+		OrbitCamera camera;
+		camera.frame({ 0.0f, 0.0f, 0.0f }, scene.world_size());
+		if (!window_mode)
+		{
+			VoxelRenderer renderer(context, OffscreenTarget::kColourFormat);
+			OffscreenTarget target(context, a.width, a.height);
+			const auto buffers = scene.buffers();
+			target.render(renderer, camera.camera(), buffers);
+			write_png(a.png, a.width, a.height, target.read_rgba());
+			std::cout << "wrote " << a.png << "\n";
+			return 0;
+		}
+		ViewerWindowOptions options;
+		options.width = a.width;
+		options.height = a.height;
+		options.vsync = a.vsync;
+		ViewerWindow window(context, options);
+		window.camera() = camera;
+		window.set_home_camera();
+		window.set_key_handler([&](int key)
+		{
+			if (key >= '1' && key <= '9')
+				scene.toggle_visible(static_cast<std::size_t>(key - '1'));
+		});
+		while (!window.should_close() && (a.frames == 0 || window.frames_presented() < a.frames))
+		{
+			window.poll_events();
+			move_spheres(static_cast<double>(window.frames_presented()) * 0.02);
+			gvl.visualize_primitives_array("spheres", true);   // extracts the new positions
+			const auto buffers = scene.buffers();
+			window.draw(buffers);
+		}
+		std::cout << "frames: " << window.frames_presented() << "\n";
+		return 0;
+	}
+
 	int run(const Arguments& a)
 	{
+		if (a.facade)
+			return run_facade(a);
 		if (!a.png.empty())
 		{
 			// no window: render into an image

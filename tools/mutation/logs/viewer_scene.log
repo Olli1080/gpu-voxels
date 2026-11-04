@@ -1,0 +1,18 @@
+V29 sphere shader: no discard when the ray misses : KILLED
+V30 sphere shader: the depth of the hit point is not written : KILLED
+V31 sphere shader: radius twice as large : KILLED
+V32 cube vertex: the sphere centre is the minimum corner : KILLED
+V33 renderer: sphere buffers use the cube pipeline : KILLED
+V34 renderer: the pipeline is bound once : KILLED
+V35 renderer: the eye is the camera target : KILLED
+V36 primitives: the cube starts at the centre : KILLED
+V37 primitives: spheres get the cube kind : KILLED
+V38 assign: found counts only the stored cubes : KILLED
+V39 primitives: the edge is the radius : KILLED
+V40 scene hook: force_repaint is ignored : KILLED
+V41 scene: a layer shown again is not extracted : KILLED
+V42 scene refresh: hidden layers are extracted too : KILLED
+V43 scene: buffers() includes hidden layers : KILLED
+V44 scene: the hooks stay after the scene is gone : KILLED
+V45 facade: the hook result is ignored : KILLED
+restored
