@@ -1,12 +1,12 @@
-# Cleanup Candidates (proposals only — nothing deleted)
+# Cleanup Candidates (first round done 2026-11-05)
 
 Noticed on 2026-10-22 in `C:\Code\2026-10-22_gpu-voxels`. Approve via [open_questions.md](open_questions.md) Q12 before acting; deletions go through git so they are recoverable.
 
 | Path | Observation | Suggested action |
 |---|---|---|
-| `packages/examples/RobotVsEnvironment - Kopie.cpp` | German "copy" of `RobotVsEnvironment.cpp` (space in name) | Diff against the original, then delete |
-| `packages/gpu_voxels/CMakeLists_old.txt` | Legacy build file, not referenced by CMake | Delete or move to docs |
-| `packages/gpu_voxels/Dependencies.conf`, `packages/icl_core/Dependencies.conf`, `package.xml`, `pom.xml` | Remnants of earlier build/packaging systems (ICMAKER / ROS / Maven) | Keep until ICMAKER removal is decided; then drop |
+| ~~`packages/examples/RobotVsEnvironment - Kopie.cpp`~~ | **Done 2026-11-05:** not a duplicate (full diff read): an older variant with the Hollie arm from `.xyz` point clouds, three translation joints and the old `DHParameters` API; renamed to `RobotVsEnvironmentHollie.cpp`, still not built | kept |
+| ~~`packages/gpu_voxels/CMakeLists_old.txt`~~ | **Done 2026-11-05:** deleted (no reference in any CMake or source) | deleted |
+| ~~`Dependencies.conf` (x2), `packages/icl_core/package.xml`, `pom.xml`, `icl_core_config.pch`, `icl_core_logging.pch`~~ | **Done 2026-11-05:** deleted (remnants of ICMAKER / ROS / Maven; the `.pch` files were tracked although `.gitignore` ignores `*.pch`; nothing referenced any of them) | deleted |
 | ICMAKER relics in module `CMakeLists.txt` (commented blocks, `if(OFF)` sections, `#ICMAKER_*`) | Dead code | Remove during the CMake port of examples/viewer/tests, not before |
 | `packages/gpu_voxels/gpu_voxels/helpers/include/gpu_voxels/helpers/tfHelper.h`, `Kinect.*` | ROS-/OpenNI-dependent helpers, conditionally built | Decide with scope question Q6 |
 | Mojibake in `README.md` | Encoding damage | Fix with the README rewrite (the README still describes CUDA only) |

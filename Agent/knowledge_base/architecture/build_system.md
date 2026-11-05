@@ -15,7 +15,7 @@
 
 ## Legacy: ICMAKER
 Original FZI build system. `ICMAKER_SET / ADD_SOURCES / ADD_CUDA_FILES / INTERNAL_DEPENDENCIES …` macros no longer exist in the tree. Still used by: `packages/examples/**`, `packages/gpu_visualization/CMakeLists.txt`, test CMake files (`gpu_voxels/test`, `voxelmap/tests`, `octree/test`), `doc/CMakeLists.txt`, plus commented relics in module CMakes. Porting these to plain CMake is a prerequisite for building examples/viewer/tests (the earlier attempt rewrote some of it; see [attempt_history.md](../vulkan_migration/attempt_history.md)).
-Also stale: `packages/gpu_voxels/CMakeLists_old.txt`, `Dependencies.conf`, `package.xml`, `pom.xml`.
+Also stale (deleted 2026-11-05, K10): `packages/gpu_voxels/CMakeLists_old.txt`, `Dependencies.conf`, `package.xml`, `pom.xml`.
 
 ## What the previous Vulkan attempts added (for orientation)
 - `find_package(kompute|Vulkan|spdlog|GTest)`, `GVL_WITH_KOMPUTE` / `GVL_WITH_SYCL` options, `cmake/ShaderCompile.cmake` (`compile_shaders(target list)` → `glslangValidator --target-env vulkan1.2 -V`), a `kompute` overlay port pinned to GitHub commit `6e5380de…` (version 0.9.0), vcpkg additions `kompute vulkan-loader vulkan-headers gtest glslang[tools]`, preset generator "Visual Studio 18 2026". Not part of master.

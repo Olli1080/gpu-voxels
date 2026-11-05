@@ -28,7 +28,7 @@ Library code is under `packages/gpu_voxels/gpu_voxels/<module>/{include/gpu_voxe
 |---|---|---|
 | `vis_interface` (`gpu_voxels_vis_interface`) | `add_subdirectory` commented out; commit `dedcdeb` removed link references. `GpuVoxels.cu` only includes the `Vis*` headers under `#ifdef GPUVOXEL_VISUALIZE`, which master never defines ⇒ visualization is compiled out | `packages/gpu_voxels/CMakeLists.txt`, `GpuVoxels.cu:28` |
 | `gpu_visualization` (OpenGL viewer) | Not in `packages/CMakeLists.txt`; its CMake uses `ICMAKER_*` macros that no longer exist | `packages/gpu_visualization/CMakeLists.txt` |
-| `packages/examples/*` (≈25 programs incl. a stray `RobotVsEnvironment - Kopie.cpp`, plus `swept_fitter`) | Same ICMAKER problem; not wired in | `packages/examples/CMakeLists.txt` |
+| `packages/examples/*` (≈25 programs incl. `RobotVsEnvironmentHollie.cpp`, the older Hollie variant of `RobotVsEnvironment`, plus `swept_fitter`) | Same ICMAKER problem; not wired in | `packages/examples/CMakeLists.txt` |
 | URDF robot (`gpu_voxels_urdf_robot`) | wrapped in `if(OFF)` | `robot/CMakeLists.txt` |
 | Unit tests (`gpu_voxels/test`, `voxelmap/tests`, `octree/test`) | Present (`*.cu` + fixtures) but use ICMAKER; `add_subdirectory(tests)` commented out. Root sets `BUILD_TESTS ON` but nothing consumes it | CMake files |
 | `doc/` (Doxygen), `gvl_ompl_planning/`, `example_how_to_link/` | Standalone; `doc/CMakeLists.txt` uses ICMAKER | — |
@@ -39,4 +39,4 @@ Consequence: **master compiles only the library**; the viewer, examples and test
 FZI infrastructure: `icl_core` (utils), `icl_core_config` (XML/ini config), `icl_core_logging` (stream logging macros `LOGGING_*`), `icl_core_performance_monitor`, `icl_core_testsuite`. Used by every CUDA module, **not by the Vulkan backend** (since 2026-11-05 it is only configured and built with `GVL_BACKEND_CUDA`); GPU-agnostic.
 
 ## Other top-level items
-`pom.xml` (Maven stub), `changelog.txt` (history 2014 →), `overlay-ports/` (vcpkg), `gvl_ompl_planning/` (OMPL planner example), `example_how_to_link/` (CMake consumer demo).
+`changelog.txt` (history 2014 →), `overlay-ports/` (vcpkg), `gvl_ompl_planning/` (OMPL planner example), `example_how_to_link/` (CMake consumer demo).
