@@ -18,7 +18,6 @@ endif()
 
 # ---- Optional third-party features of the CUDA backend ---------------------
 option(GVL_WITH_PCL "Build PCL point cloud file support (pcd) into gpu_voxels_helpers" ON)
-option(GVL_WITH_KINECT "Build OpenNI2 Kinect support into gpu_voxels_helpers (needs GVL_WITH_PCL)" ON)
 
 # ---- Tests ------------------------------------------------------------------
 option(BUILD_TESTS "Build the unit tests (GoogleTest; with the CUDA backend also the Boost.Test suites of icl_core)" ON)

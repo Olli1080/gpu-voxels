@@ -16,8 +16,7 @@ Find detailed installation and linking instructions in our Doxygen.
 **Core:**
 
 - CUDA > 10
-- PCL
-- OpenNI
+- PCL (optional, `.pcd` files)
 - Boost
 - TinyXML (libtinyxml-dev)
 

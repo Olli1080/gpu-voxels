@@ -10,7 +10,7 @@ Noticed on 2026-10-22 in `C:\Code\2026-10-22_gpu-voxels`. Approve via [open_ques
 | ~~`packages/icl_core/icl_core/tests` (`ts_icl_core`)~~ | **Done 2026-11-05:** deleted, no test case in it (K18) | deleted |
 | ~~`Dependencies.conf` (x2), `packages/icl_core/package.xml`, `pom.xml`, `icl_core_config.pch`, `icl_core_logging.pch`~~ | **Done 2026-11-05:** deleted (remnants of ICMAKER / ROS / Maven; the `.pch` files were tracked although `.gitignore` ignores `*.pch`; nothing referenced any of them) | deleted |
 | ICMAKER relics in module `CMakeLists.txt` (commented blocks, `if(OFF)` sections, `#ICMAKER_*`) | Dead code | Remove during the CMake port of examples/viewer/tests, not before |
-| `packages/gpu_voxels/gpu_voxels/helpers/include/gpu_voxels/helpers/tfHelper.h`, `Kinect.*` | ROS-/OpenNI-dependent helpers, conditionally built | Decide with scope question Q6 |
+| `packages/gpu_voxels/gpu_voxels/helpers/include/gpu_voxels/helpers/tfHelper.h` (`Kinect.*` deleted 2026-11-05) | ROS-dependent helper, conditionally built | Decide with scope question Q6 |
 | Mojibake in `README.md` | Encoding damage | Fix with the README rewrite (the README still describes CUDA only) |
 | `.gitignore` (≈ 7 KB Visual Studio template) | Mostly irrelevant entries; one entry `packages/gpu_voxels/models/franka model/**` | Leave; low value |
 

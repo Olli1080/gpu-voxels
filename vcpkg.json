@@ -16,14 +16,9 @@
             ]
         },
         "pcl": {
-            "description": "PCL point cloud support and OpenNI2 Kinect input in gpu_voxels_helpers (GVL_WITH_PCL / GVL_WITH_KINECT)",
+            "description": "PCL point cloud support (.pcd reader) in gpu_voxels_helpers (GVL_WITH_PCL)",
             "dependencies": [
-                {
-                    "name": "pcl",
-                    "features": [
-                        "openni2"
-                    ]
-                }
+                "pcl"
             ]
         },
         "vulkan": {

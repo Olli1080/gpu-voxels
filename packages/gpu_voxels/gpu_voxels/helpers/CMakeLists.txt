@@ -93,20 +93,6 @@ if(GVL_WITH_PCL)
   FILES
     ${INCLUDE_DIR}/PcdFileReader.h
   )
-
-  if (GVL_WITH_KINECT) # needs the openni2 feature of the vcpkg pcl port
-
-    target_compile_definitions(${PROJECT_NAME} PUBLIC _BUILD_GVL_WITH_KINECT_SUPPORT_)
-
-    target_sources(${PROJECT_NAME}
-    PRIVATE
-      src/Kinect.cpp
-    PUBLIC FILE_SET HEADERS 
-    BASE_DIRS ${INCLUDE_DIR}
-    FILES
-      ${INCLUDE_DIR}/Kinect.h
-    )
-  endif()
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
