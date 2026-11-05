@@ -23,19 +23,22 @@ if(GVL_BACKEND_VULKAN)
   endif()
 endif()
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/gpu_voxels-config.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/gpu_voxels-config.cmake"
-  INSTALL_DESTINATION share/gpu_voxels
-)
+# Package files and the export of the targets only exist if a backend builds targets (without one the export set would be empty).
+if(GVL_BACKEND_CUDA OR GVL_BACKEND_VULKAN)
+  include(CMakePackageConfigHelpers)
+  configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpu_voxels-config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/gpu_voxels-config.cmake"
+    INSTALL_DESTINATION share/gpu_voxels
+  )
 
-install(FILES
-          "${CMAKE_CURRENT_BINARY_DIR}/gpu_voxels-config.cmake"
-        DESTINATION share/gpu_voxels)
+  install(FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/gpu_voxels-config.cmake"
+          DESTINATION share/gpu_voxels)
 
-install(
-  EXPORT gpu_voxels-targets
-  FILE gpu_voxels-targets.cmake
-  DESTINATION share/gpu_voxels
-)
+  install(
+    EXPORT gpu_voxels-targets
+    FILE gpu_voxels-targets.cmake
+    DESTINATION share/gpu_voxels
+  )
+endif()
