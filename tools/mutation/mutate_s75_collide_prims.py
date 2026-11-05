@@ -93,7 +93,7 @@ MUT = [
     ('P28 primitives: content never stored', PA, "primitives_ = std::move(primitives);", ""),
     # ---- the façade
     ('F1 facade: primitives before initialize', GV, "if (!initialized_)\n\t\t\tthrow VulkanError(\"initialize() has to be called before primitive arrays", "if (false)\n\t\t\tthrow VulkanError(\"initialize() has to be called before primitive arrays"),
-    ('F2 facade: used primitive name accepted', GV, "if (primitives_.contains(array_name))\n\t\t{\n\t\t\tLOGGING_ERROR_C(VulkanLog, GpuVoxels, \"Primitives array with name '\" << array_name << \"' already exists.\"", "if (false)\n\t\t{\n\t\t\tLOGGING_ERROR_C(VulkanLog, GpuVoxels, \"Primitives array with name '\" << array_name << \"' already exists.\""),
+    ('F2 facade: used primitive name accepted', GV, "if (primitives_.contains(array_name))\n\t\t{\n\t\t\tGVL_LOG_ERROR(GpuVoxels, \"Primitives array with name '\" << array_name << \"' already exists.\"", "if (false)\n\t\t{\n\t\t\tGVL_LOG_ERROR(GpuVoxels, \"Primitives array with name '\" << array_name << \"' already exists.\""),
     ('F3 facade: array gets other dimensions', GV, "std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, type)", "std::make_shared<PrimitiveArray>(Dim3ui{ 1, 1, 1 }, voxel_side_length_, type)"),
     ('F4 facade: array gets another side length', GV, "std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, type)", "std::make_shared<PrimitiveArray>(dimensions_, 1.0f, type)"),
     ('F5 facade: array gets another type', GV, "std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, type)", "std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, ePRIM_SPHERE)"),
@@ -102,7 +102,7 @@ MUT = [
     ('F8 facade: modify(voxel4) does nothing', GV, "array->set_points(voxel_positions);", ""),
     ('F9 facade: modify(metric3) does nothing', GV, "array->set_points(metric_positions, diameter);", ""),
     ('F10 facade: modify(voxel3) does nothing', GV, "array->set_points(voxel_positions, diameter);", ""),
-    ('F11 facade: visualize primitives succeeds', GV, "\"Primitives Array with name '\" << array_name << \"' not found.\" << endl);\n\t\treturn false;", "\"Primitives Array with name '\" << array_name << \"' not found.\" << endl);\n\t\treturn true;"),
+    ('F11 facade: visualize primitives succeeds', GV, "\"Primitives Array with name '\" << array_name << \"' not found.\");\n\t\t\treturn false;", "\"Primitives Array with name '\" << array_name << \"' not found.\");\n\t\t\treturn true;"),
 ]
 
 TESTS = 'ListMapCollisionTest.*:PrimitiveTest.*:VulkanTest.*List*:ExampleTest.*'

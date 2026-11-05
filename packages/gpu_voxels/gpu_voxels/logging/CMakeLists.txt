@@ -22,7 +22,6 @@ target_sources(${PROJECT_NAME}
     src/logging_gpu_voxels.cpp
     src/logging_gpu_voxels_helpers.cpp
     src/logging_cuda.cpp
-    src/logging_vulkan.cpp
     src/logging_voxelmap.cpp
     src/logging_voxellist.cpp
     src/logging_primitive_array.cpp
@@ -34,7 +33,6 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/logging_gpu_voxels.h
     ${INCLUDE_DIR}/logging_gpu_voxels_helpers.h
     ${INCLUDE_DIR}/logging_cuda.h
-    ${INCLUDE_DIR}/logging_vulkan.h
     ${INCLUDE_DIR}/logging_voxelmap.h
     ${INCLUDE_DIR}/logging_voxellist.h
     ${INCLUDE_DIR}/logging_primitive_array.h

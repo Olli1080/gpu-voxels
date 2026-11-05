@@ -8,9 +8,12 @@ gvl_add_test(test_build_config
     GVL_TEST_EXPECT_CUDA=$<BOOL:${GVL_BACKEND_CUDA}>
     GVL_TEST_EXPECT_VULKAN=$<BOOL:${GVL_BACKEND_VULKAN}>)
 
-gvl_add_test(test_icl_core_enum_helper
-  SOURCES smoke/test_icl_core_enum_helper.cpp
-  LIBS icl_core)
+# icl_core is only built with the CUDA backend.
+if(GVL_BACKEND_CUDA)
+  gvl_add_test(test_icl_core_enum_helper
+    SOURCES smoke/test_icl_core_enum_helper.cpp
+    LIBS icl_core)
+endif()
 
 # Host Morton code and the CPU octree reference (no GPU needed; the reference is the oracle of the octree tests).
 gvl_add_test(test_octree_reference

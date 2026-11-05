@@ -16,7 +16,7 @@
 #include <string>
 #include <string_view>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 
 static_assert(std::endian::native == std::endian::little, "the PCD binary reader assumes a little endian host");
 
@@ -117,7 +117,7 @@ namespace gpu_voxels::vulkan
 				++skipped;
 		});
 		if (skipped > 0)
-			LOGGING_WARNING_C(VulkanLog, PointCloudFile, file.filename().string() << ": " << skipped << " line(s) do not start with three numbers and were skipped" << endl);
+			GVL_LOG_WARNING(PointCloudFile, file.filename().string() << ": " << skipped << " line(s) do not start with three numbers and were skipped");
 		return points;
 	}
 

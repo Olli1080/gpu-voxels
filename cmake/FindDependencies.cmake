@@ -4,8 +4,8 @@
 #  * every find_package() for packages/gpu_voxels lives here, module CMakeLists only link targets;
 #  * results are created at top-level scope, so they are visible in all subdirectories;
 #  * never guess a vcpkg target name: check <port>-config.cmake of the installed port.
-# packages/icl_core is vendored third-party code and still performs its own discovery
-# (ZLIB, tinyxml2, Boost, CppUnit).
+# packages/icl_core is vendored third-party code, built only with the CUDA backend, and still performs its own discovery
+# (ZLIB, tinyxml2, Boost, CppUnit). The Vulkan backend does not use it.
 
 # ---- CUDA backend -----------------------------------------------------------
 if(GVL_BACKEND_CUDA)

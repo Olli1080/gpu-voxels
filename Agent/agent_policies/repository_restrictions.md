@@ -13,7 +13,7 @@
 - **Folder convention:** `include/gpu_voxels/<module>/…` public headers, `src/…` sources, per-module `CMakeLists.txt` creating target `gpu_voxels_<module>` with `FILE_SET HEADERS`. New modules follow it.
 - **File-suffix convention:** `.h/.cpp` plain C++, `.hpp` templated headers, `.cu/.cuh` CUDA sources, `.cuhpp` templated CUDA code. A Vulkan backend introduces its own suffixes/dirs (e.g. `.comp` / `.slang`); never rename `.cu` to `.cpp` in place (guardrail 1).
 - **C++ standard:** C++20 (`cxx_std_20`); CMake ≥ 3.23.
-- **Logging:** use `LOGGING_*` macros from `icl_core_logging`, not `std::cout`/`printf` in library code.
+- **Logging:** CUDA modules use the `LOGGING_*` macros from `icl_core_logging`; the Vulkan backend uses `GVL_LOG_ERROR/WARNING/INFO` from `gpu_voxels/vulkan/Log.h` (no icl_core there). No `std::cout`/`printf` in library code.
 - **Error handling:** CUDA code uses `HANDLE_CUDA_ERROR` / `CHECK_CUDA_ERROR` (`cuda_handling.h`); the Vulkan equivalent must be introduced as a documented abstraction, not by redefining the CUDA macros to no-ops.
 
 ## Line endings / encoding

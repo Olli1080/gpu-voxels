@@ -30,7 +30,7 @@ MUT = [
     ('F5 files: scaled', GV, LOAD, "clouds.push_back(load_point_cloud(file, model_path, PointCloudLoadOptions{ false, Point3f{ 0.0f, 0.0f, 0.0f }, 2.0f }));"),
     ('F6 files: model path ignored', GV, "clouds.push_back(load_point_cloud(file, model_path, ", "clouds.push_back(load_point_cloud(file, std::filesystem::path{}, "),
     ('F7 files: file errors not caught', GV, LOAD + "\n\t\t}\n\t\tcatch (const PointCloudFileError& e)", LOAD + "\n\t\t}\n\t\tcatch (const std::bad_alloc& e)"),
-    ('F8 files: file error reported as success', GV, "e.what() << endl);\n\t\t\treturn false;\n\t\t}\n\t\tconst std::vector<LinkSpec> links", "e.what() << endl);\n\t\t\treturn true;\n\t\t}\n\t\tconst std::vector<LinkSpec> links"),
+    ('F8 files: file error reported as success', GV, "e.what());\n\t\t\treturn false;\n\t\t}\n\t\tconst std::vector<LinkSpec> links", "e.what());\n\t\t\treturn true;\n\t\t}\n\t\tconst std::vector<LinkSpec> links"),
     ('F9 files: convention ignored', GV, "link_of_cloud, clouds);" + EMPLACE, "link_of_cloud, clouds);" + EMPLACE.replace("convention", "DHConvention::Classic")),
     ('F10 meta cloud: convention ignored', GV, "link_of_cloud, points);" + EMPLACE, "link_of_cloud, points);" + EMPLACE.replace("convention", "DHConvention::Classic")),
     ('F11 meta cloud: names not counted', GV, "if (cloud_names.size() != clouds.num_clouds())", "if (false)"),

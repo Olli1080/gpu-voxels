@@ -2,8 +2,7 @@
     "name": "gpu-voxels",
     "description": "GPU-Voxels: volumetric collision detection on the GPU (CUDA backend; Vulkan backend in preparation)",
     "dependencies": [
-        "tinyxml2",
-        "zlib"
+        "tinyxml2"
     ],
     "default-features": [],
     "features": {
@@ -13,7 +12,8 @@
                 "cuda",
                 "eigen3",
                 "glm",
-                "stb"
+                "stb",
+                "zlib"
             ]
         },
         "pcl": {
@@ -35,11 +35,16 @@
             ]
         },
         "tests": {
-            "description": "Unit tests (BUILD_TESTS): GoogleTest for gpu_voxels, Boost.Test and CppUnit for icl_core",
+            "description": "Unit tests (BUILD_TESTS): GoogleTest",
+            "dependencies": [
+                "gtest"
+            ]
+        },
+        "cuda-tests": {
+            "description": "Boost.Test and CppUnit for the vendored icl_core test suites (BUILD_TESTS with GVL_BACKEND_CUDA; icl_core is only built with the CUDA backend)",
             "dependencies": [
                 "boost-test",
-                "cppunit",
-                "gtest"
+                "cppunit"
             ]
         },
         "viewer": {

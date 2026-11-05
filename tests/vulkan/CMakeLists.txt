@@ -21,6 +21,7 @@ gvl_add_test(test_vulkan
     test_gpu_voxels_examples.cpp
     test_kinematic_chain.cpp
     test_list_map_collisions.cpp
+    test_log.cpp
     test_meta_point_cloud.cpp
     test_octree_build.cpp
     test_octree_chunks.cpp

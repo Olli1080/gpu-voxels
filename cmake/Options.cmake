@@ -21,7 +21,7 @@ option(GVL_WITH_PCL "Build PCL point cloud file support (pcd) into gpu_voxels_he
 option(GVL_WITH_KINECT "Build OpenNI2 Kinect support into gpu_voxels_helpers (needs GVL_WITH_PCL)" ON)
 
 # ---- Tests ------------------------------------------------------------------
-option(BUILD_TESTS "Build the unit tests (GoogleTest, plus the Boost.Test suites of icl_core)" ON)
+option(BUILD_TESTS "Build the unit tests (GoogleTest; with the CUDA backend also the Boost.Test suites of icl_core)" ON)
 
 # ---- vcpkg manifest features -------------------------------------------------
 if(GVL_BACKEND_CUDA)
@@ -38,4 +38,7 @@ if(GVL_BACKEND_VULKAN)
 endif()
 if(BUILD_TESTS)
   list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+  if(GVL_BACKEND_CUDA)
+    list(APPEND VCPKG_MANIFEST_FEATURES "cuda-tests")
+  endif()
 endif()

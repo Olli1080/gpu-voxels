@@ -16,8 +16,8 @@ BOUNDS = "if (x < 0 || y < 0 || z < 0 || x >= int64_t(dimensions_.x) || y >= int
 MAP_BRANCH = "if (other_bit_list == nullptr && other_counting_list == nullptr)\n\t\t\t\trefuse();\n\t\t\tsame_side();\n\t\t\tno_offset(\"a map\");"
 WRITE_CATCH = "write_map_file(file, *map);\n\t\t\t}, storage_);\n\t\t}\n\t\tcatch (const MapFileError& e)"
 READ_CATCH = "read_map_file(file, *map);\n\t\t\t}, storage_);\n\t\t}\n\t\tcatch (const MapFileError& e)"
-TREE_WRITE = "OctreeNativeStorage().write_file(*tree, file.string());\n\t\t\t}\n\t\t\tcatch (const VulkanError& e)\n\t\t\t{\n\t\t\t\tLOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);\n\t\t\t\treturn false;"
-TREE_READ = "OctreeNativeStorage().read_file(*tree, file.string());\n\t\t\t}\n\t\t\tcatch (const VulkanError& e)\n\t\t\t{\n\t\t\t\tLOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);\n\t\t\t\treturn false;"
+TREE_WRITE = "OctreeNativeStorage().write_file(*tree, file.string());\n\t\t\t}\n\t\t\tcatch (const VulkanError& e)\n\t\t\t{\n\t\t\t\tGVL_LOG_ERROR(GpuVoxelsMap, e.what());\n\t\t\t\treturn false;"
+TREE_READ = "OctreeNativeStorage().read_file(*tree, file.string());\n\t\t\t}\n\t\t\tcatch (const VulkanError& e)\n\t\t\t{\n\t\t\t\tGVL_LOG_ERROR(GpuVoxelsMap, e.what());\n\t\t\t\treturn false;"
 SIGN_EXT = "static_cast<uint32_t>(static_cast<int32_t>(static_cast<int8_t>(payload[i] & 0xFFu))) != payload[i]"
 
 MUT = [
@@ -37,7 +37,7 @@ MUT = [
     ('L14 list merge: bit payload taken from counting lists', VL, "else if (other.kind() == Kind::Bit)", "else if (other.kind() == Kind::Counting)"),
     ('L15 list merge: counts lost', VL, "payload.push_back(other.kind() == Kind::Counting ? source[i] : 0u);", "payload.push_back(0u);"),
     ('L16 list merge: everything dropped reports 0', VL, "if (kept == 0)\n\t\t\treturn n;", "if (kept == 0)\n\t\t\treturn 0;"),
-    ('L17 list merge: dropped not reported', VL, "after the offset!\" << endl);\n\t\treturn n - kept;", "after the offset!\" << endl);\n\t\treturn 0;"),
+    ('L17 list merge: dropped not reported', VL, "after the offset!\");\n\t\treturn n - kept;", "after the offset!\");\n\t\treturn 0;"),
     ('L18 list merge: ids over the old ones', VL, "uint64_t(kept) * sizeof(uint32_t), 0, uint64_t(first) * sizeof(uint32_t));", "uint64_t(kept) * sizeof(uint32_t), 0, 0);"),
     ('L19 list merge: coordinates over the old ones', VL, "0, uint64_t(first) * 3 * sizeof(uint32_t));", "0, 0);"),
     ('L20 list merge: payload over the old ones', VL, "0, uint64_t(first) * words * sizeof(uint32_t));", "0, 0);"),
@@ -105,8 +105,8 @@ MUT = [
     ('V24 disk: read errors of maps not caught', GV, READ_CATCH, READ_CATCH.replace("MapFileError", "std::bad_alloc")),
     ('V25 disk: failed octree write is success', GV, TREE_WRITE, TREE_WRITE.replace("return false;", "return true;")),
     ('V26 disk: failed octree read is success', GV, TREE_READ, TREE_READ.replace("return false;", "return true;")),
-    ('V27 disk: failed map write is success', GV, "e.what() << endl);\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\n\tbool GpuVoxelsMap::read_from_disk", "e.what() << endl);\n\t\t\treturn true;\n\t\t}\n\t\treturn true;\n\t}\n\n\tbool GpuVoxelsMap::read_from_disk"),
-    ('V28 disk: failed map read is success', GV, "e.what() << endl);\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\n\tuint64_t GpuVoxelsMap::memory_usage_bytes", "e.what() << endl);\n\t\t\treturn true;\n\t\t}\n\t\treturn true;\n\t}\n\n\tuint64_t GpuVoxelsMap::memory_usage_bytes"),
+    ('V27 disk: failed map write is success', GV, "e.what());\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\n\tbool GpuVoxelsMap::read_from_disk", "e.what());\n\t\t\treturn true;\n\t\t}\n\t\treturn true;\n\t}\n\n\tbool GpuVoxelsMap::read_from_disk"),
+    ('V28 disk: failed map read is success', GV, "e.what());\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\n\tuint64_t GpuVoxelsMap::memory_usage_bytes", "e.what());\n\t\t\treturn true;\n\t\t}\n\t\treturn true;\n\t}\n\n\tuint64_t GpuVoxelsMap::memory_usage_bytes"),
     ('U1 bit map upload: size not checked', BM, "if (words.size() != voxel_count() * kWordsPerVoxel)", "if (false)"),
     ('U2 prob. map upload: size not checked', PM, "if (values.size() != voxel_count())", "if (false)"),
     ('U3 prob. map upload: values zero extended', PM, "static_cast<uint32_t>(static_cast<int32_t>(values[i]))", "static_cast<uint32_t>(static_cast<uint8_t>(values[i]))"),

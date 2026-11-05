@@ -1,0 +1,92 @@
+L1 list merge: itself allowed : KILLED
+L2 list merge: other voxel side length allowed : KILLED
+L3 list merge: x offset ignored : KILLED
+L4 list merge: y offset ignored : KILLED
+L5 list merge: z offset ignored : KILLED
+L6 list merge: x = -1 is inside : KILLED
+L7 list merge: y = -1 is inside : KILLED
+L8 list merge: z = -1 is inside : KILLED
+L9 list merge: x = dim is inside : KILLED
+L10 list merge: y = dim is inside : KILLED
+L11 list merge: z = dim is inside : KILLED
+L12 list merge: meaning word index : KILLED
+L13 list merge: meaning bit index : KILLED
+L14 list merge: bit payload taken from counting lists : KILLED
+L15 list merge: counts lost : KILLED
+L16 list merge: everything dropped reports 0 : KILLED
+L17 list merge: dropped not reported : PATTERN COUNT 0
+L18 list merge: ids over the old ones : KILLED
+L19 list merge: coordinates over the old ones : KILLED
+L20 list merge: payload over the old ones : KILLED
+L21 list from map: meaning lost : KILLED
+L22 list from map: nothing taken : KILLED
+E1 entries: payload size not compared : KILLED
+E2 entries: coordinates not counted : KILLED
+E3 entries: x = dim is inside : KILLED
+E4 entries: y = dim is inside : KILLED
+E5 entries: z = dim is inside : KILLED
+E6 entries: ids need not match the coordinates : KILLED
+E7 entries: equal ids are fine : KILLED
+E8 entries: counts need not be sign extended : KILLED
+E9 entries: assign does not check : KILLED
+F1 file: magic not checked : KILLED
+F2 file: version not checked : KILLED
+F3 file: type not checked : KILLED
+F4 file: only the x dimension is checked : KILLED
+F5 file: dimensions not checked : KILLED
+F6 file: side length not checked : KILLED
+F7 file: first reserved word only : KILLED
+F8 file: second reserved word only : KILLED
+F9 file: the count of a map is not compared : KILLED
+F10 file: data after the end is fine : KILLED
+F11 file: the smallest file is too short : KILLED
+F12 file: checksum not compared : KILLED
+F13 file: FNV basis : KILLED
+F14 file: FNV prime : KILLED
+F15 file: dimensions written as y x : KILLED
+F16 file: version written as 2 : KILLED
+F17 file: list coordinates before the ids : KILLED
+F18 file: counts read without sign extension : KILLED
+F19 file: distance bit 30 not refused : KILLED
+F20 file: bit list coordinates at the wrong offset : KILLED
+F21 file: counting list coordinates at the wrong offset : KILLED
+F22 file: bit vectors at the wrong offset : KILLED
+F23 file: counts at the wrong offset : KILLED
+F24 file: prob. map written as a bit map : KILLED
+F25 file: checksum misses the last byte : KILLED
+F26 file: a file that cannot be opened for writing is not noticed : KILLED
+F27 file: the list list is read as the wrong kind : KILLED
+V1 map merge: itself allowed : KILLED
+V2 map merge: voxel side not compared (maps) : KILLED
+V3 map merge: voxel side not compared (bit list) : KILLED
+V4 map merge: voxel side not compared (counting list) : KILLED
+V5 map merge: offset into a map is fine : KILLED
+V6 map merge: meaning into a map is fine : KILLED
+V7 map merge: meaning into a counting list is fine : KILLED
+V8 map merge: offset for a list from a map is fine : KILLED
+V9 map merge: coordinates inserted as free : KILLED
+V10 map merge: bit list offset lost : KILLED
+V11 map merge: counting source offset lost (bit list) : KILLED
+V12 map merge: bit list meaning lost : KILLED
+V13 map merge: counting source meaning lost : KILLED
+V14 map merge: counting list offset lost (bit source) : KILLED
+V15 map merge: counting list offset lost (counting source) : KILLED
+V16 metric: lists truncate : KILLED
+V17 metric: maps floor : KILLED
+V18 metric: floor and trunc swapped : KILLED
+V19 metric: y from x : KILLED
+V20 metric: z from x : KILLED
+V21 metric: not finite is fine : KILLED
+V22 metric: 2^31 is fine : KILLED
+V23 disk: write errors of maps not caught : KILLED
+V24 disk: read errors of maps not caught : KILLED
+V25 disk: failed octree write is success : KILLED
+V26 disk: failed octree read is success : KILLED
+V27 disk: failed map write is success : PATTERN COUNT 0
+V28 disk: failed map read is success : PATTERN COUNT 0
+U1 bit map upload: size not checked : KILLED
+U2 prob. map upload: size not checked : KILLED
+U3 prob. map upload: values zero extended : KILLED
+U4 distance map upload: size not checked : KILLED
+U5 distance map upload: bit 30 is fine : KILLED
+restored

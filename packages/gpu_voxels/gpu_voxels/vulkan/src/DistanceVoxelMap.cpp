@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
@@ -160,7 +160,7 @@ namespace gpu_voxels::vulkan
 			outside += insert_raw(buffer, static_cast<uint32_t>(chunk.size()), 0);
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, DistanceVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(DistanceVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -178,7 +178,7 @@ namespace gpu_voxels::vulkan
 			outside += insert_raw(buffer, static_cast<uint32_t>(chunk.size()), 1);
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, DistanceVoxelMap, outside << " coordinate(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(DistanceVoxelMap, outside << " coordinate(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -192,7 +192,7 @@ namespace gpu_voxels::vulkan
 			return 0;
 		const uint32_t outside = insert_raw(cloud.points(), cloud.accumulated_size(), 0);
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, DistanceVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(DistanceVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 

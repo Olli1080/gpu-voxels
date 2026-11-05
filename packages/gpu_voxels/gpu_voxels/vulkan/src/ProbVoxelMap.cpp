@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <bit>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
@@ -374,7 +374,7 @@ namespace gpu_voxels::vulkan
 			outside += apply_events({ &buffer, 0, static_cast<uint32_t>(chunk.size()), 0 }, params, options).outside;
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, ProbVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(ProbVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -395,7 +395,7 @@ namespace gpu_voxels::vulkan
 			outside += apply_events({ &buffer, 0, static_cast<uint32_t>(chunk.size()), 1 }, params, options).outside;
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, ProbVoxelMap, outside << " coordinate(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(ProbVoxelMap, outside << " coordinate(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -432,7 +432,7 @@ namespace gpu_voxels::vulkan
 			k = end;
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, ProbVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(ProbVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -466,7 +466,7 @@ namespace gpu_voxels::vulkan
 			total.cut_by_robot += part.cut_by_robot;
 		}
 		if (total.outside > 0)
-			LOGGING_WARNING_C(VulkanLog, ProbVoxelMap, total.outside << " measurement(s) were dropped: hit or sensor outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(ProbVoxelMap, total.outside << " measurement(s) were dropped: hit or sensor outside the map dimensions!");
 		return total;
 	}
 

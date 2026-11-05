@@ -27,7 +27,7 @@ endif()
 
 if(NOT GVL_BACKEND_CUDA AND NOT GVL_BACKEND_VULKAN)
   message(STATUS "gpu_voxels: no compute backend selected; only backend-independent targets are built "
-                 "(icl_core, gpu_voxels_logging, tests)")
+                 "(tests)")
 endif()
 
 message(STATUS "gpu_voxels backends: CUDA=${GVL_BACKEND_CUDA} VULKAN=${GVL_BACKEND_VULKAN}")

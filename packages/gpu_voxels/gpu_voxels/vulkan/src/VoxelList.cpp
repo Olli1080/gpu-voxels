@@ -11,7 +11,7 @@
 #include <functional>
 #include <string>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 #include <gpu_voxels/vulkan/BitVoxelMap.h>
 #include <gpu_voxels/vulkan/CommandBatch.h>
 #include <gpu_voxels/vulkan/ComputePipeline.h>
@@ -315,7 +315,7 @@ namespace gpu_voxels::vulkan
 			});
 		}
 		if (dropped > 0)
-			LOGGING_WARNING_C(VulkanLog, VoxelList, dropped << " point(s) lie outside the reference map dimensions!" << endl);
+			GVL_LOG_WARNING(VoxelList, dropped << " point(s) lie outside the reference map dimensions!");
 		return dropped;
 	}
 
@@ -337,7 +337,7 @@ namespace gpu_voxels::vulkan
 			});
 		}
 		if (dropped > 0)
-			LOGGING_WARNING_C(VulkanLog, VoxelList, dropped << " coordinate(s) lie outside the reference map dimensions!" << endl);
+			GVL_LOG_WARNING(VoxelList, dropped << " coordinate(s) lie outside the reference map dimensions!");
 		return dropped;
 	}
 
@@ -372,7 +372,7 @@ namespace gpu_voxels::vulkan
 				group_count(*context_, n), push);
 		});
 		if (dropped > 0)
-			LOGGING_WARNING_C(VulkanLog, VoxelList, dropped << " point(s) lie outside the reference map dimensions!" << endl);
+			GVL_LOG_WARNING(VoxelList, dropped << " point(s) lie outside the reference map dimensions!");
 		return dropped;
 	}
 
@@ -581,7 +581,7 @@ namespace gpu_voxels::vulkan
 		});
 		impl_->entries = impl_->make_unique(std::move(combined));
 		if (n > kept)
-			LOGGING_WARNING_C(VulkanLog, VoxelList, (n - kept) << " entrie(s) lie outside the reference map dimensions after the offset!" << endl);
+			GVL_LOG_WARNING(VoxelList, (n - kept) << " entrie(s) lie outside the reference map dimensions after the offset!");
 		return n - kept;
 	}
 

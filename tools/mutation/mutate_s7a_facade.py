@@ -50,7 +50,7 @@ MUT = [
     ('I10 context() without the check', CPP, "if (context_ == nullptr)\n\t\t\tthrow VulkanError(\"the Vulkan context does not exist before initialize()\");", ""),
     ('I11 map added with swapped dimensions', CPP, "*context_, type, dimensions_, voxel_side_length_", "*context_, type, Dim3ui{ dimensions_.y, dimensions_.x, dimensions_.z }, voxel_side_length_"),
     ('I12 map added with side length 1', CPP, "*context_, type, dimensions_, voxel_side_length_", "*context_, type, dimensions_, 1.0f"),
-    ('N1 duplicate names replace silently', CPP, "if (maps_.contains(name))\n\t\t{\n\t\t\tLOGGING_ERROR_C(VulkanLog, GpuVoxels, \"Map with name '\" << name << \"' already exists.\" << endl);\n\t\t\treturn {};\n\t\t}", ""),
+    ('N1 duplicate names replace silently', CPP, "if (maps_.contains(name))\n\t\t{\n\t\t\tGVL_LOG_ERROR(GpuVoxels, \"Map with name '\" << name << \"' already exists.\");\n\t\t\treturn {};\n\t\t}", ""),
     ('N2 del_map inverted', CPP, "if (maps_.erase(name) == 0)", "if (maps_.erase(name) != 0)"),
     ('N3 clear with meaning clears everything', CPP, "map->clear_bit_voxel_meaning(voxel_meaning);\n\t\treturn true;", "map->clear_map();\n\t\treturn true;"),
     ('N4 insert counter not stored (points)', CPP, "map->insert_point_cloud(points, voxel_meaning);\n\t\tif (outside != nullptr)\n\t\t\t*outside = dropped;", "map->insert_point_cloud(points, voxel_meaning);\n\t\tif (outside != nullptr)\n\t\t\t*outside = 0;"),

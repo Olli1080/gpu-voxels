@@ -12,7 +12,7 @@
 #include <string>
 #include <type_traits>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 
 namespace gpu_voxels::vulkan
 {
@@ -293,7 +293,7 @@ namespace gpu_voxels::vulkan
 			}
 			catch (const VulkanError& e)
 			{
-				LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+				GVL_LOG_ERROR(GpuVoxelsMap, e.what());
 				return false;
 			}
 			return true;
@@ -308,7 +308,7 @@ namespace gpu_voxels::vulkan
 		}
 		catch (const MapFileError& e)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+			GVL_LOG_ERROR(GpuVoxelsMap, e.what());
 			return false;
 		}
 		return true;
@@ -324,7 +324,7 @@ namespace gpu_voxels::vulkan
 			}
 			catch (const VulkanError& e)
 			{
-				LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+				GVL_LOG_ERROR(GpuVoxelsMap, e.what());
 				return false;
 			}
 			return true;
@@ -339,7 +339,7 @@ namespace gpu_voxels::vulkan
 		}
 		catch (const MapFileError& e)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxelsMap, e.what() << endl);
+			GVL_LOG_ERROR(GpuVoxelsMap, e.what());
 			return false;
 		}
 		return true;
@@ -440,7 +440,7 @@ namespace gpu_voxels::vulkan
 			throw VulkanError("initialize() has to be called before maps are added");
 		if (maps_.contains(name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << name << "' already exists." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Map with name '" << name << "' already exists.");
 			return {};
 		}
 		auto map = std::make_shared<GpuVoxelsMap>(*context_, type, dimensions_, voxel_side_length_);
@@ -452,7 +452,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (maps_.erase(name) == 0)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Map with name '" << name << "' not found.");
 			return false;
 		}
 		return true;
@@ -463,7 +463,7 @@ namespace gpu_voxels::vulkan
 		const auto it = maps_.find(name);
 		if (it == maps_.end())
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Map with name '" << name << "' not found.");
 			return {};
 		}
 		return it->second;
@@ -536,7 +536,7 @@ namespace gpu_voxels::vulkan
 		}
 		catch (const PointCloudFileError& e)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, e.what() << endl);
+			GVL_LOG_ERROR(GpuVoxels, e.what());
 			return false;
 		}
 		const uint32_t dropped = map->insert_point_cloud(points, voxel_meaning);
@@ -566,7 +566,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (robots_.contains(robot_name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' already exists." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Robot with name '" << robot_name << "' already exists.");
 			return false;
 		}
 		Context& ctx = context();
@@ -579,7 +579,7 @@ namespace gpu_voxels::vulkan
 		}
 		catch (const PointCloudFileError& e)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, e.what() << endl);
+			GVL_LOG_ERROR(GpuVoxels, e.what());
 			return false;
 		}
 		const std::vector<LinkSpec> links = link_specs(link_names, dh_parameters, link_of_cloud, clouds);
@@ -592,7 +592,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (robots_.contains(robot_name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' already exists." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Robot with name '" << robot_name << "' already exists.");
 			return false;
 		}
 		Context& ctx = context();
@@ -612,7 +612,7 @@ namespace gpu_voxels::vulkan
 		const auto it = robots_.find(robot_name);
 		if (it == robots_.end())
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Robot with name '" << robot_name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Robot with name '" << robot_name << "' not found.");
 			return {};
 		}
 		return it->second;
@@ -699,7 +699,7 @@ namespace gpu_voxels::vulkan
 			throw VulkanError("initialize() has to be called before primitive arrays are added");
 		if (primitives_.contains(array_name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' already exists." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Primitives array with name '" << array_name << "' already exists.");
 			return false;
 		}
 		primitives_.emplace(array_name, std::make_shared<PrimitiveArray>(dimensions_, voxel_side_length_, type));
@@ -710,7 +710,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (primitives_.erase(array_name) == 0)
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Primitives array with name '" << array_name << "' not found.");
 			return false;
 		}
 		return true;
@@ -721,7 +721,7 @@ namespace gpu_voxels::vulkan
 		const auto it = primitives_.find(array_name);
 		if (it == primitives_.end())
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives array with name '" << array_name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Primitives array with name '" << array_name << "' not found.");
 			return {};
 		}
 		return it->second;
@@ -767,7 +767,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (!maps_.contains(map_name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Map with name '" << map_name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Map with name '" << map_name << "' not found.");
 			return false;
 		}
 		return visualize_map_hook_ ? visualize_map_hook_(map_name, force_repaint) : false;
@@ -777,7 +777,7 @@ namespace gpu_voxels::vulkan
 	{
 		if (!primitives_.contains(array_name))
 		{
-			LOGGING_ERROR_C(VulkanLog, GpuVoxels, "Primitives Array with name '" << array_name << "' not found." << endl);
+			GVL_LOG_ERROR(GpuVoxels, "Primitives Array with name '" << array_name << "' not found.");
 			return false;
 		}
 		return visualize_primitives_hook_ ? visualize_primitives_hook_(array_name, force_repaint) : false;

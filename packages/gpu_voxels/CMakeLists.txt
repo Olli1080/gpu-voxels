@@ -1,6 +1,5 @@
-add_subdirectory(gpu_voxels/logging)
-
 if(GVL_BACKEND_CUDA)
+  add_subdirectory(gpu_voxels/logging)
   add_subdirectory(gpu_voxels/helpers)
   add_subdirectory(gpu_voxels/primitive_array)
   add_subdirectory(gpu_voxels/core)

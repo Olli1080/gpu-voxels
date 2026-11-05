@@ -1,6 +1,6 @@
 # Vulkan Backend Runtime (P1 Foundation, 2026-10-22)
 
-Module `packages/gpu_voxels/gpu_voxels/vulkan/` -> target `gpu_voxels_vulkan`, namespace `gpu_voxels::vulkan`, built only with `GVL_BACKEND_VULKAN=ON`. Stack: `vulkan.hpp` (RAII `vk::Unique*`, exceptions) with the statically linked loader (`Vulkan::Vulkan`), VMA (vcpkg `vulkan-memory-allocator`, implementation in `src/vma_impl.cpp`, not in public headers), logging via `VulkanLog` (`gpu_voxels_logging`). Decision basis: [kompute_reevaluation.md](../vulkan_migration/kompute_reevaluation.md), [reach_reference.md](../reach_reference.md).
+Module `packages/gpu_voxels/gpu_voxels/vulkan/` -> target `gpu_voxels_vulkan`, namespace `gpu_voxels::vulkan`, built only with `GVL_BACKEND_VULKAN=ON`. Stack: `vulkan.hpp` (RAII `vk::Unique*`, exceptions) with the statically linked loader (`Vulkan::Vulkan`), VMA (vcpkg `vulkan-memory-allocator`, implementation in `src/vma_impl.cpp`, not in public headers), logging via `GVL_LOG_*` (`vulkan/Log.h`; level, handler, default output stderr; no icl_core since 2026-11-05). Decision basis: [kompute_reevaluation.md](../vulkan_migration/kompute_reevaluation.md), [reach_reference.md](../reach_reference.md).
 Status: **Tested** on Intel UHD (see results); not yet behind a CUDA/Vulkan abstraction interface; nothing of the voxel library uses it yet.
 
 ## API (all in `include/gpu_voxels/vulkan/`)

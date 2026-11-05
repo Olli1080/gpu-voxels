@@ -20,6 +20,7 @@ target_sources(${PROJECT_NAME}
     src/DistanceVoxelMap.cpp
     src/GpuVoxels.cpp
     src/KinematicChain.cpp
+    src/Log.cpp
     src/Octree.cpp
     src/OctreeStorage.cpp
     src/PointCloudFile.cpp
@@ -41,6 +42,7 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/DistanceVoxelMap.h
     ${INCLUDE_DIR}/GpuVoxels.h
     ${INCLUDE_DIR}/KinematicChain.h
+    ${INCLUDE_DIR}/Log.h
     ${INCLUDE_DIR}/Morton.h
     ${INCLUDE_DIR}/MetaPointCloud.h
     ${INCLUDE_DIR}/Octree.h
@@ -60,8 +62,6 @@ target_sources(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
     Vulkan::Vulkan
-    icl_core_logging
-    gpu_voxels_logging
   PRIVATE
     GPUOpen::VulkanMemoryAllocator
 )

@@ -13,7 +13,7 @@
 
 #include <vk_mem_alloc.h>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 
 namespace gpu_voxels::vulkan
 {
@@ -211,9 +211,9 @@ namespace gpu_voxels::vulkan
 					state->messages.push_back(text);
 			}
 			if (is_error)
-				LOGGING_ERROR_C(VulkanLog, Context, "Vulkan validation: " << text << endl);
+				GVL_LOG_ERROR(Context, "Vulkan validation: " << text);
 			else
-				LOGGING_WARNING_C(VulkanLog, Context, "Vulkan validation: " << text << endl);
+				GVL_LOG_WARNING(Context, "Vulkan validation: " << text);
 			return VK_FALSE;
 		}
 	}
@@ -263,7 +263,7 @@ namespace gpu_voxels::vulkan
 				throw ValidationUnavailableError(std::string(kValidationLayer) +
 					" is not available. Install the Vulkan SDK (https://vulkan.lunarg.com) or set GVL_ALLOW_NO_VALIDATION=1.");
 			if (!validation)
-				LOGGING_WARNING_C(VulkanLog, Context, "Vulkan validation layer not available; running unvalidated." << endl);
+				GVL_LOG_WARNING(Context, "Vulkan validation layer not available; running unvalidated.");
 		}
 
 		for (const std::string& name : create_info.instance_extensions)
@@ -387,9 +387,9 @@ namespace gpu_voxels::vulkan
 			throw VulkanError("vmaCreateAllocator failed");
 		allocator_ = allocator;
 
-		LOGGING_INFO_C(VulkanLog, Context, "Vulkan device '" << info_.name << "' (" << info_.type << "), API "
+		GVL_LOG_INFO(Context, "Vulkan device '" << info_.name << "' (" << info_.type << "), API "
 			<< VK_API_VERSION_MAJOR(info_.api_version) << "." << VK_API_VERSION_MINOR(info_.api_version)
-			<< ", validation " << (validation ? "on" : "off") << endl);
+			<< ", validation " << (validation ? "on" : "off"));
 	}
 
 	Context::~Context()

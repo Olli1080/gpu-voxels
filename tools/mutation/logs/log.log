@@ -1,0 +1,16 @@
+L1 level compared with < instead of <= : KILLED
+L2 default level Warning : SURVIVED
+L3 log_message does not filter : KILLED
+L4 handler never used : KILLED
+L5 empty handler stored : KILLED
+L6 source and text swapped : KILLED
+L7 default output format : KILLED
+L8 level name : KILLED
+L9 handler set without lock : SURVIVED
+L10 level never stored : KILLED
+L11 level order changed : KILLED
+L12 text always built : KILLED
+L13 source without the function : KILLED
+L14 error macro logs a warning : KILLED
+L15 device line text : KILLED
+restored

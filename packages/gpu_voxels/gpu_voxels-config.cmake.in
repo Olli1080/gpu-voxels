@@ -4,7 +4,9 @@ include(CMakeFindDependencyMacro)
 find_dependency(CUDAToolkit)
 find_dependency(Stb)
 find_dependency(PCL)
-find_dependency(icl_core)
+if(@GVL_BACKEND_CUDA@)
+  find_dependency(icl_core)
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/gpu_voxels-targets.cmake")
 

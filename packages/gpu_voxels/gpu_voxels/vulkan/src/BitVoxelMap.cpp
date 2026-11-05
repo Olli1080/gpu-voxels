@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-#include <gpu_voxels/logging/logging_vulkan.h>
+#include <gpu_voxels/vulkan/Log.h>
 #include <gpu_voxels/vulkan/ProbVoxelMap.h>
 #include <gpu_voxels/vulkan/VoxelList.h>
 
@@ -116,7 +116,7 @@ namespace gpu_voxels::vulkan
 			outside += scratch_counter_.download_vector<uint32_t>(1).front();
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, BitVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(BitVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -140,7 +140,7 @@ namespace gpu_voxels::vulkan
 			outside += scratch_counter_.download_vector<uint32_t>(1).front();
 		}
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, BitVoxelMap, outside << " coordinate(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(BitVoxelMap, outside << " coordinate(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -174,7 +174,7 @@ namespace gpu_voxels::vulkan
 		batch.submit_and_wait();
 		const uint32_t outside = scratch_counter_.download_vector<uint32_t>(1).front();
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, BitVoxelMap, outside << " list coordinate(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(BitVoxelMap, outside << " list coordinate(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -208,7 +208,7 @@ namespace gpu_voxels::vulkan
 		batch.submit_and_wait();
 		const uint32_t outside = scratch_counter_.download_vector<uint32_t>(1).front();
 		if (outside > 0)
-			LOGGING_WARNING_C(VulkanLog, BitVoxelMap, outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(BitVoxelMap, outside << " point(s) lie outside the map dimensions!");
 		return outside;
 	}
 
@@ -274,7 +274,7 @@ namespace gpu_voxels::vulkan
 		std::copy(words.begin(), words.end(), result.colliding_meanings.begin());
 		result.colliding = std::any_of(words.begin(), words.end(), [](uint32_t w) { return w != 0; });
 		if (result.points_outside > 0)
-			LOGGING_WARNING_C(VulkanLog, BitVoxelMap, result.points_outside << " point(s) lie outside the map dimensions!" << endl);
+			GVL_LOG_WARNING(BitVoxelMap, result.points_outside << " point(s) lie outside the map dimensions!");
 		return result;
 	}
 
