@@ -81,8 +81,6 @@ namespace
 		}
 	};
 
-	template<class T>
-	void put(std::string& bytes, T value) { bytes.append(reinterpret_cast<const char*>(&value), sizeof(T)); }
 
 	bool eq(const Point3f& a, const Point3f& b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
 
@@ -114,6 +112,9 @@ TEST(PointCloudFiles, XyzModelFile)
 
 TEST(PointCloudFiles, PcdModelFiles)
 {
+#ifndef _BUILD_GVL_WITH_PCL_SUPPORT_
+	GTEST_SKIP() << "built without PCL (GVL_WITH_PCL)";
+#endif
 	const fs::path binary = kModels / "hollie_from_pointcloud2.pcd", ascii = kModels / "robot4cmRes.pcd", intensity = kModels / "pointcloud_0002.pcd";
 	if (!fs::exists(binary) || !fs::exists(ascii) || !fs::exists(intensity))
 		GTEST_SKIP() << "model files missing";
@@ -167,91 +168,34 @@ TEST(PointCloudFiles, XyzSyntax)
 	expect_file_error([&] { (void)read_xyz_file(dir.path / "missing.xyz"); }, "could not open");
 }
 
-TEST(PointCloudFiles, PcdSyntheticAscii)
+#ifdef _BUILD_GVL_WITH_PCL_SUPPORT_
+// The parsing is PCL's; what the Vulkan side adds is checked here: the points as they are, and an error instead of a crash or an empty result.
+TEST(PointCloudFiles, PcdFilesMadeHere)
 {
 	const TempDir dir;
-	// fields in another order, a field with count 3 before z, the data lines hold more than the header says
 	const fs::path file = dir.write("a.pcd",
-		"# .PCD v0.7\nVERSION 0.7\nFIELDS intensity y normal z x\nSIZE 4 4 4 4 4\nTYPE F F F F F\nCOUNT 1 1 3 1 1\nWIDTH 2\nHEIGHT 1\nPOINTS 2\nDATA ascii\n"
-		"9 2 0 0 0 3 1\n"
-		"9 5 0 0 0 6 4\r\n"
-		"9 8 0 0 0 9 7\n");
+		"# .PCD v0.7\nVERSION 0.7\nFIELDS x y z intensity\nSIZE 4 4 4 4\nTYPE F F F F\nCOUNT 1 1 1 1\nWIDTH 2\nHEIGHT 1\n"
+		"VIEWPOINT 0 0 0 1 0 0 0\nPOINTS 2\nDATA ascii\n1 2 3 9\n4.5 -5.5 6.5 9\n");
 	const auto points = read_pcd_file(file);
 	ASSERT_EQ(points.size(), 2u);
 	EXPECT_TRUE(eq(points[0], { 1, 2, 3 }));
-	EXPECT_TRUE(eq(points[1], { 4, 5, 6 }));
-	// POINTS missing: WIDTH * HEIGHT; double precision fields; NaN is kept
-	const fs::path doubles = dir.write("d.pcd", "FIELDS x y z\nSIZE 8 8 8\nTYPE F F F\nCOUNT 1 1 1\nWIDTH 2\nHEIGHT 2\nDATA ascii\n1.5 2.5 3.5\nnan 0 0\n0 0 0\n7 8 9\n");
-	const auto d = read_pcd_file(doubles);
-	ASSERT_EQ(d.size(), 4u);
-	EXPECT_TRUE(eq(d[0], { 1.5f, 2.5f, 3.5f }));
-	EXPECT_TRUE(std::isnan(d[1].x));
-	EXPECT_TRUE(eq(d[3], { 7, 8, 9 }));
-	// COUNT missing means 1 for every field
-	EXPECT_EQ(read_pcd_file(dir.write("c.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")).size(), 1u);
+	EXPECT_TRUE(eq(points[1], { 4.5f, -5.5f, 6.5f }));
 
-	const std::string head = "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\n";
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e1.pcd", head + "POINTS 1\n1 2 3\n")); }, "DATA");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e2.pcd", "SIZE 4 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "has no FIELDS");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e3.pcd", "FIELDS x y w\nSIZE 4 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "field z");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e4.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F U\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "float");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e5.pcd", "FIELDS x y z\nSIZE 2 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "float");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e6.pcd", "FIELDS x y z\nSIZE 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "different numbers");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e7.pcd", head + "POINTS 3\nDATA ascii\n1 2 3\n4 5 6\n")); }, "holds 2 points");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e8.pcd", head + "POINTS 1\nDATA ascii\n1 2\n")); }, "too few columns");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e9.pcd", head + "POINTS 1\nDATA ascii\n1 2 x\n")); }, "not a number");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e10.pcd", head + "POINTS 1\nDATA binary_compressed\nxxxxxxxxxxxx")); }, "binary_compressed");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e11.pcd", head + "DATA ascii\n1 2 3\n")); }, "POINTS");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e12.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 0 1\nPOINTS 1\nDATA ascii\n1 2 3\n")); }, "COUNT");
-	expect_file_error([&] { (void)read_pcd_file(dir.write("e13.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 2 1 1\nPOINTS 1\nDATA ascii\n1 2 3 4\n")); }, "float");
-	// no HEIGHT: the cloud has one row
-	EXPECT_EQ(read_pcd_file(dir.write("w.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nWIDTH 2\nDATA ascii\n1 2 3\n4 5 6\n")).size(), 2u);
 	expect_file_error([&] { (void)read_pcd_file(dir.path / "missing.pcd"); }, "could not open");
+	// a text without a PCD header is not an error for PCL: it returns an empty cloud (the CUDA reader returns it as well); an empty file is an error
+	EXPECT_TRUE(read_pcd_file(dir.write("garbage.pcd", "this is not a point cloud\n")).empty());
+	expect_file_error([&] { (void)read_pcd_file(dir.write("empty.pcd", "")); }, "PCL could not read");
+	// the by-extension reader goes through the same code
+	EXPECT_EQ(read_point_cloud_file(file).size(), 2u);
 }
-
-TEST(PointCloudFiles, PcdSyntheticBinary)
+#else
+TEST(PointCloudFiles, PcdNeedsAPclBuild)
 {
 	const TempDir dir;
-	// x y z as float, then an int field, in front of them a field of 3 bytes (count 3, size 1)
-	std::string bytes = "FIELDS pad x y z id\nSIZE 1 4 4 4 4\nTYPE U F F F U\nCOUNT 3 1 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA binary\n";
-	const Point3f in[3] = { { 1, 2, 3 }, { -4.5f, 5.5f, -6.5f }, { 1e10f, 0, -1e-10f } };
-	for (int i = 0; i < 3; ++i)
-	{
-		bytes += "abc";
-		put(bytes, in[i].x);
-		put(bytes, in[i].y);
-		put(bytes, in[i].z);
-		put<uint32_t>(bytes, 100 + i);
-	}
-	const auto points = read_pcd_file(dir.write("b.pcd", bytes));
-	ASSERT_EQ(points.size(), 3u);
-	for (int i = 0; i < 3; ++i)
-		EXPECT_TRUE(eq(points[i], in[i])) << i;
-	// doubles, header with CRLF
-	std::string d = "FIELDS x y z\r\nSIZE 8 8 8\r\nTYPE F F F\r\nCOUNT 1 1 1\r\nPOINTS 1\r\nDATA binary\n";
-	put(d, 0.25);
-	put(d, -0.5);
-	put(d, 1.0e300);
-	const auto dp = read_pcd_file(dir.write("d.pcd", d));
-	ASSERT_EQ(dp.size(), 1u);
-	EXPECT_EQ(dp[0].x, 0.25f);
-	EXPECT_EQ(dp[0].y, -0.5f);
-	EXPECT_TRUE(std::isinf(dp[0].z) && dp[0].z > 0); // 1e300 does not fit a float
-	std::string neg = "FIELDS x y z\nSIZE 8 8 8\nTYPE F F F\nPOINTS 1\nDATA binary\n";
-	put(neg, 0.0);
-	put(neg, -1.0e300);
-	put(neg, 1.0e-300);
-	const auto np = read_pcd_file(dir.write("n.pcd", neg));
-	ASSERT_EQ(np.size(), 1u);
-	EXPECT_TRUE(std::isinf(np[0].y) && np[0].y < 0);
-	EXPECT_EQ(np[0].z, 0.0f); // too small for a float: 0, not an error
-	// truncated: one byte short
-	std::string cut = bytes;
-	cut.pop_back();
-	expect_file_error([&] { (void)read_pcd_file(dir.write("t.pcd", cut)); }, "fewer than the 3 points");
-	// the count may not overflow the size check
-	expect_file_error([&] { (void)read_pcd_file(dir.write("h.pcd", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nPOINTS 18446744073709551615\nDATA binary\nxxxx")); }, "fewer than");
+	expect_file_error([&] { (void)read_pcd_file(dir.path / "any.pcd"); }, "GVL_WITH_PCL");
+	expect_file_error([&] { (void)read_point_cloud_file(dir.path / "any.pcd"); }, "GVL_WITH_PCL");
 }
+#endif
 
 namespace
 {
@@ -312,7 +256,11 @@ TEST(PointCloudFiles, ByExtensionAndLoadOptions)
 	expect_file_error([&] { (void)read_point_cloud_file(dir.write("a.txt", "1 2 3")); }, ".txt");
 	expect_file_error([&] { (void)read_point_cloud_file(dir.write("noext", "1 2 3")); }, "noext");
 	expect_file_error([&] { (void)read_point_cloud_file(dir.path / "missing.xyz"); }, "could not open");
+#ifdef _BUILD_GVL_WITH_PCL_SUPPORT_
 	EXPECT_EQ(read_point_cloud_file(dir.write("p.PCD", "FIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nPOINTS 1\nDATA ascii\n1 2 3\n")).size(), 1u);
+#else
+	expect_file_error([&] { (void)read_point_cloud_file(dir.write("p.PCD", "x")); }, "GVL_WITH_PCL"); // the extension is found case insensitively, the reader needs PCL
+#endif
 	EXPECT_EQ(read_point_cloud_file(dir.write("v.BinVox", binvox("#binvox 1\ndim 1 1 1\n", { { 1, 1 } }))).size(), 1u);
 
 	// shift: the minimum of every axis goes to 0, points that are not finite stay and do not count

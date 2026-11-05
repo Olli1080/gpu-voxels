@@ -6,19 +6,21 @@
 #include <gpu_voxels/vulkan/PointCloudFile.h>
 
 #include <algorithm>
-#include <bit>
 #include <charconv>
 #include <cmath>
 #include <cstring>
 #include <fstream>
 #include <limits>
-#include <map>
 #include <string>
 #include <string_view>
 
 #include <gpu_voxels/vulkan/Log.h>
 
-static_assert(std::endian::native == std::endian::little, "the PCD binary reader assumes a little endian host");
+#ifdef _BUILD_GVL_WITH_PCL_SUPPORT_
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#endif
 
 namespace gpu_voxels::vulkan
 {
@@ -81,16 +83,6 @@ namespace gpu_voxels::vulkan
 			}
 		}
 
-		/// double to float; what does not fit becomes infinity (a plain cast is undefined for it)
-		float to_float(double d)
-		{
-			if (d > static_cast<double>(std::numeric_limits<float>::max()))
-				return std::numeric_limits<float>::infinity();
-			if (d < -static_cast<double>(std::numeric_limits<float>::max()))
-				return -std::numeric_limits<float>::infinity();
-			return static_cast<float>(d);
-		}
-
 		std::string lower(std::string s)
 		{
 			std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -125,166 +117,31 @@ namespace gpu_voxels::vulkan
 
 	std::vector<Point3f> read_pcd_file(const std::filesystem::path& file)
 	{
-		const std::string text = read_all(file);
-		std::map<std::string, std::vector<std::string>> header;
-		size_t data_start = std::string::npos;
+#ifdef _BUILD_GVL_WITH_PCL_SUPPORT_
+		if (!std::filesystem::exists(file))
+			throw PointCloudFileError("could not open the file " + file.string());
+		pcl::PointCloud<pcl::PointXYZ> cloud;
+		try
 		{
-			size_t pos = 0;
-			while (pos < text.size())
-			{
-				size_t end = text.find('\n', pos);
-				const size_t next = end == std::string::npos ? text.size() : end + 1;
-				if (end == std::string::npos)
-					end = text.size();
-				const auto tokens = split(std::string_view(text).substr(pos, end - pos));
-				pos = next;
-				if (tokens.empty() || tokens[0].front() == '#')
-					continue;
-				std::vector<std::string> values;
-				for (size_t i = 1; i < tokens.size(); ++i)
-					values.emplace_back(tokens[i]);
-				const std::string key(tokens[0]);
-				header[key] = std::move(values);
-				if (key == "DATA")
-				{
-					data_start = next;
-					break;
-				}
-			}
+			if (pcl::io::loadPCDFile<pcl::PointXYZ>(file.string(), cloud) == -1)
+				fail(file, "PCL could not read the PCD file");
 		}
-		if (data_start == std::string::npos)
-			fail(file, "no DATA line in the header");
-		for (const char* key : { "FIELDS", "SIZE", "TYPE" })
-			if (!header.contains(key))
-				fail(file, std::string("the header has no ") + key + " line");
-		const auto& fields = header["FIELDS"];
-		const auto& type = header["TYPE"];
-		std::vector<uint32_t> sizes, counts;
-		for (const std::string& s : header["SIZE"])
+		catch (const PointCloudFileError&)
 		{
-			uint32_t v = 0;
-			if (!parse_number<uint32_t>(s, v) || v == 0)
-				fail(file, "bad SIZE entry '" + s + "'");
-			sizes.push_back(v);
+			throw;
 		}
-		if (header.contains("COUNT"))
-			for (const std::string& s : header["COUNT"])
-			{
-				uint32_t v = 0;
-				if (!parse_number<uint32_t>(s, v) || v == 0)
-					fail(file, "bad COUNT entry '" + s + "'");
-				counts.push_back(v);
-			}
-		else
-			counts.assign(fields.size(), 1);
-		if (sizes.size() != fields.size() || type.size() != fields.size() || counts.size() != fields.size())
-			fail(file, "FIELDS, SIZE, TYPE and COUNT have different numbers of entries");
-
-		uint64_t n = 0;
-		auto number_of = [&](const char* key, uint64_t& value) {
-			uint64_t v = 0;
-			if (!header.contains(key) || header[key].size() != 1 || !parse_number<uint64_t>(header[key][0], v))
-				return false;
-			value = v;
-			return true;
-		};
-		uint64_t width = 0, height = 1;
-		if (!number_of("POINTS", n))
+		catch (const std::exception& e)
 		{
-			if (!number_of("WIDTH", width) || (header.contains("HEIGHT") && !number_of("HEIGHT", height)))
-				fail(file, "the header has no valid POINTS (or WIDTH and HEIGHT)");
-			n = width * height;
+			fail(file, std::string("PCL could not read the PCD file: ") + e.what());
 		}
-
-		const char* axes[3] = { "x", "y", "z" };
-		size_t field_of[3];
-		uint64_t column_of[3], offset_of[3];
-		uint32_t size_of[3];
-		for (int a = 0; a < 3; ++a)
-		{
-			const auto it = std::find(fields.begin(), fields.end(), axes[a]);
-			if (it == fields.end())
-				fail(file, std::string("no field ") + axes[a]);
-			field_of[a] = static_cast<size_t>(it - fields.begin());
-			if (type[field_of[a]] != "F" || (sizes[field_of[a]] != 4 && sizes[field_of[a]] != 8) || counts[field_of[a]] != 1)
-				fail(file, std::string("the field ") + axes[a] + " must be a float of 4 or 8 bytes with count 1");
-			column_of[a] = 0;
-			offset_of[a] = 0;
-			for (size_t f = 0; f < field_of[a]; ++f)
-			{
-				column_of[a] += counts[f];
-				offset_of[a] += uint64_t(sizes[f]) * counts[f];
-			}
-			size_of[a] = sizes[field_of[a]];
-		}
-
-		const std::string kind = header["DATA"].empty() ? std::string() : header["DATA"][0];
 		std::vector<Point3f> points;
-		const std::string_view body = std::string_view(text).substr(data_start);
-		if (kind == "binary")
-		{
-			uint64_t stride = 0;
-			for (size_t f = 0; f < fields.size(); ++f)
-				stride += uint64_t(sizes[f]) * counts[f];
-			if (n > body.size() / stride)
-				fail(file, "the binary data holds fewer than the " + std::to_string(n) + " points of the header");
-			points.reserve(static_cast<size_t>(n));
-			for (uint64_t i = 0; i < n; ++i)
-			{
-				float c[3];
-				for (int a = 0; a < 3; ++a)
-				{
-					const char* at = body.data() + i * stride + offset_of[a];
-					if (size_of[a] == 4)
-						std::memcpy(&c[a], at, 4);
-					else
-					{
-						double d;
-						std::memcpy(&d, at, 8);
-						c[a] = to_float(d);
-					}
-				}
-				points.push_back({ c[0], c[1], c[2] });
-			}
-		}
-		else if (kind == "ascii")
-		{
-			uint64_t needed = 0;
-			for (int a = 0; a < 3; ++a)
-				needed = std::max(needed, column_of[a] + 1);
-			points.reserve(static_cast<size_t>(std::min<uint64_t>(n, body.size() / 6)));
-			for_each_line(body, [&](std::string_view line, size_t number)
-			{
-				if (points.size() == n)
-					return;
-				const auto tokens = split(line);
-				if (tokens.empty())
-					return;
-				if (tokens.size() < needed)
-					fail(file, "data line " + std::to_string(number) + " has too few columns");
-				float c[3];
-				for (int a = 0; a < 3; ++a)
-				{
-					bool ok;
-					if (size_of[a] == 4)
-						ok = parse_number(tokens[column_of[a]], c[a]);
-					else
-					{
-						double d = 0;
-						ok = parse_number(tokens[column_of[a]], d);
-						c[a] = to_float(d);
-					}
-					if (!ok)
-						fail(file, "data line " + std::to_string(number) + ": '" + std::string(tokens[column_of[a]]) + "' is not a number");
-				}
-				points.push_back({ c[0], c[1], c[2] });
-			});
-			if (points.size() != n)
-				fail(file, "the ascii data holds " + std::to_string(points.size()) + " points, the header says " + std::to_string(n));
-		}
-		else
-			fail(file, "DATA " + kind + " is not supported (only ascii and binary)");
+		points.reserve(cloud.size());
+		for (const auto& p : cloud.points)
+			points.push_back({ p.x, p.y, p.z });
 		return points;
+#else
+		fail(file, ".pcd files need a build with GVL_WITH_PCL");
+#endif
 	}
 
 	// ---------------------------------------------------------------- binvox

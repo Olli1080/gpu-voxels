@@ -323,6 +323,9 @@ TEST_F(ExampleTest, Sandbox)
 // and collideWithTypes of the lists against the map (3 frames).
 TEST_F(ExampleTest, Collisions)
 {
+#ifndef _BUILD_GVL_WITH_PCL_SUPPORT_
+	GTEST_SKIP() << "built without PCL (GVL_WITH_PCL): no .pcd files";
+#endif
 	GpuVoxels gvl(ctx());
 	gvl.initialize({ 200, 200, 200 }, 0.01f);
 	ASSERT_NE(gvl.add_map(MT_BITVECTOR_VOXELLIST, "myPointcloud"), nullptr);
@@ -430,6 +433,9 @@ TEST_F(ExampleTest, VoxelListSandbox)
 // Difference: subtractFromCountingVoxelList / subtract take a metric offset in CUDA (the program passes zero), here there is none.
 TEST_F(ExampleTest, CountingVoxelList)
 {
+#ifndef _BUILD_GVL_WITH_PCL_SUPPORT_
+	GTEST_SKIP() << "built without PCL (GVL_WITH_PCL): no .pcd files";
+#endif
 	GpuVoxels gvl(ctx());
 	gvl.initialize({ 200, 200, 200 }, 0.01f);
 	for (const char* name : { "CountingMap", "CountingFilter0Map", "CountingFilter1Map", "CountingFilter2Map" })

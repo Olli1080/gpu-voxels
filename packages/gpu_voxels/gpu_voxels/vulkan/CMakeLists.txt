@@ -66,6 +66,14 @@ target_link_libraries(${PROJECT_NAME}
     GPUOpen::VulkanMemoryAllocator
 )
 
+# .pcd files are read with PCL (option GVL_WITH_PCL, the same switch and macro as the CUDA helpers). Without it read_pcd_file refuses .pcd files.
+if(GVL_WITH_PCL)
+  target_include_directories(${PROJECT_NAME} PRIVATE ${PCL_INCLUDE_DIRS})
+  target_link_directories(${PROJECT_NAME} PRIVATE ${PCL_LIBRARY_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PCL_LIBRARIES})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE ${PCL_DEFINITIONS} PUBLIC _BUILD_GVL_WITH_PCL_SUPPORT_)
+endif()
+
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 # Kernels: GLSL -> SPIR-V at build time, embedded into the library (no shader files needed at run time).

@@ -83,6 +83,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 if(GVL_WITH_PCL)
   target_include_directories(${PROJECT_NAME} PRIVATE ${PCL_INCLUDE_DIRS})
   target_link_directories(${PROJECT_NAME} PRIVATE ${PCL_LIBRARY_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PCL_LIBRARIES})
   target_compile_definitions(${PROJECT_NAME} INTERFACE ${PCL_DEFINITIONS} PUBLIC _BUILD_GVL_WITH_PCL_SUPPORT_)
 
   target_sources(${PROJECT_NAME}

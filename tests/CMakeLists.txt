@@ -27,4 +27,11 @@ if(GVL_BACKEND_VULKAN)
 endif()
 if(GVL_BACKEND_CUDA)
   add_subdirectory(cuda_parity)
+  if(GVL_WITH_PCL)
+    # the .pcd reader of the CUDA helpers (PCL), on the model files
+    gvl_add_test(test_cuda_pcd_reader
+      SOURCES smoke/test_cuda_pcd_reader.cpp
+      LIBS gpu_voxels_helpers
+      DEFINITIONS "GVL_TEST_MODEL_DIR=\"${CMAKE_SOURCE_DIR}/packages/gpu_voxels/models\"")
+  endif()
 endif()

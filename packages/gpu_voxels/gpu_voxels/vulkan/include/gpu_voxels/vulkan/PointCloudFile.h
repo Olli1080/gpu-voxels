@@ -7,7 +7,7 @@
  * \brief  Host point cloud readers (.xyz, .pcd, .binvox) and the box of voxels for insertBoxIntoMap (slice S7-2).
  *
  * Counterparts of file_handling::PointcloudFileHandler (XyzFileReader, PcdFileReader, BinvoxFileReader) and
- * geometry_generation::createBoxOfPoints. No CUDA, thrust, Eigen or PCL; differences are listed in
+ * geometry_generation::createBoxOfPoints. No CUDA or thrust; .pcd files are read with PCL (option GVL_WITH_PCL, like the CUDA reader); differences are listed in
  * Agent/knowledge_base/architecture/vulkan_gpu_voxels_files.md.
  */
 #ifndef GPU_VOXELS_VULKAN_POINT_CLOUD_FILE_H_INCLUDED
@@ -35,8 +35,9 @@ namespace gpu_voxels::vulkan
 	/// triple of a line as a point, so a line with six numbers gives two points).
 	[[nodiscard]] std::vector<Point3f> read_xyz_file(const std::filesystem::path& file);
 
-	/// PCL point cloud data v0.7 with DATA ascii or DATA binary (not binary_compressed). Needs the fields x, y, z of type F (size 4
-	/// or 8, count 1); other fields are skipped. All POINTS points are returned, also NaN ones of organised clouds (CUDA through PCL).
+	/// Point cloud data (.pcd) read by PCL (pcl::io::loadPCDFile<pcl::PointXYZ>, as the CUDA reader does): every format PCL reads, all
+	/// points including NaN ones of organised clouds. \throws PointCloudFileError if the file is missing or PCL cannot read it, and always in
+	/// a build without GVL_WITH_PCL (the macro _BUILD_GVL_WITH_PCL_SUPPORT_ is then not defined).
 	[[nodiscard]] std::vector<Point3f> read_pcd_file(const std::filesystem::path& file);
 
 	/// Binvox (any version of the header with dim / translate / scale / data, run length coded): one point per filled voxel,

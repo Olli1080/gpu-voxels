@@ -1,0 +1,16 @@
+E2 pcd read as xyz : KILLED
+G1 file: shift flag lost : KILLED
+G2 file: offset lost : KILLED
+G3 file: scaling lost : KILLED
+G4 file: meaning changed : KILLED
+G5 file: counter not stored : KILLED
+G6 file: file errors not caught : KILLED
+G7 file: failure reported as success : KILLED
+G8 box: spacing times the points per voxel : KILLED
+G9 box: points per voxel 0 not refused here (the box refuses it later) : KILLED
+G10 box: meaning changed : KILLED
+G11 box: clipped voxels not counted : KILLED
+G12 box: clipped to a bigger limit (equivalent: the class drops and counts them) : SURVIVED
+G13 box: the class drops are not added (equivalent: with the clip to its size it drops none) : SURVIVED
+G14 box: counter not stored : KILLED
+restored

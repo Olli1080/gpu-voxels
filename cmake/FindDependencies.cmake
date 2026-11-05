@@ -12,9 +12,11 @@ if(GVL_BACKEND_CUDA)
   find_package(CUDAToolkit REQUIRED)
   find_package(Stb REQUIRED)
   find_package(Eigen3 CONFIG REQUIRED) # the vcpkg port installs the headers below include/eigen3, so link Eigen3::Eigen
-  if(GVL_WITH_PCL)
-    find_package(PCL REQUIRED COMPONENTS io)
-  endif()
+endif()
+
+# ---- PCL (the .pcd reader of both backends) ---------------------------------
+if(GVL_WITH_PCL AND (GVL_BACKEND_CUDA OR GVL_BACKEND_VULKAN))
+  find_package(PCL REQUIRED COMPONENTS io)
 endif()
 
 # ---- Vulkan backend (dependencies only; no runtime yet) -----------------------

@@ -17,7 +17,7 @@ if(GVL_BACKEND_VULKAN AND GVL_VULKAN_VIEWER AND NOT GVL_VULKAN_VIEW)
 endif()
 
 # ---- Optional third-party features of the CUDA backend ---------------------
-option(GVL_WITH_PCL "Build PCL point cloud file support (pcd) into gpu_voxels_helpers" ON)
+option(GVL_WITH_PCL "Read .pcd files with PCL (CUDA backend: gpu_voxels_helpers, Vulkan backend: gpu_voxels_vulkan)" ON)
 
 # ---- Tests ------------------------------------------------------------------
 option(BUILD_TESTS "Build the unit tests (GoogleTest; with the CUDA backend also the Boost.Test suites of icl_core)" ON)
@@ -25,9 +25,9 @@ option(BUILD_TESTS "Build the unit tests (GoogleTest; with the CUDA backend also
 # ---- vcpkg manifest features -------------------------------------------------
 if(GVL_BACKEND_CUDA)
   list(APPEND VCPKG_MANIFEST_FEATURES "cuda")
-  if(GVL_WITH_PCL)
-    list(APPEND VCPKG_MANIFEST_FEATURES "pcl")
-  endif()
+endif()
+if(GVL_WITH_PCL AND (GVL_BACKEND_CUDA OR GVL_BACKEND_VULKAN))
+  list(APPEND VCPKG_MANIFEST_FEATURES "pcl")
 endif()
 if(GVL_BACKEND_VULKAN)
   list(APPEND VCPKG_MANIFEST_FEATURES "vulkan")
