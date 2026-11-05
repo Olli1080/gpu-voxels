@@ -9,7 +9,6 @@
         "cuda": {
             "description": "CUDA backend (GVL_BACKEND_CUDA); needs the CUDA toolkit installed",
             "dependencies": [
-                "cuda",
                 "eigen3",
                 "glm",
                 "stb",
