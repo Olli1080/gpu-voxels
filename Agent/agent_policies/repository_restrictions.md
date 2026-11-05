@@ -27,5 +27,5 @@
 - Never write test dumps/logs/generated files to the repo root or into tracked directories.
 
 ## Dependencies
-- Dependencies are declared in `vcpkg.json` (manifest mode) with overlay ports in `overlay-ports/` (`eigen3` 3.4.0 with nvcc patches, `cudnn`). Adding a dependency = edit `vcpkg.json`, state why in the plan, and record the version in [build_system.md](../knowledge_base/architecture/build_system.md).
+- Dependencies are declared in `vcpkg.json` (manifest mode) without overlay ports (the former `overlay-ports/` was removed on 2026-11-05). Adding a dependency = edit `vcpkg.json`, state why in the plan, and record the version in [build_system.md](../knowledge_base/architecture/build_system.md).
 - Do not add ROS/catkin dependencies to the core build.

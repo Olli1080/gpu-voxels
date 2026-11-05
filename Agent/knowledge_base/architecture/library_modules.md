@@ -39,4 +39,4 @@ Consequence: **master compiles only the library**; the viewer, examples and test
 FZI infrastructure: `icl_core` (utils), `icl_core_config` (XML/ini config), `icl_core_logging` (stream logging macros `LOGGING_*`), `icl_core_performance_monitor`, `icl_core_testsuite`. Used by every CUDA module, **not by the Vulkan backend** (since 2026-11-05 it is only configured and built with `GVL_BACKEND_CUDA`); GPU-agnostic.
 
 ## Other top-level items
-`changelog.txt` (history 2014 →), `overlay-ports/` (vcpkg), `gvl_ompl_planning/` (OMPL planner example), `example_how_to_link/` (CMake consumer demo).
+`changelog.txt` (history 2014 →), `gvl_ompl_planning/` (OMPL planner example), `example_how_to_link/` (CMake consumer demo).

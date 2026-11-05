@@ -56,7 +56,3 @@ install(
   FILE_SET HEADERS
     DESTINATION ${ICL_INCLUDE_DIR}
 )
-
-if(NOT DEFINED BUILD_TESTS OR BUILD_TESTS) # BUILD_TESTS comes from the gpu_voxels root project
-  add_subdirectory(tests)
-endif()

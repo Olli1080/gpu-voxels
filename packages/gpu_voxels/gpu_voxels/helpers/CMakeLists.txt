@@ -75,6 +75,7 @@ target_link_libraries(${PROJECT_NAME}
     icl_core_config
     icl_core_logging
     gpu_voxels_logging 
+    Eigen3::Eigen
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})

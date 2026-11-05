@@ -11,6 +11,7 @@
 if(GVL_BACKEND_CUDA)
   find_package(CUDAToolkit REQUIRED)
   find_package(Stb REQUIRED)
+  find_package(Eigen3 CONFIG REQUIRED) # the vcpkg port installs the headers below include/eigen3, so link Eigen3::Eigen
   if(GVL_WITH_PCL)
     find_package(PCL REQUIRED COMPONENTS io)
   endif()

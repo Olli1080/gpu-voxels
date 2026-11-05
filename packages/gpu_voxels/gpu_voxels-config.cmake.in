@@ -3,6 +3,7 @@
 include(CMakeFindDependencyMacro)
 find_dependency(CUDAToolkit)
 find_dependency(Stb)
+find_dependency(Eigen3 CONFIG)
 find_dependency(PCL)
 if(@GVL_BACKEND_CUDA@)
   find_dependency(icl_core)

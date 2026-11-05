@@ -12,7 +12,7 @@
 
 ## Rules
 1. Always `gvl_add_test(name SOURCES … [LIBS …] [DEFINITIONS …])`; never raw `add_executable` for tests. It links `GTest::gtest_main`, requires C++20, discovers cases with `gtest_discover_tests(... DISCOVERY_MODE PRE_TEST)` (no test executable is run during the build, so DLL lookup problems cannot break the build).
-2. GoogleTest is the framework for gpu_voxels tests (user decision, matches REACH). The vendored `icl_core` keeps its own Boost.Test suites (`ts_icl_core`, `ts_icl_core_config`); they are built only when `BUILD_TESTS` is ON and the CUDA backend is on (since 2026-11-05 icl_core is not built otherwise).
+2. GoogleTest is the framework for gpu_voxels tests (user decision, matches REACH). The vendored `icl_core` keeps its own Boost.Test suites (`ts_icl_core_config`; the case-less `ts_icl_core` was deleted on 2026-11-05, K18); they are built only when `BUILD_TESTS` is ON and the CUDA backend is on (since 2026-11-05 icl_core is not built otherwise).
 3. Tests must have an independent reference (see [definition_of_done.md](../../agent_policies/definition_of_done.md)); a regression test's comment names the bug/commit.
 
 ## Running (Windows, Visual Studio generator)
@@ -26,7 +26,7 @@ or use the test presets (`ctest --preset cuda-debug`, `vulkan-debug`), which exc
 
 With `GVL_BACKEND_VULKAN=ON` (build dir `build/verify-vk`; ctest of 2026-11-01 after S6d-6, Debug, 4 in parallel, 116 s): 296 ctest cases listed, 289 run (the 7 disabled experiments are listed but not run), 288 pass (same pre-existing `ts_icl_core` failure, K18).
 
-Fresh Vulkan-only tree 2026-11-05 (`build/verify-vk-fresh`, Debug, no icl_core): 457 ctest cases listed, 450 run and pass, the 7 disabled experiments are not run; no `ts_icl_core` there. CUDA tree `build/cuda-rel` (Release): 54 cases, 53 pass, the failure is `ts_icl_core` (K18).
+Fresh Vulkan-only tree 2026-11-05 (`build/verify-vk-fresh`, Debug, no icl_core): 457 ctest cases listed, 450 run and pass, the 7 disabled experiments are not run; no `ts_icl_core` there. CUDA tree `build/cuda-rel` (Release): 54 cases, 53 pass, the failure was `ts_icl_core` (K18); after deleting it and moving to vcpkg's eigen3 5.0.1 (K6): 53 cases, 53 pass.
 
 ## Reference implementations
 `tests/reference/` holds independent CPU references (rule: written from the CUDA sources, no shared code or data layout with the implementation under test). Currently `bit_voxel_map_reference.h` (sparse bitset map incl. meta-cloud self collision), `kinematics_reference.h` (double precision DH/FK) `voxel_list_reference.h` (`std::map` keyed by voxel id; bit/counting lists, collision, subtract) `prob_voxel_map_reference.h` (sparse int map, explicit update events, ray walk, all serial orders of a voxel's updates) and `distance_map_reference.h` (obstacle set + brute force distances). Validate the tests themselves by mutation testing (modify one shader/kernel line, the tests must fail) - see the S1 page for the procedure and results.

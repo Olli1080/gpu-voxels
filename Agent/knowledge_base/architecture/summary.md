@@ -7,7 +7,7 @@ Description of the **current** (CUDA, `master`) code base. Nothing here is about
 | [library_modules.md](library_modules.md) | Module/target map, who links whom, what is actually built on `master` |
 | [data_model.md](data_model.md) | Map/list/octree types, voxel types, BitVector, enums, `GpuVoxels` façade API |
 | [cuda_coupling_inventory.md](cuda_coupling_inventory.md) | Measured counts of CUDA/Thrust usage per area, kernel inventory, hard-to-port constructs |
-| [build_system.md](build_system.md) | CMake layout, presets, vcpkg manifest and overlay ports, legacy ICMAKER leftovers |
+| [build_system.md](build_system.md) | CMake layout, presets, vcpkg manifest, legacy ICMAKER leftovers |
 | [visualization_and_ipc.md](visualization_and_ipc.md) | Visualizer process, shared-memory + CUDA-IPC protocol, GL interop |
 | [vulkan_viewer.md](vulkan_viewer.md) | **In-process Vulkan viewer without a second process and without Boost.Interprocess** (2026-11-04): GPU extraction of cubes from bit / prob. maps, bit lists and octrees, primitive spheres / cuboids, robots, named layers over a `GpuVoxels` (`ViewerScene`, the `visualize_*` hooks), an XML style file, screenshots, indirect draw through buffer device addresses, offscreen target, orbit camera, PNG screenshots, GLFW window with swapchain, `gvl_viewer`; tests, mutations, what is not done |
 | [vulkan_bit_voxel_map.md](vulkan_bit_voxel_map.md) | Slice S1: Vulkan `BitVoxelMap` (insert, clear, collide): scope, deviations from CUDA, verification incl. mutation testing |
